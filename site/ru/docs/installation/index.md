@@ -25,7 +25,7 @@ brevis.sh поставляется как **один бинарный файл**
 Этот путь даёт бинарный файл с вшитыми версией и коммитом:
 
 ```bash
-git clone https://github.com/AreteAcademy/brevis.git
+git clone https://github.com/brevis-sh/brevis.git
 cd brevis
 make build
 ./bin/brevis version

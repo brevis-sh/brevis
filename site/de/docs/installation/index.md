@@ -25,7 +25,7 @@ Oberflächen-Assets und Schriften stecken alle im Binary.
 Dieser Weg erzeugt ein Binary mit eingestempelter Version und eingestempeltem Commit:
 
 ```bash
-git clone https://github.com/AreteAcademy/brevis.git
+git clone https://github.com/brevis-sh/brevis.git
 cd brevis
 make build
 ./bin/brevis version

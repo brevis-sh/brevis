@@ -151,7 +151,7 @@ Three things follow from it:
   idempotent, and Pub/Sub is at-least-once anyway.
 
 Runnable, against the emulator:
-[`examples/13-pubsub`](https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub).
+[`examples/13-pubsub`](https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub).
 
 ## A whole fetcher
 
@@ -671,5 +671,5 @@ re-run be a no-op instead of a duplicate.
 ## Reference
 
 - [pkg.go.dev](https://pkg.go.dev/brevis.sh/brevis/sdk) — the complete API
-- [`examples/`](https://github.com/AreteAcademy/brevis/tree/master/examples) — twelve runnable examples
-- [`CHANGELOG.md`](https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md) — version-by-version history
+- [`examples/`](https://github.com/brevis-sh/brevis/tree/master/examples) — twelve runnable examples
+- [`CHANGELOG.md`](https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md) — version-by-version history

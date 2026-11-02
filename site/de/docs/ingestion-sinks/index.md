@@ -153,7 +153,7 @@ tragen.
 
 | Image | trägt | Pull (amd64) |
 |---|---|---|
-| `brevissh/brevis-gateway:0.33.0` | sechs Sinks, S3, GCS, Redis, memcached | 19,1 MB |
+| `brevissh/brevis-gateway:0.33.0` | sechs Sinks, S3, GCS, Redis, memcached | 20,1 MB |
 | `brevissh/brevis-gateway:0.33.0-slim` | `postgres`, lokales `files`, `auto_table` | **5,2 MB** |
 
 Beide aus einem Build eines Baums, die beiden Tags sind also immer derselbe
@@ -414,7 +414,7 @@ SELECT JSON_VALUE(customer, '$.uf') ...;           -- SP
 Antwortet `JSON_TYPE` mit `string` und `JSON_VALUE` mit NULL, wurde das Objekt
 doppelt kodiert – die Spalte hält den TEXT des Objekts statt des Objekts.
 Gateway-Versionen bis einschließlich **0.15.0** taten das bei BigQuery, in
-**beiden** Formen; siehe das [Gateway-Changelog](https://github.com/AreteAcademy/brevis/blob/master/gateway/CHANGELOG.md)
+**beiden** Formen; siehe das [Gateway-Changelog](https://github.com/brevis-sh/brevis/blob/master/gateway/CHANGELOG.md)
 für die Ein-Zeilen-Prüfung und die Reparatur. Postgres und MySQL waren nie
 betroffen: Ihr Server parst den Text.
 

@@ -152,7 +152,7 @@ steps:
 | `id` | **필수** | workflow 안에서 고유합니다. 그래프와 로그에 표시되는 이름입니다 |
 | `run` | | 명령 |
 | `image` | | step의 이미지. 없으면 최상위 값을 상속합니다 |
-| `host` | | 엔진이 관리하지 **않는** 머신으로 명령을 보냅니다. `image`의 대안이며 함께 쓰지 않습니다. [Kubernetes 가이드의 `host:`](https://github.com/AreteAcademy/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host)를 참고하세요 |
+| `host` | | 엔진이 관리하지 **않는** 머신으로 명령을 보냅니다. `image`의 대안이며 함께 쓰지 않습니다. [Kubernetes 가이드의 `host:`](https://github.com/brevis-sh/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host)를 참고하세요 |
 | `shell` | `true` | `false`는 셸 없이 실행합니다. distroless에서는 필수입니다 |
 | `depends_on` | | 먼저 끝나야 하는 `id`의 목록. 항목은 `{step, label}`일 수도 있습니다 |
 | `marker` | `false` | `start`나 `end`처럼 명령이 없는 step |

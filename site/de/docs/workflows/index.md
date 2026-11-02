@@ -162,7 +162,7 @@ und 32Mi kosten lässt, statt dass beide die Größe des größeren zahlen. Sieh
 | `id` | **erforderlich** | eindeutig im Workflow; der Name, der im Graphen und in den Logs angezeigt wird |
 | `run` | | der Befehl |
 | `image` | | das Image des Steps; ohne Angabe wird das oberste übernommen |
-| `host` | | den Befehl an eine Maschine schicken, die die Engine **nicht** verwaltet – eine Alternative zu `image`, nie eine Ergänzung. Siehe [`host:` im Kubernetes-Leitfaden](https://github.com/AreteAcademy/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host) |
+| `host` | | den Befehl an eine Maschine schicken, die die Engine **nicht** verwaltet – eine Alternative zu `image`, nie eine Ergänzung. Siehe [`host:` im Kubernetes-Leitfaden](https://github.com/brevis-sh/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host) |
 | `shell` | `true` | `false` führt ohne Shell aus – erforderlich bei distroless |
 | `depends_on` | | Liste der `id`s, die zuerst abgeschlossen sein müssen; ein Eintrag kann `{step, label}` sein |
 | `marker` | `false` | ein Step ohne Befehl, für ein `start` oder ein `end` |

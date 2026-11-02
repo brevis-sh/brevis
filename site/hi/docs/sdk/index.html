@@ -90,14 +90,14 @@
       <a href="/hi/#ecosystem">इकोसिस्टम</a>
       <a href="/hi/docs/">दस्तावेज़</a>
       <details class="lang-dd"><summary aria-label="भाषा: हिन्दी"><span>हिन्दी</span></summary><ul><li><a href="/docs/sdk/" lang="en-US" hreflang="en-US">English</a></li><li><a href="/es/docs/sdk/" lang="es" hreflang="es">Español</a></li><li><a href="/pt/docs/sdk/" lang="pt-BR" hreflang="pt-BR">Português</a></li><li><a href="/fr/docs/sdk/" lang="fr" hreflang="fr">Français</a></li><li><a href="/de/docs/sdk/" lang="de" hreflang="de">Deutsch</a></li><li><a href="/zh/docs/sdk/" lang="zh-CN" hreflang="zh-CN">简体中文</a></li><li><a href="/ja/docs/sdk/" lang="ja" hreflang="ja">日本語</a></li><li><a href="/ru/docs/sdk/" lang="ru" hreflang="ru">Русский</a></li><li><a href="/ko/docs/sdk/" lang="ko" hreflang="ko">한국어</a></li><li><a href="/hi/docs/sdk/" lang="hi" hreflang="hi" aria-current="true">हिन्दी</a></li><li><a href="/id/docs/sdk/" lang="id" hreflang="id">Bahasa Indonesia</a></li></ul></details>
-      <a class="button button-secondary button-sm header-cta" href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">
+      <a class="button button-secondary button-sm header-cta" href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">
         <svg aria-hidden="true"><use href="#i-github"></use></svg>
         ओपन सोर्स देखें
         <!-- The star count. js/stars.js fills it from the GitHub API and
              unhides it; until then, and without script, the button is the
              one above. aria-hidden: the link's name stays the label, and a
              number read out after it would be noise, not information. -->
-        <span class="stars" data-stars="AreteAcademy/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
+        <span class="stars" data-stars="brevis-sh/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
       </a>
     </nav>
 
@@ -218,7 +218,7 @@ to.Files{Path: "gs:<span class="t-c">//bucket/landing/", Store: gcs.New(client)}
 <p>यह नियम है, न्यूनतावाद नहीं। तालिका उसे लिखने वाली pipeline बनाती है, इसलिए SDK तय कर सकता है कि उसके कॉलम क्या हों। <strong>Topic ऐसा नहीं है</strong>: वह आपकी pipeline से पहले मौजूद है, उसके subscribers पहले लिखे गए और उनके filters भी पहले लिखे गए। अपने आप जोड़ा गया attribute Brevis का किसी और के अनुबंध को संपादित करना होता, और subscriber को रात के तीन बजे पता चलता।</p>
 <p>इससे तीन बातें निकलती हैं:</p>
 <ul><li><strong>यह कभी topic नहीं बनाता।</strong> जो pipeline बना सकती है वह गलत भी बना सकती है, और गलत टाइप की तालिका के उलट किसी को पता नहीं चलता — संदेश कहीं चले जाते हैं और जिस subscriber को मिलने थे वह चुप रहता है।</li><li><strong><code>Schema</code>, <code>Dedup</code> और <code>PartitionBy</code> मना हैं</strong>, विकल्प का नाम बताते हुए। वे तालिकाओं के लिए हैं: <code>Schema</code> से गंतव्य तालिका बनाता है, deduplication को बदलने के लिए पंक्ति चाहिए, partition तालिका का विचार है। यहाँ सबसे नज़दीकी <code>OrderingKey</code> है, जो अलग चीज़ है — वह उन संदेशों को समूहित करती है जिन्हें क्रम से <em>पहुँचना</em> है।</li><li><strong>विफलता आंशिक होती है।</strong> प्रकाशन लेनदेन नहीं है, इसलिए 31,000 पर विफल होने वाले 48,000 संदेशों ने 31,000 <em>डिलीवर</em> किए। नतीजा बताता है कि असल में क्या गया, और त्रुटि कहती है कि दोबारा चलाना दोबारा डिलीवरी है — subscriber को idempotent होना होगा, और Pub/Sub वैसे भी at-least-once है।</li></ul>
-<p>चलाने योग्य, emulator के विरुद्ध: <a href="https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub" target="_blank" rel="noopener"><code>examples/13-pubsub</code></a>।</p>
+<p>चलाने योग्य, emulator के विरुद्ध: <a href="https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub" target="_blank" rel="noopener"><code>examples/13-pubsub</code></a>।</p>
 <h2 id="a-whole-fetcher">पूरा fetcher<a class="anchor" href="#a-whole-fetcher" aria-label="link">#</a></h2>
 <p><code>sdk.Run</code> flags, <code>-dry-run</code>, लॉगिंग, retry, pagination, provenance, तालिका निर्माण और exit code सँभालता है। फ़ाइल में सिर्फ़ वही बचता है जो उस स्रोत के लिए खास है:</p>
 <div class="code-block" data-code="package main
@@ -469,7 +469,7 @@ specification without a key length</code></pre></div>
 <p>Postgres चलता है, क्योंकि उसका <code>string</code> <code>TEXT</code> है। MySQL पर <code>DedupNone</code> के साथ उतारें और मौजूदा संस्करण आगे की ओर resolve करें, या तालिका खुद <code>CreateSQL</code> और नाप वाले id कॉलम के साथ बनाएँ।</p>
 <p><strong>Id सामग्री-पता वाली है।</strong> एक ही रिकॉर्ड किसी भी रास्ते से वही id बनाता है, और बदला हुआ रिकॉर्ड नई — जिससे दोबारा चलाना डुप्लिकेट के बजाय no-op बनता है।</p>
 <h2 id="reference">संदर्भ<a class="anchor" href="#reference" aria-label="link">#</a></h2>
-<ul><li><a href="https://pkg.go.dev/brevis.sh/brevis/sdk" target="_blank" rel="noopener">pkg.go.dev</a> — पूरी API</li><li><a href="https://github.com/AreteAcademy/brevis/tree/master/examples" target="_blank" rel="noopener"><code>examples/</code></a> — बारह चलाने योग्य उदाहरण</li><li><a href="https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md" target="_blank" rel="noopener"><code>CHANGELOG.md</code></a> — संस्करण-दर-संस्करण इतिहास</li></ul>
+<ul><li><a href="https://pkg.go.dev/brevis.sh/brevis/sdk" target="_blank" rel="noopener">pkg.go.dev</a> — पूरी API</li><li><a href="https://github.com/brevis-sh/brevis/tree/master/examples" target="_blank" rel="noopener"><code>examples/</code></a> — बारह चलाने योग्य उदाहरण</li><li><a href="https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md" target="_blank" rel="noopener"><code>CHANGELOG.md</code></a> — संस्करण-दर-संस्करण इतिहास</li></ul>
 
       <nav class="pagers" aria-label="पेज">
         <a class="pager pager-prev" href="/hi/docs/runtime/"><span>पिछला</span><strong>Step runtime</strong></a>
@@ -477,7 +477,7 @@ specification without a key length</code></pre></div>
       </nav>
 
       <p class="doc-edit">
-        <a href="https://github.com/AreteAcademy/brevis/blob/master/site/content/hi/docs/sdk.md" target="_blank" rel="noopener">GitHub पर यह पेज संपादित करें</a>
+        <a href="https://github.com/brevis-sh/brevis/blob/master/site/content/hi/docs/sdk.md" target="_blank" rel="noopener">GitHub पर यह पेज संपादित करें</a>
       </p>
     </article>
 
@@ -514,8 +514,8 @@ specification without a key length</code></pre></div>
         <h2>कोड</h2>
         <ul>
           <li><a href="/hi/docs/">दस्तावेज़</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">रिपॉज़िटरी</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">रिपॉज़िटरी</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
           <li><a href="https://areteacademy.com.br/" target="_blank" rel="noopener">Aretê Academy</a></li>
         </ul>
       </div>

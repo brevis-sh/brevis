@@ -23,7 +23,7 @@ brevis.sh 以**单个二进制文件**和 **Docker 镜像**的形式发布。除
 这条路径生成的二进制文件会写入版本号和 commit：
 
 ```bash
-git clone https://github.com/AreteAcademy/brevis.git
+git clone https://github.com/brevis-sh/brevis.git
 cd brevis
 make build
 ./bin/brevis version

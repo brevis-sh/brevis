@@ -90,14 +90,14 @@
       <a href="/fr/#ecosystem">Écosystème</a>
       <a href="/fr/docs/">Documentation</a>
       <details class="lang-dd"><summary aria-label="Langue: Français"><span>Français</span></summary><ul><li><a href="/docs/workflows/" lang="en-US" hreflang="en-US">English</a></li><li><a href="/es/docs/workflows/" lang="es" hreflang="es">Español</a></li><li><a href="/pt/docs/workflows/" lang="pt-BR" hreflang="pt-BR">Português</a></li><li><a href="/fr/docs/workflows/" lang="fr" hreflang="fr" aria-current="true">Français</a></li><li><a href="/de/docs/workflows/" lang="de" hreflang="de">Deutsch</a></li><li><a href="/zh/docs/workflows/" lang="zh-CN" hreflang="zh-CN">简体中文</a></li><li><a href="/ja/docs/workflows/" lang="ja" hreflang="ja">日本語</a></li><li><a href="/ru/docs/workflows/" lang="ru" hreflang="ru">Русский</a></li><li><a href="/ko/docs/workflows/" lang="ko" hreflang="ko">한국어</a></li><li><a href="/hi/docs/workflows/" lang="hi" hreflang="hi">हिन्दी</a></li><li><a href="/id/docs/workflows/" lang="id" hreflang="id">Bahasa Indonesia</a></li></ul></details>
-      <a class="button button-secondary button-sm header-cta" href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">
+      <a class="button button-secondary button-sm header-cta" href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">
         <svg aria-hidden="true"><use href="#i-github"></use></svg>
         Explorer l&#x27;open source
         <!-- The star count. js/stars.js fills it from the GitHub API and
              unhides it; until then, and without script, the button is the
              one above. aria-hidden: the link's name stays the label, and a
              number read out after it would be noise, not information. -->
-        <span class="stars" data-stars="AreteAcademy/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
+        <span class="stars" data-stars="brevis-sh/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
       </a>
     </nav>
 
@@ -247,7 +247,7 @@ resources:
     <span class="t-k">depends_on</span>: [bronze]</code></pre></div>
 <p>C'est ce qui permet à un fetcher Go de coûter 12 Mo et 32Mi à côté d'un <code>dbt build</code> de 1,9 Go, au lieu que les deux paient la taille du plus gros. Voir <a href="/fr/docs/pod-per-step/">Un pod par step</a>.</p>
 <h2 id="step-fields">Champs d'un step<a class="anchor" href="#step-fields" aria-label="link">#</a></h2>
-<div class="table-wrap"><table><thead><tr><th>champ</th><th></th><th></th></tr></thead><tbody><tr><td><code>id</code></td><td><strong>requis</strong></td><td>unique dans le workflow ; le nom affiché dans le graphe et les logs</td></tr><tr><td><code>run</code></td><td></td><td>la commande</td></tr><tr><td><code>image</code></td><td></td><td>l'image du step ; sans elle, hérite de celle du niveau supérieur</td></tr><tr><td><code>host</code></td><td></td><td>envoie la commande à une machine que le moteur ne gère <strong>pas</strong> — une alternative à <code>image</code>, jamais un complément. Voir <a href="https://github.com/AreteAcademy/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host" target="_blank" rel="noopener"><code>host:</code> dans le guide Kubernetes</a></td></tr><tr><td><code>shell</code></td><td><code>true</code></td><td><code>false</code> exécute sans shell — requis sur distroless</td></tr><tr><td><code>depends_on</code></td><td></td><td>liste d'<code>id</code> qui doivent se terminer avant ; une entrée peut être <code>{step, label}</code></td></tr><tr><td><code>marker</code></td><td><code>false</code></td><td>un step sans commande, pour un <code>start</code> ou un <code>end</code></td></tr><tr><td><code>resources</code></td><td></td><td><code>cpu</code>, <code>memory</code> et <code>limits</code> pour ce step</td></tr><tr><td><code>runtime</code>, <code>tools</code></td><td></td><td>le langage et les outils du step — voir <a href="/fr/docs/runtime/">Runtime d'un step</a></td></tr><tr><td><code>when</code></td><td><code>all_success</code></td><td>sous quel état de ses dépendances ce step s'exécute — voir ci-dessous</td></tr><tr><td><code>unless_empty</code></td><td></td><td>une clé de contexte qui décide s'il y a quelque chose à faire — voir ci-dessous</td></tr><tr><td><code>for_each</code></td><td></td><td>une clé de contexte contenant une liste ; le step s'exécute une fois par élément — voir ci-dessous</td></tr><tr><td><code>group</code></td><td></td><td>dessine ce step dans une boîte nommée et repliable — voir ci-dessous</td></tr><tr><td><code>uses</code></td><td></td><td>un autre workflow dont les steps prennent la place de celui-ci — voir ci-dessous</td></tr><tr><td><code>on_error</code></td><td></td><td>annonce les échecs de ce step — voir ci-dessous</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>champ</th><th></th><th></th></tr></thead><tbody><tr><td><code>id</code></td><td><strong>requis</strong></td><td>unique dans le workflow ; le nom affiché dans le graphe et les logs</td></tr><tr><td><code>run</code></td><td></td><td>la commande</td></tr><tr><td><code>image</code></td><td></td><td>l'image du step ; sans elle, hérite de celle du niveau supérieur</td></tr><tr><td><code>host</code></td><td></td><td>envoie la commande à une machine que le moteur ne gère <strong>pas</strong> — une alternative à <code>image</code>, jamais un complément. Voir <a href="https://github.com/brevis-sh/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host" target="_blank" rel="noopener"><code>host:</code> dans le guide Kubernetes</a></td></tr><tr><td><code>shell</code></td><td><code>true</code></td><td><code>false</code> exécute sans shell — requis sur distroless</td></tr><tr><td><code>depends_on</code></td><td></td><td>liste d'<code>id</code> qui doivent se terminer avant ; une entrée peut être <code>{step, label}</code></td></tr><tr><td><code>marker</code></td><td><code>false</code></td><td>un step sans commande, pour un <code>start</code> ou un <code>end</code></td></tr><tr><td><code>resources</code></td><td></td><td><code>cpu</code>, <code>memory</code> et <code>limits</code> pour ce step</td></tr><tr><td><code>runtime</code>, <code>tools</code></td><td></td><td>le langage et les outils du step — voir <a href="/fr/docs/runtime/">Runtime d'un step</a></td></tr><tr><td><code>when</code></td><td><code>all_success</code></td><td>sous quel état de ses dépendances ce step s'exécute — voir ci-dessous</td></tr><tr><td><code>unless_empty</code></td><td></td><td>une clé de contexte qui décide s'il y a quelque chose à faire — voir ci-dessous</td></tr><tr><td><code>for_each</code></td><td></td><td>une clé de contexte contenant une liste ; le step s'exécute une fois par élément — voir ci-dessous</td></tr><tr><td><code>group</code></td><td></td><td>dessine ce step dans une boîte nommée et repliable — voir ci-dessous</td></tr><tr><td><code>uses</code></td><td></td><td>un autre workflow dont les steps prennent la place de celui-ci — voir ci-dessous</td></tr><tr><td><code>on_error</code></td><td></td><td>annonce les échecs de ce step — voir ci-dessous</td></tr></tbody></table></div>
 <h2 id="running-a-step-only-when-there-is-something-to-do">Exécuter un step seulement quand il y a quelque chose à faire<a class="anchor" href="#running-a-step-only-when-there-is-something-to-do" aria-label="link">#</a></h2>
 <div class="code-block" data-code="# in extract
 context.set(has_rows=len(rows) &gt; 0)"><div class="code-head"><span class="code-lang">python</span><button class="code-copy" type="button" aria-label="Copier" data-done="Copié">Copier</button></div><pre><code><span class="t-c"># in extract</span>
@@ -492,7 +492,7 @@ brevis publish workflows/ --project acme --prune"><div class="code-head"><span c
       </nav>
 
       <p class="doc-edit">
-        <a href="https://github.com/AreteAcademy/brevis/blob/master/site/content/fr/docs/workflows.md" target="_blank" rel="noopener">Modifier cette page sur GitHub</a>
+        <a href="https://github.com/brevis-sh/brevis/blob/master/site/content/fr/docs/workflows.md" target="_blank" rel="noopener">Modifier cette page sur GitHub</a>
       </p>
     </article>
 
@@ -529,8 +529,8 @@ brevis publish workflows/ --project acme --prune"><div class="code-head"><span c
         <h2>code</h2>
         <ul>
           <li><a href="/fr/docs/">Documentation</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">Dépôt</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">Dépôt</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
           <li><a href="https://areteacademy.com.br/" target="_blank" rel="noopener">Aretê Academy</a></li>
         </ul>
       </div>

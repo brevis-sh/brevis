@@ -25,7 +25,7 @@ brevis.sh एक **अकेली बाइनरी** और एक **Docker i
 यही वह रास्ता है जो संस्करण और commit छपी हुई बाइनरी बनाता है:
 
 ```bash
-git clone https://github.com/AreteAcademy/brevis.git
+git clone https://github.com/brevis-sh/brevis.git
 cd brevis
 make build
 ./bin/brevis version

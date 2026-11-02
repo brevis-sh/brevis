@@ -131,7 +131,7 @@ steps:
 | `id` | **必填** | 在 workflow 内唯一；显示在图和日志中的名称 |
 | `run` | | 命令 |
 | `image` | | step 的镜像；省略时继承顶层的镜像 |
-| `host` | | 把命令发送到一台引擎**不**管理的机器，是 `image` 的替代方案，绝不与之并用。见 [Kubernetes 指南中的 `host:`](https://github.com/AreteAcademy/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host) |
+| `host` | | 把命令发送到一台引擎**不**管理的机器，是 `image` 的替代方案，绝不与之并用。见 [Kubernetes 指南中的 `host:`](https://github.com/brevis-sh/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host) |
 | `shell` | `true` | `false` 表示不使用 shell 运行，distroless 镜像必须如此 |
 | `depends_on` | | 必须先完成的 `id` 列表；其中的条目可以是 `{step, label}` |
 | `marker` | `false` | 没有命令的 step，用于 `start` 或 `end` |

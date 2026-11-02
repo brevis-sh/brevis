@@ -107,6 +107,6 @@ The same documentation in Indonesian: https://brevis.sh/id/docs/ (append `index.
 
 ## Optional
 
-- [Repository](https://github.com/AreteAcademy/brevis): source and issues
+- [Repository](https://github.com/brevis-sh/brevis): source and issues
 - [Go SDK reference](https://pkg.go.dev/brevis.sh/brevis/sdk): the generated API docs
 - [Aretê Academy](https://areteacademy.com.br/): the group the project belongs to

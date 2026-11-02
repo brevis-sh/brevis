@@ -25,7 +25,7 @@ fontes vão dentro do binário.
 É o caminho que produz um binário com versão e commit carimbados:
 
 ```bash
-git clone https://github.com/AreteAcademy/brevis.git
+git clone https://github.com/brevis-sh/brevis.git
 cd brevis
 make build
 ./bin/brevis version

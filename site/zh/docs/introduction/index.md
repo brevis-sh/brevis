@@ -82,7 +82,7 @@ brevis.sh 是 100% 开源的。没有专有许可证，没有受限版本，也�
 
 阅读、使用、改造并改进运行时，用在你自己的业务中。完整的运行时 · 可审计的代码 · 开放的贡献。
 
-[查看仓库](https://github.com/AreteAcademy/brevis)
+[查看仓库](https://github.com/brevis-sh/brevis)
 
 ### 共同构建
 
@@ -90,7 +90,7 @@ brevis.sh 是 100% 开源的。没有专有许可证，没有受限版本，也�
 
 参与决定项目走向的讨论。Issue 与提案 · 同行交流 · 公开的路线图。
 
-[关注项目](https://github.com/AreteAcademy/brevis/issues)
+[关注项目](https://github.com/brevis-sh/brevis/issues)
 
 ### 深入学习
 

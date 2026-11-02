@@ -116,7 +116,7 @@ eingeschränkte Edition, keine Sperren für das, was Sie bauen.
 
 Lesen, nutzen, anpassen und verbessern Sie die Laufzeitumgebung in Ihrem eigenen Betrieb. Vollständige Laufzeitumgebung · Prüfbarer Code · Offene Beiträge.
 
-[Repository ansehen](https://github.com/AreteAcademy/brevis)
+[Repository ansehen](https://github.com/brevis-sh/brevis)
 
 ### Gemeinsam bauen
 
@@ -124,7 +124,7 @@ Lesen, nutzen, anpassen und verbessern Sie die Laufzeitumgebung in Ihrem eigenen
 
 Beteiligen Sie sich an den Gesprächen, die entscheiden, was aus dem Projekt wird. Issues und Vorschläge · Austausch unter Gleichgesinnten · Öffentliche Roadmap.
 
-[Das Projekt verfolgen](https://github.com/AreteAcademy/brevis/issues)
+[Das Projekt verfolgen](https://github.com/brevis-sh/brevis/issues)
 
 ### Tiefgehend lernen
 

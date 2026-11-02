@@ -155,7 +155,7 @@ Esto es lo que hace que un fetcher en Go cueste 12 MB y 32Mi junto a un
 | `id` | **obligatorio** | único en el workflow; el nombre que se muestra en el grafo y en los logs |
 | `run` | | el comando |
 | `image` | | la imagen del step; sin ella, hereda la del nivel superior |
-| `host` | | envía el comando a una máquina que el engine **no** gestiona; una alternativa a `image`, nunca un complemento. Ver [`host:` en la guía de Kubernetes](https://github.com/AreteAcademy/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host) |
+| `host` | | envía el comando a una máquina que el engine **no** gestiona; una alternativa a `image`, nunca un complemento. Ver [`host:` en la guía de Kubernetes](https://github.com/brevis-sh/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host) |
 | `shell` | `true` | `false` ejecuta sin shell; necesario en distroless |
 | `depends_on` | | lista de `id`s que deben terminar antes; una entrada puede ser `{step, label}` |
 | `marker` | `false` | un step sin comando, para un `start` o un `end` |

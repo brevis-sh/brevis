@@ -109,7 +109,7 @@ O brevis.sh é 100% open source. Sem licenças proprietárias, sem edição limi
 
 Leia, use, adapte e melhore o runtime na sua própria operação. Runtime completo · Código auditável · Contribuições abertas.
 
-[Ver repositório](https://github.com/AreteAcademy/brevis)
+[Ver repositório](https://github.com/brevis-sh/brevis)
 
 ### Construa junto
 
@@ -117,7 +117,7 @@ Leia, use, adapte e melhore o runtime na sua própria operação. Runtime comple
 
 Participe das conversas que definem o que o projeto se torna. Issues e propostas · Troca entre pares · Roadmap público.
 
-[Acompanhar projeto](https://github.com/AreteAcademy/brevis/issues)
+[Acompanhar projeto](https://github.com/brevis-sh/brevis/issues)
 
 ### Aprenda fundo
 

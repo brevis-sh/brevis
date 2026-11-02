@@ -90,14 +90,14 @@
       <a href="/zh/#ecosystem">生态</a>
       <a href="/zh/docs/">文档</a>
       <details class="lang-dd"><summary aria-label="语言: 简体中文"><span>简体中文</span></summary><ul><li><a href="/docs/sdk/" lang="en-US" hreflang="en-US">English</a></li><li><a href="/es/docs/sdk/" lang="es" hreflang="es">Español</a></li><li><a href="/pt/docs/sdk/" lang="pt-BR" hreflang="pt-BR">Português</a></li><li><a href="/fr/docs/sdk/" lang="fr" hreflang="fr">Français</a></li><li><a href="/de/docs/sdk/" lang="de" hreflang="de">Deutsch</a></li><li><a href="/zh/docs/sdk/" lang="zh-CN" hreflang="zh-CN" aria-current="true">简体中文</a></li><li><a href="/ja/docs/sdk/" lang="ja" hreflang="ja">日本語</a></li><li><a href="/ru/docs/sdk/" lang="ru" hreflang="ru">Русский</a></li><li><a href="/ko/docs/sdk/" lang="ko" hreflang="ko">한국어</a></li><li><a href="/hi/docs/sdk/" lang="hi" hreflang="hi">हिन्दी</a></li><li><a href="/id/docs/sdk/" lang="id" hreflang="id">Bahasa Indonesia</a></li></ul></details>
-      <a class="button button-secondary button-sm header-cta" href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">
+      <a class="button button-secondary button-sm header-cta" href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">
         <svg aria-hidden="true"><use href="#i-github"></use></svg>
         探索开源项目
         <!-- The star count. js/stars.js fills it from the GitHub API and
              unhides it; until then, and without script, the button is the
              one above. aria-hidden: the link's name stays the label, and a
              number read out after it would be noise, not information. -->
-        <span class="stars" data-stars="AreteAcademy/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
+        <span class="stars" data-stars="brevis-sh/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
       </a>
     </nav>
 
@@ -218,7 +218,7 @@ to.Files{Path: "gs:<span class="t-c">//bucket/landing/", Store: gcs.New(client)}
 <p>这是一条规则，而不是极简主义。表是由写入它的 pipeline 创建的，所以 SDK 可以决定它的列是什么。<strong>topic 则不然</strong>：它先于你的 pipeline 存在，它的订阅方和订阅方的过滤器也都先于你的 pipeline 写成。自行添加的属性，等于 Brevis 在修改别人的契约，订阅方会在凌晨三点才发现。</p>
 <p>由此引出三点：</p>
 <ul><li><strong>它从不创建 topic。</strong> 能创建 topic 的 pipeline 也能创建错误的 topic，而且与拼错的表名不同，没有人会注意到：消息发往了别处，本该收到的订阅方却毫无动静。</li><li><strong><code>Schema</code>、<code>Dedup</code> 和 <code>PartitionBy</code> 会被拒绝</strong>，并指出具体的选项。它们是为表而存在的：<code>Schema</code> 是目的地创建表的方式，去重需要有一行可以替换，分区是表的概念。这里与之最接近的是 <code>OrderingKey</code>，但它是另一回事：它把必须按顺序*到达*的消息分为一组。</li><li><strong>失败是部分的。</strong> 发布不是事务性的，所以发布 48,000 条消息在 31,000 条处失败，就意味着已经*投递*了 31,000 条。结果会报告实际发出的数量，错误信息会说明重新运行就是重新投递：订阅方必须是幂等的，而且 Pub/Sub 本来就是至少一次投递。</li></ul>
-<p>可运行，针对模拟器： <a href="https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub" target="_blank" rel="noopener"><code>examples/13-pubsub</code></a>。</p>
+<p>可运行，针对模拟器： <a href="https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub" target="_blank" rel="noopener"><code>examples/13-pubsub</code></a>。</p>
 <h2 id="a-whole-fetcher">完整的抓取器<a class="anchor" href="#a-whole-fetcher" aria-label="link">#</a></h2>
 <p><code>sdk.Run</code> 负责标志、<code>-dry-run</code>、日志、重试、分页、来源追踪、建表和退出码。文件里剩下的，只有该数据源特有的部分：</p>
 <div class="code-block" data-code="package main
@@ -469,7 +469,7 @@ specification without a key length</code></pre></div>
 <p>Postgres 可以工作，因为它的 <code>string</code> 是 <code>TEXT</code>。在 MySQL 上，请使用 <code>DedupNone</code> 落地，并在下游解析当前版本，或者用 <code>CreateSQL</code> 和指定长度的 id 列自己创建表。</p>
 <p><strong>id 是内容寻址的。</strong> 同一条记录经由任一路径都产生同一个 id，而变化后的记录产生新的 id，这正是重新运行成为无操作而不是产生重复的原因。</p>
 <h2 id="reference">参考<a class="anchor" href="#reference" aria-label="link">#</a></h2>
-<ul><li><a href="https://pkg.go.dev/brevis.sh/brevis/sdk" target="_blank" rel="noopener">pkg.go.dev</a>：完整的 API</li><li><a href="https://github.com/AreteAcademy/brevis/tree/master/examples" target="_blank" rel="noopener"><code>examples/</code></a>：十二个可运行的示例</li><li><a href="https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md" target="_blank" rel="noopener"><code>CHANGELOG.md</code></a>：逐版本的历史</li></ul>
+<ul><li><a href="https://pkg.go.dev/brevis.sh/brevis/sdk" target="_blank" rel="noopener">pkg.go.dev</a>：完整的 API</li><li><a href="https://github.com/brevis-sh/brevis/tree/master/examples" target="_blank" rel="noopener"><code>examples/</code></a>：十二个可运行的示例</li><li><a href="https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md" target="_blank" rel="noopener"><code>CHANGELOG.md</code></a>：逐版本的历史</li></ul>
 
       <nav class="pagers" aria-label="页面">
         <a class="pager pager-prev" href="/zh/docs/runtime/"><span>上一页</span><strong>step 运行时</strong></a>
@@ -477,7 +477,7 @@ specification without a key length</code></pre></div>
       </nav>
 
       <p class="doc-edit">
-        <a href="https://github.com/AreteAcademy/brevis/blob/master/site/content/zh/docs/sdk.md" target="_blank" rel="noopener">在 GitHub 上编辑此页</a>
+        <a href="https://github.com/brevis-sh/brevis/blob/master/site/content/zh/docs/sdk.md" target="_blank" rel="noopener">在 GitHub 上编辑此页</a>
       </p>
     </article>
 
@@ -514,8 +514,8 @@ specification without a key length</code></pre></div>
         <h2>代码</h2>
         <ul>
           <li><a href="/zh/docs/">文档</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">仓库</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">仓库</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
           <li><a href="https://areteacademy.com.br/" target="_blank" rel="noopener">Aretê Academy</a></li>
         </ul>
       </div>

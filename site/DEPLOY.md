@@ -6,7 +6,7 @@ server-side anything.
 
 ## Cloudflare Workers Builds, connected to Git
 
-The Worker `brevis` is connected to `AreteAcademy/brevis` with root directory
+The Worker `brevis` is connected to `brevis-sh/brevis` with root directory
 `site` and production branch `master`. Every push to `master` deploys; every
 other branch uploads a preview version.
 

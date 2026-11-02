@@ -90,14 +90,14 @@
       <a href="/ko/#ecosystem">에코시스템</a>
       <a href="/ko/docs/">문서</a>
       <details class="lang-dd"><summary aria-label="언어: 한국어"><span>한국어</span></summary><ul><li><a href="/docs/sdk/" lang="en-US" hreflang="en-US">English</a></li><li><a href="/es/docs/sdk/" lang="es" hreflang="es">Español</a></li><li><a href="/pt/docs/sdk/" lang="pt-BR" hreflang="pt-BR">Português</a></li><li><a href="/fr/docs/sdk/" lang="fr" hreflang="fr">Français</a></li><li><a href="/de/docs/sdk/" lang="de" hreflang="de">Deutsch</a></li><li><a href="/zh/docs/sdk/" lang="zh-CN" hreflang="zh-CN">简体中文</a></li><li><a href="/ja/docs/sdk/" lang="ja" hreflang="ja">日本語</a></li><li><a href="/ru/docs/sdk/" lang="ru" hreflang="ru">Русский</a></li><li><a href="/ko/docs/sdk/" lang="ko" hreflang="ko" aria-current="true">한국어</a></li><li><a href="/hi/docs/sdk/" lang="hi" hreflang="hi">हिन्दी</a></li><li><a href="/id/docs/sdk/" lang="id" hreflang="id">Bahasa Indonesia</a></li></ul></details>
-      <a class="button button-secondary button-sm header-cta" href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">
+      <a class="button button-secondary button-sm header-cta" href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">
         <svg aria-hidden="true"><use href="#i-github"></use></svg>
         오픈 소스 둘러보기
         <!-- The star count. js/stars.js fills it from the GitHub API and
              unhides it; until then, and without script, the button is the
              one above. aria-hidden: the link's name stays the label, and a
              number read out after it would be noise, not information. -->
-        <span class="stars" data-stars="AreteAcademy/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
+        <span class="stars" data-stars="brevis-sh/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
       </a>
     </nav>
 
@@ -218,7 +218,7 @@ to.Files{Path: "gs:<span class="t-c">//bucket/landing/", Store: gcs.New(client)}
 <p>이것은 미니멀리즘이 아니라 규칙입니다. 테이블은 그것을 기록하는 파이프라인이 만들므로 SDK가 컬럼을 정해도 됩니다. <strong>토픽은 그렇지 않습니다.</strong> 토픽은 파이프라인보다 먼저 존재하고, 구독자와 필터도 먼저 작성되었습니다. 임의로 추가된 속성은 Brevis가 다른 사람의 계약을 수정하는 것이 되고, 구독자는 새벽 세 시에 그 사실을 알게 됩니다.</p>
 <p>여기서 세 가지가 따라 나옵니다.</p>
 <ul><li><strong>토픽을 절대 만들지 않습니다.</strong> 토픽을 만들 수 있는 파이프라인은 잘못된 토픽도 만들 수 있고, 잘못 입력한 테이블과 달리 아무도 알아채지 못합니다. 메시지는 어딘가로 가고, 받았어야 할 구독자는 조용합니다.</li><li><strong><code>Schema</code>, <code>Dedup</code>, <code>PartitionBy</code>는 옵션 이름을 명시하며 거부됩니다.</strong> 이들은 테이블을 위한 것입니다. <code>Schema</code>는 목적지가 테이블을 만드는 방법이고, 중복 제거에는 교체할 행이 필요하며, 파티션은 테이블의 개념입니다. 여기서 가장 가까운 것은 <code>OrderingKey</code>인데, 이것은 <em>도착</em> 순서가 중요한 메시지를 묶는 다른 개념입니다.</li><li><strong>실패는 부분적입니다.</strong> 게시는 트랜잭션이 아니므로, 31,000건에서 실패한 48,000건의 메시지는 31,000건이 <em>전달된</em> 것입니다. 결과는 실제로 나간 것을 보고하고, 오류는 재실행이 재전달임을 알려 줍니다. 구독자는 멱등해야 하며, 어차피 Pub/Sub은 at-least-once입니다.</li></ul>
-<p>에뮬레이터를 대상으로 실행 가능한 예제는 <a href="https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub" target="_blank" rel="noopener"><code>examples/13-pubsub</code></a>입니다.</p>
+<p>에뮬레이터를 대상으로 실행 가능한 예제는 <a href="https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub" target="_blank" rel="noopener"><code>examples/13-pubsub</code></a>입니다.</p>
 <h2 id="a-whole-fetcher">완전한 fetcher<a class="anchor" href="#a-whole-fetcher" aria-label="link">#</a></h2>
 <p><code>sdk.Run</code>은 플래그, <code>-dry-run</code>, 로깅, 재시도, 페이지네이션, 출처 정보, 테이블 생성, 종료 코드를 처리합니다. 파일에 남는 것은 해당 소스에만 해당하는 내용뿐입니다.</p>
 <div class="code-block" data-code="package main
@@ -469,7 +469,7 @@ specification without a key length</code></pre></div>
 <p>Postgres는 <code>string</code>이 <code>TEXT</code>이므로 동작합니다. MySQL에서는 <code>DedupNone</code>으로 적재하고 현재 버전은 다운스트림에서 결정하거나, <code>CreateSQL</code>로 크기를 지정한 id 컬럼과 함께 테이블을 직접 만드세요.</p>
 <p><strong>id는 콘텐츠 기반 주소 지정입니다.</strong> 같은 레코드는 어느 경로에서든 같은 id를 만들고, 변경된 레코드는 새 id를 만듭니다. 그래서 재실행이 중복이 아닌 no-op이 될 수 있습니다.</p>
 <h2 id="reference">참고<a class="anchor" href="#reference" aria-label="link">#</a></h2>
-<ul><li><a href="https://pkg.go.dev/brevis.sh/brevis/sdk" target="_blank" rel="noopener">pkg.go.dev</a> — 전체 API</li><li><a href="https://github.com/AreteAcademy/brevis/tree/master/examples" target="_blank" rel="noopener"><code>examples/</code></a> — 실행 가능한 예제 열두 개</li><li><a href="https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md" target="_blank" rel="noopener"><code>CHANGELOG.md</code></a> — 버전별 변경 이력</li></ul>
+<ul><li><a href="https://pkg.go.dev/brevis.sh/brevis/sdk" target="_blank" rel="noopener">pkg.go.dev</a> — 전체 API</li><li><a href="https://github.com/brevis-sh/brevis/tree/master/examples" target="_blank" rel="noopener"><code>examples/</code></a> — 실행 가능한 예제 열두 개</li><li><a href="https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md" target="_blank" rel="noopener"><code>CHANGELOG.md</code></a> — 버전별 변경 이력</li></ul>
 
       <nav class="pagers" aria-label="페이지">
         <a class="pager pager-prev" href="/ko/docs/runtime/"><span>이전</span><strong>step 런타임</strong></a>
@@ -477,7 +477,7 @@ specification without a key length</code></pre></div>
       </nav>
 
       <p class="doc-edit">
-        <a href="https://github.com/AreteAcademy/brevis/blob/master/site/content/ko/docs/sdk.md" target="_blank" rel="noopener">GitHub에서 이 페이지 편집</a>
+        <a href="https://github.com/brevis-sh/brevis/blob/master/site/content/ko/docs/sdk.md" target="_blank" rel="noopener">GitHub에서 이 페이지 편집</a>
       </p>
     </article>
 
@@ -514,8 +514,8 @@ specification without a key length</code></pre></div>
         <h2>코드</h2>
         <ul>
           <li><a href="/ko/docs/">문서</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">저장소</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">저장소</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
           <li><a href="https://areteacademy.com.br/" target="_blank" rel="noopener">Aretê Academy</a></li>
         </ul>
       </div>

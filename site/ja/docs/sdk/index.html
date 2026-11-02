@@ -90,14 +90,14 @@
       <a href="/ja/#ecosystem">エコシステム</a>
       <a href="/ja/docs/">ドキュメント</a>
       <details class="lang-dd"><summary aria-label="言語: 日本語"><span>日本語</span></summary><ul><li><a href="/docs/sdk/" lang="en-US" hreflang="en-US">English</a></li><li><a href="/es/docs/sdk/" lang="es" hreflang="es">Español</a></li><li><a href="/pt/docs/sdk/" lang="pt-BR" hreflang="pt-BR">Português</a></li><li><a href="/fr/docs/sdk/" lang="fr" hreflang="fr">Français</a></li><li><a href="/de/docs/sdk/" lang="de" hreflang="de">Deutsch</a></li><li><a href="/zh/docs/sdk/" lang="zh-CN" hreflang="zh-CN">简体中文</a></li><li><a href="/ja/docs/sdk/" lang="ja" hreflang="ja" aria-current="true">日本語</a></li><li><a href="/ru/docs/sdk/" lang="ru" hreflang="ru">Русский</a></li><li><a href="/ko/docs/sdk/" lang="ko" hreflang="ko">한국어</a></li><li><a href="/hi/docs/sdk/" lang="hi" hreflang="hi">हिन्दी</a></li><li><a href="/id/docs/sdk/" lang="id" hreflang="id">Bahasa Indonesia</a></li></ul></details>
-      <a class="button button-secondary button-sm header-cta" href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">
+      <a class="button button-secondary button-sm header-cta" href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">
         <svg aria-hidden="true"><use href="#i-github"></use></svg>
         オープンソースを見る
         <!-- The star count. js/stars.js fills it from the GitHub API and
              unhides it; until then, and without script, the button is the
              one above. aria-hidden: the link's name stays the label, and a
              number read out after it would be noise, not information. -->
-        <span class="stars" data-stars="AreteAcademy/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
+        <span class="stars" data-stars="brevis-sh/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
       </a>
     </nav>
 
@@ -218,7 +218,7 @@ to.Files{Path: "gs:<span class="t-c">//bucket/landing/", Store: gcs.New(client)}
 <p>これはミニマリズムではなくルールです。テーブルは、それを書き込むパイプラインが作るので、SDK が 列を決めてかまいません。<strong>トピックは違います。</strong> パイプラインより前から存在し、サブスクライバが 先に書かれ、そのフィルタも先に書かれています。勝手に属性を足せば、Brevis が他者の契約を 書き換えることになり、サブスクライバはそれを午前 3 時に知ることになります。</p>
 <p>ここから 3 つのことが導かれます。</p>
 <ul><li><strong>トピックを作ることは決してありません。</strong> トピックを作れるパイプラインは、間違ったトピックも作れます。 しかもタイプミスしたテーブルと違って、誰も気づきません。メッセージはどこかへ行き、 受け取るはずだったサブスクライバは静かなままです。</li><li><strong><code>Schema</code>、<code>Dedup</code>、<code>PartitionBy</code> は拒否され</strong>、オプション名が示されます。これらはテーブルのための ものです。<code>Schema</code> は宛先がテーブルを作る方法で、重複排除には置き換える対象の行が必要で、 パーティションはテーブルの概念です。ここで最も近いのは <code>OrderingKey</code> ですが、これは別物で、 順序どおりに*届く*必要があるメッセージをグループ化します。</li><li><strong>失敗は部分的です。</strong> 公開はトランザクションではないので、48,000 件のメッセージが 31,000 件目で失敗した場合、31,000 件は*配信済み*です。結果は実際に送られたものを報告し、 エラーは、再実行は再配信であると伝えます。サブスクライバは冪等でなければならず、 Pub/Sub はいずれにしても at-least-once です。</li></ul>
-<p>エミュレータに対して実行できる例: <a href="https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub" target="_blank" rel="noopener"><code>examples/13-pubsub</code></a>。</p>
+<p>エミュレータに対して実行できる例: <a href="https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub" target="_blank" rel="noopener"><code>examples/13-pubsub</code></a>。</p>
 <h2 id="a-whole-fetcher">フェッチャー全体<a class="anchor" href="#a-whole-fetcher" aria-label="link">#</a></h2>
 <p><code>sdk.Run</code> は、フラグ、<code>-dry-run</code>、ログ、リトライ、ページネーション、来歴、テーブル作成、終了コードを 引き受けます。ファイルに残るのは、そのソース固有のものだけです。</p>
 <div class="code-block" data-code="package main
@@ -469,7 +469,7 @@ specification without a key length</code></pre></div>
 <p>Postgres は動作します。その <code>string</code> は <code>TEXT</code> だからです。MySQL では、<code>DedupNone</code> で着地させて 下流で現行バージョンを解決するか、<code>CreateSQL</code> と長さ付きの id 列で自分でテーブルを作成してください。</p>
 <p><strong>id は内容アドレス方式です。</strong> 同じレコードはどちらの経路からも同じ id を生成し、変更された レコードは新しい id を生成します。これにより、再実行が重複ではなく何もしない操作になります。</p>
 <h2 id="reference">リファレンス<a class="anchor" href="#reference" aria-label="link">#</a></h2>
-<ul><li><a href="https://pkg.go.dev/brevis.sh/brevis/sdk" target="_blank" rel="noopener">pkg.go.dev</a> — 完全な API</li><li><a href="https://github.com/AreteAcademy/brevis/tree/master/examples" target="_blank" rel="noopener"><code>examples/</code></a> — 実行可能な 12 個の例</li><li><a href="https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md" target="_blank" rel="noopener"><code>CHANGELOG.md</code></a> — バージョンごとの履歴</li></ul>
+<ul><li><a href="https://pkg.go.dev/brevis.sh/brevis/sdk" target="_blank" rel="noopener">pkg.go.dev</a> — 完全な API</li><li><a href="https://github.com/brevis-sh/brevis/tree/master/examples" target="_blank" rel="noopener"><code>examples/</code></a> — 実行可能な 12 個の例</li><li><a href="https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md" target="_blank" rel="noopener"><code>CHANGELOG.md</code></a> — バージョンごとの履歴</li></ul>
 
       <nav class="pagers" aria-label="ページ">
         <a class="pager pager-prev" href="/ja/docs/runtime/"><span>前へ</span><strong>ステップのランタイム</strong></a>
@@ -477,7 +477,7 @@ specification without a key length</code></pre></div>
       </nav>
 
       <p class="doc-edit">
-        <a href="https://github.com/AreteAcademy/brevis/blob/master/site/content/ja/docs/sdk.md" target="_blank" rel="noopener">GitHub でこのページを編集</a>
+        <a href="https://github.com/brevis-sh/brevis/blob/master/site/content/ja/docs/sdk.md" target="_blank" rel="noopener">GitHub でこのページを編集</a>
       </p>
     </article>
 
@@ -514,8 +514,8 @@ specification without a key length</code></pre></div>
         <h2>コード</h2>
         <ul>
           <li><a href="/ja/docs/">ドキュメント</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">リポジトリ</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">リポジトリ</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
           <li><a href="https://areteacademy.com.br/" target="_blank" rel="noopener">Aretê Academy</a></li>
         </ul>
       </div>

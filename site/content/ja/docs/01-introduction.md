@@ -106,7 +106,7 @@ brevis.sh は 100% オープンソースです。独自ライセンスも、機�
 
 ランタイムを読み、使い、調整し、自分の運用の中で改善できます。完全なランタイム · 監査可能なコード · オープンなコントリビューション。
 
-[リポジトリを見る](https://github.com/AreteAcademy/brevis)
+[リポジトリを見る](https://github.com/brevis-sh/brevis)
 
 ### 一緒に作る
 
@@ -114,7 +114,7 @@ brevis.sh は 100% オープンソースです。独自ライセンスも、機�
 
 プロジェクトの方向を決める議論に参加できます。Issue と提案 · 仲間との交流 · 公開ロードマップ。
 
-[プロジェクトをフォローする](https://github.com/AreteAcademy/brevis/issues)
+[プロジェクトをフォローする](https://github.com/brevis-sh/brevis/issues)
 
 ### 深く学ぶ
 

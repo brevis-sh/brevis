@@ -25,7 +25,7 @@ et les polices sont toutes à l'intérieur du binaire.
 C'est le chemin qui produit un binaire avec la version et le commit intégrés :
 
 ```bash
-git clone https://github.com/AreteAcademy/brevis.git
+git clone https://github.com/brevis-sh/brevis.git
 cd brevis
 make build
 ./bin/brevis version

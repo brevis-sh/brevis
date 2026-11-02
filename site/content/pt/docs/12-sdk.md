@@ -150,7 +150,7 @@ Daí decorrem três coisas:
   e o Pub/Sub é at-least-once de qualquer forma.
 
 Executável, contra o emulador:
-[`examples/13-pubsub`](https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub).
+[`examples/13-pubsub`](https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub).
 
 ## Um fetcher inteiro
 
@@ -666,5 +666,5 @@ reexecução ser um no-op em vez de duplicata.
 ## Referência
 
 - [pkg.go.dev](https://pkg.go.dev/brevis.sh/brevis/sdk) — a API completa
-- [`examples/`](https://github.com/AreteAcademy/brevis/tree/master/examples) — doze exemplos executáveis
-- [`CHANGELOG.md`](https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md) — histórico versão a versão
+- [`examples/`](https://github.com/brevis-sh/brevis/tree/master/examples) — doze exemplos executáveis
+- [`CHANGELOG.md`](https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md) — histórico versão a versão

@@ -90,14 +90,14 @@
       <a href="/zh/#ecosystem">生态</a>
       <a href="/zh/docs/">文档</a>
       <details class="lang-dd"><summary aria-label="语言: 简体中文"><span>简体中文</span></summary><ul><li><a href="/docs/workflows/" lang="en-US" hreflang="en-US">English</a></li><li><a href="/es/docs/workflows/" lang="es" hreflang="es">Español</a></li><li><a href="/pt/docs/workflows/" lang="pt-BR" hreflang="pt-BR">Português</a></li><li><a href="/fr/docs/workflows/" lang="fr" hreflang="fr">Français</a></li><li><a href="/de/docs/workflows/" lang="de" hreflang="de">Deutsch</a></li><li><a href="/zh/docs/workflows/" lang="zh-CN" hreflang="zh-CN" aria-current="true">简体中文</a></li><li><a href="/ja/docs/workflows/" lang="ja" hreflang="ja">日本語</a></li><li><a href="/ru/docs/workflows/" lang="ru" hreflang="ru">Русский</a></li><li><a href="/ko/docs/workflows/" lang="ko" hreflang="ko">한국어</a></li><li><a href="/hi/docs/workflows/" lang="hi" hreflang="hi">हिन्दी</a></li><li><a href="/id/docs/workflows/" lang="id" hreflang="id">Bahasa Indonesia</a></li></ul></details>
-      <a class="button button-secondary button-sm header-cta" href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">
+      <a class="button button-secondary button-sm header-cta" href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">
         <svg aria-hidden="true"><use href="#i-github"></use></svg>
         探索开源项目
         <!-- The star count. js/stars.js fills it from the GitHub API and
              unhides it; until then, and without script, the button is the
              one above. aria-hidden: the link's name stays the label, and a
              number read out after it would be noise, not information. -->
-        <span class="stars" data-stars="AreteAcademy/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
+        <span class="stars" data-stars="brevis-sh/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
       </a>
     </nav>
 
@@ -247,7 +247,7 @@ resources:
     <span class="t-k">depends_on</span>: [bronze]</code></pre></div>
 <p>正是这一点，使一个 Go 抓取器与一个 1.9 GB 的 <code>dbt build</code> 并存时只需 12 MB 和 32Mi，而不是两者都按较大的那个来付出代价。见<a href="/zh/docs/pod-per-step/">每个 step 一个 pod</a>。</p>
 <h2 id="step-fields">step 字段<a class="anchor" href="#step-fields" aria-label="link">#</a></h2>
-<div class="table-wrap"><table><thead><tr><th>字段</th><th></th><th></th></tr></thead><tbody><tr><td><code>id</code></td><td><strong>必填</strong></td><td>在 workflow 内唯一；显示在图和日志中的名称</td></tr><tr><td><code>run</code></td><td></td><td>命令</td></tr><tr><td><code>image</code></td><td></td><td>step 的镜像；省略时继承顶层的镜像</td></tr><tr><td><code>host</code></td><td></td><td>把命令发送到一台引擎<strong>不</strong>管理的机器，是 <code>image</code> 的替代方案，绝不与之并用。见 <a href="https://github.com/AreteAcademy/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host" target="_blank" rel="noopener">Kubernetes 指南中的 <code>host:</code></a></td></tr><tr><td><code>shell</code></td><td><code>true</code></td><td><code>false</code> 表示不使用 shell 运行，distroless 镜像必须如此</td></tr><tr><td><code>depends_on</code></td><td></td><td>必须先完成的 <code>id</code> 列表；其中的条目可以是 <code>{step, label}</code></td></tr><tr><td><code>marker</code></td><td><code>false</code></td><td>没有命令的 step，用于 <code>start</code> 或 <code>end</code></td></tr><tr><td><code>resources</code></td><td></td><td>该 step 的 <code>cpu</code>、<code>memory</code> 和 <code>limits</code></td></tr><tr><td><code>runtime</code>, <code>tools</code></td><td></td><td>step 的语言和工具，见 <a href="/zh/docs/runtime/">step 运行时</a></td></tr><tr><td><code>when</code></td><td><code>all_success</code></td><td>依赖处于什么状态时运行这个 step，见下文</td></tr><tr><td><code>unless_empty</code></td><td></td><td>一个 context 键，用来决定是否有事可做，见下文</td></tr><tr><td><code>for_each</code></td><td></td><td>一个保存列表的 context 键；step 对每个元素各运行一次，见下文</td></tr><tr><td><code>group</code></td><td></td><td>把这个 step 画在一个带名称的可折叠方框内，见下文</td></tr><tr><td><code>uses</code></td><td></td><td>另一个 workflow，其 step 将取代这个 step 的位置，见下文</td></tr><tr><td><code>on_error</code></td><td></td><td>通知这个 step 的失败，见下文</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>字段</th><th></th><th></th></tr></thead><tbody><tr><td><code>id</code></td><td><strong>必填</strong></td><td>在 workflow 内唯一；显示在图和日志中的名称</td></tr><tr><td><code>run</code></td><td></td><td>命令</td></tr><tr><td><code>image</code></td><td></td><td>step 的镜像；省略时继承顶层的镜像</td></tr><tr><td><code>host</code></td><td></td><td>把命令发送到一台引擎<strong>不</strong>管理的机器，是 <code>image</code> 的替代方案，绝不与之并用。见 <a href="https://github.com/brevis-sh/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host" target="_blank" rel="noopener">Kubernetes 指南中的 <code>host:</code></a></td></tr><tr><td><code>shell</code></td><td><code>true</code></td><td><code>false</code> 表示不使用 shell 运行，distroless 镜像必须如此</td></tr><tr><td><code>depends_on</code></td><td></td><td>必须先完成的 <code>id</code> 列表；其中的条目可以是 <code>{step, label}</code></td></tr><tr><td><code>marker</code></td><td><code>false</code></td><td>没有命令的 step，用于 <code>start</code> 或 <code>end</code></td></tr><tr><td><code>resources</code></td><td></td><td>该 step 的 <code>cpu</code>、<code>memory</code> 和 <code>limits</code></td></tr><tr><td><code>runtime</code>, <code>tools</code></td><td></td><td>step 的语言和工具，见 <a href="/zh/docs/runtime/">step 运行时</a></td></tr><tr><td><code>when</code></td><td><code>all_success</code></td><td>依赖处于什么状态时运行这个 step，见下文</td></tr><tr><td><code>unless_empty</code></td><td></td><td>一个 context 键，用来决定是否有事可做，见下文</td></tr><tr><td><code>for_each</code></td><td></td><td>一个保存列表的 context 键；step 对每个元素各运行一次，见下文</td></tr><tr><td><code>group</code></td><td></td><td>把这个 step 画在一个带名称的可折叠方框内，见下文</td></tr><tr><td><code>uses</code></td><td></td><td>另一个 workflow，其 step 将取代这个 step 的位置，见下文</td></tr><tr><td><code>on_error</code></td><td></td><td>通知这个 step 的失败，见下文</td></tr></tbody></table></div>
 <h2 id="running-a-step-only-when-there-is-something-to-do">仅在有事可做时运行 step<a class="anchor" href="#running-a-step-only-when-there-is-something-to-do" aria-label="link">#</a></h2>
 <div class="code-block" data-code="# in extract
 context.set(has_rows=len(rows) &gt; 0)"><div class="code-head"><span class="code-lang">python</span><button class="code-copy" type="button" aria-label="复制" data-done="已复制">复制</button></div><pre><code><span class="t-c"># in extract</span>
@@ -492,7 +492,7 @@ brevis publish workflows/ --project acme --prune"><div class="code-head"><span c
       </nav>
 
       <p class="doc-edit">
-        <a href="https://github.com/AreteAcademy/brevis/blob/master/site/content/zh/docs/workflows.md" target="_blank" rel="noopener">在 GitHub 上编辑此页</a>
+        <a href="https://github.com/brevis-sh/brevis/blob/master/site/content/zh/docs/workflows.md" target="_blank" rel="noopener">在 GitHub 上编辑此页</a>
       </p>
     </article>
 
@@ -529,8 +529,8 @@ brevis publish workflows/ --project acme --prune"><div class="code-head"><span c
         <h2>代码</h2>
         <ul>
           <li><a href="/zh/docs/">文档</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">仓库</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">仓库</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
           <li><a href="https://areteacademy.com.br/" target="_blank" rel="noopener">Aretê Academy</a></li>
         </ul>
       </div>

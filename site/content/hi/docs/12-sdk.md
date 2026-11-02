@@ -120,7 +120,7 @@ Subscriber को आपका payload बाइट-दर-बाइट मि�
 - **विफलता आंशिक होती है।** प्रकाशन लेनदेन नहीं है, इसलिए 31,000 पर विफल होने वाले 48,000 संदेशों ने 31,000 *डिलीवर* किए। नतीजा बताता है कि असल में क्या गया, और त्रुटि कहती है कि दोबारा चलाना दोबारा डिलीवरी है — subscriber को idempotent होना होगा, और Pub/Sub वैसे भी at-least-once है।
 
 चलाने योग्य, emulator के विरुद्ध:
-[`examples/13-pubsub`](https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub)।
+[`examples/13-pubsub`](https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub)।
 
 ## पूरा fetcher
 
@@ -456,5 +456,5 @@ Postgres चलता है, क्योंकि उसका `string` `TEXT`
 ## संदर्भ
 
 - [pkg.go.dev](https://pkg.go.dev/brevis.sh/brevis/sdk) — पूरी API
-- [`examples/`](https://github.com/AreteAcademy/brevis/tree/master/examples) — बारह चलाने योग्य उदाहरण
-- [`CHANGELOG.md`](https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md) — संस्करण-दर-संस्करण इतिहास
+- [`examples/`](https://github.com/brevis-sh/brevis/tree/master/examples) — बारह चलाने योग्य उदाहरण
+- [`CHANGELOG.md`](https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md) — संस्करण-दर-संस्करण इतिहास

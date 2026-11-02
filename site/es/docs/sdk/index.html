@@ -90,14 +90,14 @@
       <a href="/es/#ecosystem">Ecosistema</a>
       <a href="/es/docs/">Documentación</a>
       <details class="lang-dd"><summary aria-label="Idioma: Español"><span>Español</span></summary><ul><li><a href="/docs/sdk/" lang="en-US" hreflang="en-US">English</a></li><li><a href="/es/docs/sdk/" lang="es" hreflang="es" aria-current="true">Español</a></li><li><a href="/pt/docs/sdk/" lang="pt-BR" hreflang="pt-BR">Português</a></li><li><a href="/fr/docs/sdk/" lang="fr" hreflang="fr">Français</a></li><li><a href="/de/docs/sdk/" lang="de" hreflang="de">Deutsch</a></li><li><a href="/zh/docs/sdk/" lang="zh-CN" hreflang="zh-CN">简体中文</a></li><li><a href="/ja/docs/sdk/" lang="ja" hreflang="ja">日本語</a></li><li><a href="/ru/docs/sdk/" lang="ru" hreflang="ru">Русский</a></li><li><a href="/ko/docs/sdk/" lang="ko" hreflang="ko">한국어</a></li><li><a href="/hi/docs/sdk/" lang="hi" hreflang="hi">हिन्दी</a></li><li><a href="/id/docs/sdk/" lang="id" hreflang="id">Bahasa Indonesia</a></li></ul></details>
-      <a class="button button-secondary button-sm header-cta" href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">
+      <a class="button button-secondary button-sm header-cta" href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">
         <svg aria-hidden="true"><use href="#i-github"></use></svg>
         Explorar el código abierto
         <!-- The star count. js/stars.js fills it from the GitHub API and
              unhides it; until then, and without script, the button is the
              one above. aria-hidden: the link's name stays the label, and a
              number read out after it would be noise, not information. -->
-        <span class="stars" data-stars="AreteAcademy/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
+        <span class="stars" data-stars="brevis-sh/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
       </a>
     </nav>
 
@@ -218,7 +218,7 @@ to.Files{Path: "gs:<span class="t-c">//bucket/landing/", Store: gcs.New(client)}
 <p>Es una regla y no minimalismo. Una tabla la crea el pipeline que escribe en ella, así que el SDK puede decidir cuáles son sus columnas. <strong>Un topic no</strong>: existe antes que el pipeline, sus suscriptores se escribieron primero y sus filtros se escribieron primero. Un atributo añadido por cuenta propia sería Brevis editando el contrato de otra persona, y el suscriptor se enteraría a las tres de la madrugada.</p>
 <p>De ello se siguen tres cosas:</p>
 <ul><li><strong>Nunca crea un topic.</strong> Un pipeline que puede crear uno puede crear el equivocado, y a diferencia de una tabla con un nombre mal escrito nadie lo nota: los mensajes van a otra parte y el suscriptor que debía recibirlos permanece en silencio.</li><li><strong><code>Schema</code>, <code>Dedup</code> y <code>PartitionBy</code> se rechazan</strong>, nombrando la opción. Existen para tablas: un <code>Schema</code> es la forma en que un destino crea una, la deduplicación necesita una fila que reemplazar, una partición es una idea de las tablas. Lo más parecido aquí es <code>OrderingKey</code>, que es otra cosa: agrupa mensajes que deben <em>llegar</em> en orden.</li><li><strong>Un fallo es parcial.</strong> Publicar no es transaccional, así que 48.000 mensajes que fallan en el 31.000 han <em>entregado</em> 31.000. El resultado informa lo que realmente salió, y el error dice que volver a ejecutar es volver a entregar: el suscriptor tiene que ser idempotente, y Pub/Sub es at-least-once de todos modos.</li></ul>
-<p>Ejecutable, contra el emulador: <a href="https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub" target="_blank" rel="noopener"><code>examples/13-pubsub</code></a>.</p>
+<p>Ejecutable, contra el emulador: <a href="https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub" target="_blank" rel="noopener"><code>examples/13-pubsub</code></a>.</p>
 <h2 id="a-whole-fetcher">Un fetcher completo<a class="anchor" href="#a-whole-fetcher" aria-label="link">#</a></h2>
 <p><code>sdk.Run</code> se ocupa de los flags, <code>-dry-run</code>, el logging, los reintentos, la paginación, la procedencia, la creación de tablas y el código de salida. Lo que queda en el archivo es solo lo específico de esa fuente:</p>
 <div class="code-block" data-code="package main
@@ -469,7 +469,7 @@ specification without a key length</code></pre></div>
 <p>Postgres funciona, porque su <code>string</code> es <code>TEXT</code>. En MySQL, aterrizar con <code>DedupNone</code> y resolver la versión vigente aguas abajo, o crear la tabla manualmente con <code>CreateSQL</code> y una columna de id con tamaño.</p>
 <p><strong>El id es direccionable por contenido.</strong> El mismo registro produce el mismo id por cualquiera de los dos caminos, y un registro modificado produce uno nuevo, que es lo que permite que una reejecución no haga nada en lugar de duplicar.</p>
 <h2 id="reference">Referencia<a class="anchor" href="#reference" aria-label="link">#</a></h2>
-<ul><li><a href="https://pkg.go.dev/brevis.sh/brevis/sdk" target="_blank" rel="noopener">pkg.go.dev</a> — la API completa</li><li><a href="https://github.com/AreteAcademy/brevis/tree/master/examples" target="_blank" rel="noopener"><code>examples/</code></a> — doce ejemplos ejecutables</li><li><a href="https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md" target="_blank" rel="noopener"><code>CHANGELOG.md</code></a> — historial versión por versión</li></ul>
+<ul><li><a href="https://pkg.go.dev/brevis.sh/brevis/sdk" target="_blank" rel="noopener">pkg.go.dev</a> — la API completa</li><li><a href="https://github.com/brevis-sh/brevis/tree/master/examples" target="_blank" rel="noopener"><code>examples/</code></a> — doce ejemplos ejecutables</li><li><a href="https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md" target="_blank" rel="noopener"><code>CHANGELOG.md</code></a> — historial versión por versión</li></ul>
 
       <nav class="pagers" aria-label="Páginas">
         <a class="pager pager-prev" href="/es/docs/runtime/"><span>Anterior</span><strong>Runtime del step</strong></a>
@@ -477,7 +477,7 @@ specification without a key length</code></pre></div>
       </nav>
 
       <p class="doc-edit">
-        <a href="https://github.com/AreteAcademy/brevis/blob/master/site/content/es/docs/sdk.md" target="_blank" rel="noopener">Editar esta página en GitHub</a>
+        <a href="https://github.com/brevis-sh/brevis/blob/master/site/content/es/docs/sdk.md" target="_blank" rel="noopener">Editar esta página en GitHub</a>
       </p>
     </article>
 
@@ -514,8 +514,8 @@ specification without a key length</code></pre></div>
         <h2>código</h2>
         <ul>
           <li><a href="/es/docs/">Documentación</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">Repositorio</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">Repositorio</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
           <li><a href="https://areteacademy.com.br/" target="_blank" rel="noopener">Aretê Academy</a></li>
         </ul>
       </div>

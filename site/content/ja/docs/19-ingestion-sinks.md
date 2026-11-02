@@ -138,7 +138,7 @@ AWS SDK を抱えるべきではありません。
 
 | イメージ | 含むもの | pull サイズ(amd64) |
 |---|---|---|
-| `brevissh/brevis-gateway:0.33.0` | 6 つの sink、S3、GCS、Redis、memcached | 19.1 MB |
+| `brevissh/brevis-gateway:0.33.0` | 6 つの sink、S3、GCS、Redis、memcached | 20.1 MB |
 | `brevissh/brevis-gateway:0.33.0-slim` | `postgres`、ローカルの `files`、`auto_table` | **5.2 MB** |
 
 どちらも 1 つのツリーの 1 回のビルドから作られるため、2 つのタグは常に同じコミットです。
@@ -373,7 +373,7 @@ SELECT JSON_VALUE(customer, '$.uf') ...;           -- SP
 `JSON_TYPE` が `string` を返し、`JSON_VALUE` が NULL を返すなら、オブジェクトが二重にエンコードされています。
 列はオブジェクトではなく、オブジェクトの TEXT を保持しています。**0.15.0** 以前の gateway バージョンは、
 BigQuery で**両方の**形についてそうなっていました。1 行で確認する方法と修復は
-[gateway の changelog](https://github.com/AreteAcademy/brevis/blob/master/gateway/CHANGELOG.md)を参照して
+[gateway の changelog](https://github.com/brevis-sh/brevis/blob/master/gateway/CHANGELOG.md)を参照して
 ください。Postgres と MySQL は影響を受けていません。サーバーがテキストをパースするからです。
 
 フィールド名は、4 つの中で最も狭い BigQuery のルールに合致する必要があります。Postgres は引用符を付ければ

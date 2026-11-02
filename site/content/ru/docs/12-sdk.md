@@ -151,7 +151,7 @@ Target: sdk.Target{
   at-least-once.
 
 Работающий пример на эмуляторе:
-[`examples/13-pubsub`](https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub).
+[`examples/13-pubsub`](https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub).
 
 ## Весь загрузчик целиком
 
@@ -670,5 +670,5 @@ specification without a key length
 ## Справочник
 
 - [pkg.go.dev](https://pkg.go.dev/brevis.sh/brevis/sdk) — полный API
-- [`examples/`](https://github.com/AreteAcademy/brevis/tree/master/examples) — двенадцать работающих примеров
-- [`CHANGELOG.md`](https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md) — история по версиям
+- [`examples/`](https://github.com/brevis-sh/brevis/tree/master/examples) — двенадцать работающих примеров
+- [`CHANGELOG.md`](https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md) — история по версиям

@@ -111,7 +111,7 @@ brevis.sh 100% sumber terbuka. Tanpa lisensi proprietary, tanpa edisi terbatas, 
 
 Baca, gunakan, adaptasi, dan tingkatkan runtime di operasi Anda sendiri. Runtime lengkap · Kode yang dapat diaudit · Kontribusi terbuka.
 
-[Lihat repositori](https://github.com/AreteAcademy/brevis)
+[Lihat repositori](https://github.com/brevis-sh/brevis)
 
 ### Membangun bersama
 
@@ -119,7 +119,7 @@ Baca, gunakan, adaptasi, dan tingkatkan runtime di operasi Anda sendiri. Runtime
 
 Ikut dalam percakapan yang menentukan akan menjadi apa proyek ini. Issue dan proposal · Pertukaran antar rekan · Roadmap publik.
 
-[Ikuti proyek](https://github.com/AreteAcademy/brevis/issues)
+[Ikuti proyek](https://github.com/brevis-sh/brevis/issues)
 
 ### Belajar mendalam
 

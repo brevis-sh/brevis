@@ -2,10 +2,10 @@
 # 302 by design: these are conveniences, not permanent locations, and the repo
 # host could move.
 
-/github        https://github.com/AreteAcademy/brevis            302
-/repo          https://github.com/AreteAcademy/brevis            302
-/issues        https://github.com/AreteAcademy/brevis/issues     302
-/discussions   https://github.com/AreteAcademy/brevis/discussions 302
+/github        https://github.com/brevis-sh/brevis            302
+/repo          https://github.com/brevis-sh/brevis            302
+/issues        https://github.com/brevis-sh/brevis/issues     302
+/discussions   https://github.com/brevis-sh/brevis/discussions 302
 /sdk           https://pkg.go.dev/brevis.sh/brevis/sdk 302
 /arete         https://areteacademy.com.br/                      302
 

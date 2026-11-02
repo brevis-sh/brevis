@@ -155,7 +155,7 @@ steps:
 | `id` | **обязательно** | уникален в workflow; имя, показываемое на графе и в журналах |
 | `run` | | команда |
 | `image` | | образ шага; без него наследуется образ верхнего уровня |
-| `host` | | отправить команду на машину, которой engine **не** управляет — альтернатива `image`, но не дополнение к нему. См. [`host:` в руководстве по Kubernetes](https://github.com/AreteAcademy/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host) |
+| `host` | | отправить команду на машину, которой engine **не** управляет — альтернатива `image`, но не дополнение к нему. См. [`host:` в руководстве по Kubernetes](https://github.com/brevis-sh/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host) |
 | `shell` | `true` | `false` запускает без оболочки — обязательно для distroless |
 | `depends_on` | | список `id`, которые должны завершиться первыми; элемент может быть `{step, label}` |
 | `marker` | `false` | шаг без команды, для `start` или `end` |

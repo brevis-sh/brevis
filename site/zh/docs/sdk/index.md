@@ -120,7 +120,7 @@ Target: sdk.Target{
 - **失败是部分的。** 发布不是事务性的，所以发布 48,000 条消息在 31,000 条处失败，就意味着已经*投递*了 31,000 条。结果会报告实际发出的数量，错误信息会说明重新运行就是重新投递：订阅方必须是幂等的，而且 Pub/Sub 本来就是至少一次投递。
 
 可运行，针对模拟器：
-[`examples/13-pubsub`](https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub)。
+[`examples/13-pubsub`](https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub)。
 
 ## 完整的抓取器
 
@@ -456,5 +456,5 @@ Postgres 可以工作，因为它的 `string` 是 `TEXT`。在 MySQL 上，请�
 ## 参考
 
 - [pkg.go.dev](https://pkg.go.dev/brevis.sh/brevis/sdk)：完整的 API
-- [`examples/`](https://github.com/AreteAcademy/brevis/tree/master/examples)：十二个可运行的示例
-- [`CHANGELOG.md`](https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md)：逐版本的历史
+- [`examples/`](https://github.com/brevis-sh/brevis/tree/master/examples)：十二个可运行的示例
+- [`CHANGELOG.md`](https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md)：逐版本的历史

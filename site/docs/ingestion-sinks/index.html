@@ -90,14 +90,14 @@
       <a href="/#ecosystem">Ecosystem</a>
       <a href="/docs/">Documentation</a>
       <details class="lang-dd"><summary aria-label="Language: English"><span>English</span></summary><ul><li><a href="/docs/ingestion-sinks/" lang="en-US" hreflang="en-US" aria-current="true">English</a></li><li><a href="/es/docs/ingestion-sinks/" lang="es" hreflang="es">Español</a></li><li><a href="/pt/docs/ingestion-sinks/" lang="pt-BR" hreflang="pt-BR">Português</a></li><li><a href="/fr/docs/ingestion-sinks/" lang="fr" hreflang="fr">Français</a></li><li><a href="/de/docs/ingestion-sinks/" lang="de" hreflang="de">Deutsch</a></li><li><a href="/zh/docs/ingestion-sinks/" lang="zh-CN" hreflang="zh-CN">简体中文</a></li><li><a href="/ja/docs/ingestion-sinks/" lang="ja" hreflang="ja">日本語</a></li><li><a href="/ru/docs/ingestion-sinks/" lang="ru" hreflang="ru">Русский</a></li><li><a href="/ko/docs/ingestion-sinks/" lang="ko" hreflang="ko">한국어</a></li><li><a href="/hi/docs/ingestion-sinks/" lang="hi" hreflang="hi">हिन्दी</a></li><li><a href="/id/docs/ingestion-sinks/" lang="id" hreflang="id">Bahasa Indonesia</a></li></ul></details>
-      <a class="button button-secondary button-sm header-cta" href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">
+      <a class="button button-secondary button-sm header-cta" href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">
         <svg aria-hidden="true"><use href="#i-github"></use></svg>
         Explore open source
         <!-- The star count. js/stars.js fills it from the GitHub API and
              unhides it; until then, and without script, the button is the
              one above. aria-hidden: the link's name stays the label, and a
              number read out after it would be noise, not information. -->
-        <span class="stars" data-stars="AreteAcademy/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
+        <span class="stars" data-stars="brevis-sh/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
       </a>
     </nav>
 
@@ -214,7 +214,7 @@ sink:
 <div class="table-wrap"><table><thead><tr><th>build</th><th>packages</th><th>binary</th></tr></thead><tbody><tr><td>all six sinks, both object stores, both metastores</td><td>about 900</td><td>55.0 MB</td></tr><tr><td><code>postgres</code> + local <code>files</code></td><td>about 240</td><td><strong>10.2 MB</strong></td></tr></tbody></table></div>
 <p>Object stores are a <strong>second</strong> registry, because a scheme is not a destination: <code>files</code> is one sink that writes to a directory, to <code>gs://</code> and to <code>s3://</code>, and a build that only writes locally should not carry the AWS SDK to do it.</p>
 <h3 id="two-published-images">Two published images<a class="anchor" href="#two-published-images" aria-label="link">#</a></h3>
-<div class="table-wrap"><table><thead><tr><th>image</th><th>carries</th><th>pull (amd64)</th></tr></thead><tbody><tr><td><code>brevissh/brevis-gateway:0.33.0</code></td><td>six sinks, S3, GCS, Redis, memcached</td><td>19.1 MB</td></tr><tr><td><code>brevissh/brevis-gateway:0.33.0-slim</code></td><td><code>postgres</code>, local <code>files</code>, <code>auto_table</code></td><td><strong>5.2 MB</strong></td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>image</th><th>carries</th><th>pull (amd64)</th></tr></thead><tbody><tr><td><code>brevissh/brevis-gateway:0.33.0</code></td><td>six sinks, S3, GCS, Redis, memcached</td><td>20.1 MB</td></tr><tr><td><code>brevissh/brevis-gateway:0.33.0-slim</code></td><td><code>postgres</code>, local <code>files</code>, <code>auto_table</code></td><td><strong>5.2 MB</strong></td></tr></tbody></table></div>
 <p>Both from one build of one tree, so the two tags are always the same commit. There is no <code>latest-slim</code> — <code>latest</code> is already a tag nobody should deploy.</p>
 <p><strong>Want a different pair?</strong> <code>cmd/gateway-slim</code> is fifteen lines and the import block is the whole of its configuration. Copy it, change the imports, build. Anybody who wants a hook is compiling their own binary already, so choosing the sinks costs them nothing more.</p>
 <h3 id="the-refusal-says-which-build-you-are-holding">The refusal says which build you are holding<a class="anchor" href="#the-refusal-says-which-build-you-are-holding" aria-label="link">#</a></h3>
@@ -325,7 +325,7 @@ shape: columns"><div class="code-head"><span class="code-lang">yaml</span><butto
 <div class="code-block" data-code="SELECT JSON_TYPE(customer) FROM bronze.orders;     -- object
 SELECT JSON_VALUE(customer, &#x27;$.uf&#x27;) ...;           -- SP"><div class="code-head"><span class="code-lang">sql</span><button class="code-copy" type="button" aria-label="Copy" data-done="Copied">Copy</button></div><pre><code><span class="t-k">SELECT</span> JSON_TYPE(customer) <span class="t-k">FROM</span> bronze.orders;     <span class="t-c">-- object</span>
 <span class="t-k">SELECT</span> JSON_VALUE(customer, '$.uf') ...;           <span class="t-c">-- SP</span></code></pre></div>
-<p>If <code>JSON_TYPE</code> answers <code>string</code> and <code>JSON_VALUE</code> answers NULL, the object was encoded twice — the column holds the TEXT of the object rather than the object. Gateway versions up to and including <strong>0.15.0</strong> did that on BigQuery, in <strong>both</strong> shapes; see the <a href="https://github.com/AreteAcademy/brevis/blob/master/gateway/CHANGELOG.md" target="_blank" rel="noopener">gateway changelog</a> for the one-line check and the repair. Postgres and MySQL were never affected: their server parses the text.</p>
+<p>If <code>JSON_TYPE</code> answers <code>string</code> and <code>JSON_VALUE</code> answers NULL, the object was encoded twice — the column holds the TEXT of the object rather than the object. Gateway versions up to and including <strong>0.15.0</strong> did that on BigQuery, in <strong>both</strong> shapes; see the <a href="https://github.com/brevis-sh/brevis/blob/master/gateway/CHANGELOG.md" target="_blank" rel="noopener">gateway changelog</a> for the one-line check and the repair. Postgres and MySQL were never affected: their server parses the text.</p>
 <p>A field name has to match BigQuery's rule, the narrowest of the four. Postgres would accept almost anything quoted, and that is the trap: the table is created there and it breaks the day somebody points a stream at BigQuery.</p>
 <p>Both shapes have an SDK equivalent, and it is the same code rather than a matching one: <code>sdk.Landing(table, sdk.LandingKey("id"))</code> lands <code>document</code>, and adding <a href="/docs/sdk/#two-shapes-the-record-whole-or-one-column-per-field"><code>sdk.LandingColumns()</code></a> lands <code>columns</code>. Same columns, same values, same <code>brevis_ingestion_id</code> — so a stream can move between a gateway and a pipeline without a migration, and the two can be read as one table.</p>
 <p>The pipeline can grow the same column the same way: set <a href="/docs/sdk/#when-a-field-the-table-does-not-have-shows-up"><code>Evolve: sdk.EvolveAdditiveFromPayload</code></a> on the destination and a field the batch carries becomes a column, by this rule, through this code.</p>
@@ -390,7 +390,7 @@ same record, content changed      →  a different id, both versions land</code>
       </nav>
 
       <p class="doc-edit">
-        <a href="https://github.com/AreteAcademy/brevis/blob/master/site/content/en/docs/ingestion-sinks.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+        <a href="https://github.com/brevis-sh/brevis/blob/master/site/content/en/docs/ingestion-sinks.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
       </p>
     </article>
 
@@ -427,8 +427,8 @@ same record, content changed      →  a different id, both versions land</code>
         <h2>code</h2>
         <ul>
           <li><a href="/docs/">Documentation</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">Repository</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">Repository</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
           <li><a href="https://areteacademy.com.br/" target="_blank" rel="noopener">Aretê Academy</a></li>
         </ul>
       </div>

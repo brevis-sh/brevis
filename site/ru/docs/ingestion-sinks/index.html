@@ -90,14 +90,14 @@
       <a href="/ru/#ecosystem">Экосистема</a>
       <a href="/ru/docs/">Документация</a>
       <details class="lang-dd"><summary aria-label="Язык: Русский"><span>Русский</span></summary><ul><li><a href="/docs/ingestion-sinks/" lang="en-US" hreflang="en-US">English</a></li><li><a href="/es/docs/ingestion-sinks/" lang="es" hreflang="es">Español</a></li><li><a href="/pt/docs/ingestion-sinks/" lang="pt-BR" hreflang="pt-BR">Português</a></li><li><a href="/fr/docs/ingestion-sinks/" lang="fr" hreflang="fr">Français</a></li><li><a href="/de/docs/ingestion-sinks/" lang="de" hreflang="de">Deutsch</a></li><li><a href="/zh/docs/ingestion-sinks/" lang="zh-CN" hreflang="zh-CN">简体中文</a></li><li><a href="/ja/docs/ingestion-sinks/" lang="ja" hreflang="ja">日本語</a></li><li><a href="/ru/docs/ingestion-sinks/" lang="ru" hreflang="ru" aria-current="true">Русский</a></li><li><a href="/ko/docs/ingestion-sinks/" lang="ko" hreflang="ko">한국어</a></li><li><a href="/hi/docs/ingestion-sinks/" lang="hi" hreflang="hi">हिन्दी</a></li><li><a href="/id/docs/ingestion-sinks/" lang="id" hreflang="id">Bahasa Indonesia</a></li></ul></details>
-      <a class="button button-secondary button-sm header-cta" href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">
+      <a class="button button-secondary button-sm header-cta" href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">
         <svg aria-hidden="true"><use href="#i-github"></use></svg>
         Open source на GitHub
         <!-- The star count. js/stars.js fills it from the GitHub API and
              unhides it; until then, and without script, the button is the
              one above. aria-hidden: the link's name stays the label, and a
              number read out after it would be noise, not information. -->
-        <span class="stars" data-stars="AreteAcademy/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
+        <span class="stars" data-stars="brevis-sh/brevis" hidden aria-hidden="true"><svg><use href="#i-star"></use></svg><span></span></span>
       </a>
     </nav>
 
@@ -214,7 +214,7 @@ sink:
 <div class="table-wrap"><table><thead><tr><th>сборка</th><th>пакеты</th><th>бинарный файл</th></tr></thead><tbody><tr><td>все шесть sinks, оба хранилища объектов, оба metastore</td><td>около 900</td><td>55,0 МБ</td></tr><tr><td><code>postgres</code> + локальные <code>files</code></td><td>около 240</td><td><strong>10,2 МБ</strong></td></tr></tbody></table></div>
 <p>Хранилища объектов — это <strong>второй</strong> реестр, потому что схема — это не место назначения: <code>files</code> — это один sink, который пишет в каталог, в <code>gs://</code> и в <code>s3://</code>, а сборка, пишущая только локально, не должна нести SDK AWS ради этого.</p>
 <h3 id="two-published-images">Два опубликованных образа<a class="anchor" href="#two-published-images" aria-label="link">#</a></h3>
-<div class="table-wrap"><table><thead><tr><th>образ</th><th>содержит</th><th>pull (amd64)</th></tr></thead><tbody><tr><td><code>brevissh/brevis-gateway:0.33.0</code></td><td>шесть sinks, S3, GCS, Redis, memcached</td><td>19,1 МБ</td></tr><tr><td><code>brevissh/brevis-gateway:0.33.0-slim</code></td><td><code>postgres</code>, локальные <code>files</code>, <code>auto_table</code></td><td><strong>5,2 МБ</strong></td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>образ</th><th>содержит</th><th>pull (amd64)</th></tr></thead><tbody><tr><td><code>brevissh/brevis-gateway:0.33.0</code></td><td>шесть sinks, S3, GCS, Redis, memcached</td><td>20,1 МБ</td></tr><tr><td><code>brevissh/brevis-gateway:0.33.0-slim</code></td><td><code>postgres</code>, локальные <code>files</code>, <code>auto_table</code></td><td><strong>5,2 МБ</strong></td></tr></tbody></table></div>
 <p>Оба из одной сборки одного дерева, поэтому два тега всегда указывают на один коммит. <code>latest-slim</code> нет — <code>latest</code> уже тег, который никто не должен разворачивать.</p>
 <p><strong>Нужна другая пара?</strong> <code>cmd/gateway-slim</code> — пятнадцать строк, а блок импортов — вся его конфигурация. Скопируйте, измените импорты, соберите. Тот, кому нужен хук, уже компилирует собственный бинарный файл, поэтому выбор sinks не стоит ему ничего сверх этого.</p>
 <h3 id="the-refusal-says-which-build-you-are-holding">Отказ говорит, какую сборку вы держите<a class="anchor" href="#the-refusal-says-which-build-you-are-holding" aria-label="link">#</a></h3>
@@ -325,7 +325,7 @@ shape: columns"><div class="code-head"><span class="code-lang">yaml</span><butto
 <div class="code-block" data-code="SELECT JSON_TYPE(customer) FROM bronze.orders;     -- object
 SELECT JSON_VALUE(customer, &#x27;$.uf&#x27;) ...;           -- SP"><div class="code-head"><span class="code-lang">sql</span><button class="code-copy" type="button" aria-label="Копировать" data-done="Скопировано">Копировать</button></div><pre><code><span class="t-k">SELECT</span> JSON_TYPE(customer) <span class="t-k">FROM</span> bronze.orders;     <span class="t-c">-- object</span>
 <span class="t-k">SELECT</span> JSON_VALUE(customer, '$.uf') ...;           <span class="t-c">-- SP</span></code></pre></div>
-<p>Если <code>JSON_TYPE</code> отвечает <code>string</code>, а <code>JSON_VALUE</code> отвечает NULL, объект был закодирован дважды — столбец хранит ТЕКСТ объекта, а не объект. Версии gateway до <strong>0.15.0</strong> включительно делали так в BigQuery в <strong>обеих</strong> формах; о проверке в одну строку и исправлении см. <a href="https://github.com/AreteAcademy/brevis/blob/master/gateway/CHANGELOG.md" target="_blank" rel="noopener">журнал изменений gateway</a>. Postgres и MySQL никогда не были затронуты: их сервер разбирает текст.</p>
+<p>Если <code>JSON_TYPE</code> отвечает <code>string</code>, а <code>JSON_VALUE</code> отвечает NULL, объект был закодирован дважды — столбец хранит ТЕКСТ объекта, а не объект. Версии gateway до <strong>0.15.0</strong> включительно делали так в BigQuery в <strong>обеих</strong> формах; о проверке в одну строку и исправлении см. <a href="https://github.com/brevis-sh/brevis/blob/master/gateway/CHANGELOG.md" target="_blank" rel="noopener">журнал изменений gateway</a>. Postgres и MySQL никогда не были затронуты: их сервер разбирает текст.</p>
 <p>Имя поля должно соответствовать правилу BigQuery, самому узкому из четырёх. Postgres принял бы почти что угодно в кавычках, и это ловушка: таблица там создаётся и ломается в тот день, когда кто-то направит поток в BigQuery.</p>
 <p>У обеих форм есть эквивалент в SDK, и это тот же код, а не соответствующий: <code>sdk.Landing(table, sdk.LandingKey("id"))</code> приземляет <code>document</code>, а добавление <a href="/ru/docs/sdk/#two-shapes-the-record-whole-or-one-column-per-field"><code>sdk.LandingColumns()</code></a> приземляет <code>columns</code>. Те же столбцы, те же значения, тот же <code>brevis_ingestion_id</code> — так что поток может переходить между gateway и пайплайном без миграции, и их можно читать как одну таблицу.</p>
 <p>Пайплайн может вырастить тот же столбец тем же способом: задайте <a href="/ru/docs/sdk/#when-a-field-the-table-does-not-have-shows-up"><code>Evolve: sdk.EvolveAdditiveFromPayload</code></a> на месте назначения, и поле, которое несёт пакет, станет столбцом по этому правилу, через этот код.</p>
@@ -390,7 +390,7 @@ same record, content changed      →  a different id, both versions land</code>
       </nav>
 
       <p class="doc-edit">
-        <a href="https://github.com/AreteAcademy/brevis/blob/master/site/content/ru/docs/ingestion-sinks.md" target="_blank" rel="noopener">Править эту страницу на GitHub</a>
+        <a href="https://github.com/brevis-sh/brevis/blob/master/site/content/ru/docs/ingestion-sinks.md" target="_blank" rel="noopener">Править эту страницу на GitHub</a>
       </p>
     </article>
 
@@ -427,8 +427,8 @@ same record, content changed      →  a different id, both versions land</code>
         <h2>код</h2>
         <ul>
           <li><a href="/ru/docs/">Документация</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis" target="_blank" rel="noopener">Репозиторий</a></li>
-          <li><a href="https://github.com/AreteAcademy/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis" target="_blank" rel="noopener">Репозиторий</a></li>
+          <li><a href="https://github.com/brevis-sh/brevis/issues" target="_blank" rel="noopener">Issues</a></li>
           <li><a href="https://areteacademy.com.br/" target="_blank" rel="noopener">Aretê Academy</a></li>
         </ul>
       </div>

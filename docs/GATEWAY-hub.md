@@ -19,7 +19,7 @@ docker run -p 8080:8080 \
 
 | tag | carries | pull |
 |---|---|---|
-| `0.33.0` | six sinks, S3 and GCS, Redis and memcached | 19.1 MB |
+| `0.33.0` | six sinks, S3 and GCS, Redis and memcached | 20.1 MB |
 | `0.33.0-slim` | `postgres`, `auto_table`, local `files` | **5.2 MB** |
 
 Sizes are the compressed amd64 image in MB, as `docker pull` counts them;
@@ -77,6 +77,6 @@ destination.
 ## Documentation
 
 Full reference, configuration and the reasoning behind each refusal:
-**[docs/GATEWAY.md](https://github.com/AreteAcademy/brevis/blob/master/docs/GATEWAY.md)**
+**[docs/GATEWAY.md](https://github.com/brevis-sh/brevis/blob/master/docs/GATEWAY.md)**
 
 MIT licensed. Built at [Aretê Academy](https://areteacademy.com.br/).

@@ -152,7 +152,7 @@ pour le faire.
 
 | image | contient | pull (amd64) |
 |---|---|---|
-| `brevissh/brevis-gateway:0.33.0` | six sinks, S3, GCS, Redis, memcached | 19,1 Mo |
+| `brevissh/brevis-gateway:0.33.0` | six sinks, S3, GCS, Redis, memcached | 20,1 Mo |
 | `brevissh/brevis-gateway:0.33.0-slim` | `postgres`, `files` local, `auto_table` | **5,2 Mo** |
 
 Les deux issues d'un même build d'un même arbre, donc les deux tags correspondent
@@ -412,7 +412,7 @@ SELECT JSON_VALUE(customer, '$.uf') ...;           -- SP
 Si `JSON_TYPE` répond `string` et `JSON_VALUE` répond NULL, l'objet a été encodé
 deux fois — la colonne contient le TEXTE de l'objet plutôt que l'objet. Les
 versions du gateway jusqu'à **0.15.0** incluse faisaient cela sur BigQuery, dans les
-**deux** formes ; voir le [changelog du gateway](https://github.com/AreteAcademy/brevis/blob/master/gateway/CHANGELOG.md)
+**deux** formes ; voir le [changelog du gateway](https://github.com/brevis-sh/brevis/blob/master/gateway/CHANGELOG.md)
 pour la vérification en une ligne et la réparation. Postgres et MySQL n'ont jamais
 été touchés : leur serveur parse le texte.
 

@@ -154,7 +154,7 @@ Trois choses en découlent :
   l'abonné doit être idempotent, et Pub/Sub est de toute façon at-least-once.
 
 Exécutable, contre l'émulateur :
-[`examples/13-pubsub`](https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub).
+[`examples/13-pubsub`](https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub).
 
 ## Un fetcher complet
 
@@ -689,5 +689,5 @@ permet à une relance d'être un no-op au lieu d'un doublon.
 ## Référence
 
 - [pkg.go.dev](https://pkg.go.dev/brevis.sh/brevis/sdk) — l'API complète
-- [`examples/`](https://github.com/AreteAcademy/brevis/tree/master/examples) — douze exemples exécutables
-- [`CHANGELOG.md`](https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md) — l'historique version par version
+- [`examples/`](https://github.com/brevis-sh/brevis/tree/master/examples) — douze exemples exécutables
+- [`CHANGELOG.md`](https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md) — l'historique version par version

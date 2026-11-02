@@ -149,7 +149,7 @@ build que só escreve local não deveria carregar o SDK da AWS para isso.
 
 | imagem | carrega | pull (amd64) |
 |---|---|---|
-| `brevissh/brevis-gateway:0.33.0` | os seis destinos, S3, GCS, Redis, memcached | 19,1 MB |
+| `brevissh/brevis-gateway:0.33.0` | os seis destinos, S3, GCS, Redis, memcached | 20,1 MB |
 | `brevissh/brevis-gateway:0.33.0-slim` | `postgres`, `files` local, `auto_table` | **5,2 MB** |
 
 As duas saem de um build da mesma árvore, então as duas tags são sempre o mesmo
@@ -403,7 +403,7 @@ SELECT JSON_VALUE(customer, '$.uf') ...;           -- SP
 Se o `JSON_TYPE` responde `string` e o `JSON_VALUE` responde NULL, o objeto foi
 codificado duas vezes — a coluna guarda o TEXTO do objeto em vez do objeto. As
 versões do gateway até a **0.15.0** inclusive faziam isso no BigQuery, nas
-**duas** formas; o [changelog do gateway](https://github.com/AreteAcademy/brevis/blob/master/gateway/CHANGELOG.md)
+**duas** formas; o [changelog do gateway](https://github.com/brevis-sh/brevis/blob/master/gateway/CHANGELOG.md)
 traz a checagem de uma linha e o reparo. Postgres e MySQL nunca foram
 afetados: o servidor deles parseia o texto.
 

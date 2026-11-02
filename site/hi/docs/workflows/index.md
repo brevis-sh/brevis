@@ -133,7 +133,7 @@ steps:
 | `id` | **ज़रूरी** | workflow में अनूठी; ग्राफ़ और लॉग में दिखने वाला नाम |
 | `run` | | कमांड |
 | `image` | | step की image; इसके बिना, शीर्ष वाली विरासत में मिलती है |
-| `host` | | कमांड को ऐसी मशीन पर भेजें जिसे engine **नहीं** सँभालता — `image` का विकल्प, साथी कभी नहीं। देखें [Kubernetes गाइड में `host:`](https://github.com/AreteAcademy/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host) |
+| `host` | | कमांड को ऐसी मशीन पर भेजें जिसे engine **नहीं** सँभालता — `image` का विकल्प, साथी कभी नहीं। देखें [Kubernetes गाइड में `host:`](https://github.com/brevis-sh/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host) |
 | `shell` | `true` | `false` बिना shell के चलाता है — distroless पर ज़रूरी |
 | `depends_on` | | `id` की सूची जो पहले खत्म होनी चाहिए; प्रविष्टि `{step, label}` हो सकती है |
 | `marker` | `false` | बिना कमांड का step, `start` या `end` के लिए |

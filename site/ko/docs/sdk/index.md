@@ -144,7 +144,7 @@ SDK가 컬럼을 정해도 됩니다. **토픽은 그렇지 않습니다.** 토�
   at-least-once입니다.
 
 에뮬레이터를 대상으로 실행 가능한 예제는
-[`examples/13-pubsub`](https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub)입니다.
+[`examples/13-pubsub`](https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub)입니다.
 
 ## 완전한 fetcher
 
@@ -636,5 +636,5 @@ Postgres는 `string`이 `TEXT`이므로 동작합니다. MySQL에서는 `DedupNo
 ## 참고
 
 - [pkg.go.dev](https://pkg.go.dev/brevis.sh/brevis/sdk) — 전체 API
-- [`examples/`](https://github.com/AreteAcademy/brevis/tree/master/examples) — 실행 가능한 예제 열두 개
-- [`CHANGELOG.md`](https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md) — 버전별 변경 이력
+- [`examples/`](https://github.com/brevis-sh/brevis/tree/master/examples) — 실행 가능한 예제 열두 개
+- [`CHANGELOG.md`](https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md) — 버전별 변경 이력

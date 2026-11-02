@@ -268,7 +268,7 @@ brevis.sh is 100% open source. No proprietary licences, no limited edition, no l
 
 Read, use, adapt and improve the runtime in your own operation. Complete runtime · Auditable code · Open contributions.
 
-[View repository](https://github.com/AreteAcademy/brevis)
+[View repository](https://github.com/brevis-sh/brevis)
 
 ### Build together
 
@@ -276,7 +276,7 @@ Read, use, adapt and improve the runtime in your own operation. Complete runtime
 
 Take part in the conversations that decide what the project becomes. Issues and proposals · Peer exchange · Public roadmap.
 
-[Follow the project](https://github.com/AreteAcademy/brevis/issues)
+[Follow the project](https://github.com/brevis-sh/brevis/issues)
 
 ### Learn deeply
 
@@ -331,7 +331,7 @@ inside the binary.
 This is the path that produces a binary with version and commit stamped in:
 
 ```bash
-git clone https://github.com/AreteAcademy/brevis.git
+git clone https://github.com/brevis-sh/brevis.git
 cd brevis
 make build
 ./bin/brevis version
@@ -800,7 +800,7 @@ This is what makes a Go fetcher cost 12 MB and 32Mi next to a 1.9 GB
 | `id` | **required** | unique in the workflow; the name shown in the graph and logs |
 | `run` | | the command |
 | `image` | | the step's image; without it, inherits the top-level one |
-| `host` | | send the command to a machine the engine does **not** manage — an alternative to `image`, never a companion. See [`host:` in the Kubernetes guide](https://github.com/AreteAcademy/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host) |
+| `host` | | send the command to a machine the engine does **not** manage — an alternative to `image`, never a companion. See [`host:` in the Kubernetes guide](https://github.com/brevis-sh/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host) |
 | `shell` | `true` | `false` runs without a shell — required on distroless |
 | `depends_on` | | list of `id`s that must finish first; an entry may be `{step, label}` |
 | `marker` | `false` | a step with no command, for a `start` or an `end` |
@@ -2814,7 +2814,7 @@ Three things follow from it:
   idempotent, and Pub/Sub is at-least-once anyway.
 
 Runnable, against the emulator:
-[`examples/13-pubsub`](https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub).
+[`examples/13-pubsub`](https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub).
 
 ## A whole fetcher
 
@@ -3334,8 +3334,8 @@ re-run be a no-op instead of a duplicate.
 ## Reference
 
 - [pkg.go.dev](https://pkg.go.dev/brevis.sh/brevis/sdk) — the complete API
-- [`examples/`](https://github.com/AreteAcademy/brevis/tree/master/examples) — twelve runnable examples
-- [`CHANGELOG.md`](https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md) — version-by-version history
+- [`examples/`](https://github.com/brevis-sh/brevis/tree/master/examples) — twelve runnable examples
+- [`CHANGELOG.md`](https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md) — version-by-version history
 
 ---
 
@@ -4866,7 +4866,7 @@ build that only writes locally should not carry the AWS SDK to do it.
 
 | image | carries | pull (amd64) |
 |---|---|---|
-| `brevissh/brevis-gateway:0.33.0` | six sinks, S3, GCS, Redis, memcached | 19.1 MB |
+| `brevissh/brevis-gateway:0.33.0` | six sinks, S3, GCS, Redis, memcached | 20.1 MB |
 | `brevissh/brevis-gateway:0.33.0-slim` | `postgres`, local `files`, `auto_table` | **5.2 MB** |
 
 Both from one build of one tree, so the two tags are always the same commit.
@@ -5120,7 +5120,7 @@ SELECT JSON_VALUE(customer, '$.uf') ...;           -- SP
 If `JSON_TYPE` answers `string` and `JSON_VALUE` answers NULL, the object was
 encoded twice — the column holds the TEXT of the object rather than the
 object. Gateway versions up to and including **0.15.0** did that on BigQuery,
-in **both** shapes; see the [gateway changelog](https://github.com/AreteAcademy/brevis/blob/master/gateway/CHANGELOG.md)
+in **both** shapes; see the [gateway changelog](https://github.com/brevis-sh/brevis/blob/master/gateway/CHANGELOG.md)
 for the one-line check and the repair. Postgres and MySQL were never affected:
 their server parses the text.
 

@@ -112,7 +112,7 @@ Go 链接器会裁剪掉没有被引用的东西，所以从未导入 BigQuery �
 
 | 镜像 | 包含 | 拉取大小（amd64） |
 |---|---|---|
-| `brevissh/brevis-gateway:0.33.0` | 六个 sink、S3、GCS、Redis、memcached | 19.1 MB |
+| `brevissh/brevis-gateway:0.33.0` | 六个 sink、S3、GCS、Redis、memcached | 20.1 MB |
 | `brevissh/brevis-gateway:0.33.0-slim` | `postgres`、本地 `files`、`auto_table` | **5.2 MB** |
 
 两者来自同一棵树的同一次构建，所以这两个标签始终是同一个 commit。没有 `latest-slim`，因为 `latest` 本来就是一个没有人应该部署的标签。
@@ -288,7 +288,7 @@ SELECT JSON_TYPE(customer) FROM bronze.orders;     -- object
 SELECT JSON_VALUE(customer, '$.uf') ...;           -- SP
 ```
 
-如果 `JSON_TYPE` 回答 `string` 而 `JSON_VALUE` 回答 NULL，说明对象被编码了两次：列里保存的是对象的文本，而不是对象。**0.15.0** 及之前的 gateway 版本在 BigQuery 上，在**两种**形态下都是这样；一行命令的检查与修复方法见 [gateway 变更日志](https://github.com/AreteAcademy/brevis/blob/master/gateway/CHANGELOG.md)。Postgres 和 MySQL 从未受到影响：它们的服务器会解析文本。
+如果 `JSON_TYPE` 回答 `string` 而 `JSON_VALUE` 回答 NULL，说明对象被编码了两次：列里保存的是对象的文本，而不是对象。**0.15.0** 及之前的 gateway 版本在 BigQuery 上，在**两种**形态下都是这样；一行命令的检查与修复方法见 [gateway 变更日志](https://github.com/brevis-sh/brevis/blob/master/gateway/CHANGELOG.md)。Postgres 和 MySQL 从未受到影响：它们的服务器会解析文本。
 
 字段名必须符合 BigQuery 的规则，这是四者中最严格的。Postgres 几乎接受任何带引号的名称，而这正是陷阱：表在那里创建出来了，却在有人把 stream 指向 BigQuery 的那天出问题。
 

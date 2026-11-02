@@ -150,7 +150,7 @@ hanya menulis secara lokal tidak seharusnya membawa AWS SDK untuk melakukannya.
 
 | image | membawa | pull (amd64) |
 |---|---|---|
-| `brevissh/brevis-gateway:0.33.0` | enam sink, S3, GCS, Redis, memcached | 19,1 MB |
+| `brevissh/brevis-gateway:0.33.0` | enam sink, S3, GCS, Redis, memcached | 20,1 MB |
 | `brevissh/brevis-gateway:0.33.0-slim` | `postgres`, `files` lokal, `auto_table` | **5,2 MB** |
 
 Keduanya dari satu build atas satu tree, sehingga kedua tag selalu commit yang
@@ -406,7 +406,7 @@ SELECT JSON_VALUE(customer, '$.uf') ...;           -- SP
 Jika `JSON_TYPE` menjawab `string` dan `JSON_VALUE` menjawab NULL, objek itu
 di-encode dua kali — kolom berisi TEKS objek alih-alih objeknya. Versi gateway
 hingga dan termasuk **0.15.0** melakukannya di BigQuery, pada **kedua** bentuk;
-lihat [changelog gateway](https://github.com/AreteAcademy/brevis/blob/master/gateway/CHANGELOG.md)
+lihat [changelog gateway](https://github.com/brevis-sh/brevis/blob/master/gateway/CHANGELOG.md)
 untuk pemeriksaan satu baris dan perbaikannya. Postgres dan MySQL tidak pernah
 terpengaruh: server mereka mem-parse teksnya.
 

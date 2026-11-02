@@ -143,7 +143,7 @@ Target: sdk.Target{
   Pub/Sub はいずれにしても at-least-once です。
 
 エミュレータに対して実行できる例:
-[`examples/13-pubsub`](https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub)。
+[`examples/13-pubsub`](https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub)。
 
 ## フェッチャー全体
 
@@ -619,5 +619,5 @@ Postgres は動作します。その `string` は `TEXT` だからです。MySQL
 ## リファレンス
 
 - [pkg.go.dev](https://pkg.go.dev/brevis.sh/brevis/sdk) — 完全な API
-- [`examples/`](https://github.com/AreteAcademy/brevis/tree/master/examples) — 実行可能な 12 個の例
-- [`CHANGELOG.md`](https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md) — バージョンごとの履歴
+- [`examples/`](https://github.com/brevis-sh/brevis/tree/master/examples) — 実行可能な 12 個の例
+- [`CHANGELOG.md`](https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md) — バージョンごとの履歴

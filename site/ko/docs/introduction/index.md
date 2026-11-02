@@ -106,7 +106,7 @@ brevis.sh는 100% 오픈 소스입니다. 독점 라이선스도, 기능이 제�
 
 런타임을 읽고, 사용하고, 수정하고, 개선해서 자신의 운영 환경에 적용하세요. 완전한 런타임 · 감사 가능한 코드 · 열린 기여.
 
-[저장소 보기](https://github.com/AreteAcademy/brevis)
+[저장소 보기](https://github.com/brevis-sh/brevis)
 
 ### 함께 만들기
 
@@ -114,7 +114,7 @@ brevis.sh는 100% 오픈 소스입니다. 독점 라이선스도, 기능이 제�
 
 프로젝트의 방향을 결정하는 논의에 참여하세요. 이슈와 제안 · 동료 간 교류 · 공개 로드맵.
 
-[프로젝트 팔로우](https://github.com/AreteAcademy/brevis/issues)
+[프로젝트 팔로우](https://github.com/brevis-sh/brevis/issues)
 
 ### 깊이 배우기
 

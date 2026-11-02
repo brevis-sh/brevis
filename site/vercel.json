@@ -36,22 +36,22 @@
   "redirects": [
     {
       "source": "/github",
-      "destination": "https://github.com/AreteAcademy/brevis",
+      "destination": "https://github.com/brevis-sh/brevis",
       "permanent": false
     },
     {
       "source": "/docs",
-      "destination": "https://github.com/AreteAcademy/brevis/tree/main/docs",
+      "destination": "https://github.com/brevis-sh/brevis/tree/master/docs",
       "permanent": false
     },
     {
       "source": "/issues",
-      "destination": "https://github.com/AreteAcademy/brevis/issues",
+      "destination": "https://github.com/brevis-sh/brevis/issues",
       "permanent": false
     },
     {
       "source": "/discussions",
-      "destination": "https://github.com/AreteAcademy/brevis/discussions",
+      "destination": "https://github.com/brevis-sh/brevis/discussions",
       "permanent": false
     }
   ]

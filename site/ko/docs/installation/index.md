@@ -25,7 +25,7 @@ brevis.sh는 **단일 바이너리**와 **Docker 이미지**로 제공됩니다.
 버전과 커밋이 새겨진 바이너리를 만드는 방법입니다.
 
 ```bash
-git clone https://github.com/AreteAcademy/brevis.git
+git clone https://github.com/brevis-sh/brevis.git
 cd brevis
 make build
 ./bin/brevis version

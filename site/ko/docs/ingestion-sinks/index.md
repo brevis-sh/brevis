@@ -141,7 +141,7 @@ SDK를 포함해서는 안 됩니다.
 
 | 이미지 | 포함하는 것 | pull 크기 (amd64) |
 |---|---|---|
-| `brevissh/brevis-gateway:0.33.0` | sink 여섯 개, S3, GCS, Redis, memcached | 19.1 MB |
+| `brevissh/brevis-gateway:0.33.0` | sink 여섯 개, S3, GCS, Redis, memcached | 20.1 MB |
 | `brevissh/brevis-gateway:0.33.0-slim` | `postgres`, 로컬 `files`, `auto_table` | **5.2 MB** |
 
 하나의 트리를 한 번 빌드해서 만들므로 두 태그는 항상 같은 커밋입니다. `latest-slim`은
@@ -377,7 +377,7 @@ SELECT JSON_VALUE(customer, '$.uf') ...;           -- SP
 `JSON_TYPE`이 `string`을 반환하고 `JSON_VALUE`가 NULL을 반환한다면 객체가 두 번
 인코딩된 것이며, 컬럼은 객체가 아니라 객체의 텍스트를 담고 있습니다. **0.15.0**까지의
 게이트웨이 버전은 BigQuery에서 **두** 형태 모두에 대해 그렇게 동작했습니다. 한 줄짜리
-확인 방법과 복구 방법은 [게이트웨이 changelog](https://github.com/AreteAcademy/brevis/blob/master/gateway/CHANGELOG.md)를
+확인 방법과 복구 방법은 [게이트웨이 changelog](https://github.com/brevis-sh/brevis/blob/master/gateway/CHANGELOG.md)를
 참고하세요. Postgres와 MySQL은 서버가 텍스트를 파싱하므로 영향을 받지 않았습니다.
 
 필드 이름은 네 가지 중 가장 좁은 BigQuery의 규칙에 맞아야 합니다. Postgres는 따옴표를

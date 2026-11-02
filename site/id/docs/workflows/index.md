@@ -158,7 +158,7 @@ lebih besar. Lihat [Pod per step](/id/docs/pod-per-step/index.md).
 | `id` | **wajib** | unik dalam workflow; nama yang ditampilkan di graf dan log |
 | `run` | | command-nya |
 | `image` | | image step; tanpanya, mewarisi image tingkat atas |
-| `host` | | kirim command ke mesin yang **tidak** dikelola engine — alternatif untuk `image`, bukan pendampingnya. Lihat [`host:` di panduan Kubernetes](https://github.com/AreteAcademy/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host) |
+| `host` | | kirim command ke mesin yang **tidak** dikelola engine — alternatif untuk `image`, bukan pendampingnya. Lihat [`host:` di panduan Kubernetes](https://github.com/brevis-sh/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host) |
 | `shell` | `true` | `false` berjalan tanpa shell — wajib pada distroless |
 | `depends_on` | | daftar `id` yang harus selesai lebih dulu; sebuah entri boleh berupa `{step, label}` |
 | `marker` | `false` | step tanpa command, untuk `start` atau `end` |

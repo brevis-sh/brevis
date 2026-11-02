@@ -25,7 +25,7 @@ inside the binary.
 This is the path that produces a binary with version and commit stamped in:
 
 ```bash
-git clone https://github.com/AreteAcademy/brevis.git
+git clone https://github.com/brevis-sh/brevis.git
 cd brevis
 make build
 ./bin/brevis version

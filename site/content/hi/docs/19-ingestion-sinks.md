@@ -112,7 +112,7 @@ Go linker वह छाँट देता है जिसे कोई सं�
 
 | image | क्या ढोती है | pull (amd64) |
 |---|---|---|
-| `brevissh/brevis-gateway:0.33.0` | छह sinks, S3, GCS, Redis, memcached | 19.1 MB |
+| `brevissh/brevis-gateway:0.33.0` | छह sinks, S3, GCS, Redis, memcached | 20.1 MB |
 | `brevissh/brevis-gateway:0.33.0-slim` | `postgres`, स्थानीय `files`, `auto_table` | **5.2 MB** |
 
 दोनों एक ट्री के एक बिल्ड से, इसलिए दोनों tags हमेशा वही commit हैं। `latest-slim` नहीं है — `latest` पहले से ऐसा tag है जिसे किसी को deploy नहीं करना चाहिए।
@@ -288,7 +288,7 @@ SELECT JSON_TYPE(customer) FROM bronze.orders;     -- object
 SELECT JSON_VALUE(customer, '$.uf') ...;           -- SP
 ```
 
-अगर `JSON_TYPE` `string` कहे और `JSON_VALUE` NULL, तो ऑब्जेक्ट दो बार encode हुआ — कॉलम ऑब्जेक्ट की जगह ऑब्जेक्ट का TEXT थामे है। **0.15.0** तक के (और समेत) gateway संस्करणों ने BigQuery पर यह किया, **दोनों** आकारों में; एक-पंक्ति जाँच और मरम्मत के लिए [gateway changelog](https://github.com/AreteAcademy/brevis/blob/master/gateway/CHANGELOG.md) देखें। Postgres और MySQL कभी प्रभावित नहीं थे: उनका सर्वर टेक्स्ट को parse करता है।
+अगर `JSON_TYPE` `string` कहे और `JSON_VALUE` NULL, तो ऑब्जेक्ट दो बार encode हुआ — कॉलम ऑब्जेक्ट की जगह ऑब्जेक्ट का TEXT थामे है। **0.15.0** तक के (और समेत) gateway संस्करणों ने BigQuery पर यह किया, **दोनों** आकारों में; एक-पंक्ति जाँच और मरम्मत के लिए [gateway changelog](https://github.com/brevis-sh/brevis/blob/master/gateway/CHANGELOG.md) देखें। Postgres और MySQL कभी प्रभावित नहीं थे: उनका सर्वर टेक्स्ट को parse करता है।
 
 फ़ील्ड का नाम BigQuery के नियम से मेल खाना चाहिए, जो चारों में सबसे सँकरा है। Postgres quoted होने पर लगभग कुछ भी स्वीकार कर लेगा, और यही जाल है: तालिका वहाँ बन जाती है और उस दिन टूटती है जब कोई stream BigQuery की ओर इंगित करे।
 

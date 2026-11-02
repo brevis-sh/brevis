@@ -151,7 +151,7 @@ steps:
 | `id` | **必須** | ワークフロー内で一意。グラフとログに表示される名前 |
 | `run` | | コマンド |
 | `image` | | ステップのイメージ。省略するとトップレベルのものを継承します |
-| `host` | | エンジンが管理**しない**マシンにコマンドを送ります。`image` の代替であり、併用はしません。[Kubernetes ガイドの `host:`](https://github.com/AreteAcademy/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host)を参照 |
+| `host` | | エンジンが管理**しない**マシンにコマンドを送ります。`image` の代替であり、併用はしません。[Kubernetes ガイドの `host:`](https://github.com/brevis-sh/brevis/blob/master/docs/KUBERNETES.md#a-third-place-a-step-can-run-host)を参照 |
 | `shell` | `true` | `false` にするとシェルなしで実行します。distroless では必須です |
 | `depends_on` | | 先に終わっている必要がある `id` のリスト。要素は `{step, label}` でも構いません |
 | `marker` | `false` | コマンドを持たないステップ。`start` や `end` 用です |

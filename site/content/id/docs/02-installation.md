@@ -25,7 +25,7 @@ berada di dalam binary.
 Ini adalah jalur yang menghasilkan binary dengan versi dan commit yang tertanam:
 
 ```bash
-git clone https://github.com/AreteAcademy/brevis.git
+git clone https://github.com/brevis-sh/brevis.git
 cd brevis
 make build
 ./bin/brevis version

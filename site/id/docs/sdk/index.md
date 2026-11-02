@@ -154,7 +154,7 @@ Tiga hal mengikuti dari sini:
   at-least-once.
 
 Dapat dijalankan, terhadap emulator:
-[`examples/13-pubsub`](https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub).
+[`examples/13-pubsub`](https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub).
 
 ## Fetcher utuh
 
@@ -684,5 +684,5 @@ membuat run ulang menjadi no-op alih-alih duplikat.
 ## Referensi
 
 - [pkg.go.dev](https://pkg.go.dev/brevis.sh/brevis/sdk) — API lengkap
-- [`examples/`](https://github.com/AreteAcademy/brevis/tree/master/examples) — dua belas contoh yang dapat dijalankan
-- [`CHANGELOG.md`](https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md) — riwayat versi demi versi
+- [`examples/`](https://github.com/brevis-sh/brevis/tree/master/examples) — dua belas contoh yang dapat dijalankan
+- [`CHANGELOG.md`](https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md) — riwayat versi demi versi

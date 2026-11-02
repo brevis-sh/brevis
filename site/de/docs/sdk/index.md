@@ -155,7 +155,7 @@ Daraus folgen drei Dinge:
   ist ohnehin at-least-once.
 
 Lauffähig, gegen den Emulator:
-[`examples/13-pubsub`](https://github.com/AreteAcademy/brevis/tree/master/examples/13-pubsub).
+[`examples/13-pubsub`](https://github.com/brevis-sh/brevis/tree/master/examples/13-pubsub).
 
 ## Ein ganzer Fetcher
 
@@ -697,5 +697,5 @@ erneuter Lauf ein No-op statt eines Duplikats ist.
 ## Referenz
 
 - [pkg.go.dev](https://pkg.go.dev/brevis.sh/brevis/sdk) – die vollständige API
-- [`examples/`](https://github.com/AreteAcademy/brevis/tree/master/examples) – zwölf lauffähige Beispiele
-- [`CHANGELOG.md`](https://github.com/AreteAcademy/brevis/blob/master/CHANGELOG.md) – Historie Version für Version
+- [`examples/`](https://github.com/brevis-sh/brevis/tree/master/examples) – zwölf lauffähige Beispiele
+- [`CHANGELOG.md`](https://github.com/brevis-sh/brevis/blob/master/CHANGELOG.md) – Historie Version für Version
