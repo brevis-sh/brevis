@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getJSON } from "../api/client";
+import { useT } from "../i18n";
 import { Skeleton } from "../ui/skeleton";
 
 type Project = { slug: string; name: string; workflows: number; runs: number; createdAt: string };
@@ -78,10 +79,17 @@ function Projects() {
   );
 }
 
+function Title() {
+  const { t } = useT();
+  return <h1 className="page-title">{t("nav.projects")}</h1>;
+}
+
 export default function ProjectsRoute() {
   return (
     <>
-      <h1 className="page-title">Projects</h1>
+      <Suspense fallback={<Skeleton w="8rem" h="1.5rem" />}>
+        <Title />
+      </Suspense>
       <Suspense fallback={<ProjectsSkeleton />}>
         <Projects />
       </Suspense>

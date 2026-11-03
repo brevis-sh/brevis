@@ -1,6 +1,7 @@
 import { Suspense, useEffect } from "react";
 import { NavLink, Outlet } from "react-router";
 import { useConfig, useSession } from "./api/session";
+import { useT } from "./i18n";
 import { Skeleton } from "./ui/skeleton";
 
 // The sidebar's identity block. It suspends on the session and the branding,
@@ -41,6 +42,27 @@ function IdentitySkeleton() {
 
 // The shell is a placeholder for the real sidebar and topbar (base.templ). It
 // fixes the responsive contract now: a column from 768px up, a bar below it.
+function Nav() {
+  const { t } = useT();
+  return (
+    <>
+      <NavLink to="/" end>
+        {t("nav.overview")}
+      </NavLink>
+      <NavLink to="/projects">{t("nav.projects")}</NavLink>
+    </>
+  );
+}
+
+function NavSkeleton() {
+  return (
+    <>
+      <Skeleton w="5rem" h="1.5rem" />
+      <Skeleton w="4rem" h="1.5rem" />
+    </>
+  );
+}
+
 export function Shell() {
   return (
     <div className="shell">
@@ -48,10 +70,9 @@ export function Shell() {
         <Suspense fallback={<IdentitySkeleton />}>
           <Identity />
         </Suspense>
-        <NavLink to="/" end>
-          Overview
-        </NavLink>
-        <NavLink to="/projects">Projects</NavLink>
+        <Suspense fallback={<NavSkeleton />}>
+          <Nav />
+        </Suspense>
       </nav>
       <main className="main">
         <Outlet />

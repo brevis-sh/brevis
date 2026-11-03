@@ -98,3 +98,21 @@ func (u *UI) projects(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, out)
 }
+
+// messages is the console's catalog in the reader's language, for the React
+// app's t(). The same JSON files the server pages translate from: one source
+// for the words. no-cache with a validator: a deploy that changes a sentence
+// reaches the next load, and an unchanged one is a 304.
+func (u *UI) messages(w http.ResponseWriter, r *http.Request) {
+	body, etag := i18n.BundleJSON(i18n.Negotiate(r))
+	w.Header().Set("ETag", etag)
+	w.Header().Set("Cache-Control", "no-cache")
+	// The language is negotiated from a cookie and Accept-Language.
+	w.Header().Add("Vary", "Cookie, Accept-Language")
+	if r.Header.Get("If-None-Match") == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(body)
+}
