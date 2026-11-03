@@ -57,7 +57,7 @@ export function Strip({ family, snap, failed, unit, title, rateNow, values, cell
       <dl className="mx-cells" aria-hidden={!ghost && h.kind !== "ready" ? true : undefined}>
         {cells.map((c) => (
           <div key={c.label}>
-            <dt>{c.label}</dt>
+            <dt title={c.label}>{c.label}</dt>
             <dd className={c.hot && c.value ? "mx-hot" : undefined}>
               {ghost ? <Ghost>000</Ghost> : h.kind !== "ready" || (c.text ?? c.value ?? null) === null ? "—" : (c.text ?? count(c.value as number))}
             </dd>
@@ -134,7 +134,7 @@ export function Panel({ family, title, snap, failed, entity, figs, chart, latenc
         <dl className="mx-figs">
           {figs.map((f) => (
             <div key={f.label} className="mx-fig">
-              <dt>{f.label}</dt>
+              <dt title={f.label}>{f.label}</dt>
               <dd className={shown && f.hot ? "mx-hot" : undefined}>{ghost ? <Ghost>000</Ghost> : shown ? f.value : "—"}</dd>
             </div>
           ))}
