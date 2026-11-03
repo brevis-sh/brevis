@@ -6,7 +6,6 @@ import { getJSON } from "../../api/client";
 import { useFormat, useT } from "../../i18n";
 import { Skeleton } from "../skeleton";
 import { langLabel, NODE_TYPES, stageTone, tone, type NodeData } from "./nodes";
-import "../status-badge.css";
 import "./dag.css";
 
 type GNode = Node<NodeData> & { parentId?: string };

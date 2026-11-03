@@ -21,6 +21,7 @@ const SqlRoute = lazy(() => import("./routes/sql"));
 // Screens load on their own, so the first paint pays for the shell alone.
 const OverviewRoute = lazy(() => import("./routes/overview"));
 const RunsRoute = lazy(() => import("./routes/runs"));
+const RunsIndex = lazy(() => import("./routes/runs").then((m) => ({ default: m.RunsIndex })));
 
 const CatalogRoute = lazyRoute(() => import("./routes/catalog"));
 const EndpointsRoute = lazyRoute(() => import("./routes/endpoints"));
@@ -39,12 +40,14 @@ createRoot(document.getElementById("root")!).render(
         <Routes>
           <Route element={<Shell />}>
             <Route index element={<Suspense><OverviewRoute /></Suspense>} />
-            <Route path="runs" element={<Suspense><RunsRoute /></Suspense>} />
+            <Route path="runs" element={<Suspense><RunsRoute /></Suspense>}>
+              <Route index element={<Suspense><RunsIndex /></Suspense>} />
+              <Route path=":id" element={<RunRoute />} />
+            </Route>
             <Route path="projects" element={<ProjectsRoute />} />
             <Route path="sql" element={<Suspense fallback={<Skeleton h="60vh" />}><SqlRoute /></Suspense>} />
             <Route path="workflows" element={<WorkflowsRoute />} />
             <Route path="workflows/:slug" element={<WorkflowRoute />} />
-            <Route path="runs/:id" element={<RunRoute />} />
             <Route path="ingest/streams" element={<StreamsRoute />} />
             <Route path="ingest/streams/:gateway/*" element={<StreamRoute />} />
             <Route path="ingest/loads" element={<LoadsRoute />} />

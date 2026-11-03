@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { useFormat, useT } from "../i18n";
-import { useAgo, useNumbers } from "./format";
-import { RetryMark, StatusBadge } from "./ov-status";
+import { Link } from "react-router";
+import { useT } from "../i18n";
+import { linkClass } from "./card";
+import { useAgo, useBrief, useNumbers } from "./format";
+import { Logos } from "./logo";
 import { Skeleton } from "./skeleton";
-import "./runs-table.css";
+import { RetryMark, Status, runKind } from "./status";
 
 /** A run as /api/overview and /api/runs send it. */
 export type RunRow = {
@@ -29,8 +31,8 @@ function useTrigger() {
   };
 }
 
-// The failure behind a run, in the browser's own modal: Esc, focus trap and
-// return of focus come with <dialog>.
+// The failure behind a run, in the browser's own modal (components.ErrorDialog):
+// Esc, focus trap and return of focus come with <dialog>.
 function ErrorDialog({ run, onClose }: { run: RunRow | null; onClose: () => void }) {
   const { t } = useT();
   const ref = useRef<HTMLDialogElement>(null);
@@ -39,26 +41,36 @@ function ErrorDialog({ run, onClose }: { run: RunRow | null; onClose: () => void
     if (run && d && !d.open) d.showModal();
   }, [run]);
   return (
-    <dialog ref={ref} className="rt-dialog" onClose={onClose} aria-labelledby="rt-err-title">
+    <dialog
+      ref={ref}
+      onClose={onClose}
+      aria-labelledby="rt-err-title"
+      className="w-[min(680px,92vw)] rounded-card border border-line bg-surface p-0 text-ink shadow-warm backdrop:bg-ink/40 backdrop:backdrop-blur-[2px]"
+    >
       {run && (
         <>
-          <header>
+          <div className="flex items-start justify-between gap-4 border-b border-line px-6 py-4">
             <div>
-              <p className="muted" style={{ fontSize: ".72rem" }}>{t("run.error.title")}</p>
-              <p id="rt-err-title" style={{ fontSize: "1.1rem", marginTop: ".2rem" }}>{run.workflow}</p>
+              <p className="text-[11.5px] text-muted">{t("run.error.title")}</p>
+              <p id="rt-err-title" className="display mt-1 text-2xl">{run.workflow}</p>
             </div>
             <form method="dialog">
-              <button autoFocus aria-label={t("dialog.close")}>{t("dialog.close_word")}</button>
+              <button
+                autoFocus
+                aria-label={t("dialog.close")}
+                className="rounded-card border border-line px-3 py-1 text-xs text-muted transition-colors hover:border-line-strong hover:text-ink focus-visible:text-ink"
+              >
+                {t("dialog.close_word")}
+              </button>
             </form>
-          </header>
-          <div className="body">
-            <div style={{ display: "flex", flexWrap: "wrap", gap: ".75rem", alignItems: "center", fontSize: ".78rem" }}>
-              <StatusBadge status={run.status} />
-              {/* The run's page is still the server's. */}
-              <a href={`/runs/${run.id}`}>{t("run.error.open")}</a>
-              <span className="mono muted">{run.id}</span>
+          </div>
+          <div className="px-6 py-5">
+            <div className="mb-4 flex flex-wrap items-center gap-3 text-xs">
+              <Status kind={runKind(run.status)} />
+              <Link to={`/runs/${run.id}`} className={linkClass}>{t("run.error.open")}</Link>
+              <span className="font-mono text-[0.7rem] text-muted/70">{run.id}</span>
             </div>
-            <pre>{run.error}</pre>
+            <pre className="max-h-[50vh] overflow-auto rounded-card border border-state-failed/20 bg-state-failed/5 px-4 py-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-state-failed">{run.error}</pre>
           </div>
         </>
       )}
@@ -66,105 +78,123 @@ function ErrorDialog({ run, onClose }: { run: RunRow | null; onClose: () => void
   );
 }
 
+const th = (extra = "") => `px-2.5 text-[11.5px] font-medium whitespace-nowrap text-faint ${extra}`;
+const td = "px-3 py-3";
+
 type Props = {
-  runs: RunRow[];
+  /** undefined while the runs are on their way: the header stays, the rows are skeletons. */
+  runs?: RunRow[];
   /** Show the workflow column; a workflow's own page leaves it out. */
   workflow?: boolean;
+  /** Bare: the table sits inside a panel and draws no card of its own. */
+  bare?: boolean;
+  /** How many skeleton rows to draw while loading. */
+  rows?: number;
   /** Names the table for assistive technology. */
   label: string;
+  /** The pager under the rows, inside the card. */
+  footer?: React.ReactNode;
 };
 
-/**
- * Runs as a table from 48rem of its own width and as stacked cards below it.
- * The roles are written out because the cards turn table elements into grids,
- * which drops their semantics in some browsers.
- */
-export function RunsTable({ runs, workflow = true, label }: Props) {
+// web/pages runsTableWith: the rows are data; the header and its columns are not,
+// so they are drawn whether the runs have arrived or not.
+export function RunsTable({ runs, workflow = true, bare = false, rows = 5, label, footer }: Props) {
   const { t } = useT();
   const ago = useAgo();
+  const brief = useBrief();
   const trigger = useTrigger();
-  const f = useFormat();
   const { elapsed } = useNumbers();
   const [failed, setFailed] = useState<RunRow | null>(null);
-  const longest = Math.max(0, ...runs.map((r) => r.durationMs ?? 0));
+  const longest = Math.max(0, ...(runs ?? []).map((r) => r.durationMs ?? 0));
 
   return (
-    <div className="rt">
-      <div className="rt-scroll">
-        <table role="table" aria-label={label}>
-          <thead role="rowgroup">
-            <tr role="row">
-              <th role="columnheader">{t("runs.col.state")}</th>
-              {workflow && <th role="columnheader">{t("runs.col.workflow")}</th>}
-              <th role="columnheader">{t("runs.col.trigger")}</th>
-              <th role="columnheader">{t("runs.col.slot")}</th>
-              <th role="columnheader">{t("runs.col.duration")}</th>
-              <th role="columnheader" className="num">{t("runs.col.created")}</th>
-              <th role="columnheader"><span className="rt-sr">{t("run.error.button")}</span></th>
-            </tr>
-          </thead>
-          <tbody role="rowgroup">
-            {runs.map((r) => (
-              <tr role="row" key={r.id} data-status={r.status}>
-                <td role="cell" className="c-state">
-                  <StatusBadge status={r.status} />
-                  <RetryMark attempt={r.attempt} />
-                </td>
-                {workflow && (
-                  <td role="cell" className="c-wf">
-                    {/* Run detail is not migrated yet: a full navigation. */}
-                    <a className="wf" href={`/runs/${r.id}`}>{r.workflow}</a>
-                  </td>
-                )}
-                <td role="cell" className="c-small c-trig" data-label={t("runs.col.trigger")}>{trigger(r.trigger)}</td>
-                <td role="cell" className="c-small c-slot" data-label={t("runs.col.slot")}>
-                  {r.logicalDate ? <span title={r.logicalDate}>{f.dateTime(r.logicalDate)}</span> : "—"}
-                </td>
-                <td role="cell" className="c-small c-dur" data-label={t("runs.col.duration")}>
-                  {r.durationMs === null ? "—" : elapsed(r.durationMs)}
-                  {r.durationMs !== null && longest > 0 && (
-                    <span className="rt-bar" aria-hidden="true">
-                      <span style={{ width: `${Math.max(1, Math.round((r.durationMs / longest) * 100))}%` }} />
-                    </span>
-                  )}
-                </td>
-                <td role="cell" className="c-small c-created num" title={r.createdAt}>{ago(r.createdAt)}</td>
-                <td role="cell" className="c-err">
-                  {r.error && (
-                    <button type="button" className="rt-err" title={t("run.error.see")} onClick={() => setFailed(r)}>
-                      {t("run.error.button")}
-                    </button>
-                  )}
-                </td>
+    <>
+      <div className={bare ? "overflow-x-auto" : "overflow-hidden rounded-card border border-line bg-surface shadow-warm-sm"}>
+        <div className="overflow-x-auto">
+          <table className="ct w-full text-sm" aria-label={label} aria-busy={runs === undefined}>
+            <thead>
+              <tr className="border-b border-line bg-parchment-soft/60 text-left">
+                <th className={th("pl-6")}>{t("runs.col.state")}</th>
+                {workflow && <th className={th()}>{t("runs.col.workflow")}</th>}
+                <th className={th()}>{t("runs.col.trigger")}</th>
+                <th className={th()}>{t("runs.col.slot")}</th>
+                <th className={th()}>{t("runs.col.duration")}</th>
+                <th className={th("text-right")}>{t("runs.col.created")}</th>
+                <th className={th("w-16 pr-6")}>
+                  <span className="sr-only">{t("run.error.button")}</span>
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-line-soft">
+              {runs === undefined
+                ? Array.from({ length: rows }, (_, i) => (
+                    <tr key={i} aria-hidden="true">
+                      <td className={`${td} pl-6`}><Skeleton w="4.5rem" h="14px" /></td>
+                      {workflow && <td className={td}><Skeleton w="8rem" h="14px" /></td>}
+                      <td className={td}><Skeleton w="3.5rem" h="12px" /></td>
+                      <td className={td}><Skeleton w="5rem" h="12px" /></td>
+                      <td className={td}><Skeleton w="3rem" h="12px" /></td>
+                      <td className={td}><Skeleton w="4rem" h="12px" className="ml-auto" /></td>
+                      <td className={`${td} pr-6`} />
+                    </tr>
+                  ))
+                : runs.map((r) => (
+                    <tr key={r.id} data-run-id={r.id} data-status={r.status} className="transition-colors hover:bg-hover">
+                      <td className={`${td} pl-6`}>
+                        {workflow ? (
+                          <Status kind={runKind(r.status)} />
+                        ) : (
+                          <Link to={`/runs/${r.id}`} className="hover:underline">
+                            <Status kind={runKind(r.status)} />
+                          </Link>
+                        )}
+                        <RetryMark attempt={r.attempt} />
+                      </td>
+                      {workflow && (
+                        <td className={td}>
+                          <span className="inline-flex items-center gap-1.5">
+                            <Logos keys={r.logos} />
+                            <Link to={`/runs/${r.id}`} className="font-medium text-ink hover:underline">{r.workflow}</Link>
+                          </span>
+                        </td>
+                      )}
+                      <td className={`${td} text-xs text-muted`}>{trigger(r.trigger)}</td>
+                      <td className={`${td} text-xs text-muted tabular-nums`}>
+                        {r.logicalDate ? <span title={r.logicalDate} className="whitespace-nowrap tabular-nums">{brief(r.logicalDate)}</span> : <span className="text-faint">—</span>}
+                      </td>
+                      <td className={`${td} text-xs text-muted tabular-nums`}>
+                        {r.durationMs === null ? "—" : elapsed(r.durationMs)}
+                        {r.durationMs !== null && longest > 0 && (
+                          <span className="mt-1 block h-1 w-24 rounded-full bg-surface-2">
+                            <span className="block h-1 rounded-full bg-bar" style={{ width: `${Math.max(1, Math.floor((r.durationMs / longest) * 100))}%` }} />
+                          </span>
+                        )}
+                      </td>
+                      <td className={`${td} text-right text-xs text-muted`} title={r.createdAt}>{ago(r.createdAt)}</td>
+                      <td className={`${td} pr-6 text-right`}>
+                        {r.error && (
+                          <button
+                            type="button"
+                            title={t("run.error.see")}
+                            onClick={() => setFailed(r)}
+                            className="inline-flex items-center gap-1 rounded-card border border-state-failed/30 bg-state-failed/5 px-2.5 py-1 text-[0.7rem] font-medium text-state-failed transition-colors hover:bg-state-failed/10"
+                          >
+                            <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                              <circle cx="6" cy="6" r="4.6" />
+                              <path d="M6 3.4v3M6 8.4v.2" strokeLinecap="round" />
+                            </svg>
+                            {t("run.error.button")}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+            </tbody>
+          </table>
+        </div>
+        {footer}
       </div>
       <ErrorDialog run={failed} onClose={() => setFailed(null)} />
-    </div>
-  );
-}
-
-/** Rows of the same shape as RunsTable's, for the loading state. */
-export function RunsTableSkeleton({ rows = 8, workflow = true }: { rows?: number; workflow?: boolean }) {
-  return (
-    <div className="rt" aria-hidden="true">
-      <table>
-        <tbody>
-          {Array.from({ length: rows }, (_, i) => (
-            <tr key={i}>
-              <td className="c-state"><Skeleton w="5rem" h="1rem" /></td>
-              {workflow && <td className="c-wf"><Skeleton w="9rem" h="1rem" /></td>}
-              <td className="c-trig"><Skeleton w="3.5rem" h=".9rem" /></td>
-              <td className="c-slot"><Skeleton w="5.5rem" h=".9rem" /></td>
-              <td className="c-dur"><Skeleton w="3.5rem" h=".9rem" /></td>
-              <td className="c-created num"><Skeleton w="3.5rem" h=".9rem" /></td>
-              <td className="c-err" />
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    </>
   );
 }
