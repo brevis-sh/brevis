@@ -1,4 +1,5 @@
 {
+  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count",
   "app.not_found": "찾을 수 없습니다.",
   "auto.adjusted_at": "now() 대신 읽을 시계",
   "auto.date": "adjusted_at의 UTC 날짜 — 파티션",

@@ -1,4 +1,5 @@
 {
+  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count",
   "app.not_found": "Nicht gefunden.",
   "auto.adjusted_at": "die Uhr, die anstelle von now() gelesen wird",
   "auto.date": "der UTC-Tag von adjusted_at — die Partition",

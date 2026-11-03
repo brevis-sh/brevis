@@ -1,5 +1,5 @@
 {
-  "_review": "needs a native speaker",
+  "_review": "needs a native speaker; first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count; es: the older keys were already waiting for review",
   "app.not_found": "No encontrado.",
   "auto.adjusted_at": "el reloj a usar en lugar de now()",
   "auto.date": "día UTC de adjusted_at — la partición",

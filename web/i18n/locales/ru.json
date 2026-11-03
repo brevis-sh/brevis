@@ -1,4 +1,5 @@
 {
+  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count; ru: catalog.count and loads.count say \"назначений\"/\"загрузок\" after \"из\", which is wrong for counts ending in 1 except 11 (21, 31, 101), because the catalog has only one/other",
   "app.not_found": "Не найдено.",
   "auto.adjusted_at": "часы, которые читаются вместо now()",
   "auto.date": "день UTC из adjusted_at — партиция",
