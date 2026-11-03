@@ -38,7 +38,8 @@ test("a run started on the server refreshes the open Runs list once", async ({ p
   await loaded(page);
   await expect(page.locator("main button[aria-pressed=true]")).toHaveCount(1); // Live is on
   await page.waitForTimeout(1000);
-  const rows = page.locator("#runs-list a[href*='/runs/']");
+  // The rows only: with more than a page of runs the pager is a link to /runs/<id>?page=2 too.
+  const rows = page.locator("#runs-list nav a[href*='/runs/']");
   const before = await rows.count();
   const api = trackApi(page);
   api.take();

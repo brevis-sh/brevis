@@ -25,7 +25,9 @@ export async function seed(request: APIRequestContext): Promise<Seed | string> {
   return {
     slug: plain.slug,
     runId: (await runs())[0]!.id,
-    withParams: wf.rows.find((w) => w.hasParams)?.slug ?? null,
+    // the drawer test types into the `days` list parameter that examples/list-params.yaml declares: any other
+    // workflow with parameters (a demo someone published) would not have that field
+    withParams: wf.rows.find((w) => w.hasParams && w.slug === "list_params")?.slug ?? null,
     sql: cfg.sql,
   };
 }

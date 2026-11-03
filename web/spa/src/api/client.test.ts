@@ -3,19 +3,25 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, getJSON, postJSON } from "./client";
 
-const reply = (status: number, body?: unknown, extra: Partial<Response> = {}) =>
-  ({ status, ok: status >= 200 && status < 300, redirected: false, url: "http://x/api", json: async () => body, ...extra }) as Response;
+const reply = (status: number, body?: unknown, extra: Partial<Response> = {}) => {
+  const res = { status, ok: status >= 200 && status < 300, redirected: false, url: "http://x/api", json: async () => body, ...extra } as Response;
+  // the client reads a 401's body from a clone, to leave the original readable
+  (res as { clone: () => Response }).clone = () => res;
+  return res;
+};
 const stub = (res: Response | Promise<never>) => {
   const f = vi.fn(() => Promise.resolve(res));
   vi.stubGlobal("fetch", f);
   return f;
 };
 const assign = vi.fn();
-const here = (path: string) => vi.stubGlobal("location", { pathname: path, search: "?q=1", assign });
+const replace = vi.fn();
+const here = (path: string) => vi.stubGlobal("location", { pathname: path, search: "?q=1", assign, replace });
 
 afterEach(() => {
   vi.unstubAllGlobals();
   assign.mockClear();
+  replace.mockClear();
 });
 
 describe("getJSON", () => {
@@ -43,11 +49,25 @@ describe("getJSON", () => {
     await expect(getJSON("/api/x")).rejects.toMatchObject({ status: 502, message: "/api/x: HTTP 502" });
   });
 
-  it("the Gate's redirect to /login is a 401: sends the browser to log in and back to this screen", async () => {
+  it("the Gate's 401 {error: sign in} sends the browser to the login and back to this screen", async () => {
     here("/app/runs");
-    stub(reply(200, undefined, { redirected: true, url: "http://x/login?next=%2F" }));
+    stub(reply(401, { error: "sign in" }));
     await expect(getJSON("/api/x")).rejects.toMatchObject({ status: 401 });
-    expect(assign).toHaveBeenCalledWith("/login?next=%2Fapp%2Fruns%3Fq%3D1");
+    expect(replace).toHaveBeenCalledWith("/app/login?next=%2Fapp%2Fruns%3Fq%3D1");
+  });
+
+  it("a 401 that is NOT the Gate's is that screen's error, not a sign-out", async () => {
+    here("/app/runs");
+    stub(reply(401, { error: "the warehouse refused the token" }));
+    await expect(getJSON("/api/x")).rejects.toMatchObject({ status: 401, message: "the warehouse refused the token" });
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("on the login screen itself there is nowhere to go: the caller handles the 401", async () => {
+    here("/app/login");
+    stub(reply(401, { error: "sign in" }));
+    await expect(getJSON("/api/session")).rejects.toMatchObject({ status: 401 });
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it("any other redirect is not a login", async () => {
