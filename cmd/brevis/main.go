@@ -6,6 +6,7 @@
 package main
 
 import (
+	"brevis.sh/brevis/internal/events"
 	"bufio"
 	"context"
 	"encoding/json"
@@ -1457,6 +1458,11 @@ func serve(ctx context.Context) error {
 		WithEvents(postgres.NewEventRepo(pool)).
 		// The component gallery, for whoever is building the console.
 		WithGallery(cfg.Env == "local").
+		// Server-sent change notifications. Bound to ctx so the signal that
+		// starts the graceful shutdown also ends every open stream; otherwise
+		// srv.Shutdown would wait on them until its timeout.
+		WithChangeHub(events.NewHub(ctx, api.NewFingerprints(postgres.NewFingerprints(pool)),
+			events.Options{Log: log})).
 		WithVersion(Version, updateChecker(ctx, log))
 	// `inseguro` follows the environment: locally the server listens on plain
 	// http, and a Secure cookie would never come back — the login would look

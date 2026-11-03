@@ -1,6 +1,7 @@
 package api
 
 import (
+	"brevis.sh/brevis/internal/events"
 	"context"
 	"encoding/json"
 	"errors"
@@ -175,6 +176,9 @@ type UI struct {
 
 	// gallery serves /_components. See WithGallery.
 	gallery bool
+
+	// hub feeds GET /api/events. See WithChangeHub.
+	hub *events.Hub
 }
 
 // WithPreview points the console at a SQL service, and says whether this
@@ -352,6 +356,7 @@ func (u *UI) Registrar(mux *http.ServeMux) {
 	// The command palette's index: everything the console lists, fetched once
 	// per page and filtered in the browser. JSON under /api, like the graph.
 	mux.HandleFunc("GET /api/palette", u.palette)
+	u.registerEvents(mux)
 	mux.HandleFunc("GET /runs/{id}/live", u.runLive)
 	mux.HandleFunc("GET /workflows/{slug}", u.workflow)
 	mux.HandleFunc("GET /runs/{id}", u.run)
