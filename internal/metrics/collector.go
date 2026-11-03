@@ -195,6 +195,7 @@ func (c *Collector) Run(ctx context.Context) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			// #nosec G404 -- jitter only: spreads the scrapes so targets are not hit together; nothing secret.
 			wait := time.Duration(rand.Float64() * float64(c.cfg.Interval))
 			for {
 				select {
@@ -203,6 +204,7 @@ func (c *Collector) Run(ctx context.Context) {
 				case <-time.After(wait):
 				}
 				c.scrape(ctx, t)
+				// #nosec G404 -- same jitter as above.
 				wait = time.Duration(float64(c.cfg.Interval) * (0.9 + 0.2*rand.Float64()))
 			}
 		}()
