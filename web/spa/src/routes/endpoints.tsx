@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useData } from "../api/live";
 import { useT, type Vars } from "../i18n";
 import { useSince } from "../ui/format";
+import { useDrawer } from "../ui/drawer";
 import { HowDrawer, HowSteps } from "../ui/how";
 import { btn, Empty, FilterRow, Lead, MethodPill, PageHead, linkUnderline, Page } from "../ui/kit";
 import { Icon } from "../ui/icon";
@@ -352,13 +352,13 @@ function HowItWorks() {
 export default function EndpointsRoute() {
   const { t } = useT();
   const filter = useFilter(FIELDS, "/data/endpoints");
-  const [drawer, setDrawer] = useState(false);
+  const { show } = useDrawer("publicar");
   return (
     <Page>
       <PageHead
         title={t("endpoints.title")}
         actions={
-          <button type="button" className={btn(true)} aria-haspopup="dialog" onClick={() => setDrawer(true)}>
+          <button type="button" className={btn(true)} aria-haspopup="dialog" onClick={show}>
             <Icon name="plus" className="h-3.5 w-3.5" />
             {t("endpoints.publish")}
           </button>
@@ -368,8 +368,7 @@ export default function EndpointsRoute() {
       <Endpoints filter={filter} />
       <HowItWorks />
       <HowDrawer
-        open={drawer}
-        onClose={() => setDrawer(false)}
+        id="publicar"
         title={t("endpoints.publish")}
         lead={t("endpoints.publish.lead")}
         blocks={[

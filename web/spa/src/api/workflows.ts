@@ -81,6 +81,21 @@ export type WorkflowDetail = {
     lastFailure: string | null;
     since: string | null;
   };
+  /** The "What it loads" series (null without load history); the server draws their numbers and lines. */
+  load: {
+    window: string;
+    series: {
+      label: string;
+      latest: string;
+      delta: string;
+      hue: string;
+      note: string;
+      path: string;
+      area: string;
+      flat: boolean;
+      points: { x: number; y: number; tooltip: string }[];
+    }[];
+  } | null;
   steps: Step[];
   runs: {
     id: string;

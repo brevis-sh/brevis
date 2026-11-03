@@ -11,6 +11,7 @@ import { until, useAgo, useBrief, useNumbers } from "../ui/format";
 import { Icon } from "../ui/icon";
 import { Logo } from "../ui/logo";
 import { PageFrame } from "../ui/page-frame";
+import { Panel } from "../ui/panel";
 import { LoadError } from "../ui/query-boundary";
 import { Skeleton } from "../ui/skeleton";
 import { Stats, type StatProps } from "../ui/stat";
@@ -442,6 +443,48 @@ function Actions({ slug, d, toggler }: { slug: string; d?: WorkflowDetail; toggl
   );
 }
 
+// ---- what it loads: four lines over the last 90 days (web/components LoadTrend) ----
+
+function WhatItLoads({ load }: { load: NonNullable<WorkflowDetail["load"]> }) {
+  const { t } = useT();
+  return (
+    <section className="mt-3">
+      <Panel title={t("workflow.load.title")}>
+        <div className="px-3.5 py-3">
+          <p className="mb-3 text-[12.5px] text-muted">
+            {load.window}. {t("workflow.load.lead")}
+          </p>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {load.series.map((s) => (
+              <div key={s.label}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-[11.5px] text-muted">{s.label}</p>
+                  {s.delta && <span className={`text-[0.7rem] font-medium ${s.hue}`}>{s.delta}</span>}
+                </div>
+                <p className="mt-1 font-serif text-2xl text-ink tabular-nums">{s.latest}</p>
+                {s.flat ? (
+                  <p className="mt-1 text-xs text-muted">one day so far &mdash; a trend needs two</p>
+                ) : (
+                  <svg viewBox="0 0 300 56" className="mt-2 h-[56px] w-full" preserveAspectRatio="none" role="img" aria-label={`${s.label} over ${load.window}`}>
+                    <polyline points={s.area} className="fill-ink/10" stroke="none" />
+                    <polyline points={s.path} className="stroke-ink-2" fill="none" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+                    {s.points.map((p) => (
+                      <circle key={p.x} cx={p.x} cy={p.y} r="4" fill="transparent">
+                        <title>{p.tooltip}</title>
+                      </circle>
+                    ))}
+                  </svg>
+                )}
+                <p className="mt-1 text-xs text-muted">{s.note}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Panel>
+    </section>
+  );
+}
+
 export default function WorkflowRoute() {
   const { t } = useT();
   const { slug = "" } = useParams();
@@ -489,6 +532,7 @@ export default function WorkflowRoute() {
           <YearOfRuns d={d} />
         </div>
         <Tabs d={d} />
+        {d?.load && <WhatItLoads load={d.load} />}
       </div>
     );
   }

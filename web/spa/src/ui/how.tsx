@@ -1,7 +1,7 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useT } from "../i18n";
 import { CopyButton } from "./copy";
-import { Icon } from "./icon";
+import { Drawer } from "./drawer";
 
 /** A stream or an endpoint in three steps, for somebody who has not set one up. */
 export function HowSteps({ steps }: { steps: { kicker: string; title: string; text: ReactNode }[] }) {
@@ -37,51 +37,23 @@ function CopyBlock({ title, text }: { title: string; text: string }) {
 /**
  * A side drawer that says how a thing is made and makes nothing: the thing is
  * declared in a file and published from there, so a form here would be a
- * second source of truth. A native <dialog>, closed by Escape or the backdrop.
+ * second source of truth.
  */
 export function HowDrawer({
-  open, onClose, title, lead, blocks, note,
+  id, title, lead, blocks, note,
 }: {
-  open: boolean;
-  onClose: () => void;
+  id: string;
   title: string;
   lead: string;
   blocks: { title: string; text: string }[];
   note: string;
 }) {
-  const { t } = useT();
-  const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (open && !el.open) el.showModal();
-    if (!open && el.open) el.close();
-  }, [open]);
   return (
-    <dialog
-      ref={ref}
-      aria-labelledby="how-title"
-      onClose={onClose}
-      onClick={(e) => e.target === ref.current && onClose()}
-      className="run-drawer fixed inset-y-0 right-0 left-auto m-0 h-full max-h-none w-[min(560px,100vw)] border-l border-line bg-surface p-0 text-ink backdrop:bg-ink/40"
-    >
-      <div className="flex h-full flex-col">
-        <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
-          <div className="min-w-0">
-            <p id="how-title" className="text-[15px] font-semibold text-ink">{title}</p>
-            <p className="mt-1 text-[12.5px] text-muted">{lead}</p>
-          </div>
-          <button type="button" onClick={onClose} aria-label={t("dialog.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-card text-muted transition-colors hover:bg-surface-2 hover:text-ink">
-            <Icon name="x" className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4 text-[12.5px]">
-          {blocks.map((b) => (
-            <CopyBlock key={b.title} {...b} />
-          ))}
-          <p className="text-muted">{note}</p>
-        </div>
-      </div>
-    </dialog>
+    <Drawer id={id} title={title} lead={lead}>
+      {blocks.map((b) => (
+        <CopyBlock key={b.title} {...b} />
+      ))}
+      <p className="text-muted">{note}</p>
+    </Drawer>
   );
 }

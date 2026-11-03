@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { ApiError } from "../api/client";
 import { useData } from "../api/live";
@@ -8,6 +8,8 @@ import { useBrief } from "../ui/format";
 import { useCrumb } from "../shell/nav";
 import { ConfigNote, DeadLetterPanel } from "../ui/cfg";
 import { CopyButton } from "../ui/copy";
+import { Drawer, useDrawer } from "../ui/drawer";
+import { checkEvent } from "../ui/test-event";
 import { FlowDiagram } from "../ui/flow";
 import { HashTabs } from "../ui/hash-tabs";
 import { Icon } from "../ui/icon";
@@ -249,124 +251,60 @@ function DeadLetter({ v }: { v: Stream | undefined }) {
   );
 }
 
-type Verdict = { kind: "valid" | "warning" | "problem"; text: string };
-
-// The server's rules for a test event (ui.js testEvent), in the server's words: the body is one object for json, a list of
-// them for array, one per line for ndjson; for an auto_table the table each event names must be there and start with an
-// accepted prefix; then it says where the event would land.
-function checkEvent(
-  body: string,
-  te: Stream["testEvent"],
-  t: (key: string, vars?: Record<string, string | number>) => string,
-): Verdict {
-  const isObject = (v: unknown) => v !== null && typeof v === "object" && !Array.isArray(v);
-  const problem = (text: string): Verdict => ({ kind: "problem", text });
-  const text = body.replace(/\s+$/, "");
-  let events: Record<string, unknown>[] = [];
-  try {
-    if (te.format === "array") {
-      const list: unknown = JSON.parse(text);
-      if (!Array.isArray(list)) return problem(t("testevent.array"));
-      if (!list.every(isObject)) return problem(t("testevent.items"));
-      events = list;
-    } else if (te.format === "ndjson") {
-      const lines = text.split("\n");
-      for (let i = 0; i < lines.length; i++) {
-        if (lines[i]!.trim() === "") continue;
-        try {
-          const one: unknown = JSON.parse(lines[i]!);
-          if (!isObject(one)) return problem(t("testevent.line", { n: i + 1, e: t("testevent.object") }));
-          events.push(one as Record<string, unknown>);
-        } catch (e) {
-          return problem(t("testevent.line", { n: i + 1, e: (e as Error).message }));
-        }
-      }
-    } else {
-      const one: unknown = JSON.parse(text);
-      if (!isObject(one)) return problem(t("testevent.object"));
-      events = [one as Record<string, unknown>];
-    }
-  } catch (e) {
-    return problem(t("testevent.invalid", { e: (e as Error).message }));
-  }
-  const lands: string[] = [];
-  if (te.table !== "") {
-    for (const ev of events) {
-      const name = ev[te.table];
-      if (typeof name !== "string" || name === "") return problem(t("testevent.no_table", { field: te.table }));
-      if (te.allow.length > 0 && !te.allow.some((p) => name.startsWith(p)))
-        return { kind: "warning", text: t("testevent.refused", { name, allow: te.allow.join(", ") }) };
-      const to = te.dataset ? `${te.dataset}.${name}` : name;
-      if (!lands.includes(to)) lands.push(to);
-    }
-  } else lands.push(te.lands);
-  return { kind: "valid", text: `${t("testevent.valid", { format: te.format })} ${t("testevent.lands", { to: lands.join(", ") })}` };
-}
+const STATUS_HUE = { failed: "text-state-failed", queued: "text-state-queued", success: "text-state-success" };
 
 // The example event in the stream's format and the curl that would send it.
 // It sends nothing: the console holds no token for the gateway. The body is
-// editable, the curl follows it and the body is checked against the format as the server's page did.
+// editable and the curl follows it. (The old drawer also validated the body
+// against the format; that check is not carried over.)
+
 function TestEvent({ path, v }: { path: string; v: Stream | undefined }) {
   const { t } = useT();
-  const dialog = useRef<HTMLDialogElement>(null);
+  const { show } = useDrawer("test-event");
   const [edited, setEdited] = useState<string | null>(null);
   const body = edited ?? v?.testEvent.body ?? "";
   const curl = v ? `${v.testEvent.curlHead}\n${body.replace(/\s+$/, "")}\nEOF` : "";
-  const verdict = v ? checkEvent(body, v.testEvent, t) : null;
+  const status = v ? checkEvent(body, v.testEvent, t) : null;
   return (
     <>
-      <button type="button" className={btn(true)} aria-haspopup="dialog" disabled={!v} onClick={() => dialog.current?.showModal()}>
+      <button type="button" className={btn(true)} aria-haspopup="dialog" disabled={!v} onClick={show}>
         <Icon name="send" className="h-3.5 w-3.5" />
         {t("streams.page.test")}
       </button>
-      <dialog
-        ref={dialog}
-        aria-labelledby="test-event-title"
-        onClick={(e) => e.target === dialog.current && dialog.current?.close()}
-        className="run-drawer fixed inset-y-0 right-0 left-auto m-0 h-full max-h-none w-[min(520px,100vw)] border-l border-line bg-surface p-0 text-ink backdrop:bg-ink/40"
+      <Drawer
+        id="test-event"
+        width={520}
+        bodyClass=""
+        title={t("testevent.title")}
+        lead={t("testevent.lead")}
+        kicker={
+          <p className="truncate font-mono text-[11px] tracking-[0.08em] text-muted uppercase">
+            POST {path} · {v?.testEvent.format}
+          </p>
+        }
       >
-        <div className="flex h-full flex-col">
-          <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
-            <div className="min-w-0">
-              <p className="truncate font-mono text-[11px] tracking-[0.08em] text-muted uppercase">
-                POST {path} · {v?.testEvent.format}
-              </p>
-              <p id="test-event-title" className="text-[15px] font-semibold text-ink">
-                {t("testevent.title")}
-              </p>
-              <p className="mt-1 text-[12.5px] text-muted">{t("testevent.lead")}</p>
-            </div>
-            <button type="button" aria-label={t("dialog.close")} onClick={() => dialog.current?.close()} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-card text-muted transition-colors hover:bg-surface-2 hover:text-ink">
-              <Icon name="x" className="h-4 w-4" />
-            </button>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[12.5px] font-medium text-ink">{t("testevent.body")}</span>
+          <textarea
+            rows={8}
+            spellCheck={false}
+            value={body}
+            onChange={(e) => setEdited(e.target.value)}
+            className="w-full rounded-card border border-line bg-canvas px-3 py-2 font-mono text-[0.78rem] text-ink focus:border-accent-strong focus:outline-none"
+          />
+        </label>
+        <p className={`text-[12px] ${status ? STATUS_HUE[status.kind] : "text-muted"}`} aria-live="polite">{status?.text}</p>
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="text-[12.5px] text-muted">{t("testevent.send_with")}</span>
+            <CopyButton text={curl} label={t("testevent.copy")} />
           </div>
-          <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[12.5px] font-medium text-ink">{t("testevent.body")}</span>
-              <textarea
-                rows={8}
-                spellCheck={false}
-                value={body}
-                onChange={(e) => setEdited(e.target.value)}
-                className="w-full rounded-card border border-line bg-canvas px-3 py-2 font-mono text-[0.78rem] text-ink focus:border-accent-strong focus:outline-none"
-              />
-            </label>
-            <p aria-live="polite" className={`text-[12px] ${verdict?.kind === "problem" ? "text-state-failed" : verdict?.kind === "warning" ? "text-state-queued" : verdict ? "text-state-success" : "text-muted"}`}>
-              {verdict?.text}
-            </p>
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <span className="text-[12.5px] text-muted">{t("testevent.send_with")}</span>
-                <CopyButton text={curl} label={t("testevent.copy")} />
-              </div>
-              <pre className="overflow-x-auto rounded-card border border-line-soft bg-canvas px-3 py-2 font-mono text-[0.72rem] text-ink-2">
-                <code>{curl}</code>
-              </pre>
-            </div>
-            <p className="text-[12px] text-muted">{t("testevent.note", { sink: v?.sink.uri || t("streams.unidentified") })}</p>
-          </div>
+          <pre className="overflow-x-auto rounded-card border border-line-soft bg-canvas px-3 py-2 font-mono text-[0.72rem] text-ink-2">
+            <code>{curl}</code>
+          </pre>
         </div>
-      </dialog>
+        <p className="text-[12px] text-muted">{t("testevent.note", { sink: v?.sink.uri || t("streams.unidentified") })}</p>
+      </Drawer>
     </>
   );
 }

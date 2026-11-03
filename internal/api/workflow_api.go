@@ -87,6 +87,7 @@ type workflowDetailView struct {
 	Stages      int               `json:"stages"`
 	Stats       statsView         `json:"stats"`
 	Calendar    calendarView      `json:"calendar"`
+	Load        *loadView         `json:"load"`
 	Steps       []stepView        `json:"steps"`
 	Runs        []workflowRunView `json:"runs"`
 	Day         *string           `json:"day"`
@@ -149,6 +150,12 @@ func (u *UI) workflowJSON(w http.ResponseWriter, r *http.Request) {
 		out.Calendar, out.Stats.RanDays, out.Stats.FailedDays = calendarOf(ctx, days, now)
 	} else {
 		u.log.Warn("the workflow's calendar is unavailable", "workflow", slug, "error", err)
+	}
+
+	if load, err := u.leitura.LoadTrend(ctx, slug, components.TrendDays); err == nil {
+		out.Load = loadOf(load)
+	} else {
+		u.log.Warn("the workflow's load trend is unavailable", "workflow", slug, "error", err)
 	}
 
 	if all, err := u.leitura.Workflows(ctx); err == nil {
