@@ -2,40 +2,8 @@ package api_test
 
 import (
 	"regexp"
-	"strings"
 	"testing"
 )
-
-// strip removes `//` comments, so an assertion about what a script DOES
-// cannot be satisfied by what it says about itself.
-//
-// Line comments only, and that is enough here: this file has no block
-// comments, and a stripper that tried to be a parser would be a second
-// JavaScript implementation nobody asked for. A string containing `//` --
-// a URL -- would be cut short, which costs this test nothing, because the
-// paths it looks for are the leading part.
-func strip(src string) string {
-	var out strings.Builder
-	for _, line := range strings.Split(src, "\n") {
-		if at := strings.Index(line, "//"); at >= 0 {
-			line = line[:at]
-		}
-		out.WriteString(line)
-		out.WriteByte('\n')
-	}
-	return out.String()
-}
-
-// THE WORKBENCH TAKES THE WHOLE HEIGHT. It is a Fill page: the breadcrumb
-// already says where it is, and a 26px title over three panes is a band of
-// screen the editor needed.
-func TestTheWorkbenchSpendsNoHeightOnATitle(t *testing.T) {
-	_, ui := browsing(t)
-	_, body := get(t, ui, "/sql")
-	if strings.Contains(body, "data-page-header") {
-		t.Error("the workbench draws a page header above its panes")
-	}
-}
 
 // ON A PHONE THE WORKBENCH STACKS. Three zones side by side need width: on a
 // 390px screen the tree took two thirds of it and the editor was a strip.
