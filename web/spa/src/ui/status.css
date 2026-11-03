@@ -1,0 +1,23 @@
+:root {
+  --st-success: #15803d; --st-failed: #dc2626; --st-running: #2563eb; --st-queued: #b45309;
+  --st-retrying: #7e22ce; --st-canceled: #6b7280; --st-pending: #6b7280;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --st-success: #4ade80; --st-failed: #f87171; --st-running: #60a5fa; --st-queued: #fbbf24;
+    --st-retrying: #c084fc; --st-canceled: #9ca3af; --st-pending: #9ca3af;
+  }
+}
+/* The mark: colour and a shape, so two states never differ by colour alone. */
+.st { display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap; }
+.st-mark { --c: var(--st-pending); flex: none; width: .6rem; height: .6rem; box-sizing: border-box; background: var(--c); border-radius: 50%; }
+.st[data-status="success"] .st-mark, .st-mark[data-status="success"] { --c: var(--st-success); }
+.st[data-status="failed"] .st-mark, .st-mark[data-status="failed"] { --c: var(--st-failed); border-radius: 1px; transform: rotate(45deg) scale(.85); }
+.st[data-status="running"] .st-mark, .st-mark[data-status="running"] { --c: var(--st-running); background: none; border: 2px solid var(--c); border-top-color: transparent; animation: st-spin 1s linear infinite; }
+.st[data-status="queued"] .st-mark, .st-mark[data-status="queued"] { --c: var(--st-queued); background: none; border: 2px solid var(--c); }
+.st[data-status="retrying"] .st-mark, .st-mark[data-status="retrying"] { --c: var(--st-retrying); background: none; border: 2px dashed var(--c); animation: st-spin 2s linear infinite; }
+.st[data-status="canceled"] .st-mark, .st-mark[data-status="canceled"] { --c: var(--st-canceled); border-radius: 1px; }
+.st[data-status="pending"] .st-mark, .st-mark[data-status="pending"] { background: none; border: 2px solid var(--c); }
+@keyframes st-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .st-mark { animation: none !important; } }
+.st-retry { margin-left: .4rem; padding: 0 .3rem; border-radius: .25rem; font: 500 .7rem/1.2rem ui-monospace, monospace; color: var(--st-retrying); background: color-mix(in srgb, var(--st-retrying) 13%, transparent); cursor: help; }
