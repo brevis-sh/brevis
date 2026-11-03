@@ -122,7 +122,7 @@ const ghostOf = (s: Shape): Streams => ({
 
 // The bar (see ui/filters): a search and the destination kinds, drawn at once from the last shape seen.
 function StreamsBar({ filter, v, ghost }: { filter: Filter; v: Streams; ghost: boolean }) {
-  const { t } = useT();
+  const { t, n } = useT();
   const { number } = useFormat();
   const navigate = useNavigate();
   const [text, setText] = useUrlSearch("q");
@@ -144,7 +144,7 @@ function StreamsBar({ filter, v, ghost }: { filter: Filter; v: Streams; ghost: b
       chips={chips}
       clearable={filter.any}
       onClearAll={() => go({ kind: "", q: "" })}
-      count={<ResultCount pending={ghost} shown={v.rows.length} tail={<>/ {number(v.total)}{q && <> {t("workflows.count.search", { q })}</>}</>} />}
+      count={<ResultCount pending={ghost} shown={v.rows.length} tail={<>{n("streams.count", v.total, { count: number(v.total) })}{q && <> {t("workflows.count.search", { q })}</>}</>} />}
     />
   );
 }

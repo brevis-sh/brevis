@@ -168,7 +168,7 @@ export function LogView({ log, live, downloadHref, gotoCause = 0 }: Props) {
                 <div className="sticky top-0 border-b border-line-soft bg-surface-2 px-3 py-1 text-[11.5px] text-muted">
                   {b.step} · {t("run.log.attempt", { n: b.attempt })}
                   {b.status && <> · {b.statusLabel}</>}
-                  {b.exitCode !== null && <> · exit {b.exitCode}</>}
+                  {b.exitCode !== null && <> · {t("run.log.exit", { code: b.exitCode })}</>}
                 </div>
                 {b.running && <div className="px-3 py-1 font-sans text-faint">{t("run.log.running", { step: b.step })}</div>}
                 {(visible[bi] ?? []).map((it, i) =>

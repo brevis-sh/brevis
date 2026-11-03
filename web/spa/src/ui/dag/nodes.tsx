@@ -27,7 +27,7 @@ export { langLabel };
 const HIGHLIGHT = ["in", "out", "groups", "rows", "pages", "objects"];
 
 export function StepCard({ data: d }: P) {
-  const { t } = useT();
+  const { t, n } = useT();
   const { duration, number } = useFormat();
   // A workflow's graph draws no run: its cards are pending and say how the step went last time.
   const last = d.status === "pending" && d.last_status;
@@ -57,7 +57,7 @@ export function StepCard({ data: d }: P) {
             type="button"
             className="dag-toggle nodrag"
             aria-expanded={!d.collapsed}
-            aria-label={d.collapsed ? "show the stages" : "collapse the stages"}
+            aria-label={t(d.collapsed ? "graph.expand" : "graph.collapse")}
             onClick={(e) => {
               e.stopPropagation();
               d.toggle();
@@ -71,7 +71,7 @@ export function StepCard({ data: d }: P) {
       {(d.runtime || tools.length > 0) && (
         <div className="dag-chips">
           {d.runtime && (
-            <span className={`dag-chip strong${inferred ? " inferred" : ""}`} style={tint(d.runtime)} title={`${langLabel(d.runtime)} — ${inferred ? "inferred from the command" : d.runtime_source}`}>
+            <span className={`dag-chip strong${inferred ? " inferred" : ""}`} style={tint(d.runtime)} title={`${langLabel(d.runtime)} — ${inferred ? t("graph.inferred") : d.runtime_source}`}>
               {langLabel(d.runtime)}
             </span>
           )}
@@ -87,11 +87,11 @@ export function StepCard({ data: d }: P) {
           )}
         </div>
       )}
-      {published > 0 && <div className="dag-pub">{published} {published === 1 ? "value" : "values"} published</div>}
+      {published > 0 && <div className="dag-pub">{n("graph.published", published)}</div>}
       <div className="dag-status">
         <span>{t(`state.${st}`)}</span>
         {took ? <span className="took">{duration(took)}</span> : null}
-        {d.tentativa ? <span className="retry">retry {number(d.tentativa)}</span> : null}
+        {d.tentativa ? <span className="retry">{t("graph.retry", { n: number(d.tentativa) })}</span> : null}
         {d.sdk && <span className="dag-sdk">SDK {d.sdk}</span>}
       </div>
       <Handle type="source" position={Position.Right} />

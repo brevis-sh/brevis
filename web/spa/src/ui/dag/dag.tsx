@@ -121,10 +121,10 @@ function Inspector({ node, stages, close }: { node: GNode; stages: GNode[]; clos
     ),
   ];
   return (
-    <aside className="dag-insp shadow-warm" aria-label="Step details">
+    <aside className="dag-insp shadow-warm" aria-label={t("graph.inspector")}>
       <header>
-        <h4>Details</h4>
-        <button type="button" onClick={close} aria-label="Close">
+        <h4>{t("graph.details")}</h4>
+        <button type="button" onClick={close} aria-label={t("dialog.close")}>
           ×
         </button>
       </header>
@@ -198,7 +198,7 @@ export default function Dag({ src, runId, onPick }: Props) {
   }, []);
 
   const { t } = useT();
-  const stageWord = "Stage";
+  const stageWord = t("graph.stage");
   const toggle = useCallback((id: string) => {
     setCollapsed((m) => {
       const { [id]: was, ...rest } = m;
@@ -247,7 +247,7 @@ export default function Dag({ src, runId, onPick }: Props) {
       .filter((e) => e.source !== e.target)
       .map((e) => (!path || (path.has(e.source) && path.has(e.target)) ? e : { ...e, style: { ...e.style, opacity: 0.25 } }));
     return { nodes: [...nodes, ...labels], edges, sel, height: heightFor([...all, ...labels], width) };
-  }, [g, collapsed, selected, toggle, width]);
+  }, [g, collapsed, selected, toggle, width, stageWord]);
 
   // Selecting by click or by keyboard (Enter/Space on a focused node) arrives as a change.
   const onNodesChange = useCallback((changes: NodeChange[]) => {
@@ -262,7 +262,7 @@ export default function Dag({ src, runId, onPick }: Props) {
   return (
     <div ref={box} className="dag rounded-card border border-line bg-surface shadow-warm-sm" style={{ height: view?.height ?? dagHeight(url) }} aria-busy={isPending}>
       {isPending && <Skeleton h="100%" />}
-      {error && <div className="dag-err" role="alert">could not load the graph: {error.message}</div>}
+      {error && <div className="dag-err" role="alert">{t("graph.failed", { error: error.message })}</div>}
       {view && (
         <>
           {/* A key on the shape remounts React Flow when the drawing changes: the only reliable re-fit. */}

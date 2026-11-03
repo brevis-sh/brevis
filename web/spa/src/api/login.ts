@@ -5,8 +5,7 @@ export type SignIn =
   | { ok: true; next: string }
   | { ok: false; status: number; error: string; retryAfter?: number };
 
-const GENERIC = "Sign-in failed. Try again.";
-
+// An empty `error` means the server said nothing: the screen writes its own, in the reader's language.
 // The password travels once, in this request's body, and is not kept anywhere
 // here. Content-Type is application/json on purpose: the server accepts nothing
 // else, because a cross-site HTML form cannot send it (CSRF).
@@ -19,9 +18,9 @@ export async function signIn(user: string, password: string, next: string): Prom
     });
     const body = (await res.json().catch(() => ({}))) as { next?: string; error?: string; retryAfter?: number };
     if (res.ok) return { ok: true, next: body.next ?? "/app/" };
-    return { ok: false, status: res.status, error: body.error ?? GENERIC, retryAfter: body.retryAfter };
+    return { ok: false, status: res.status, error: body.error ?? "", retryAfter: body.retryAfter };
   } catch {
-    return { ok: false, status: 0, error: GENERIC };
+    return { ok: false, status: 0, error: "" };
   }
 }
 

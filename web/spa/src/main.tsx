@@ -18,6 +18,7 @@ import EndpointsRoute from "./routes/endpoints";
 import EndpointRoute from "./routes/endpoint";
 import SqlRoute from "./routes/sql";
 import LoginRoute from "./routes/login";
+import { useT } from "./i18n";
 import "./styles.css";
 
 // EVERY SCREEN IS IN THE FIRST DOWNLOAD, on purpose. A screen's title, its
@@ -30,6 +31,12 @@ import "./styles.css";
 // Data stays fresh for 5s: moving between screens does not refetch what was
 // just read, and a screen that comes back shows the old data while it renews.
 const client = new QueryClient({ defaultOptions: { queries: { staleTime: 5_000, retry: 1 } } });
+
+// The catch-all route: a path no screen answers.
+function NotFound() {
+  const { t } = useT();
+  return <p>{t("app.not_found")}</p>;
+}
 
 await boot(client);
 
@@ -60,7 +67,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="data/target" element={<CatalogRoute />} />
             <Route path="data/endpoints" element={<EndpointsRoute />} />
             <Route path="data/endpoints/:api/:name" element={<EndpointRoute />} />
-            <Route path="*" element={<p>Not found.</p>} />
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
       </BrowserRouter>

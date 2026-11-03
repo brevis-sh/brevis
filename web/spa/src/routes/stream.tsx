@@ -111,7 +111,7 @@ function Overview({ path, v, ghost }: { path: string; v: Stream; ghost: boolean 
           <ol className="space-y-2 px-4 py-3 text-[12.5px]">
             <li>
               <span className="inline-flex items-center gap-1.5 rounded-card border border-line px-2 py-0.5 font-mono text-ink">
-                <span className="font-sans text-[10.5px] tracking-[0.08em] text-muted uppercase">stream</span>
+                <span className="font-sans text-[10.5px] tracking-[0.08em] text-muted uppercase">{t("config.section.stream")}</span>
                 {path}
               </span>
             </li>

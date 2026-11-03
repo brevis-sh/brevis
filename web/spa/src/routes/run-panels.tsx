@@ -105,7 +105,7 @@ function StepsTable({ run }: { run: Run | undefined }) {
                         <span role="cell" />
                         <span role="cell" />
                         <span role="cell" className="font-mono text-[12px] text-muted">
-                          {g.ok}/{g.total} ok
+                          {t("run.steps.ok", { ok: g.ok, total: g.total })}
                         </span>
                       </summary>
                       <div className="bg-canvas/40">
@@ -162,7 +162,7 @@ function StageItem({ st }: { st: Stage }) {
 
 // A one-step run draws its step as a line where a larger run has its graph.
 function StepLine({ run }: { run: Run }) {
-  const { t } = useT();
+  const { t, n } = useT();
   const { duration } = useFormat();
   const s = run.step;
   if (!s) return null;
@@ -185,7 +185,7 @@ function StepLine({ run }: { run: Run }) {
           {s.sdk && <span className={chip}>SDK {s.sdk}</span>}
           {s.status !== "" && (
             <span className="ml-auto shrink-0 text-[11.5px] text-faint">
-              {s.published > 0 && `${s.published} ${s.published === 1 ? "value" : "values"} published · `}
+              {s.published > 0 && `${n("graph.published", s.published)} · `}
               {s.durationMs > 0 ? duration(s.durationMs) : "—"}
             </span>
           )}

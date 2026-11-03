@@ -162,7 +162,7 @@ const ghostOf = (s: Shape): Catalog => ({ ...s, kinds: Array.from({ length: s.ki
 
 // The bar (see ui/filters). Static: the controls are drawn at once from the last shape seen; only the counts wait.
 function CatalogBar({ filter, data, ghost }: { filter: Filter; data: Catalog; ghost: boolean }) {
-  const { t } = useT();
+  const { t, n } = useT();
   const { number } = useFormat();
   const logoTitle = useLogoTitle();
   const navigate = useNavigate();
@@ -201,7 +201,7 @@ function CatalogBar({ filter, data, ghost }: { filter: Filter; data: Catalog; gh
       chips={chips}
       clearable={filter.any}
       onClearAll={() => go({ status: "", kind: "", legacy: "", q: "" })}
-      count={<ResultCount pending={ghost} shown={data.shown} tail={<>/ {number(data.total)}{q && <> {t("workflows.count.search", { q })}</>}</>} />}
+      count={<ResultCount pending={ghost} shown={data.shown} tail={<>{n("catalog.count", data.total, { count: number(data.total) })}{q && <> {t("workflows.count.search", { q })}</>}</>} />}
     />
   );
 }
