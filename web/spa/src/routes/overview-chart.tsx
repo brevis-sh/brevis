@@ -66,7 +66,7 @@ export function RunsChart({ buckets, grain }: { buckets?: Bucket[]; grain: "hour
 
   return (
     <>
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <svg viewBox={`0 0 ${W} ${H}`} className="h-[240px] w-full min-w-[560px]" role="img" aria-label={title}>
           {[0, 1, 2, 3, 4].map((i) => {
             const y = util - Math.floor((util * i) / 4);
