@@ -9,6 +9,7 @@ import { Icon } from "../ui/icon";
 import { btn, Empty, Lead, MethodPill, PageHead, linkUnderline, Page } from "../ui/kit";
 import { Logo, useLogoTitle } from "../ui/logo";
 import { FilterBar, ResultCount, SearchField, useUrlSearch, type Chip, type FilterDef } from "../ui/filters";
+import { StreamRowRate, StreamsStrip } from "../ui/metrics/streams";
 import { recall, remember, useSeen } from "../ui/seen";
 import { Status } from "../ui/status";
 import { Row, Table, Td, Th } from "../ui/table";
@@ -107,10 +108,13 @@ function Rows({ rows, gateway }: { rows: StreamRow[]; gateway: boolean }) {
         return (
           <Row key={s.href} onOpen={() => navigate(s.href)}>
             <Td edge="first" cls="stl-fill">
-              <Link to={s.href} className="stl-link inline-flex items-center gap-2 font-mono text-[13px]">
-                <MethodPill method="POST" />
-                <span className="stl-path">{s.path}</span>
-              </Link>
+              <div className="mx-line">
+                <Link to={s.href} className="stl-link inline-flex items-center gap-2 font-mono text-[13px]">
+                  <MethodPill method="POST" />
+                  <span className="stl-path">{s.path}</span>
+                </Link>
+                <StreamRowRate gateway={s.gateway} path={s.path} />
+              </div>
               <p className="stl-sub" title={s.note ? `${s.gateway} — ${s.note.replaceAll("`", "")}` : s.gateway}>
                 {gateway && (
                   <>
@@ -216,6 +220,7 @@ function StreamsData({ filter }: { filter: Filter }) {
   const oneGateway = v.gateways === 1 ? v.rows[0]?.gateway : "";
   return (
     <>
+      {v.total > 0 && <StreamsStrip />}
       {v.total > 0 && (
         <div aria-hidden={ghost || undefined} className={`stl-sum ${ghost ? "sk-ghost" : ""}`}>
           <span>{n("streams.summary.streams", v.total)}</span>

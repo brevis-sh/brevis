@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router";
+import { EndpointRowRate, EndpointsStrip } from "../ui/metrics/endpoints";
 import { useData } from "../api/live";
 import { useFormat, useT, type Vars } from "../i18n";
 import { useSince } from "../ui/format";
@@ -140,10 +141,13 @@ function Rows({ rows, now }: { rows: EndpointRow[]; now: string }) {
         return (
           <Row key={r.api + "/" + r.name} onOpen={() => navigate(href)}>
             <Td edge="first">
-              <Link to={href} className="inline-flex items-center gap-2 font-mono text-[13px]">
-                <MethodPill method="GET" />
-                <span className="font-medium text-ink">{r.path}</span>
-              </Link>
+              <div className="mx-line">
+                <Link to={href} className="inline-flex min-w-0 items-center gap-2 font-mono text-[13px]">
+                  <MethodPill method="GET" />
+                  <span className="truncate font-medium text-ink">{r.path}</span>
+                </Link>
+                <EndpointRowRate api={r.api} name={r.name} />
+              </div>
               {r.about && (
                 <p className="mt-1 max-w-[22rem] truncate text-[12px] text-muted" title={r.about}>
                   {r.about}
@@ -301,6 +305,7 @@ function Endpoints({ filter }: { filter: Filter }) {
   const none = d.rows.length === 0;
   return (
     <>
+      {d.total > 0 && <EndpointsStrip />}
       <Summary d={d} ghost={ghost} />
       {d.total > 0 && (
         <EndpointsBar filter={filter} d={d} ghost={ghost} />

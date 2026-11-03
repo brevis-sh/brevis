@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { StreamPanel } from "../ui/metrics/streams";
 import { Link, useParams } from "react-router";
 import { ApiError } from "../api/client";
 import { useData } from "../api/live";
@@ -392,6 +393,9 @@ export default function StreamRoute() {
       )}
       <div aria-hidden={ghost || undefined} className={`mb-4 max-w-3xl text-[13.5px] text-muted ${gh(ghost)}`}>{v.lede}</div>
       <Strip gateway={gateway} v={v} ghost={ghost} />
+      <div className="mb-4">
+        <StreamPanel gateway={gateway} path={path} />
+      </div>
       <HashTabs
         id="stream-tabs"
         label={t("streams.page.tabs")}

@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+import { EndpointPanel } from "../ui/metrics/endpoints";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { ApiError, postJSON } from "../api/client";
@@ -483,7 +484,7 @@ function TryIt({ d, values, setValues, ghost }: { d: Endpoint; values: Record<st
   );
 }
 
-function EndpointPage({ api, d, ghost }: { api: string; d: Endpoint; ghost: boolean }) {
+function EndpointPage({ api, name, d, ghost }: { api: string; name: string; d: Endpoint; ghost: boolean }) {
   const { t } = useT();
   // Try it starts from each parameter's default; the curl follows what is typed.
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(d.form.map((f) => [f.name, f.value])));
@@ -520,6 +521,7 @@ function EndpointPage({ api, d, ghost }: { api: string; d: Endpoint; ghost: bool
               </>
             )}
           </div>
+          <EndpointPanel api={api} name={name} />
           <LineagePanel d={d} ghost={ghost} />
           <CachePanel c={d.cache} ghost={ghost} />
           <ParamsPanel d={d} ghost={ghost} />
@@ -555,5 +557,5 @@ export default function EndpointRoute() {
       </Page>
     );
   // The key resets Try it when another endpoint opens; a poll keeps what was typed.
-  return <EndpointPage key={q.data ? endpointHref(q.data) : "loading"} api={api} d={q.data ?? GHOST} ghost={!q.data} />;
+  return <EndpointPage key={q.data ? endpointHref(q.data) : "loading"} api={api} name={name} d={q.data ?? GHOST} ghost={!q.data} />;
 }
