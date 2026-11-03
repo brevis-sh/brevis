@@ -1,0 +1,39 @@
+.rt { container: rt / inline-size; }
+.rt-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.rt-scroll { overflow-x: auto; }
+.rt table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.rt th { padding: .5rem .7rem; text-align: left; font-size: .72rem; font-weight: 500; color: var(--muted); white-space: nowrap; border-bottom: 1px solid var(--line); }
+.rt td { padding: .6rem .7rem; vertical-align: top; border-bottom: 1px solid var(--line); }
+.rt tbody tr:hover { background: var(--card); }
+.rt .num { text-align: right; }
+.rt td.c-small { font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rt .wf { color: inherit; font-weight: 500; overflow-wrap: anywhere; }
+.rt-bar { display: block; width: 5rem; height: 4px; margin-top: .3rem; border-radius: 2px; background: color-mix(in srgb, var(--fg) 10%, transparent); }
+.rt-bar > span { display: block; height: 100%; border-radius: 2px; background: var(--muted); }
+.rt-err { font: inherit; font-size: .72rem; padding: .2rem .6rem; color: var(--st-failed); background: color-mix(in srgb, var(--st-failed) 6%, transparent); border: 1px solid color-mix(in srgb, var(--st-failed) 35%, transparent); border-radius: .4rem; cursor: pointer; }
+.rt a:focus-visible, .rt-err:focus-visible { outline: 2px solid var(--st-running); outline-offset: 2px; }
+.rt-dialog { width: min(42rem, 92vw); padding: 0; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: .6rem; }
+.rt-dialog::backdrop { background: rgb(0 0 0 / .4); }
+.rt-dialog header { display: flex; justify-content: space-between; align-items: start; gap: 1rem; padding: .9rem 1.1rem; border-bottom: 1px solid var(--line); }
+.rt-dialog header p { margin: 0; }
+.rt-dialog .body { padding: 1rem 1.1rem; display: grid; gap: .75rem; }
+.rt-dialog pre { margin: 0; max-height: 50vh; overflow: auto; padding: .75rem; white-space: pre-wrap; font-size: .75rem; color: var(--st-failed); background: color-mix(in srgb, var(--st-failed) 6%, transparent); border-radius: .4rem; }
+.rt-dialog button { font: inherit; font-size: .78rem; padding: .25rem .7rem; color: var(--muted); background: none; border: 1px solid var(--line); border-radius: .4rem; cursor: pointer; }
+
+/* Under 48rem of ITS OWN width (the table sits in a column on some screens) each row is a card. */
+@container rt (max-width: 47.99rem) {
+  .rt table, .rt tbody { display: block; }
+  .rt thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .rt tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: "s s c" "w w w" "t sl d" "e e e"; gap: .3rem .6rem; padding: .7rem .2rem; border-bottom: 1px solid var(--line); }
+  .rt td { display: block; padding: 0; border: 0; min-width: 0; }
+  .rt td.c-state { grid-area: s; }
+  .rt td.c-created { grid-area: c; text-align: right; }
+  .rt td.c-wf { grid-area: w; }
+  .rt td.c-trig { grid-area: t; }
+  .rt td.c-slot { grid-area: sl; }
+  .rt td.c-dur { grid-area: d; }
+  .rt td.c-err { grid-area: e; }
+  .rt td.c-err:empty { display: none; }
+  .rt td[data-label]::before { content: attr(data-label); display: block; font-size: .65rem; color: var(--muted); opacity: .8; }
+  .rt tbody tr:hover { background: none; }
+}

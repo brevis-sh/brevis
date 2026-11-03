@@ -52,6 +52,7 @@ function Nav() {
         {t("nav.overview")}
       </NavLink>
       <NavLink to="/workflows">{t("nav.workflows")}</NavLink>
+      <NavLink to="/runs">{t("nav.runs")}</NavLink>
       <NavLink to="/projects">{t("nav.projects")}</NavLink>
       {sql && <NavLink to="/sql">{t("nav.sql")}</NavLink>}
       <div role="group" aria-label={t("nav.group.ingest")} className="nav-group">

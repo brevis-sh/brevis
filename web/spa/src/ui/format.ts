@@ -1,0 +1,46 @@
+import { useSession } from "../api/session";
+import { useFormat, useT } from "../i18n";
+
+/** A wait rounded to what a person plans by (the server's untilText): "<1m", "9h 28m", "3d". */
+export function until(ms: number): string {
+  const min = Math.floor(ms / 60_000);
+  if (ms < 60_000) return "<1m";
+  if (ms < 3_600_000) return `${min}m`;
+  if (ms < 48 * 3_600_000) {
+    const h = Math.floor(min / 60);
+    return min % 60 > 0 ? `${h}h ${min % 60}m` : `${h}h`;
+  }
+  return `${Math.floor(ms / 86_400_000)}d`;
+}
+
+/** Number, percentage and duration formatters in the reader's language. */
+export function useNumbers() {
+  const { lang } = useSession();
+  const one = new Intl.NumberFormat(lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return {
+    /** part of whole as "87.5%" */
+    percent: (part: number, whole: number) => `${one.format((100 * part) / whole)}%`,
+    /** A duration as the server's Elapsed writes it: 340ms, 1.5s, 2m 05s, 1h 02m. */
+    elapsed: (ms: number) => {
+      if (ms < 1000) return `${Math.round(ms)}ms`;
+      if (ms < 60_000) return `${one.format(ms / 1000)}s`;
+      const s = Math.floor(ms / 1000);
+      if (ms < 3_600_000) return `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s`;
+      return `${Math.floor(s / 3600)}h ${String(Math.floor(s / 60) % 60).padStart(2, "0")}m`;
+    },
+  };
+}
+
+/** "3 min ago" up to a day, the date after that (the server's i18n.Since). */
+export function useAgo() {
+  const { t } = useT();
+  const f = useFormat();
+  return (iso: string, now = Date.now()) => {
+    const d = now - new Date(iso).getTime();
+    const span = (ms: number) => (ms < 3_600_000 ? `${Math.floor(ms / 60_000)} min` : ms < 86_400_000 ? `${Math.floor(ms / 3_600_000)}h` : `${Math.floor(ms / 86_400_000)}d`);
+    if (d < 0) return t("time.in", { span: span(-d) });
+    if (d < 60_000) return t("time.now");
+    if (d < 86_400_000) return t("time.ago", { span: span(d) });
+    return f.date(iso);
+  };
+}
