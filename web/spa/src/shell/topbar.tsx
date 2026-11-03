@@ -3,7 +3,7 @@ import { useConfig } from "../api/session";
 import { useT } from "../i18n";
 import { Icon } from "../ui/icon";
 import { groups, metaFor, projectsSection, useCurrentCrumb } from "./nav";
-import { setDrawer } from "./prefs";
+import { setDrawer, useDrawerOpen } from "./prefs";
 
 // Where the page is: the section's group, the section, and the page's own name
 // when it is deeper than the section. The section links back to its list.
@@ -12,6 +12,7 @@ export function Topbar() {
   const { sql } = useConfig();
   const { pathname } = useLocation();
   const crumb = useCurrentCrumb();
+  const drawer = useDrawerOpen();
   const meta = metaFor(pathname);
 
   let group = "";
@@ -33,6 +34,7 @@ export function Topbar() {
         type="button"
         data-drawer-open
         aria-controls="app-sidebar"
+        aria-expanded={drawer}
         aria-label={t("shell.nav_open")}
         onClick={() => setDrawer(true)}
         className="flex h-8 w-8 items-center justify-center rounded-card text-muted transition-colors hover:bg-surface-2 hover:text-ink min-[860px]:hidden"
