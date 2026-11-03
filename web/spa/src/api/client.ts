@@ -4,6 +4,8 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    /** The parsed JSON error body ({"error", "kind", ...}), when the server sent one. */
+    readonly body?: Record<string, string>,
   ) {
     super(message);
   }
@@ -20,5 +22,25 @@ export async function getJSON<T>(path: string, signal?: AbortSignal): Promise<T>
     throw new ApiError(401, `${path}: no session`);
   }
   if (!res.ok) throw new ApiError(res.status, `${path}: HTTP ${res.status}`);
+  return (await res.json()) as T;
+}
+
+/** POST a JSON body; resolves undefined on 204. A failure carries the server's {"error"} as the message. */
+export async function postJSON<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T | undefined> {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(body),
+    signal,
+  });
+  if (res.redirected && new URL(res.url).pathname === "/login") {
+    location.assign(`/login?next=${encodeURIComponent(location.pathname + location.search)}`);
+    throw new ApiError(401, `${path}: no session`);
+  }
+  if (res.status === 204) return undefined;
+  if (!res.ok) {
+    const parsed = (await res.json().catch(() => undefined)) as Record<string, string> | undefined;
+    throw new ApiError(res.status, parsed?.error ?? `${path}: HTTP ${res.status}`, parsed);
+  }
   return (await res.json()) as T;
 }

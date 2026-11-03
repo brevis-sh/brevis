@@ -1,11 +1,14 @@
-import { StrictMode } from "react";
+import { StrictMode, Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Shell } from "./shell";
 import HomeRoute from "./routes/home";
 import ProjectsRoute from "./routes/projects";
+import { Skeleton } from "./ui/skeleton";
 import "./styles.css";
+
+const SqlRoute = lazy(() => import("./routes/sql"));
 
 // Data stays fresh for 5s: moving between screens does not refetch what was
 // just read, and a screen that comes back shows the old data while it renews.
@@ -19,6 +22,7 @@ createRoot(document.getElementById("root")!).render(
           <Route element={<Shell />}>
             <Route index element={<HomeRoute />} />
             <Route path="projects" element={<ProjectsRoute />} />
+            <Route path="sql" element={<Suspense fallback={<Skeleton h="60vh" />}><SqlRoute /></Suspense>} />
             <Route path="*" element={<p>Not found.</p>} />
           </Route>
         </Routes>
