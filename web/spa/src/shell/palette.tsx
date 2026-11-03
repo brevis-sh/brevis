@@ -110,7 +110,7 @@ export function Palette() {
     openDialog(null);
     if (it.action === "toggle-theme") return toggleTheme();
     if (it.action?.startsWith("set-lang:")) return void chooseLang(it.action.slice("set-lang:".length));
-    if (beside) window.open(`/app${it.href}`, "_blank");
+    if (beside) window.open(it.href, "_blank");
     else navigate(it.href);
   }
 

@@ -45,14 +45,12 @@ jobs:
       - name: Tests
         run: go test ./...
 
-      # The CSS and the _templ.go files are embedded in the binary and go in
+      # The CSS and the React build are embedded in the binary and go in
       # versioned; if somebody forgets to run `make generate`, the image ships
       # with the old UI.
       #
-      # This step used to run only templ, despite the comment claiming it covered
-      # `make generate` -- and that is the gap a stale app.css came through into
-      # the 0.4.0 image. The script checks BOTH generators, with both versions
-      # pinned.
+      # A stale app.css once came through into the 0.4.0 image; the script checks
+      # both generated artifacts, with Tailwind pinned.
       - name: Check the generated artifacts
         run: ./.github/scripts/generated-check.sh
 

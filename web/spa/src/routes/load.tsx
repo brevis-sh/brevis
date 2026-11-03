@@ -255,7 +255,7 @@ function Actions({ workflow, d, ghost }: { workflow: string; d: LoadDetail | nul
   const { t } = useT();
   const here = useLocation();
   // Where the run comes back to: this address, as the server knows it.
-  const back = here.pathname.replace(/^\/app(?=\/)/, "") + here.search;
+  const back = here.pathname + here.search;
   return (
     <>
       {d && d.query !== "" && (

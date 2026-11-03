@@ -50,21 +50,21 @@ describe("getJSON", () => {
   });
 
   it("the Gate's 401 {error: sign in} sends the browser to the login and back to this screen", async () => {
-    here("/app/runs");
+    here("/runs");
     stub(reply(401, { error: "sign in" }));
     await expect(getJSON("/api/x")).rejects.toMatchObject({ status: 401 });
-    expect(replace).toHaveBeenCalledWith("/app/login?next=%2Fapp%2Fruns%3Fq%3D1");
+    expect(replace).toHaveBeenCalledWith("/login?next=%2Fruns%3Fq%3D1");
   });
 
   it("a 401 that is NOT the Gate's is that screen's error, not a sign-out", async () => {
-    here("/app/runs");
+    here("/runs");
     stub(reply(401, { error: "the warehouse refused the token" }));
     await expect(getJSON("/api/x")).rejects.toMatchObject({ status: 401, message: "the warehouse refused the token" });
     expect(replace).not.toHaveBeenCalled();
   });
 
   it("on the login screen itself there is nowhere to go: the caller handles the 401", async () => {
-    here("/app/login");
+    here("/login");
     stub(reply(401, { error: "sign in" }));
     await expect(getJSON("/api/session")).rejects.toMatchObject({ status: 401 });
     expect(replace).not.toHaveBeenCalled();

@@ -37,7 +37,7 @@ const drawer = (page: Page) => page.locator("dialog#load");
 
 test("a deep link draws the list with the drawer open over it", async ({ page }) => {
   await mock(page);
-  await page.goto("/app/ingest/loads/orders/load_orders");
+  await page.goto("/ingest/loads/orders/load_orders");
   await expect(drawer(page)).toBeVisible();
   await expect(drawer(page).locator("#load-title")).toHaveText("load_orders");
   await expect(drawer(page).getByText("postgres://warehouse/public/orders")).toBeVisible();
@@ -48,23 +48,23 @@ test("a deep link draws the list with the drawer open over it", async ({ page })
 test("Back closes a drawer a row opened, and the list keeps its filter", async ({ page }) => {
   const seen: string[] = [];
   await mock(page, seen);
-  await page.goto("/app/ingest/loads?status=on_time");
+  await page.goto("/ingest/loads?status=on_time");
   await loaded(page);
   seen.length = 0;
   await page.locator("#load-rows tbody tr").nth(1).click();
   await expect(drawer(page)).toBeVisible();
-  await expect(page).toHaveURL(/\/app\/ingest\/loads\/users\/load_users\?status=on_time$/);
+  await expect(page).toHaveURL(/\/ingest\/loads\/users\/load_users\?status=on_time$/);
   // One request for the detail, none for the list behind it.
   await expect(drawer(page).getByText("postgres://warehouse/public/users")).toBeVisible();
   expect(seen).toEqual(["/api/ingest/loads/users/load_users"]);
   await page.goBack();
   await expect(drawer(page)).toHaveCount(0);
-  await expect(page).toHaveURL(/\/app\/ingest\/loads\?status=on_time$/);
+  await expect(page).toHaveURL(/\/ingest\/loads\?status=on_time$/);
 });
 
 test("Escape closes the drawer and the focus goes back to the row", async ({ page }) => {
   await mock(page);
-  await page.goto("/app/ingest/loads");
+  await page.goto("/ingest/loads");
   await loaded(page);
   const link = page.locator("#load-rows a[data-load='users/load_users']");
   await link.focus();
@@ -72,7 +72,7 @@ test("Escape closes the drawer and the focus goes back to the row", async ({ pag
   await expect(drawer(page)).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(drawer(page)).toHaveCount(0);
-  await expect(page).toHaveURL(/\/app\/ingest\/loads$/);
+  await expect(page).toHaveURL(/\/ingest\/loads$/);
   await expect(link).toBeFocused();
   // Opened by a click on the row, closed by the backdrop: the row's link still gets the focus.
   await page.locator("#load-rows tbody tr").nth(1).click();
@@ -84,7 +84,7 @@ test("Escape closes the drawer and the focus goes back to the row", async ({ pag
 
 test("opening another load swaps the content of the same dialog", async ({ page }) => {
   await mock(page);
-  await page.goto("/app/ingest/loads/orders/load_orders");
+  await page.goto("/ingest/loads/orders/load_orders");
   await expect(drawer(page).getByText("postgres://warehouse/public/orders")).toBeVisible();
   await drawer(page).evaluate((d) => ((window as unknown as { __d: Element }).__d = d));
   // The page behind a modal cannot be pressed; the event is what a history jump or a shortcut would do.
@@ -96,7 +96,7 @@ test("opening another load swaps the content of the same dialog", async ({ page 
 
 test("a step with several destinations asks which, inside the drawer", async ({ page }) => {
   await mock(page);
-  await page.goto("/app/ingest/loads/fx/load_fx");
+  await page.goto("/ingest/loads/fx/load_fx");
   const choices = drawer(page).locator("a[href*='target=']");
   await expect(choices).toHaveCount(2);
   await choices.nth(1).click();
@@ -108,7 +108,7 @@ test("a step with several destinations asks which, inside the drawer", async ({ 
 
 test("a load that writes nothing is the list with the note", async ({ page }) => {
   await mock(page);
-  await page.goto("/app/ingest/loads/nope/gone");
+  await page.goto("/ingest/loads/nope/gone");
   await expect(page.getByText("nope · gone").first()).toBeVisible();
   await expect(drawer(page)).toHaveCount(0);
   await expect(page.locator("#load-rows tbody tr")).toHaveCount(4);
@@ -123,7 +123,7 @@ test("opening the drawer shifts nothing on the page behind it", async ({ page })
       for (const e of l.getEntries() as unknown as { hadRecentInput: boolean; value: number }[]) if (!e.hadRecentInput) w.__cls += e.value;
     }).observe({ type: "layout-shift", buffered: true });
   });
-  await page.goto("/app/ingest/loads");
+  await page.goto("/ingest/loads");
   await loaded(page);
   await page.waitForTimeout(300);
   const before = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);

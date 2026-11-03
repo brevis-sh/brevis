@@ -84,62 +84,6 @@ func groups(ctx context.Context) []group {
 	return out
 }
 
-// projectsPlace is the page the switcher opens. Not a section: see groups.
-func projectsPlace(ctx context.Context) section {
-	return place(ctx, "/projects", "projects", "folder", "")
-}
-
-// goKeys are the sections that have a letter, in the sidebar's order: what the
-// shortcuts modal lists. The letters are the handoff's (o, w, e for runs --
-// "execuções" --, s, t for streams -- "tempo real"), kept so the design and
-// the console teach the same keys; the catalog's d, Models' m and
-// Connections' c arrive with their screens.
-func goKeys(ctx context.Context) []section {
-	var out []section
-	for _, g := range groups(ctx) {
-		for _, s := range g.Sections {
-			if s.GoKey != "" {
-				out = append(out, s)
-			}
-		}
-	}
-	return out
-}
-
-// crumb is where a page sits: its section's group, the section, and the
-// page's own title when it is not the section itself (a workflow's name under
-// Workflows). Empty when the page names no section, which only the login
-// screen does.
-type crumb struct {
-	Group   string
-	Section section
-	Title   string
-}
-
-func where(ctx context.Context, active, title string) (crumb, bool) {
-	// The projects page is opened from the switcher, not from a section, so
-	// it has no group to sit under: its breadcrumb is its own name.
-	if projects := projectsPlace(ctx); active == projects.Key {
-		c := crumb{Section: projects}
-		if title != projects.Name && title != projects.en {
-			c.Title = title
-		}
-		return c, true
-	}
-	for _, g := range groups(ctx) {
-		for _, s := range g.Sections {
-			if s.Key == active {
-				c := crumb{Group: g.Name, Section: s}
-				if title != s.Name && title != s.en {
-					c.Title = title
-				}
-				return c, true
-			}
-		}
-	}
-	return crumb{}, false
-}
-
 // Section is one place in the sidebar, with the group it sits in.
 type Section struct {
 	Group, Href, Name, Icon string
@@ -156,13 +100,4 @@ func Sections(ctx context.Context) []Section {
 		}
 	}
 	return out
-}
-
-// crumbTitle is what the breadcrumb ends on: the page's Crumb when it names
-// something more precise than its title, the title otherwise.
-func crumbTitle(p Page) string {
-	if p.Crumb != "" {
-		return p.Crumb
-	}
-	return p.Title
 }

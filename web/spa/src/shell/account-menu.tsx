@@ -51,7 +51,7 @@ async function signOut() {
     return;
   }
   clearSeen();
-  location.assign("/app/login");
+  location.assign("/login");
 }
 
 function ThemeChoice() {

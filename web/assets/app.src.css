@@ -1,17 +1,21 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
 
-/* Where to look for classes. It points at the .templ files (the source) and at
-   the generated _templ.go ones: Tailwind v4 detects them on its own in most
-   cases, but generated files tend to fall outside the default heuristics, and an
-   undetected class disappears from the CSS with no warning. */
+/* Where to look for classes: the React app's sources, which write the utility
+   classes this sheet provides (its own styles.css holds only its aliases), and the
+   Go that writes class names (status colors, bars). The app's build output and
+   tests are NOT read: dist/ is generated after this sheet, so reading it would make
+   the sheet depend on its own consumer -- the generated-artifacts check failed on
+   exactly that. Automatic detection is OFF (`source(none)`): it reads every file in
+   the repository, prose included, so a changelog entry could change this sheet. */
+@source "../spa/src";
+@source "../spa/index.html";
 @source "../layouts";
 @source "../pages";
 @source "../components";
-/* The React app has its own styles (web/spa/src/styles.css) and builds its own
-   CSS. Left in, Tailwind's automatic detection reads its sources and its dist/
-   and adds their words to this sheet: the generated-artifacts check failed on
-   exactly that. */
-@source not "../spa";
+/* Classes the app writes that this sheet never had: they were no-ops while the
+   sheet was built from the old pages, and the move to / is not the place to change
+   how those places draw. Drop one from here when the screen is meant to have it. */
+@source not inline("w-0 min-w-full flex-nowrap ease-out size-4 shadow disabled:opacity-60 aria-selected:shadow-[inset_0_-2px_0_var(--color-ink)]");
 
 /* ---------------------------------------------------------------------------
    Typography — served from the binary itself, not from Google Fonts.
@@ -1324,7 +1328,7 @@ table.ct > tbody > tr > td {
 }
 
 /* ---------------------------------------------------------------------------
-   OVERLAYS (web/components/overlays.templ)
+   OVERLAYS
 
    A drawer slides in from the right; a modal sits a little above the middle.
    Both are native <dialog>s, so the backdrop is ::backdrop and the page
@@ -1576,7 +1580,7 @@ tr[data-paused] > td[data-fade] {
 }
 
 /* ---------------------------------------------------------------------------
-   LOGOS (web/components/logo.templ)
+   LOGOS
 
    A brand's mark on a quiet tile: the raised surface on the dark theme,
    white on the light one, where most marks were drawn to sit. The mark takes

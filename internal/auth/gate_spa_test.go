@@ -23,7 +23,7 @@ func spaGate(t *testing.T) (*auth.Gate, *[]string) {
 func TestOnlyTheLoginScreensPathsAreOpenWithNoSession(t *testing.T) {
 	gate, arrived := spaGate(t)
 	open := map[string]string{
-		"/app/login": "GET", "/app/assets/index-abc.js": "GET", "/app/assets/x/y.css": "GET",
+		"/login": "GET", "/static/index-abc.js": "GET", "/static/x/y.css": "GET", "/assets/app.css": "GET",
 		"/api/config": "GET", "/api/messages": "GET", "/api/login": "POST", "/api/logout": "POST",
 	}
 	for p, m := range open {
@@ -35,7 +35,7 @@ func TestOnlyTheLoginScreensPathsAreOpenWithNoSession(t *testing.T) {
 
 	*arrived = nil
 	for _, p := range []string{
-		"/app/", "/app", "/app/runs", "/app/login/x", "/app/loginx", "/app/assets", "/app/index.html", "/app/../api/session",
+		"/", "/runs", "/login/x", "/loginx", "/static", "/index.html", "/logout", "/app", "/app/login", "/app/assets/x.js",
 		"/api/session", "/api/loginx", "/api/config/x", "/api/projects", "/api/release", "/api/runs/1/graph",
 	} {
 		rec := httptest.NewRecorder()
@@ -64,13 +64,13 @@ func TestAnAPIRequestWithNoSessionIs401JSONForEveryMethod(t *testing.T) {
 	}
 }
 
-func TestAnAppPageWithNoSessionGoesToTheAppLoginAndOtherPagesToTheOldOne(t *testing.T) {
+func TestAPageWithNoSessionGoesToTheLoginAndComesBackThroughNext(t *testing.T) {
 	gate, _ := spaGate(t)
 	for p, want := range map[string]string{
-		"/app/runs?state=failed": "/app/login?next=%2Fapp%2Fruns%3Fstate%3Dfailed",
-		"/app/":                  "/app/login?next=%2Fapp%2F",
-		"/app":                   "/app/login?next=%2Fapp",
-		"/runs?page=2":           "/login?next=%2Fruns%3Fpage%3D2",
+		"/runs?state=failed&page=2": "/login?next=%2Fruns%3Fstate%3Dfailed%26page%3D2",
+		"/":                         "/login",
+		"/ingest/streams/gw/v1/a.b": "/login?next=%2Fingest%2Fstreams%2Fgw%2Fv1%2Fa.b",
+		"/app/runs":                 "/login?next=%2Fapp%2Fruns",
 	} {
 		rec := httptest.NewRecorder()
 		gate.ServeHTTP(rec, httptest.NewRequest("GET", p, nil))

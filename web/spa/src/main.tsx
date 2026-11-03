@@ -43,7 +43,7 @@ await boot(client);
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={client}>
-      <BrowserRouter basename="/app">
+      <BrowserRouter>
         <Routes>
           {/* Outside the Shell: its own minimal layout, and the one screen an anonymous visitor may open. */}
           <Route path="login" element={<LoginRoute />} />

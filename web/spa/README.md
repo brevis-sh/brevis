@@ -1,6 +1,6 @@
 # The console app (web/spa)
 
-React 19 + React Router + TanStack Query, built by Vite and served by the Go binary under `/app/`.
+React 19 + React Router + TanStack Query, built by Vite and served by the Go binary at `/`.
 
 ```bash
 cd web/spa
@@ -11,7 +11,7 @@ npm ci            # exactly the lockfile
 
 ```bash
 make up                 # from the repo root: the API on :8080 (the dev server proxies to it)
-npm run dev             # http://localhost:5173/app/
+npm run dev             # http://localhost:5173/
 BREVIS_API=http://localhost:8098 npm run dev   # against another API
 ```
 

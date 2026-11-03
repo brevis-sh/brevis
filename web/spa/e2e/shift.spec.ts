@@ -56,7 +56,7 @@ test("loading a screen shifts nothing (CLS), and a returning visit's skeleton is
     // A workflow's detail page draws one fixed-size skeleton whatever the workflow has (a 4-step one is
     // ~200 px shorter once loaded). Nothing sits below it so nothing shifts (CLS above holds); the height
     // assertion covers the screens that remember their shape.
-    const fixedSkeleton = /\/app\/workflows\/[^/]+$/.test(route);
+    const fixedSkeleton = /\/workflows\/[^/]+$/.test(route);
     if (!fixedSkeleton && Math.abs(done - skeleton) > HEIGHT_DELTA_MAX) report.push(`${route}: skeleton ${skeleton}px -> loaded ${done}px`);
     await ctx.close();
   }));
@@ -65,7 +65,7 @@ test("loading a screen shifts nothing (CLS), and a returning visit's skeleton is
 
 test("a change on the server refetches without bringing a skeleton back", async ({ browser, seed }) => {
   const ctx = await browser.newContext();
-  const watched = ["/app/", "/app/runs", "/app/workflows"];
+  const watched = ["/", "/runs", "/workflows"];
   const pages = await Promise.all(watched.map(async (route) => {
     const page = await ctx.newPage();
     await page.goto(route);
@@ -96,7 +96,7 @@ test("a change on the server refetches without bringing a skeleton back", async 
 // API's natural speed: a 1 s artificial delay exposes finer mismatches of the OTHER placeholders (an 11px
 // difference of the meta strip for a manual-only workflow) that a real answer never shows.
 test("a one-step workflow opened from the list does not shift when it loads", async ({ page }) => {
-  await page.goto("/app/workflows");
+  await page.goto("/workflows");
   await loaded(page);
   await page.addInitScript(() => undefined); // (a fresh navigation below is client-side: no reload)
   await page.evaluate(() => {

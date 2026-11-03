@@ -17,7 +17,7 @@ export async function signIn(user: string, password: string, next: string): Prom
       body: JSON.stringify({ user, password, next }),
     });
     const body = (await res.json().catch(() => ({}))) as { next?: string; error?: string; retryAfter?: number };
-    if (res.ok) return { ok: true, next: body.next ?? "/app/" };
+    if (res.ok) return { ok: true, next: body.next ?? "/" };
     return { ok: false, status: res.status, error: body.error ?? "", retryAfter: body.retryAfter };
   } catch {
     return { ok: false, status: 0, error: "" };
@@ -26,6 +26,7 @@ export async function signIn(user: string, password: string, next: string): Prom
 
 /** Where a post-login destination may go: a same-origin path, never `//host` or a backslash (the server's guard, again). */
 export function safeNext(raw: string | null | undefined): string {
-  if (!raw || !/^\/(?![/\\])/.test(raw) || /[\u0000-\u001f\u007f]/.test(raw)) return "/app/";
-  return raw;
+  if (!raw || !/^\/(?![/\\])/.test(raw) || /[\u0000-\u001f\u007f]/.test(raw)) return "/";
+  // A bookmark from when the console lived under /app/ still lands on the right screen.
+  return raw.replace(/^\/app(?=[/?#]|$)/, "") || "/";
 }

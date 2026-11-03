@@ -2,13 +2,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// The SPA is served by the Go binary under /app/ (web/spa/spa.go embeds dist/),
-// so every URL the build writes starts there.
+// The SPA is served by the Go binary at / (web/spa/spa.go embeds dist/). Its hashed files go
+// under /static/ because /assets/ is the engine's own (app.css, fonts, logo).
 // BREVIS_API points the dev server at another API (a second one on its own port).
 const api = process.env.BREVIS_API ?? "http://localhost:8080";
 
 export default defineConfig({
-  base: "/app/",
+  base: "/",
   plugins: [
     react(),
     {
@@ -22,7 +22,7 @@ export default defineConfig({
   // Unit tests (npm run test). jsdom because the logic under test touches `document`,
   // `localStorage` and React; e2e/ belongs to Playwright and must not be collected here.
   test: { environment: "jsdom", setupFiles: ["src/test/setup.ts"], include: ["src/**/*.test.{ts,tsx}"], restoreMocks: true },
-  build: { outDir: "dist", emptyOutDir: true, sourcemap: false },
+  build: { outDir: "dist", assetsDir: "static", emptyOutDir: true, sourcemap: false },
   // The graph (React Flow) is only imported by a lazy chunk. Pre-bundled up front it is
   // never "discovered" in the middle of a session: a late discovery makes the dev server
   // re-optimize, and every open tab then fails with 504 "Outdated Optimize Dep" and

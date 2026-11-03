@@ -6,7 +6,7 @@ import { bindOperator } from "./ui/seen";
 type Messages = { lang: string; messages: Record<string, unknown> };
 
 // The session is the one of the three that needs a login. Without one the Gate
-// answers 401 and the app is on its login screen (/app/login) with the visitor
+// answers 401 and the app is on its login screen (/login) with the visitor
 // marked anonymous; anywhere else the client has already started the trip to
 // that screen, and there is nothing to draw in the meantime.
 async function readSession(): Promise<Session | undefined> {
@@ -14,7 +14,7 @@ async function readSession(): Promise<Session | undefined> {
     return await getJSON<Session>("/api/session");
   } catch (e) {
     if (!(e instanceof ApiError) || e.status !== 401) throw e;
-    if (location.pathname !== "/app/login") return new Promise<never>(() => {});
+    if (location.pathname !== "/login") return new Promise<never>(() => {});
     return undefined;
   }
 }

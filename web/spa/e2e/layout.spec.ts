@@ -29,7 +29,7 @@ for (const [w, h] of [[1440, 900], [1024, 768], [390, 844]] as const) {
   test(`the runs list scrolls inside its own box, not the page (${w}x${h})`, async ({ browser }) => {
     const ctx = await browser.newContext({ viewport: { width: w, height: h } });
     const page = await ctx.newPage();
-    await page.goto("/app/runs");
+    await page.goto("/runs");
     await loaded(page);
     const m = await page.evaluate(() => {
       const l = document.querySelector("#runs-list")!;
@@ -43,7 +43,7 @@ for (const [w, h] of [[1440, 900], [1024, 768], [390, 844]] as const) {
 }
 
 // The drawers are addressable: a link with a hash opens one, and Escape closes it.
-for (const [url, label] of [["/app/workflows#how-to-create", "how to create"], ["/app/ingest/streams#novo", "new stream"], ["/app/data/endpoints#publicar", "publish endpoints"]] as const) {
+for (const [url, label] of [["/workflows#how-to-create", "how to create"], ["/ingest/streams#novo", "new stream"], ["/data/endpoints#publicar", "publish endpoints"]] as const) {
   test(`drawer opens from its address and Escape closes it: ${label}`, async ({ page }) => {
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(String(e)));
