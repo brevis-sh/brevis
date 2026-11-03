@@ -47,6 +47,10 @@
   "catalog.col.status": "Status",
   "catalog.col.target": "Ziel",
   "catalog.col.writer": "Schreibt",
+  "catalog.count": {
+    "one": "von {count} Ziel",
+    "other": "von {count} Zielen"
+  },
   "catalog.drawer.best": "Der Status ist der des besten Writers: Daten, die von einem von ihnen ankommen, sind ankommende Daten",
   "catalog.drawer.cache": "sein Cache wird geleert, wenn die Tabelle neu aufgebaut wird",
   "catalog.drawer.copy": "Ziel kopieren",
@@ -274,6 +278,10 @@
   "endpoints.col.published": "Veröffentlicht",
   "endpoints.col.reads": "Liest",
   "endpoints.col.status": "Status",
+  "endpoints.count": {
+    "one": "von {count} Endpoint",
+    "other": "von {count} Endpoints"
+  },
   "endpoints.empty": "Noch kein Endpoint veröffentlicht. Führen Sie brevis-sql-api describe --out manifest.json aus, dann:",
   "endpoints.empty.filtered": "Nichts passt zu diesem Filter.",
   "endpoints.filter.api.all": "Jede API",
@@ -399,6 +407,10 @@
   "loads.col.rows": "Zeilen",
   "loads.col.status": "Status",
   "loads.col.who": "Workflow · Step",
+  "loads.count": {
+    "one": "von {count} Load",
+    "other": "von {count} Loads"
+  },
   "loads.drawer.bars": "Zeilen pro Load · letzte {n}",
   "loads.drawer.catalog": "im Katalog öffnen",
   "loads.drawer.choices": {
@@ -865,6 +877,10 @@
   "streams.col.flow": "Herkunft → Ziel",
   "streams.col.status": "Status",
   "streams.col.stream": "Stream",
+  "streams.count": {
+    "one": "von {count} Stream",
+    "other": "von {count} Streams"
+  },
   "streams.empty": "Noch kein Stream. Einer erscheint, wenn ein Gateway veröffentlicht wird:",
   "streams.empty.filtered": "Nichts passt zu diesem Filter.",
   "streams.gateway": "Gateway HTTP",

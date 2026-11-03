@@ -47,6 +47,10 @@
   "catalog.col.status": "상태",
   "catalog.col.target": "목적지",
   "catalog.col.writer": "작성 주체",
+  "catalog.count": {
+    "one": "/ 목적지 {count}개",
+    "other": "/ 목적지 {count}개"
+  },
   "catalog.drawer.best": "상태는 가장 좋은 작성 주체를 기준으로 합니다. 어느 쪽이든 데이터가 도착하면 도착한 것입니다",
   "catalog.drawer.cache": "테이블이 다시 빌드되면 캐시가 지워집니다",
   "catalog.drawer.copy": "목적지 복사",
@@ -274,6 +278,10 @@
   "endpoints.col.published": "게시",
   "endpoints.col.reads": "읽는 대상",
   "endpoints.col.status": "상태",
+  "endpoints.count": {
+    "one": "/ endpoints {count}개",
+    "other": "/ endpoints {count}개"
+  },
   "endpoints.empty": "아직 게시된 endpoint가 없습니다. brevis-sql-api describe --out manifest.json을 실행한 다음:",
   "endpoints.empty.filtered": "이 필터에 맞는 항목이 없습니다.",
   "endpoints.filter.api.all": "모든 API",
@@ -399,6 +407,10 @@
   "loads.col.rows": "행",
   "loads.col.status": "상태",
   "loads.col.who": "Workflow · step",
+  "loads.count": {
+    "one": "/ 적재 {count}건",
+    "other": "/ 적재 {count}건"
+  },
   "loads.drawer.bars": "적재당 행 수 · 최근 {n}건",
   "loads.drawer.catalog": "카탈로그에서 열기",
   "loads.drawer.choices": {
@@ -865,6 +877,10 @@
   "streams.col.flow": "원본 → 목적지",
   "streams.col.status": "상태",
   "streams.col.stream": "Stream",
+  "streams.count": {
+    "one": "/ stream {count}개",
+    "other": "/ stream {count}개"
+  },
   "streams.empty": "아직 stream이 없습니다. Gateway를 게시하면 나타납니다:",
   "streams.empty.filtered": "이 필터에 맞는 항목이 없습니다.",
   "streams.gateway": "Gateway HTTP",

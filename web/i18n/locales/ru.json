@@ -47,6 +47,10 @@
   "catalog.col.status": "Статус",
   "catalog.col.target": "Назначение",
   "catalog.col.writer": "Кто пишет",
+  "catalog.count": {
+    "one": "из {count} назначения",
+    "other": "из {count} назначений"
+  },
   "catalog.drawer.best": "статус определяет лучший из писателей: данные от любого из них — это поступающие данные",
   "catalog.drawer.cache": "его кэш сбрасывается при пересборке таблицы",
   "catalog.drawer.copy": "Копировать назначение",
@@ -274,6 +278,10 @@
   "endpoints.col.published": "Опубликовано",
   "endpoints.col.reads": "Читает",
   "endpoints.col.status": "Статус",
+  "endpoints.count": {
+    "one": "из {count} Endpoints",
+    "other": "из {count} Endpoints"
+  },
   "endpoints.empty": "Endpoint пока не опубликованы. Выполните brevis-sql-api describe --out manifest.json, затем:",
   "endpoints.empty.filtered": "Ничего не подходит под этот фильтр.",
   "endpoints.filter.api.all": "Все API",
@@ -399,6 +407,10 @@
   "loads.col.rows": "Строк",
   "loads.col.status": "Статус",
   "loads.col.who": "Workflow · шаг",
+  "loads.count": {
+    "one": "из {count} загрузки",
+    "other": "из {count} загрузок"
+  },
   "loads.drawer.bars": "Строк за загрузку · последние {n}",
   "loads.drawer.catalog": "открыть в каталоге",
   "loads.drawer.choices": {
@@ -865,6 +877,10 @@
   "streams.col.flow": "Источник → назначение",
   "streams.col.status": "Статус",
   "streams.col.stream": "Stream",
+  "streams.count": {
+    "one": "из {count} Streams",
+    "other": "из {count} Streams"
+  },
   "streams.empty": "Streams пока нет. Появится, когда будет опубликован gateway:",
   "streams.empty.filtered": "Ничего не подходит под этот фильтр.",
   "streams.gateway": "Gateway HTTP",

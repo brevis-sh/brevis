@@ -47,6 +47,10 @@
   "catalog.col.status": "स्थिति",
   "catalog.col.target": "गंतव्य",
   "catalog.col.writer": "कौन लिखता है",
+  "catalog.count": {
+    "one": "{count} गंतव्य में से",
+    "other": "{count} गंतव्य में से"
+  },
   "catalog.drawer.best": "स्थिति सबसे अच्छे writer की होती है: किसी भी writer से आने वाला डेटा आता हुआ डेटा है",
   "catalog.drawer.cache": "तालिका के दोबारा बनने पर इसका cache साफ़ हो जाता है",
   "catalog.drawer.copy": "गंतव्य कॉपी करें",
@@ -274,6 +278,10 @@
   "endpoints.col.published": "प्रकाशित",
   "endpoints.col.reads": "पढ़ता है",
   "endpoints.col.status": "स्थिति",
+  "endpoints.count": {
+    "one": "{count} Endpoints में से",
+    "other": "{count} Endpoints में से"
+  },
   "endpoints.empty": "अभी कोई endpoint प्रकाशित नहीं। brevis-sql-api describe --out manifest.json चलाएँ, फिर:",
   "endpoints.empty.filtered": "इस फ़िल्टर से कुछ मेल नहीं खाता।",
   "endpoints.filter.api.all": "सभी API",
@@ -399,6 +407,10 @@
   "loads.col.rows": "पंक्तियाँ",
   "loads.col.status": "स्थिति",
   "loads.col.who": "Workflow · step",
+  "loads.count": {
+    "one": "{count} लोड में से",
+    "other": "{count} लोड में से"
+  },
   "loads.drawer.bars": "प्रति लोड पंक्तियाँ · आखिरी {n}",
   "loads.drawer.catalog": "कैटलॉग में खोलें",
   "loads.drawer.choices": {
@@ -865,6 +877,10 @@
   "streams.col.flow": "स्रोत → गंतव्य",
   "streams.col.status": "स्थिति",
   "streams.col.stream": "Stream",
+  "streams.count": {
+    "one": "{count} stream में से",
+    "other": "{count} stream में से"
+  },
   "streams.empty": "अभी कोई stream नहीं। gateway प्रकाशित होने पर एक दिखता है:",
   "streams.empty.filtered": "इस फ़िल्टर से कुछ मेल नहीं खाता।",
   "streams.gateway": "Gateway HTTP",

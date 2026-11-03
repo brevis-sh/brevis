@@ -47,6 +47,10 @@
   "catalog.col.status": "Status",
   "catalog.col.target": "Tujuan",
   "catalog.col.writer": "Penulis",
+  "catalog.count": {
+    "one": "dari {count} tujuan",
+    "other": "dari {count} tujuan"
+  },
   "catalog.drawer.best": "statusnya mengikuti penulis terbaik: data yang datang dari salah satunya berarti data sedang masuk",
   "catalog.drawer.cache": "cache-nya dikosongkan saat tabel dibangun ulang",
   "catalog.drawer.copy": "Salin tujuan",
@@ -274,6 +278,10 @@
   "endpoints.col.published": "Dipublikasikan",
   "endpoints.col.reads": "Membaca",
   "endpoints.col.status": "Status",
+  "endpoints.count": {
+    "one": "dari {count} endpoints",
+    "other": "dari {count} endpoints"
+  },
   "endpoints.empty": "Belum ada endpoint yang dipublikasikan. Jalankan brevis-sql-api describe --out manifest.json, lalu:",
   "endpoints.empty.filtered": "Tidak ada yang cocok dengan filter ini.",
   "endpoints.filter.api.all": "Semua API",
@@ -399,6 +407,10 @@
   "loads.col.rows": "Baris",
   "loads.col.status": "Status",
   "loads.col.who": "Workflow · step",
+  "loads.count": {
+    "one": "dari {count} load",
+    "other": "dari {count} load"
+  },
   "loads.drawer.bars": "Baris per load · {n} terakhir",
   "loads.drawer.catalog": "buka di katalog",
   "loads.drawer.choices": {
@@ -865,6 +877,10 @@
   "streams.col.flow": "Asal → tujuan",
   "streams.col.status": "Status",
   "streams.col.stream": "Stream",
+  "streams.count": {
+    "one": "dari {count} stream",
+    "other": "dari {count} stream"
+  },
   "streams.empty": "Belum ada stream. Satu akan muncul saat sebuah gateway dipublikasikan:",
   "streams.empty.filtered": "Tidak ada yang cocok dengan filter ini.",
   "streams.gateway": "Gateway HTTP",

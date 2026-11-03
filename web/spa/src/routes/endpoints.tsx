@@ -246,7 +246,7 @@ function Summary({ d, ghost }: { d: Endpoints; ghost: boolean }) {
 // The bar (see ui/filters): drawn at once from the last shape seen; only the counts wait. The three states of
 // freshness are the primary choice; the API (a list that grows with the manifests) is the dropdown.
 function EndpointsBar({ filter, d, ghost }: { filter: Filter; d: Endpoints; ghost: boolean }) {
-  const { t } = useT();
+  const { t, n } = useT();
   const { number } = useFormat();
   const navigate = useNavigate();
   const [text, setText] = useUrlSearch("q");
@@ -284,7 +284,7 @@ function EndpointsBar({ filter, d, ghost }: { filter: Filter; d: Endpoints; ghos
       chips={chips}
       clearable={filter.any}
       onClearAll={() => go({ api: "", state: "", q: "" })}
-      count={<ResultCount pending={ghost} shown={d.rows.length} tail={<>/ {number(d.total)}{q && <> {t("workflows.count.search", { q })}</>}</>} />}
+      count={<ResultCount pending={ghost} shown={d.rows.length} tail={<>{n("endpoints.count", d.total, { count: number(d.total) })}{q && <> {t("workflows.count.search", { q })}</>}</>} />}
     />
   );
 }

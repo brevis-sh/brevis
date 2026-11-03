@@ -174,7 +174,7 @@ function Summary({ v, ghost }: { v: Loads; ghost: boolean }) {
 
 // The bar (see ui/filters): drawn at once from the last shape seen; only the counts wait.
 function LoadsBar({ filter, v, ghost }: { filter: Filter; v: Loads; ghost: boolean }) {
-  const { t } = useT();
+  const { t, n } = useT();
   const { number } = useFormat();
   const navigate = useNavigate();
   const [text, setText] = useUrlSearch("q");
@@ -213,7 +213,7 @@ function LoadsBar({ filter, v, ghost }: { filter: Filter; v: Loads; ghost: boole
       chips={chips}
       clearable={filter.any}
       onClearAll={() => go({ status: "", source: "", legacy: "", q: "" })}
-      count={<ResultCount pending={ghost} shown={v.rows.length} tail={<>/ {number(v.total)}{q && <> {t("workflows.count.search", { q })}</>}</>} />}
+      count={<ResultCount pending={ghost} shown={v.rows.length} tail={<>{n("loads.count", v.total, { count: number(v.total) })}{q && <> {t("workflows.count.search", { q })}</>}</>} />}
     />
   );
 }

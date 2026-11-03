@@ -47,6 +47,10 @@
   "catalog.col.status": "状态",
   "catalog.col.target": "目标",
   "catalog.col.writer": "写入方",
+  "catalog.count": {
+    "one": "共 {count} 个目标",
+    "other": "共 {count} 个目标"
+  },
   "catalog.drawer.best": "状态取最佳写入方的状态：任何一方有数据到达，就算数据到达",
   "catalog.drawer.cache": "表重建时，其缓存会被清除",
   "catalog.drawer.copy": "复制目标",
@@ -274,6 +278,10 @@
   "endpoints.col.published": "发布时间",
   "endpoints.col.reads": "读取",
   "endpoints.col.status": "状态",
+  "endpoints.count": {
+    "one": "共 {count} 个 endpoints",
+    "other": "共 {count} 个 endpoints"
+  },
   "endpoints.empty": "尚未发布 endpoint。请运行 brevis-sql-api describe --out manifest.json，然后：",
   "endpoints.empty.filtered": "没有符合此筛选条件的内容。",
   "endpoints.filter.api.all": "所有 API",
@@ -399,6 +407,10 @@
   "loads.col.rows": "行数",
   "loads.col.status": "状态",
   "loads.col.who": "Workflow · 步骤",
+  "loads.count": {
+    "one": "共 {count} 次加载",
+    "other": "共 {count} 次加载"
+  },
   "loads.drawer.bars": "每次加载的行数 · 最近 {n} 次",
   "loads.drawer.catalog": "在目录中打开",
   "loads.drawer.choices": {
@@ -865,6 +877,10 @@
   "streams.col.flow": "来源 → 目标",
   "streams.col.status": "状态",
   "streams.col.stream": "Stream",
+  "streams.count": {
+    "one": "共 {count} 个 stream",
+    "other": "共 {count} 个 stream"
+  },
   "streams.empty": "尚无 stream。发布 gateway 后会出现一个：",
   "streams.empty.filtered": "没有符合此筛选条件的内容。",
   "streams.gateway": "Gateway HTTP",

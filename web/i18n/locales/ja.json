@@ -47,6 +47,10 @@
   "catalog.col.status": "ステータス",
   "catalog.col.target": "宛先",
   "catalog.col.writer": "書き込み元",
+  "catalog.count": {
+    "one": "/ 宛先 {count} 件",
+    "other": "/ 宛先 {count} 件"
+  },
   "catalog.drawer.best": "ステータスは最も良好な書き込み元で決まります。どれかからデータが届いていれば、届いているとみなします",
   "catalog.drawer.cache": "テーブルが再構築されるとキャッシュはクリアされます",
   "catalog.drawer.copy": "宛先をコピー",
@@ -274,6 +278,10 @@
   "endpoints.col.published": "公開",
   "endpoints.col.reads": "読み取り",
   "endpoints.col.status": "ステータス",
+  "endpoints.count": {
+    "one": "/ Endpoints {count} 件",
+    "other": "/ Endpoints {count} 件"
+  },
   "endpoints.empty": "公開済みのエンドポイントはまだありません。brevis-sql-api describe --out manifest.json を実行してから:",
   "endpoints.empty.filtered": "このフィルタに一致するものはありません。",
   "endpoints.filter.api.all": "すべての API",
@@ -399,6 +407,10 @@
   "loads.col.rows": "行数",
   "loads.col.status": "ステータス",
   "loads.col.who": "Workflow · ステップ",
+  "loads.count": {
+    "one": "/ {count} 件のロード",
+    "other": "/ {count} 件のロード"
+  },
   "loads.drawer.bars": "ロードごとの行数 · 直近 {n} 件",
   "loads.drawer.catalog": "カタログで開く",
   "loads.drawer.choices": {
@@ -865,6 +877,10 @@
   "streams.col.flow": "取得元 → 宛先",
   "streams.col.status": "ステータス",
   "streams.col.stream": "Stream",
+  "streams.count": {
+    "one": "/ stream {count} 件",
+    "other": "/ stream {count} 件"
+  },
   "streams.empty": "stream はまだありません。Gateway を公開すると表示されます:",
   "streams.empty.filtered": "このフィルタに一致するものはありません。",
   "streams.gateway": "Gateway HTTP",
