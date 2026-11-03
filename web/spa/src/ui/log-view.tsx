@@ -1,8 +1,8 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useFormat, useT } from "../i18n";
 import type { RunLog } from "../api/run";
-import { buttonClass } from "./buttons";
 import "./bar.css";
+import { FilterBar, Segmented, SearchField } from "./filters";
 import { Icon } from "./icon";
 import { Skeleton } from "./skeleton";
 
@@ -68,6 +68,12 @@ export function LogView({ log, live, downloadHref, gotoCause = 0 }: Props) {
   const needle = q.trim().toLowerCase();
   const filtering = needle !== "" || level !== "all";
   const blocks = useMemo(() => log?.blocks ?? [], [log]);
+  // How many lines each level holds: the figures the level control shows, so a click is never a guess.
+  const levelCount = useMemo(() => {
+    const c: Record<Level, number> = { all: 0, warn: 0, err: 0 };
+    for (const b of blocks) for (const it of b.items) if (!it.gap) { c.all++; if (it.level === "warn" || it.level === "err") c[it.level]++; }
+    return c;
+  }, [blocks]);
 
   // Followed only while the reader is at the bottom: a few pixels of slack.
   const onScroll = () => {
@@ -106,44 +112,40 @@ export function LogView({ log, live, downloadHref, gotoCause = 0 }: Props) {
     });
   };
 
-  const small = buttonClass("secondary", "small");
-  const toggle = "inline-flex shrink-0 items-center rounded-card px-2.5 py-1 text-[12.5px] whitespace-nowrap text-muted hover:text-ink aria-pressed:bg-surface-2 aria-pressed:text-ink";
+  const bar = (
+    <FilterBar
+      className="border-b border-line-soft px-3 py-2"
+      search={<SearchField value={q} onChange={setQ} label={t("run.log.search")} hotkey={false} />}
+      primary={
+        <Segmented
+          label={t("run.log.level")}
+          value={level}
+          pending={!log}
+          onChange={(l) => setLevel(l as Level)}
+          items={LEVELS.map((l) => ({ key: l, label: t(`run.log.level.${l}`), count: levelCount[l] }))}
+        />
+      }
+      actions={
+        <>
+          <button type="button" aria-pressed={wrap} onClick={() => setWrap(!wrap)} className="flt-ctl flt-btn">
+            {t("run.log.wrap")}
+          </button>
+          <button type="button" onClick={copy} className="flt-ctl flt-btn" title={t("run.log.copy")} aria-label={copied ? t("copy.done") : t("run.log.copy")}>
+            <Icon name={copied ? "check" : "copy"} className="h-3.5 w-3.5" />
+            <span className="flt-btn-text">{copied ? t("copy.done") : t("run.log.copy")}</span>
+          </button>
+          <a href={downloadHref} download className="flt-ctl flt-btn" title={t("run.download_log")} aria-label={t("run.download_log")}>
+            <Icon name="download" className="h-3.5 w-3.5" />
+            <span className="flt-btn-text">{t("run.download_log")}</span>
+          </a>
+        </>
+      }
+    />
+  );
 
   return (
     <div data-log data-wrap={wrap ? "" : undefined} className="overflow-hidden rounded-card border border-line bg-surface">
-      <div className="bar-row flex flex-nowrap items-center gap-2 overflow-x-auto border-b border-line-soft px-3 py-2">
-        <label className="relative min-w-[12rem] flex-1 shrink-0">
-          <span className="sr-only">{t("run.log.search")}</span>
-          <Icon name="search" className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-faint" />
-          <input
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t("run.log.search")}
-            autoComplete="off"
-            className="h-8 w-full rounded-card border border-line bg-canvas pr-2 pl-8 text-[13px] text-ink placeholder:text-faint focus:border-line-strong focus:outline-none"
-          />
-        </label>
-        <div role="group" aria-label={t("run.log.level")} className="inline-flex shrink-0 rounded-card border border-line p-0.5">
-          {LEVELS.map((l) => (
-            <button key={l} type="button" aria-pressed={level === l} onClick={() => setLevel(l)} className="rounded-[5px] px-2.5 py-1 text-[12.5px] text-muted hover:text-ink aria-pressed:bg-surface-2 aria-pressed:text-ink">
-              {t(`run.log.level.${l}`)}
-            </button>
-          ))}
-        </div>
-        <span className="ml-auto shrink-0" />
-        <button type="button" aria-pressed={wrap} onClick={() => setWrap(!wrap)} className={toggle}>
-          {t("run.log.wrap")}
-        </button>
-        <button type="button" onClick={copy} className={small}>
-          <Icon name={copied ? "check" : "copy"} className="h-3 w-3" />
-          <span>{copied ? t("copy.done") : t("run.log.copy")}</span>
-        </button>
-        <a href={downloadHref} download className={small}>
-          <Icon name="download" className="h-3 w-3" />
-          {t("run.download_log")}
-        </a>
-      </div>
+      {bar}
       {!log ? (
         <LinesSkeleton />
       ) : blocks.length === 0 ? (
@@ -200,7 +202,7 @@ export function LogView({ log, live, downloadHref, gotoCause = 0 }: Props) {
             <div className="flex justify-center border-t border-line-soft p-1.5">
               <button
                 type="button"
-                className={small}
+                className="flt-ctl flt-btn"
                 onClick={() => {
                   setFollowing(true);
                   const el = box.current;
