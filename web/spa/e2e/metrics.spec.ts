@@ -203,6 +203,7 @@ test("no horizontal scroll at 390px on any of the four screens", async ({ browse
   for (const path of [STREAMS, STREAM, ENDPOINTS, ENDPOINT]) {
     const page = await ctx.newPage();
     await mockMetrics(page, "ready");
+    await mockEndpointsList(page);
     await page.goto(path);
     await expect(page.locator(".mx-strip, .mx-panel").first()).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), path).toBeLessThanOrEqual(0);
