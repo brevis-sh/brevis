@@ -20,7 +20,7 @@ export function useT() {
   const { lang } = useSession();
   const { messages } = useSuspenseQuery({
     queryKey: ["messages", lang],
-    queryFn: ({ signal }) => getJSON<Bundle>("/api/messages", signal),
+    queryFn: () => getJSON<Bundle>("/api/messages"),
     staleTime: Infinity,
   }).data;
 

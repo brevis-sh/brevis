@@ -222,7 +222,7 @@ export default function RunDrawer({ slug, rerun, onClose }: { slug: string; reru
   // The same query, and cache, as the workflow's page: the definition is what the form is drawn from.
   const q = useQuery({
     queryKey: ["workflow", slug, ""],
-    queryFn: ({ signal }) => getJSON<WorkflowDetail>(`/api/workflows/${encodeURIComponent(slug)}`, signal),
+    queryFn: () => getJSON<WorkflowDetail>(`/api/workflows/${encodeURIComponent(slug)}`),
     retry: (count, e) => !(e instanceof ApiError && e.status === 404) && count < 1,
   });
   const d = q.data;

@@ -19,7 +19,7 @@ export type Config = { brand: Brand; version: string; sql: boolean };
 const forever = { staleTime: Infinity, gcTime: Infinity } as const;
 
 export const useSession = () =>
-  useSuspenseQuery({ queryKey: ["session"], queryFn: ({ signal }) => getJSON<Session>("/api/session", signal), ...forever }).data;
+  useSuspenseQuery({ queryKey: ["session"], queryFn: () => getJSON<Session>("/api/session"), ...forever }).data;
 
 export const useConfig = () =>
-  useSuspenseQuery({ queryKey: ["config"], queryFn: ({ signal }) => getJSON<Config>("/api/config", signal), ...forever }).data;
+  useSuspenseQuery({ queryKey: ["config"], queryFn: () => getJSON<Config>("/api/config"), ...forever }).data;

@@ -168,7 +168,7 @@ export default function Dag({ src, runId, onPick }: Props) {
   const fallback = useFallbackInterval();
   const { data: g, error, isPending } = useQuery({
     queryKey: ["graph", url],
-    queryFn: ({ signal }) => getJSON<Graph>(url, signal),
+    queryFn: () => getJSON<Graph>(url),
     enabled: url !== "",
     staleTime: 0,
     // Only a run in flight has anything to follow while the stream is down.

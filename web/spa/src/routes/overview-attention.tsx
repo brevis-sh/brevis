@@ -28,7 +28,7 @@ export type Attention = { total: number; items: Item[]; more: number; targets: T
 /** "Needs your attention"; the overview screen refetches it on the `overview` topic, and the fallback polls only while the stream is down. */
 export const attentionQuery = {
   queryKey: ["overview", "attention"],
-  queryFn: ({ signal }: { signal: AbortSignal }) => getJSON<Attention>("/api/overview/attention", signal),
+  queryFn: () => getJSON<Attention>("/api/overview/attention"),
 };
 export const useAttention = () => useQuery({ ...attentionQuery, refetchInterval: useFallbackInterval() });
 

@@ -13,7 +13,7 @@ export const useBadges = () => {
   useLive(["nav"], [["nav"]]);
   return useQuery({
     queryKey: ["nav", "runs"],
-    queryFn: ({ signal }) => getJSON<Badges>("/api/nav/runs", signal),
+    queryFn: () => getJSON<Badges>("/api/nav/runs"),
     refetchInterval: useFallbackInterval(),
     refetchOnWindowFocus: true,
     staleTime: 0,

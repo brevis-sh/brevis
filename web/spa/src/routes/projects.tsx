@@ -31,7 +31,7 @@ function CardSkeleton() {
 
 export default function ProjectsRoute() {
   const { t } = useT();
-  const q = useQuery({ queryKey: ["projects"], queryFn: ({ signal }) => getJSON<Project[]>("/api/projects", signal) });
+  const q = useQuery({ queryKey: ["projects"], queryFn: () => getJSON<Project[]>("/api/projects") });
   const data = q.data;
   return (
     <PageFrame title={t("nav.projects")}>

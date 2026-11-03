@@ -48,7 +48,7 @@ function useWindow(): WindowKey {
 function useOverview(window: WindowKey) {
   return useQuery({
     queryKey: ["overview", window],
-    queryFn: ({ signal }) => getJSON<Overview>(`/api/overview?window=${window}`, signal),
+    queryFn: () => getJSON<Overview>(`/api/overview?window=${window}`),
     placeholderData: keepPreviousData,
   });
 }

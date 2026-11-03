@@ -35,8 +35,20 @@ let hiddenT: ReturnType<typeof setTimeout> | undefined;
 let retryT: ReturnType<typeof setTimeout> | undefined;
 const missed = new Set<string>(); // topics that changed while the tab was hidden
 
-/** The sorted, capped union of subscribed topics; equal keys mean the same connection can stay. */
-export const topicKey = (topics: Iterable<string>) => [...new Set(topics)].sort().slice(0, MAX_TOPICS).join(",");
+// The server's shared topics. They cost it one cheap query a second between all
+// clients, so a connection carries ALL of them whenever it exists: moving between
+// the screens that use them then never reopens the stream (every reopen is a
+// request the browser lists as "(canceled)" and a `ready` to catch up on). Only a
+// named topic (run:<id>, workflow:<slug>) changes the set, so only opening a run
+// or a workflow page does.
+const SHARED = ["catalog", "ingest", "nav", "overview", "runs", "workflows"];
+
+/** The sorted, capped union of subscribed topics (plus the shared ones, once there is any); equal keys mean the same connection can stay. */
+export const topicKey = (topics: Iterable<string>) => {
+  const want = [...new Set(topics)];
+  if (!want.length) return "";
+  return [...new Set([...SHARED, ...want])].sort().slice(0, MAX_TOPICS).join(",");
+};
 
 const setUp = (v: boolean) => {
   if (up === v) return;

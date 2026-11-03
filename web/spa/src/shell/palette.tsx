@@ -55,7 +55,7 @@ export function Palette() {
     enabled: open,
     staleTime: 60_000,
     retry: false,
-    queryFn: async ({ signal }) => (await getJSON<{ items: Item[] }>("/api/palette", signal)).items,
+    queryFn: async () => (await getJSON<{ items: Item[] }>("/api/palette")).items,
   });
 
   const shown = useMemo(

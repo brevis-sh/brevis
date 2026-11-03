@@ -25,7 +25,7 @@ export function useData<T>(key: readonly unknown[], path: string, { topic, enabl
   const fallback = useFallbackInterval();
   return useQuery({
     queryKey: key,
-    queryFn: ({ signal }) => getJSON<T>(path, signal),
+    queryFn: () => getJSON<T>(path),
     placeholderData: keep ? keepPreviousData : undefined,
     refetchInterval: topic ? fallback : 30_000,
     enabled,

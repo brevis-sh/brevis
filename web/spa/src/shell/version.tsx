@@ -21,8 +21,8 @@ export function useRelease(): Release | undefined {
     enabled: !!version,
     retry: false,
     staleTime: 5 * 60_000,
-    queryFn: async ({ signal }) => {
-      return (await getJSON<Release | undefined>("/api/release", signal)) ?? null;
+    queryFn: async () => {
+      return (await getJSON<Release | undefined>("/api/release")) ?? null;
     },
   }).data ?? undefined;
 }

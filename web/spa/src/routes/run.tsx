@@ -254,7 +254,7 @@ function RunScreen({ id }: { id: string }) {
   const fallback = useFallbackInterval();
   const { data: run } = useQuery({
     queryKey: ["run", id],
-    queryFn: ({ signal }) => getJSON<Run>(`/api/runs/${id}`, signal),
+    queryFn: () => getJSON<Run>(`/api/runs/${id}`),
     refetchInterval: (q) => (q.state.data?.terminal ? false : fallback),
     staleTime: 0,
     throwOnError: true,

@@ -11,13 +11,15 @@ export class ApiError extends Error {
   }
 }
 
-// A read is never aborted. React Query hands every query an AbortSignal and cancels
-// the request when the screen goes away mid-flight (navigating, StrictMode's double
-// mount); the browser's network panel then lists a red "(canceled)" for something
-// that was fine. These reads are small and land in the cache, so the signal is
-// accepted (the call sites pass it) and deliberately not used. Where a request
-// really is the reader's to cancel -- the SQL run -- postJSON still honors it.
-export async function getJSON<T>(path: string, _signal?: AbortSignal): Promise<T> {
+// A read takes no AbortSignal, and the query functions must not even READ the one
+// React Query offers (`({ signal }) =>`): merely touching it tells the library the
+// request is cancellable, so when the last observer leaves it cancels and starts
+// over on the next mount. StrictMode (dev) mounts every screen twice and so sent
+// every request twice; a screen that is left mid-flight listed a red "(canceled)".
+// These reads are small and land in the cache, so they simply finish and the next
+// observer joins the request in flight. Where a request really is the reader's to
+// cancel -- the SQL run -- postJSON still honors a signal.
+export async function getJSON<T>(path: string): Promise<T> {
   const res = await fetch(path, { headers: { Accept: "application/json" } });
   // The Gate answers a GET without a session with a 303 to /login, and fetch
   // follows it into a 200 HTML page. That is a 401: send the browser to the

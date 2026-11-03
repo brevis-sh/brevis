@@ -1,3 +1,4 @@
+import { useFill } from "../shell/fill";
 import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, Outlet, useLocation, useParams, useSearchParams } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -66,7 +67,7 @@ function useRuns(qs: string, live: boolean) {
   const fallback = useFallbackInterval();
   return useQuery({
     queryKey: ["runs", qs],
-    queryFn: ({ signal }) => getJSON<RunsData>(`/api/runs${qs ? `?${qs}` : ""}`, signal),
+    queryFn: () => getJSON<RunsData>(`/api/runs${qs ? `?${qs}` : ""}`),
     placeholderData: keepPreviousData,
     refetchInterval: live ? fallback : false,
   });
@@ -290,6 +291,7 @@ function cleanParams(params: URLSearchParams) {
 // Runs fills the shell (screen-runs): the list is a column and the open run is
 // beside it, each scrolling on its own; below 1000px the list goes on top.
 export default function RunsRoute() {
+  useFill(); // the list and the open run scroll on their own: the page does not
   const { t } = useT();
   const f = useFormat();
   const [params] = useSearchParams();

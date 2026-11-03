@@ -1,3 +1,4 @@
+import { useFill } from "../shell/fill";
 import { type PointerEvent as RPointerEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -167,10 +168,9 @@ function Rail({ tree, target, onSelect, collapse }: { tree: TreeData | undefined
   const cols = useQuery({
     queryKey: ["sql", "columns", target, open],
     enabled: open !== "" && target !== "",
-    queryFn: ({ signal }) =>
+    queryFn: () =>
       getJSON<{ columns: { name: string; type: string }[] }>(
         `/api/sql/describe?target=${encodeURIComponent(target)}&schema=${encodeURIComponent(schema ?? "")}&name=${encodeURIComponent(name ?? "")}`,
-        signal,
       ),
     staleTime: 60_000,
   });
@@ -313,7 +313,7 @@ function Workbench({ state }: { state: State | undefined }) {
   const tree = useQuery({
     queryKey: ["sql", "tree", target],
     enabled: target !== "",
-    queryFn: ({ signal }) => getJSON<TreeData>(`/api/sql/tree?target=${encodeURIComponent(target)}`, signal),
+    queryFn: () => getJSON<TreeData>(`/api/sql/tree?target=${encodeURIComponent(target)}`),
     initialData: state && target === state.target ? state.tree : undefined,
     staleTime: 60_000,
   });
@@ -552,7 +552,7 @@ function Screen() {
   // The workbench is drawn at once; the state (connections, the tree's first level) fills it in.
   const { data, isPending } = useQuery({
     queryKey: ["sql", "state", search],
-    queryFn: ({ signal }) => getJSON<State>(`/api/sql/state${search}`, signal),
+    queryFn: () => getJSON<State>(`/api/sql/state${search}`),
     staleTime: 0,
     gcTime: 0,
     retry: (c, e) => !(e instanceof ApiError && e.status === 404) && c < 1,
@@ -564,12 +564,8 @@ function Screen() {
 
 export default function SqlRoute() {
   const { sql } = useConfig();
-  // The workbench fills the shell: three panes that scroll on their own (the server's main[data-fill]).
-  useEffect(() => {
-    const main = document.querySelector("main");
-    main?.setAttribute("data-fill", "");
-    return () => main?.removeAttribute("data-fill");
-  }, []);
+  // The workbench fills the shell: three panes that scroll on their own.
+  useFill();
   // main[data-fill] > :last-child is the one flex column; the workbench sits inside the page's gutters, as in the server page.
   // Without a SQL service the server has no such page (a 404); here the path says so in the empty-catalog voice.
   return <Page>{sql ? <Screen /> : <Unavailable />}</Page>;

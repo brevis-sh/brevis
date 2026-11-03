@@ -531,7 +531,7 @@ export default function WorkflowsRoute() {
   useLive(["workflows"], [["workflows"]]);
   const q = useQuery({
     queryKey: ["workflows", qs],
-    queryFn: ({ signal }) => getJSON<WorkflowsList>(`/api/workflows${qs ? `?${qs}` : ""}`, signal),
+    queryFn: () => getJSON<WorkflowsList>(`/api/workflows${qs ? `?${qs}` : ""}`),
     placeholderData: keepPreviousData,
     refetchInterval: useFallbackInterval(),
   });

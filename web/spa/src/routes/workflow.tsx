@@ -496,7 +496,7 @@ export default function WorkflowRoute() {
   useLive([`workflow:${slug}`], [["workflow", slug]]);
   const q = useQuery({
     queryKey: ["workflow", slug, day],
-    queryFn: ({ signal }) => getJSON<WorkflowDetail>(`/api/workflows/${encodeURIComponent(slug)}${day ? `?day=${encodeURIComponent(day)}` : ""}`, signal),
+    queryFn: () => getJSON<WorkflowDetail>(`/api/workflows/${encodeURIComponent(slug)}${day ? `?day=${encodeURIComponent(day)}` : ""}`),
     placeholderData: keepPreviousData,
     refetchInterval: useFallbackInterval(),
     retry: (count, e) => !(e instanceof ApiError && e.status === 404) && count < 1,
