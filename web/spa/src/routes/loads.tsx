@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router";
 import { useData } from "../api/live";
 import type { LoadRow, Loads, Source } from "../api/ingest";
 import { useFormat, useT } from "../i18n";
+import { localStamp, useSince } from "../ui/format";
 import { Icon } from "../ui/icon";
 import { ButtonLink, Empty, FilterRow, Lead, PageHead, linkUnderline, Page } from "../ui/kit";
 import { Logo } from "../ui/logo";
@@ -57,7 +58,8 @@ function Head() {
 
 function Rows({ rows }: { rows: LoadRow[] }) {
   const { t, n } = useT();
-  const { since, number, dateTime } = useFormat();
+  const { number } = useFormat();
+  const since = useSince();
   const navigate = useNavigate();
   return (
     <>
@@ -94,7 +96,7 @@ function Rows({ rows }: { rows: LoadRow[] }) {
               </Link>
             )}
           </Td>
-          <Td cls="text-xs whitespace-nowrap text-muted max-[640px]:hidden" title={r.lastLoaded ? dateTime(r.lastLoaded) : undefined}>
+          <Td cls="text-xs whitespace-nowrap text-muted max-[640px]:hidden" title={r.lastLoaded ? localStamp(r.lastLoaded) : undefined}>
             {r.lastLoaded ? since(r.lastLoaded) : "—"}
           </Td>
           <Td cls="text-right text-xs tabular-nums text-ink-2 max-[1100px]:hidden">

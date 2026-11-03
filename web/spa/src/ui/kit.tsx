@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 import { Link } from "react-router";
-import { useT } from "../i18n";
+import { stamp, useBrief } from "./format";
 import { Icon } from "./icon";
 import "./filter-row.css";
 
@@ -130,13 +130,11 @@ export function StatCells({ items }: { items: { label: string; icon?: string; va
 
 /** A date as a table cell shows it: `Oct 16 02:23`, in UTC, the full UTC in the title. */
 export function ShortStamp({ at }: { at: string | null }) {
-  const { lang } = useT();
+  const brief = useBrief();
   if (!at) return <span className="text-faint">—</span>;
-  const d = new Date(at);
-  const short = new Intl.DateTimeFormat(lang, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" }).format(d);
   return (
-    <span title={`${d.toISOString().replace("T", " ").slice(0, 19)} UTC`} className="tabular-nums whitespace-nowrap">
-      {short}
+    <span title={stamp(at)} className="tabular-nums whitespace-nowrap">
+      {brief(at)}
     </span>
   );
 }

@@ -3,6 +3,7 @@ import { ApiError } from "../api/client";
 import { useData } from "../api/live";
 import type { Change, Load, LoadDetail } from "../api/ingest";
 import { useFormat, useT } from "../i18n";
+import { useSince } from "../ui/format";
 import { useCrumb } from "../shell/nav";
 import { Icon } from "../ui/icon";
 import { btn, ButtonLink, Card, Empty, FilterRow, PageHead, ShortStamp, linkUnderline, Page } from "../ui/kit";
@@ -56,7 +57,8 @@ function Skel({ w = "8rem" }: { w?: string }) {
 /** The facts of the load: from where to where, when it runs, its last load. The labels are static; the values arrive. */
 function Facts({ step, d }: { step: string; d: LoadDetail | undefined }) {
   const { t, n } = useT();
-  const { since, number, dateTime } = useFormat();
+  const { number } = useFormat();
+  const since = useSince();
   const kindName = useLogoTitle();
   return (
     <dl className="grid grid-cols-[8rem_minmax(0,1fr)] gap-x-4 gap-y-3 rounded-card border border-line bg-surface px-4 py-3.5 text-[12.5px]">
@@ -119,7 +121,7 @@ function Facts({ step, d }: { step: string; d: LoadDetail | undefined }) {
           <Skel w="12rem" />
         ) : (
           <>
-            {d.lastLoaded ? <span title={dateTime(d.lastLoaded)}>{since(d.lastLoaded)}</span> : "—"}
+            {d.lastLoaded ? since(d.lastLoaded) : "—"}
             {d.lastRows !== null && <span className={`ml-1 ${d.readNothing ? "text-state-failed" : ""}`}>· {n("loads.drawer.rows", d.lastRows)}</span>}
             {d.read !== null && <span className="ml-1 text-muted">{t("loads.drawer.read", { n: number(d.read) })}</span>}
           </>
@@ -131,7 +133,7 @@ function Facts({ step, d }: { step: string; d: LoadDetail | undefined }) {
 
 function Body({ workflow, step, d }: { workflow: string; step: string; d: LoadDetail | undefined }) {
   const { t } = useT();
-  const { number, dateTime } = useFormat();
+  const { number } = useFormat();
   return (
     <div className="space-y-3">
       {d && d.reason !== "" && <p className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-ink-2">{d.reason}</p>}
@@ -188,7 +190,7 @@ function Body({ workflow, step, d }: { workflow: string; step: string; d: LoadDe
                   ))
                 : d.loads.map((l) => (
                     <tr key={l.runId}>
-                      <td className="px-2.5 pl-3.5 font-mono text-[12px] whitespace-nowrap text-muted tabular-nums" title={dateTime(l.loadedAt)}>
+                      <td className="px-2.5 pl-3.5 font-mono text-[12px] whitespace-nowrap text-muted tabular-nums">
                         <ShortStamp at={l.loadedAt} />
                       </td>
                       <td className="px-2.5 text-right tabular-nums">{l.rows === null ? "—" : number(l.rows)}</td>
