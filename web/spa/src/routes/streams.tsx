@@ -131,7 +131,7 @@ function StreamsData({ filter }: { filter: Filter }) {
   const { t, n } = useT();
   const qs = new URLSearchParams();
   for (const f of FIELDS) if (filter.get(f)) qs.set(f, filter.get(f));
-  const q = useData<Streams>(["ingest", "streams", qs.toString()], `/api/ingest/streams${qs.size ? `?${qs}` : ""}`);
+  const q = useData<Streams>(["ingest", "streams", qs.toString()], `/api/ingest/streams${qs.size ? `?${qs}` : ""}`, { topic: "ingest" });
   const v = q.data;
   const kind = filter.get("kind");
   return (

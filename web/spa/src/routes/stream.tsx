@@ -319,7 +319,7 @@ export default function StreamRoute() {
   const path = `/${rest}`;
   useCrumb(`POST ${path}`, { mono: true });
   const q = useData<Stream>(["ingest", "stream", gateway, rest], `/api/ingest/streams/${encodeURIComponent(gateway)}/${rest.split("/").map(encodeURIComponent).join("/")}`, {
-    every: 15_000,
+    topic: "ingest",
     keep: false,
   });
   const v = q.data;

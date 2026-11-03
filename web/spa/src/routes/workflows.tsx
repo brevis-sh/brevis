@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getJSON } from "../api/client";
+import { useFallbackInterval, useLive } from "../live/hooks";
 import { useScheduleToggle, type Logo as LogoRef, type WorkflowRow, type WorkflowsList } from "../api/workflows";
 import { useFormat, useT } from "../i18n";
 import { useAgo } from "../ui/format";
@@ -480,12 +481,13 @@ export default function WorkflowsRoute() {
   const toggler = useScheduleToggle();
   const qs = links.sp.toString();
   // The list keeps the previous page on screen while a filter loads, and renews itself
-  // every 5s while the tab is visible (the query does not poll in the background).
+  // when the server reports `workflows` (the fallback polls only while the stream is down).
+  useLive(["workflows"], [["workflows"]]);
   const q = useQuery({
     queryKey: ["workflows", qs],
     queryFn: ({ signal }) => getJSON<WorkflowsList>(`/api/workflows${qs ? `?${qs}` : ""}`, signal),
     placeholderData: keepPreviousData,
-    refetchInterval: 5_000,
+    refetchInterval: useFallbackInterval(),
   });
   const data = q.data;
   const { note, error, dismiss, toggle } = toggler;

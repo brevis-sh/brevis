@@ -263,7 +263,7 @@ export default function LoadRoute() {
   const { search } = useLocation();
   useCrumb(`${workflow} · ${step}`);
   const q = useData<Load>(["ingest", "load", workflow, step, search], `/api/ingest/loads/${encodeURIComponent(workflow)}/${encodeURIComponent(step)}${search}`, {
-    every: 15_000,
+    topic: "ingest",
     keep: false,
   });
   const v = q.data;

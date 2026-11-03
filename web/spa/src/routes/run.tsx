@@ -2,7 +2,8 @@ import { Component, type ReactNode, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, getJSON } from "../api/client";
-import { cancelRun, pollEvery, type Run } from "../api/run";
+import { cancelRun, type Run } from "../api/run";
+import { useFallbackInterval, useLive } from "../live/hooks";
 import { useFormat, useT } from "../i18n";
 import { buttonClass } from "../ui/buttons";
 import { CopyIcon } from "../ui/copy";
@@ -238,13 +239,16 @@ function RunScreen({ id }: { id: string }) {
   const navigate = useNavigate();
   const { hash } = useLocation();
   const [goto, setGoto] = useState(0);
-  // Polling stops by itself when the tab is hidden (refetchIntervalInBackground
-  // defaults to false) and when the run is terminal. A missing run or a failed
-  // read throws to the boundary; until then the page is drawn, its values waiting.
+  // The server reports `run:<id>` whenever the run (or its log) moves, so a
+  // running run needs no cadence; the fallback polls only while the stream is
+  // down and the run is not terminal. A missing run or a failed read throws to
+  // the boundary; until then the page is drawn, its values waiting.
+  useLive([`run:${id}`], [["run", id]]);
+  const fallback = useFallbackInterval();
   const { data: run } = useQuery({
     queryKey: ["run", id],
     queryFn: ({ signal }) => getJSON<Run>(`/api/runs/${id}`, signal),
-    refetchInterval: (q) => pollEvery(q.state.data),
+    refetchInterval: (q) => (q.state.data?.terminal ? false : fallback),
     staleTime: 0,
     throwOnError: true,
     retry: (n, e) => !(e instanceof ApiError && e.status === 404) && n < 1,
