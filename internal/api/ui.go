@@ -392,6 +392,7 @@ func (u *UI) Registrar(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/messages", u.messages)
 	u.registerSQLJSON(mux)
 	u.registerWorkflowsAPI(mux)
+	u.registerTriggerAPI(mux)
 	u.registerRunAPI(mux)
 	u.registerIngestAPI(mux)
 	u.registerOverviewAndRunsAPI(mux)

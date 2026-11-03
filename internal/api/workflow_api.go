@@ -69,6 +69,17 @@ type paramView struct {
 	Warn        string `json:"warn"`
 	Group       string `json:"group"`
 	Uses        string `json:"uses"`
+	// Enum and Pattern are the rules the Run drawer checks a value against
+	// before the server does; Enum is never null.
+	Enum    []string `json:"enum"`
+	Pattern string   `json:"pattern"`
+}
+
+// slotView is one past slot of the schedule, worded as the old Run dialog
+// worded it ("<when> · processes <from> -> <to> UTC").
+type slotView struct {
+	At    time.Time `json:"at"`
+	Label string    `json:"label"`
 }
 
 type workflowDetailView struct {
@@ -91,8 +102,11 @@ type workflowDetailView struct {
 	Runs        []workflowRunView `json:"runs"`
 	Day         *string           `json:"day"`
 	Params      []paramView       `json:"params"`
-	YAML        string            `json:"yaml"`
-	Now         time.Time         `json:"now"`
+	// Slots are the schedule's last 14 slots, newest first, for the Run
+	// drawer's picker; empty for a workflow with no schedule.
+	Slots []slotView `json:"slots"`
+	YAML  string     `json:"yaml"`
+	Now   time.Time  `json:"now"`
 }
 
 func dayString(t *time.Time) *string {
@@ -122,7 +136,7 @@ func (u *UI) workflowJSON(w http.ResponseWriter, r *http.Request) {
 		Slug: def.Slug, Description: def.Description, Cron: def.Schedule, Tags: nonNil(def.Tags),
 		Schedule: pages.CronTextIn(ctx, def.Schedule), Langs: logosOf(r, runsIn(def, 0)),
 		Edges: len(def.Edges), Steps: []stepView{}, Runs: []workflowRunView{}, Params: []paramView{},
-		Calendar: calendarView{Days: []calendarDayView{}}, Day: dayString(day), Now: now,
+		Calendar: calendarView{Days: []calendarDayView{}}, Day: dayString(day), Now: now, Slots: []slotView{},
 	}
 
 	latest, err := u.leitura.WorkflowHistory(ctx, slug, day, 10)
@@ -168,7 +182,12 @@ func (u *UI) workflowJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, p := range def.Params {
 		out.Params = append(out.Params, paramView{Name: p.Name, Type: string(p.Type), Default: p.Default, Title: p.Title,
-			Description: p.Description, Warn: p.Warn, Group: p.Group, Uses: p.Uses})
+			Description: p.Description, Warn: p.Warn, Group: p.Group, Uses: p.Uses, Enum: nonNil(p.Enum), Pattern: p.Pattern})
+	}
+	// The zone is the summary's, read above; without a summary the picker
+	// reads the cron in UTC, as the old page did.
+	for _, sl := range pages.RecentSlots(def.Schedule, out.Timezone, now, 14) {
+		out.Slots = append(out.Slots, slotView{At: sl.At, Label: pages.SlotLabel(ctx, sl, out.Timezone)})
 	}
 
 	if oneStep(def) {
