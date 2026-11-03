@@ -62,3 +62,8 @@
   .stl-batch { font-size: 12px; }
   .stl-sub { white-space: nowrap; }
 }
+
+/* The stream page's health row keeps the room of its longest sentence (three lines and the word on a phone, one beside it on a
+   screen), so a state that says more or less never moves the strip under it. `lh` is not a unit Tailwind's classes take. */
+.stp-health { flex-basis: 100%; min-height: 4lh; }
+@media (min-width: 640px) { .stp-health { min-height: 1lh; } }

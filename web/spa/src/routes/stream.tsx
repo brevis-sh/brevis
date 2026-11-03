@@ -18,6 +18,7 @@ import { btn, ButtonLink, Card, Empty, PageHead, linkUnderline, Page } from "../
 import { Logo, useLogoTitle } from "../ui/logo";
 import { HealthStatus, useHealthReason, useHealthSince } from "../ui/health";
 import { TOPIC_STREAMS } from "../ui/metrics/hooks";
+import "./streams.css";
 
 const pill = "inline-flex items-center gap-1.5 rounded-card border border-line px-2 py-0.5 text-ink-2";
 // The tab names the panel; the server hides this heading when the tabs are there.
@@ -69,7 +70,15 @@ function Strip({ gateway, v, ghost }: { gateway: string; v: Stream; ghost: boole
   const since = useHealthSince()(v.health);
   return (
     <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border border-line bg-surface px-4 py-3 text-[12.5px] text-muted">
-      <HealthStatus health={v.health} />
+      {/* Health has a row of its own, so the width of its word (healthy, degraded) never changes how the rest wraps. */}
+      <div className="stp-health flex flex-wrap items-baseline gap-x-3">
+        <HealthStatus health={v.health} />
+        <p data-testid="health-reason" aria-hidden={ghost || undefined} className={`text-[12.5px] text-muted ${gh(ghost)}`}>
+          {reason(v.health)}
+          {since && <span className="ml-1.5 whitespace-nowrap text-faint">· {since}</span>}
+          {v.health?.recovering && <span className="ml-1.5 text-faint">· {t("streams.health.recovering")}</span>}
+        </p>
+      </div>
       <span>{t("streams.page.from")}</span>
       <span className={pill}>
         <Logo k="gateway" />
@@ -94,11 +103,7 @@ function Strip({ gateway, v, ghost }: { gateway: string; v: Stream; ghost: boole
           {v.publishedAt && <span className={gh(ghost)}>{t("streams.page.published", { at: `${brief(v.publishedAt)} UTC` })}</span>}
         </>
       }
-      <p data-testid="health-reason" aria-hidden={ghost || undefined} className={`basis-full text-[12.5px] text-muted ${gh(ghost)}`}>
-        {reason(v.health)}
-        {since && <span className="ml-1.5 whitespace-nowrap text-faint">· {since}</span>}
-        {v.health?.recovering && <span className="ml-1.5 text-faint">· {t("streams.health.recovering")}</span>}
-      </p>
+
     </div>
   );
 }

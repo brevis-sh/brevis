@@ -85,8 +85,14 @@ async function fakeStream(page: Page) {
     // A skeleton or a busy list that appears AFTER the first answer is a flicker; layout shifts add up.
     (window as any).__flicker = 0;
     (window as any).__cls = 0;
+    (window as any).__who = [];
     new PerformanceObserver((l) => {
-      for (const e of l.getEntries() as any[]) if (!e.hadRecentInput) (window as any).__cls += e.value;
+      for (const e of l.getEntries() as any[]) {
+        if (e.hadRecentInput) continue;
+        (window as any).__cls += e.value;
+        // What moved, so a failure names the element and not just a number.
+        (window as any).__who.push(`${e.value.toFixed(3)} ${e.sources.map((s: any) => s.node?.className || s.node?.nodeName).join(" | ")}`.slice(0, 160));
+      }
     }).observe({ type: "layout-shift", buffered: true });
     addEventListener("DOMContentLoaded", () => {
       new MutationObserver(() => {
@@ -96,7 +102,7 @@ async function fakeStream(page: Page) {
   });
 }
 const emit = (page: Page, topic = "metrics:streams") => page.evaluate((t) => (window as any).__emit(t), topic);
-const arm = (page: Page) => page.evaluate(() => ((window as any).__armed = true, (window as any).__cls = 0));
+const arm = (page: Page) => page.evaluate(() => ((window as any).__armed = true, (window as any).__cls = 0, (window as any).__who = []));
 
 test("the list says each state in its own shape and word, and counts them in the summary", async ({ page }) => {
   const hs = [H.healthy, H.unknown, H.failing, H.quiet, H.degraded];
@@ -196,28 +202,37 @@ test("rows keep their places while the pointer is over the table, and settle whe
   await expect.poll(paths).toEqual(["/v1/stream_2", "/v1/stream_0", "/v1/stream_1"]);
 });
 
-test("a scrape finishing changes the state on the stream page: one refetch of each query, no skeleton, no shift", async ({ page }) => {
-  await fakeStream(page);
-  let current: Health = H.healthy;
-  let reads = 0;
-  await page.route("**/api/ingest/streams/**", (r) => (reads++, r.fulfill({ json: detail(current) })));
-  await page.route("**/api/ingest/metrics/streams/**", (r) => r.fulfill({ json: { configured: false, since: SINCE, intervalSec: 5, window: { start: 0, minutes: 60 }, owners: [], total: { values: {}, covered: [], ratePerMin: {}, lastHour: {}, observedSec: 0, owner: "", name: "", present: false }, entities: [{ values: {}, covered: [], ratePerMin: {}, lastHour: {}, observedSec: 0, owner: "", name: "", present: false, gateway: "events_gateway", path: "/v1/stream_0" }] } }));
-  await page.goto("/app/ingest/streams/events_gateway/v1/stream_0");
-  await expect(page.getByTestId("health-reason")).toHaveText(/none was refused/);
-  await page.waitForTimeout(600);
-  await arm(page);
-  const before = reads;
-  current = H.degraded;
-  await emit(page);
-  await expect(page.getByTestId("health-reason")).toHaveText(/37% of the last 5 minutes' events were rejected/);
-  await page.waitForTimeout(500);
-  expect(reads - before, "detail refetches for one event").toBe(1);
-  expect(await page.evaluate(() => (window as any).__flicker), "a skeleton appeared").toBe(0);
-  expect(await page.evaluate(() => (window as any).__cls), "layout shift").toBeLessThan(0.01);
-  current = H.failing;
-  await emit(page);
-  await expect(page.getByTestId("health-reason")).toContainText("since");
-});
+for (const vp of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+  test.describe(`${vp.width}`, () => {
+    test.use({ viewport: vp });
+    test(`a scrape finishing changes the state on the stream page at ${vp.width}px: one refetch of each query, no skeleton, no shift`, async ({ page }) => {
+      await fakeStream(page);
+      let current: Health = H.healthy;
+      let reads = 0;
+      await page.route("**/api/ingest/streams/**", (r) => (reads++, r.fulfill({ json: detail(current) })));
+      await page.route("**/api/ingest/metrics/streams/**", (r) => r.fulfill({ json: { configured: false, since: SINCE, intervalSec: 5, window: { start: 0, minutes: 60 }, owners: [], total: { values: {}, covered: [], ratePerMin: {}, lastHour: {}, observedSec: 0, owner: "", name: "", present: false }, entities: [{ values: {}, covered: [], ratePerMin: {}, lastHour: {}, observedSec: 0, owner: "", name: "", present: false, gateway: "events_gateway", path: "/v1/stream_0" }] } }));
+      await page.goto("/app/ingest/streams/events_gateway/v1/stream_0");
+      await expect(page.getByTestId("health-reason")).toHaveText(/none was refused/);
+      await page.waitForTimeout(600);
+      await arm(page);
+      const before = reads;
+      current = H.degraded;
+      await emit(page);
+      await expect(page.getByTestId("health-reason")).toHaveText(/37% of the last 5 minutes' events were rejected/);
+      await page.waitForTimeout(500);
+      expect(reads - before, "detail refetches for one event").toBe(1);
+      expect(await page.evaluate(() => (window as any).__flicker), "a skeleton appeared").toBe(0);
+      expect(await page.evaluate(() => (window as any).__cls), `layout shift: ${await page.evaluate(() => (window as any).__who.join("; "))}`).toBeLessThan(0.01);
+      // A longer sentence with its suffixes (three lines on a phone) fits the room the paragraph kept.
+      current = { ...H.failing, reason: "dead_letter_most", deadLetterRatio: 0.9, recovering: true };
+      await emit(page);
+      await expect(page.getByTestId("health-reason")).toContainText("since");
+      await page.waitForTimeout(400);
+      expect(await page.evaluate(() => (window as any).__flicker), "a skeleton appeared").toBe(0);
+      expect(await page.evaluate(() => (window as any).__cls), "layout shift across three sentences").toBeLessThan(0.01);
+    });
+  });
+}
 
 test("no horizontal scroll at 390px with every state on the list and the page", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
