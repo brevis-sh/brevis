@@ -368,6 +368,14 @@ function Count({ data }: { data?: WorkflowsList }) {
 // box says so instead.
 function Table({ data, links, toggler, onRun }: { data?: WorkflowsList; links: Links; toggler: ReturnType<typeof useScheduleToggle>; onRun: (slug: string, opener: HTMLElement) => void }) {
   const { t } = useT();
+  // Before the early return below: a hook after it is skipped on the render where
+  // a search finds nothing, and React throws (error #300) and blanks the page.
+  useEffect(() => {
+    if (data) {
+      remember("workflows.rows", data.rows.length);
+      remember("workflows.pages", Math.max(1, Math.ceil(data.filtered / data.filter.perPage)));
+    }
+  }, [data]);
   if (data && data.rows.length === 0) {
     return (
       <div className="rounded-card border border-dashed border-line px-6 py-12 text-center">
@@ -377,12 +385,6 @@ function Table({ data, links, toggler, onRun }: { data?: WorkflowsList; links: L
     );
   }
   const f = data?.filter;
-  useEffect(() => {
-    if (data) {
-      remember("workflows.rows", data.rows.length);
-      remember("workflows.pages", Math.max(1, Math.ceil(data.filtered / data.filter.perPage)));
-    }
-  }, [data]);
   return (
     <div className="overflow-x-auto rounded-card border border-line bg-surface shadow-warm-sm">
       <table className="ct w-full text-sm min-[860px]:min-w-[60rem]" aria-busy={!data}>
