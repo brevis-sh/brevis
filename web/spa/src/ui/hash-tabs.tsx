@@ -27,7 +27,7 @@ export function HashTabs({ label, tabs, id }: { label: string; tabs: HashTab[]; 
 
   return (
     <div>
-      <div className="px-2 pt-1">
+      <div className="mb-3">
       <div role="tablist" aria-label={label} onKeyDown={onKey} className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-line-soft">
         {tabs.map((t) => (
           <button

@@ -3,7 +3,8 @@ import { Link, useParams } from "react-router";
 import { ApiError } from "../api/client";
 import { useData } from "../api/live";
 import type { Stream } from "../api/ingest";
-import { useFormat, useT } from "../i18n";
+import { useT } from "../i18n";
+import { useBrief } from "../ui/format";
 import { ConfigNote, DeadLetterPanel } from "../ui/cfg";
 import { CopyButton } from "../ui/copy";
 import { FlowDiagram } from "../ui/flow";
@@ -19,7 +20,7 @@ const h2 = "mb-3 text-[13px] font-semibold text-ink";
 
 function Strip({ gateway, v }: { gateway: string; v: Stream | undefined }) {
   const { t } = useT();
-  const { utc } = useFormat();
+  const brief = useBrief();
   const kind = useLogoTitle();
   return (
     <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border border-line bg-surface px-4 py-3 text-[12.5px] text-muted">
@@ -47,7 +48,7 @@ function Strip({ gateway, v }: { gateway: string; v: Stream | undefined }) {
             </span>
           </span>
           {v.format !== "" && <span>{t("streams.page.format", { format: v.format })}</span>}
-          {v.publishedAt && <span>{t("streams.page.published", { at: utc(v.publishedAt) })}</span>}
+          {v.publishedAt && <span>{t("streams.page.published", { at: `${brief(v.publishedAt)} UTC` })}</span>}
         </>
       )}
     </div>
@@ -121,7 +122,7 @@ function Overview({ path, v }: { path: string; v: Stream | undefined }) {
 
 function Config({ v }: { v: Stream | undefined }) {
   const { t } = useT();
-  const { utc } = useFormat();
+  const brief = useBrief();
   const [view, setView] = useState<"explained" | "yaml">("explained");
   const toggle = (k: "explained" | "yaml", label: string) => (
     <button
@@ -197,7 +198,7 @@ function Config({ v }: { v: Stream | undefined }) {
               {v.changes.map((c, i) => (
                 <span key={c.at}>
                   {i > 0 && <span className="text-faint"> · </span>}
-                  {utc(c.at)} — {c.text}
+                  {brief(c.at)} UTC — {c.text}
                 </span>
               ))}
             </p>
@@ -336,10 +337,6 @@ export default function StreamRoute() {
         title={`POST ${path}`}
         eyebrow={
           <>
-            <Link to="/ingest/streams" className="text-[0.75rem] text-muted hover:text-ink">
-              &larr; {t("nav.streams")}
-            </Link>
-            <span className="text-faint">·</span>
             <span className="text-[0.7rem] font-medium tracking-[0.08em] text-muted uppercase">{t("streams.page.kicker")}</span>
             <span className="font-mono text-[0.75rem] text-ink-2">{gateway}</span>
           </>

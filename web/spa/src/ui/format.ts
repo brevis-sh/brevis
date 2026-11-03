@@ -56,3 +56,6 @@ export function useBrief() {
     return lang.startsWith("en") ? `${m} ${d.getUTCDate()} ${clock.format(d)}` : `${d.getUTCDate()} ${m} ${clock.format(d)}`;
   };
 }
+
+/** The server's UTCStamp: "2026-11-03 04:57:38 UTC". */
+export const stamp = (iso: string) => `${new Date(iso).toISOString().slice(0, 19).replace("T", " ")} UTC`;
