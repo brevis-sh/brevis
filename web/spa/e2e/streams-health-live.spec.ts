@@ -173,7 +173,7 @@ test("a state change that moves no row shifts nothing: the words differ in width
   for (const next of [[H.quiet, H.healthy, H.unknown], [H.unknown, H.quiet, H.healthy], [H.healthy, H.quiet, H.unknown]]) {
     current = next;
     await emit(page);
-    await expect(page.locator("#stream-rows tbody tr .stl-state .st").first()).toHaveText(WORD[next[0].state as keyof typeof WORD]);
+    await expect(page.locator("#stream-rows tbody tr .stl-state .st").first()).toHaveText(WORD[next[0]!.state as keyof typeof WORD]);
   }
   expect(await page.evaluate(() => (window as any).__cls), "layout shift").toBeLessThan(0.01);
 });
