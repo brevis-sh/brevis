@@ -7,6 +7,11 @@
 @source "../layouts";
 @source "../pages";
 @source "../components";
+/* The React app has its own styles (web/spa/src/styles.css) and builds its own
+   CSS. Left in, Tailwind's automatic detection reads its sources and its dist/
+   and adds their words to this sheet: the generated-artifacts check failed on
+   exactly that. */
+@source not "../spa";
 
 /* ---------------------------------------------------------------------------
    Typography — served from the binary itself, not from Google Fonts.
