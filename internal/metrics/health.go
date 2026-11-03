@@ -52,8 +52,11 @@ const (
 	// MinBatches is the same for delivery. A batch is minutes of events, so
 	// the bar is low: two batches both buried is already a sink that is down.
 	MinBatches = 2
-	// MinBadMinutes is how many distinct minutes of the window carry the bad
-	// evidence for "failing". Two: a single spike, however large, is degraded.
+	// MinBadMinutes is how many minutes of the window must EACH be failing on
+	// their own (a majority of that minute's events or batches bad) for the
+	// window to be "failing". Two: a spike, however large, is degraded, and a
+	// burst straddling a minute boundary does not count twice, because each of
+	// its halves has to be a majority of its own minute.
 	MinBadMinutes = 2
 	// FailingRatio is a clear majority: half or more of the window's events
 	// were rejected or buried, or of its batches buried.
@@ -306,6 +309,7 @@ func (m Minute) active() bool {
 func rawHealth(ms []Minute) Health {
 	var w WindowCounts
 	var badRej, badDead, badBur, satMin int
+	major := func(bad, all float64) bool { return bad > 0 && bad >= FailingRatio*all }
 	lat := map[float64]float64{}
 	for _, m := range ms {
 		w.Received += max(m.Received, 0)
@@ -316,9 +320,9 @@ func rawHealth(ms []Minute) Health {
 		w.Retried += max(m.Retried, 0)
 		w.Buried += max(m.Buried, 0)
 		w.Saturated += max(m.Saturated, 0)
-		badRej += b2i(m.Rejected > 0)
-		badDead += b2i(m.DeadLetter > 0)
-		badBur += b2i(m.Buried > 0)
+		badRej += b2i(major(m.Rejected, m.Received+m.Rejected))
+		badDead += b2i(major(m.DeadLetter, m.Received))
+		badBur += b2i(major(m.Buried, m.Delivered+m.Buried))
 		satMin += b2i(m.Saturated > 0)
 		for le, v := range m.Lat {
 			lat[le] += v

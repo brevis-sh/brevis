@@ -161,6 +161,9 @@ func TestAssessFailingBoundaries(t *testing.T) {
 	}{
 		// 5 minutes: bad minutes carry rejected r out of 20+r... use 1 bad minute out of 5 -> not failing.
 		{"a single bad minute never fails", spread(1, WindowCounts{Received: 0, Rejected: 100000}), HealthDegraded, ReasonRejectedSome},
+		{"window majority carried by one minute: the second minute is a minority", []Minute{
+			mn(WindowCounts{Rejected: 5000}), mn(WindowCounts{Received: 1000, Rejected: 500}), mn(WindowCounts{Received: 100}), mn(WindowCounts{Received: 100}), mn(WindowCounts{Received: 100})},
+			HealthDegraded, ReasonRejectedSome},
 		{"rejected majority in two minutes", flat(HealthWindow, WindowCounts{Received: 10, Rejected: 10}), HealthFailing, ReasonRejectedMost},
 		{"rejected just under the majority", flat(HealthWindow, WindowCounts{Received: 11, Rejected: 10}), HealthDegraded, ReasonRejectedSome},
 		{"majority under the minimum volume", flat(1, WindowCounts{Received: 2, Rejected: 18}), HealthDegraded, ReasonRejectedSome},
