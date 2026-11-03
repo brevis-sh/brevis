@@ -93,7 +93,9 @@ export type WorkflowDetail = {
     createdAt: string;
   }[];
   day: string | null;
-  params: { name: string; type: string; default: string; title: string; description: string; warn: string; group: string; uses: string }[];
+  params: { name: string; type: string; default: string; title: string; description: string; warn: string; group: string; uses: string; enum: string[]; pattern: string }[];
+  /** The schedule's last slots, newest first, worded by the server. */
+  slots: { at: string; label: string }[];
   yaml: string;
   now: string;
 };

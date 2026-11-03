@@ -1,4 +1,4 @@
-import { Suspense, lazy, useRef, useState, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ApiError, getJSON } from "../api/client";
@@ -11,6 +11,7 @@ import { until, useAgo, useBrief, useNumbers } from "../ui/format";
 import { Icon } from "../ui/icon";
 import { Logo } from "../ui/logo";
 import { PageFrame } from "../ui/page-frame";
+import { useRunDrawer } from "./run-now";
 import { LoadError } from "../ui/query-boundary";
 import { Skeleton } from "../ui/skeleton";
 import { Stats, type StatProps } from "../ui/stat";
@@ -419,9 +420,8 @@ function About({ slug, text }: { slug: string; text: string }) {
   );
 }
 
-function Actions({ slug, d, toggler }: { slug: string; d?: WorkflowDetail; toggler: ReturnType<typeof useScheduleToggle> }) {
+function Actions({ slug, d, toggler, onRun }: { slug: string; d?: WorkflowDetail; toggler: ReturnType<typeof useScheduleToggle>; onRun: (opener: HTMLElement) => void }) {
   const { t } = useT();
-  const href = `/workflows/${encodeURIComponent(slug)}`;
   return (
     <div className="flex items-center gap-2">
       {!d ? (
@@ -433,11 +433,10 @@ function Actions({ slug, d, toggler }: { slug: string; d?: WorkflowDetail; toggl
           </button>
         )
       )}
-      {/* The run-now dialog and the parameter drawer are still the server's. */}
-      <a href={`${href}#run`} className={buttonClass("primary", "regular")}>
+      <button type="button" aria-haspopup="dialog" className={buttonClass("primary", "regular")} onClick={(e) => onRun(e.currentTarget)}>
         <Icon name="play" className="h-3.5 w-3.5" />
         {t("workflows.run_now.open")}
-      </a>
+      </button>
     </div>
   );
 }
@@ -449,6 +448,7 @@ export default function WorkflowRoute() {
   const [sp] = useSearchParams();
   const day = sp.get("day") ?? "";
   const toggler = useScheduleToggle();
+  const runDrawer = useRunDrawer();
   const q = useQuery({
     queryKey: ["workflow", slug, day],
     queryFn: ({ signal }) => getJSON<WorkflowDetail>(`/api/workflows/${encodeURIComponent(slug)}${day ? `?day=${encodeURIComponent(day)}` : ""}`, signal),
@@ -457,6 +457,12 @@ export default function WorkflowRoute() {
     retry: (count, e) => !(e instanceof ApiError && e.status === 404) && count < 1,
   });
   const d = q.data;
+  // The old page's `#run` opened the drawer; links that still say so (a load's "Run…") keep working.
+  const wantsRun = useLocation().hash === "#run" && !!d;
+  useEffect(() => {
+    if (wantsRun) runDrawer.open({ slug }, document.body);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantsRun]);
   const { note, error, dismiss, toggle } = toggler;
   const missing = q.error instanceof ApiError && q.error.status === 404;
   let body: ReactNode;
@@ -493,8 +499,9 @@ export default function WorkflowRoute() {
     );
   }
   return (
-    <PageFrame title={slug} mono actions={q.isError && !d ? undefined : <Actions slug={slug} d={d} toggler={toggler} />} aside={d?.description ? <About slug={slug} text={d.description} /> : undefined}>
+    <PageFrame title={slug} mono actions={q.isError && !d ? undefined : <Actions slug={slug} d={d} toggler={toggler} onRun={(el) => runDrawer.open({ slug }, el)} />} aside={d?.description ? <About slug={slug} text={d.description} /> : undefined}>
       {body}
+      {runDrawer.drawer}
     </PageFrame>
   );
 }

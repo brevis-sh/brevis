@@ -13,6 +13,7 @@ import { PageFrame } from "../ui/page-frame";
 import { Pagination } from "../ui/pagination";
 import { LoadError } from "../ui/query-boundary";
 import { Skeleton } from "../ui/skeleton";
+import { useRunDrawer } from "./run-now";
 import { ToggleSwitch } from "../ui/toggle-switch";
 
 const STATES = ["", "failing", "running", "paused", "manual"] as const;
@@ -95,7 +96,7 @@ const Tag = ({ tag, to }: { tag: string; to: string }) => (
   <Link to={to} className="inline-flex rounded-card border border-line bg-parchment px-2 py-0.5 text-[0.7rem] text-muted transition-colors hover:border-line-strong hover:text-ink">{tag}</Link>
 );
 
-function Row({ w, links, busy, onToggle }: { w: WorkflowRow; links: Links; busy: boolean; onToggle: () => void }) {
+function Row({ w, links, busy, onToggle, onRun }: { w: WorkflowRow; links: Links; busy: boolean; onToggle: () => void; onRun: (slug: string, opener: HTMLElement) => void }) {
   const { t, n } = useT();
   const { dateTime } = useFormat();
   const since = useAgo();
@@ -195,15 +196,7 @@ function Row({ w, links, busy, onToggle }: { w: WorkflowRow; links: Links; busy:
         </div>
       </td>
       <td className="py-3 pr-5 text-right">
-        {w.hasParams ? (
-          // Parameters are asked for in the workflow's own drawer, which is still the server's.
-          <a href={`${href}#run`} title={t("workflows.run.tip")} aria-label={t("workflows.run", { workflow: w.slug })} className={runBtn}>{playGlyph}</a>
-        ) : (
-          <form method="post" action={`${href}/trigger`} className="inline">
-            <input type="hidden" name="back" value="/app/workflows" />
-            <button type="submit" title={t("workflows.run.tip")} aria-label={t("workflows.run", { workflow: w.slug })} className={runBtn}>{playGlyph}</button>
-          </form>
-        )}
+        <button type="button" aria-haspopup="dialog" title={t("workflows.run.tip")} aria-label={t("workflows.run", { workflow: w.slug })} className={runBtn} onClick={(e) => onRun(w.slug, e.currentTarget)}>{playGlyph}</button>
       </td>
     </tr>
   );
@@ -358,7 +351,7 @@ function Count({ data }: { data?: WorkflowsList }) {
 
 // The table: its header is the screen's; its rows are data. With no rows to show the
 // box says so instead.
-function Table({ data, links, toggler }: { data?: WorkflowsList; links: Links; toggler: ReturnType<typeof useScheduleToggle> }) {
+function Table({ data, links, toggler, onRun }: { data?: WorkflowsList; links: Links; toggler: ReturnType<typeof useScheduleToggle>; onRun: (slug: string, opener: HTMLElement) => void }) {
   const { t } = useT();
   if (data && data.rows.length === 0) {
     return (
@@ -386,7 +379,7 @@ function Table({ data, links, toggler }: { data?: WorkflowsList; links: Links; t
           </tr>
         </thead>
         <tbody className="divide-y divide-line-soft">
-          {data ? data.rows.map((w) => <Row key={w.slug} w={w} links={links} busy={toggler.pending === w.slug} onToggle={() => toggler.toggle(w.slug)} />) : <RowsSkeleton />}
+          {data ? data.rows.map((w) => <Row key={w.slug} w={w} links={links} busy={toggler.pending === w.slug} onToggle={() => toggler.toggle(w.slug)} onRun={onRun} />) : <RowsSkeleton />}
         </tbody>
       </table>
       {data && f && <Pagination page={f.page} perPage={f.perPage} total={data.filtered} pages={Math.ceil(data.filtered / f.perPage)} to={(p) => links.hrefWith({ page: p > 1 ? String(p) : null }, true)} />}
@@ -478,6 +471,7 @@ export default function WorkflowsRoute() {
   const { t } = useT();
   const links = useListLinks();
   const toggler = useScheduleToggle();
+  const runDrawer = useRunDrawer();
   const qs = links.sp.toString();
   // The list keeps the previous page on screen while a filter loads, and renews itself
   // every 5s while the tab is visible (the query does not poll in the background).
@@ -514,10 +508,11 @@ export default function WorkflowsRoute() {
               )}
               {error && <p className="mb-2 text-[12.5px] text-state-failed">{error.message}</p>}
             </div>
-            <Table data={data} links={links} toggler={toggler} />
+            <Table data={data} links={links} toggler={toggler} onRun={(slug, el) => runDrawer.open({ slug }, el)} />
           </>
         )}
       </div>
+      {runDrawer.drawer}
     </PageFrame>
   );
 }

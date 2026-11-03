@@ -15,6 +15,7 @@ import { useCrumb } from "../shell/nav";
 import "../ui/bar.css";
 import { Logos } from "../ui/logo";
 import { ContextPanel, ParamsPanel, StepsPanel } from "./run-panels";
+import { useQuickRun, useRunDrawer } from "./run-now";
 
 const TABS = ["logs", "steps", "params", "context"] as const;
 type Tab = (typeof TABS)[number];
@@ -127,6 +128,8 @@ function RunHead({ id, run, onGoto }: { id: string; run: Run | undefined; onGoto
   const wf = run ? `/workflows/${encodeURIComponent(run.workflow)}` : undefined;
   const link = "inline-flex items-center gap-1 text-[13px] text-muted transition-colors hover:text-ink";
   const rerunTitle = t("run.rerun_title");
+  const quick = useQuickRun();
+  const drawer = useRunDrawer();
 
   return (
     <>
@@ -178,20 +181,23 @@ function RunHead({ id, run, onGoto }: { id: string; run: Run | undefined; onGoto
                 {t("run.cancel")}
               </button>
             )
-          ) : run.rerun === "now" ? (
-            // The old page's own trigger: a POST that comes back to the new run.
-            <form method="post" action={`${wf}/trigger`} className="inline">
-              <button type="submit" title={rerunTitle} className={buttonClass()}>
-                <Icon name="refresh-cw" className="h-3.5 w-3.5" />
-                {t("run.rerun")}
-              </button>
-            </form>
-          ) : run.rerun === "params" ? (
-            // The run-now drawer is still the old page's.
-            <a href={`/runs/${run.id}#run`} title={rerunTitle} className={buttonClass()}>
+          ) : run.rerun ? (
+            // With no parameters to ask for, one click; with some, the drawer, filled with this run's values.
+            <button
+              type="button"
+              disabled={quick.pending !== null}
+              aria-haspopup={run.rerun === "params" ? "dialog" : undefined}
+              title={run.slot ? t("run.rerun_note", { slot: utc(run.slot) }) : rerunTitle}
+              className={buttonClass()}
+              onClick={(e) =>
+                run.rerun === "now"
+                  ? void quick.run(run.workflow, {}, run.id)
+                  : drawer.open({ slug: run.workflow, rerun: { runId: run.id, params: Object.fromEntries(run.params.map((kv) => [kv.key, kv.value])), slot: run.slot } }, e.currentTarget)
+              }
+            >
               <Icon name="refresh-cw" className="h-3.5 w-3.5" />
-              {t("run.rerun_more")}
-            </a>
+              {t(run.rerun === "now" ? "run.rerun" : "run.rerun_more")}
+            </button>
           ) : null}
         </div>
       </div>
@@ -200,6 +206,7 @@ function RunHead({ id, run, onGoto }: { id: string; run: Run | undefined; onGoto
           {cancel.error.message}
         </p>
       )}
+      {drawer.drawer}
 
       <dl className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px]">
         <div className="flex items-baseline gap-1.5">
