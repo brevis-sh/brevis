@@ -33,7 +33,7 @@ const (
 	//	maxBounds      distinct histogram `le` per entity, first seen win
 	//
 	// MEMORY BOUND per target, worst case: maxEntities x Retention buckets x
-	// (a cell of 24 B + 8 counters x 8 B + maxBounds x 8 B) = 1000 x 180 x ~600 B
+	// (a cell of 24 B + 9 counters x 8 B + maxBounds x 8 B) = 1000 x 180 x ~600 B
 	// = ~110 MB, and only when every entity is full of traffic for three hours;
 	// a gateway with 20 streams and 12 bounds is ~1 MB. The previous scrape
 	// (prev) is at most maxSeries entries. Truncation is surfaced (Owner.Dropped),

@@ -73,6 +73,29 @@ A stream is matched to its series by the `name` of its published configuration
 percentiles are interpolated inside histogram buckets: an estimate, not a
 measurement.
 
+**A stream's health** is derived from those series, on the server, by one pure
+function (`internal/metrics/health.go`, with every threshold a named constant and
+the reasoning beside it), and rides on `health` of the Streams list and detail
+JSON. Honest or nothing: a state is claimed only from numbers that were measured.
+
+| state | when | reason keys |
+|---|---|---|
+| `unknown` | no source for the stream's gateway, no good scrape in 3 intervals, the first scrape (a baseline), or the gateway never reported the stream | `source_not_configured`, `source_unreachable`, `waiting`, `not_in_source`, `not_reported` (no `name`), `destination_unnamed` |
+| `quiet` | the source is healthy and the last 5 minutes had no events, deliveries or refusals; `since` is the last minute that had some | `no_traffic`, `no_traffic_seen` (none in the ring) |
+| `healthy` | traffic and nothing below | `delivering` |
+| `degraded` | any dead-lettered record or buried batch; at least 1% of offered events rejected; any refused-because-full request; at least a quarter of delivery attempts retried; delivery p95 over 30 s; some replicas silent | `dead_lettered`, `rejected_some`, `saturated`, `retrying`, `slow_delivery`, `replicas_partial` |
+| `failing` | half or more of the window's events rejected (20+ offered) or dead-lettered (20+ received), or of its batches buried (2+), in at least 2 minutes that are each a majority on their own; or the buffer refused requests in 4 of the 5 minutes | `rejected_most`, `dead_letter_most`, `delivery_failing`, `saturating` |
+
+A stream judged `failing` or `degraded` by a window is never shown healthier
+until the last 4 raw minutes (the window less one) were all better: the state
+worsens at once and improves late, so a noisy stream does not flap; `recovering`
+says a state is being held. Events a hook drops **on purpose**
+(`events_dropped_total`) are filtering and never count against health, and
+`unauthorized` requests (a wrong key, a scan) are not the stream's fault.
+Requests refused as malformed, empty or too large never became events: they count
+with the rejected ones, as a floor. With some replicas silent a clean result is
+not claimed: the state is `degraded` / `replicas_partial`.
+
 **The honest limits**
 
 - **History is the console's memory.** The last three hours are kept per minute;

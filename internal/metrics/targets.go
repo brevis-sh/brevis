@@ -88,7 +88,7 @@ type spec struct {
 // Measure names are the JSON keys the SPA reads.
 var (
 	// GatewayMeasures and EndpointMeasures are exported for the API tests.
-	GatewayMeasures  = []string{"received", "rejected", "dropped", "deadLetter", "delivered"}
+	GatewayMeasures  = []string{"received", "rejected", "dropped", "deadLetter", "delivered", "retried", "buried", "saturated", "refused"}
 	EndpointMeasures = []string{"ok", "rateLimited", "clientError", "serverError", "cacheHit", "cacheMiss", "cacheOther", "hookFailed"}
 )
 
@@ -114,8 +114,25 @@ var specs = map[Kind]*spec{
 				// Batches, not events: the gateway has no per-event delivery
 				// counter unless the opt-in ingestion switch is on. Said as
 				// "delivered batches" on screen rather than converted.
-				if s.Labels["outcome"] == "delivered" {
+				switch s.Labels["outcome"] {
+				case "delivered":
 					return ent, counter, 4
+				case "retried":
+					return ent, counter, 5
+				case "buried":
+					return ent, counter, 6
+				}
+			case "brevis_gateway_saturated_total":
+				return ent, counter, 7
+			case "brevis_gateway_requests_refused_total":
+				// Requests that never decoded into events (a body that is not
+				// JSON, empty or too large): the client's fault and invisible
+				// in events_rejected_total. `unauthorized` is left out (a wrong
+				// key or a scan is not the stream's health) and `saturated`
+				// has its own counter above.
+				switch s.Labels["reason"] {
+				case "malformed", "body_too_large", "empty":
+					return ent, counter, 8
 				}
 			case "brevis_gateway_buffer_records":
 				return ent, gauge, 0

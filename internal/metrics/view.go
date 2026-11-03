@@ -67,6 +67,9 @@ type Entity struct {
 	P50         []*float64         `json:"latencyP50Sec,omitempty"`
 	P95         []*float64         `json:"latencyP95Sec,omitempty"`
 	Latency     *Latency           `json:"latency,omitempty"`
+	// lat is each minute's merged histogram, kept for the health rule, which
+	// needs a percentile over several minutes and not a mean of percentiles.
+	lat []map[float64]float64
 }
 
 // Snapshot is everything a screen needs from one kind.
@@ -78,6 +81,8 @@ type Snapshot struct {
 	Owners      []Owner   `json:"owners"`
 	Total       Entity    `json:"total"`
 	Entities    []Entity  `json:"entities"`
+	// now is the instant the snapshot was read at, for the health rule.
+	now time.Time
 }
 
 // unconfigured answers for a nil *Collector, so a console without sources and
@@ -112,7 +117,7 @@ func (c *Collector) Snapshot(k Kind, minutes int, only *[2]string) Snapshot {
 		c = unconfigured
 	}
 	now := c.now()
-	snap := Snapshot{Configured: c.Configured(k), Since: c.started, IntervalSec: c.cfg.Interval.Seconds(), Entities: []Entity{}, Owners: []Owner{}}
+	snap := Snapshot{Configured: c.Configured(k), Since: c.started, IntervalSec: c.cfg.Interval.Seconds(), Entities: []Entity{}, Owners: []Owner{}, now: now}
 	cur := now.Unix() / 60
 	snap.Window = Window{Start: (cur - int64(n) + 1) * 60, Minutes: n}
 	if !snap.Configured {
@@ -288,6 +293,7 @@ func emptyEntity(sp *spec, owner, name string, n int) Entity {
 func (a *acc) view(sp *spec, n int) Entity {
 	e := Entity{Owner: a.owner, Name: a.name, Present: a.present, Values: map[string][]*float64{}, Covered: make([]int, n),
 		Rate: map[string]*float64{}, LastHour: map[string]float64{}}
+	e.lat = a.lat
 	hour := min(60, n)
 	for i := 0; i < n; i++ {
 		e.Covered[i] = int(math.Round(a.cov[i]))

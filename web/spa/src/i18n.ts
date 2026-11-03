@@ -47,6 +47,12 @@ export function useFormat() {
     number: (v: number) => new Intl.NumberFormat(lang).format(v),
     date: (iso: string) => new Intl.DateTimeFormat(lang, { dateStyle: "medium" }).format(new Date(iso)),
     dateTime: (iso: string) => new Intl.DateTimeFormat(lang, { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso)),
+    /** The wall-clock time of an instant, in the reader's zone ("10:12"); with its day when it is not today. */
+    clock: (iso: string) => {
+      const d = new Date(iso);
+      const sameDay = d.toDateString() === new Date().toDateString();
+      return new Intl.DateTimeFormat(lang, sameDay ? { timeStyle: "short" } : { dateStyle: "medium", timeStyle: "short" }).format(d);
+    },
     /** The instant to the second, in UTC (a run's slot is a UTC schedule). */
     utc: (iso: string) =>
       `${new Intl.DateTimeFormat(lang, { dateStyle: "medium", timeStyle: "medium", timeZone: "UTC" }).format(new Date(iso))} UTC`,

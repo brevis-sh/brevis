@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"brevis.sh/brevis/internal/infrastructure/postgres"
+	"brevis.sh/brevis/internal/metrics"
 	"brevis.sh/brevis/web/pages"
 )
 
@@ -31,7 +32,26 @@ func (u *UI) streamsAPI(w http.ResponseWriter, r *http.Request) {
 		u.ingestFail(w, "the streams", err)
 		return
 	}
-	v := pages.BuildStreams(entries, pages.ParseStreamFilter(r.URL.Query()))
+	v := pages.BuildStreamsWith(entries, pages.ParseStreamFilter(r.URL.Query()), u.streamHealth(u.scrape.Snapshot(metrics.Gateway, metrics.Retention, nil)))
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, pages.StreamsAsJSON(ingestCtx(r), v))
+}
+
+// streamHealth says a stream's health from a snapshot of its gateway's
+// metrics. A stream with no name has nothing to match the gateway's series
+// by; one whose gateway no source names, or that no collector serves, keeps
+// the static answer unless it can say why it is unknown more precisely.
+func (u *UI) streamHealth(snap metrics.Snapshot) func(pages.Stream) pages.StreamHealth {
+	return func(s pages.Stream) pages.StreamHealth {
+		static := s.Health()
+		name := s.Field("name")
+		if name == "" {
+			return static
+		}
+		h := snap.Health(s.Gateway, name)
+		if h.State == metrics.HealthUnknown && h.Reason == metrics.ReasonSourceNotConfigured && static.Reason == pages.ReasonDestinationUnnamed {
+			return static
+		}
+		return h
+	}
 }

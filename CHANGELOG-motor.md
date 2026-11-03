@@ -16,6 +16,23 @@ The engine's tag is `vX.Y.Z`, with no prefix; the SDK's carries `sdk/`.
 
 ---
 
+## [Unreleased]
+
+### Added: a stream's health, from what the gateway measured
+
+- The Streams list and a stream's page say `healthy`, `quiet`, `degraded` or
+  `failing` (and `unknown` with the reason: no source, an unreachable one, the
+  first scrape, a stream the gateway never reported) instead of "no data" for
+  every stream. The rule is one pure function over the collector's minute
+  buckets, with each threshold named and explained in
+  `internal/metrics/health.go` and summarized in `docs/OBSERVABILITY.md`.
+- `health` on `/api/ingest/streams` and its detail gains `since`,
+  `windowMinutes`, the window's counts and the ratios behind the state;
+  `healthCounts` counts every state. Both screens refetch on the
+  `metrics:streams` topic, and the list puts failing and degraded streams first.
+- The collector also keeps retried and buried batches, refused-because-full
+  requests and requests that never decoded.
+
 ## [0.42.0] — 2026-11-02
 
 ### Added: an Iceberg table is a landing target
