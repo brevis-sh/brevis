@@ -488,9 +488,9 @@ type StreamsJSON struct {
 	} `json:"filter"`
 }
 
-func streamRowJSON(ctx context.Context, s Stream) StreamRowJSON {
+func streamRowJSON(ctx context.Context, s Stream, h StreamHealth) StreamRowJSON {
 	out := StreamRowJSON{Gateway: s.Gateway, Path: s.Path, Href: s.Href(), Note: s.Note(),
-		Sink: placeJSON(ctx, s.Sink), Batch: s.BatchIn(ctx), BatchEvery: s.Field("buffer.flush.every"), Health: s.Health()}
+		Sink: placeJSON(ctx, s.Sink), Batch: s.BatchIn(ctx), BatchEvery: s.Field("buffer.flush.every"), Health: h}
 	if n, err := strconv.ParseInt(s.Field("buffer.flush.records"), 10, 64); err == nil {
 		out.BatchRecords = &n
 	}
@@ -507,7 +507,11 @@ func StreamsAsJSON(ctx context.Context, v StreamsView) StreamsJSON {
 		WithDeadLetter: v.WithDeadLetter, HealthCounts: v.HealthCounts, Kinds: []ChoiceJSON{}}
 	out.Filter.Kind, out.Filter.Q = v.Filter.Kind, v.Filter.Q
 	for _, s := range v.Rows {
-		out.Rows = append(out.Rows, streamRowJSON(ctx, s))
+		h, ok := v.Healths[s.Key()]
+		if !ok {
+			h = s.Health()
+		}
+		out.Rows = append(out.Rows, streamRowJSON(ctx, s, h))
 	}
 	for _, k := range v.Kinds {
 		out.Kinds = append(out.Kinds, ChoiceJSON{Key: k, Label: components.LogoTitle(ctx, kindLogo(k))})
@@ -586,7 +590,7 @@ type StreamJSON struct {
 func StreamAsJSON(ctx context.Context, v StreamView) StreamJSON {
 	out := StreamJSON{
 		Gateway: v.Gateway, Path: v.Path, Sink: placeJSON(ctx, v.Sink), PublishedAt: ptrTime(v.PublishedAt),
-		Format: v.Field("format"), Health: v.Health(), Lede: v.Lede(ctx), Summary: v.Summary(ctx), Flow: flowJSON(ctx, streamFlow(v.Stream)),
+		Format: v.Field("format"), Health: v.healthNow(), Lede: v.Lede(ctx), Summary: v.Summary(ctx), Flow: flowJSON(ctx, streamFlow(v.Stream)),
 		Tables: append([]string{}, v.Tables()...), ReadBy: readersJSON(v.ReadBy), HasConfig: v.Config != nil,
 		Cards: []CardJSON{}, Changes: []StreamChangeJSON{}, BuriedMetric: v.BuriedMetric(),
 		TestEvent: TestEventJSON{Format: v.TestFormat(), Body: v.TestBody(), CurlHead: v.TestCurlHead(),
@@ -633,4 +637,11 @@ func splitList(s string) []string {
 		}
 	}
 	return out
+}
+
+func (v StreamView) healthNow() StreamHealth {
+	if v.Live != nil {
+		return *v.Live
+	}
+	return v.Health()
 }

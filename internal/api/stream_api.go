@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"brevis.sh/brevis/internal/infrastructure/postgres"
+	"brevis.sh/brevis/internal/metrics"
 	"brevis.sh/brevis/web/pages"
 )
 
@@ -28,6 +29,11 @@ func (u *UI) streamAPI(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	v := pages.BuildStream(*s, detail)
+	if name := s.Field("name"); name != "" {
+		snap := u.scrape.Snapshot(metrics.Gateway, metrics.Retention, &[2]string{s.Gateway, name})
+		h := u.streamHealth(snap)(*s)
+		v.Live = &h
+	}
 	v.SQL = s.Sink.URI != "" && u.dataTools(s.Sink.URI)
 	if u.endpoints != nil && s.Sink.URI != "" {
 		readers, err := u.endpoints.Reading(r.Context(), s.Sink.URI)

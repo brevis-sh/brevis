@@ -191,3 +191,33 @@ func TestMetricsTopicsFingerprintIsTheScrapeCount(t *testing.T) {
 		t.Error("the endpoints topic moved with the gateway's scrapes")
 	}
 }
+
+// The streams list and the detail say a health derived from the scraped series,
+// the counts agree with the rows, and with no source the reason says so.
+func TestStreamHealthFromTheSource(t *testing.T) {
+	// No source: unknown, and the reason names it.
+	_, body := ingestJSON(t, dataUI(namedStream()), "/api/ingest/streams")
+	row := list(t, body, "rows")[0].(map[string]any)
+	if h := row["health"].(map[string]any); h["state"] != "unknown" || h["reason"] != "source_not_configured" {
+		t.Errorf("no source: %v", h)
+	}
+
+	// A gateway counting up with a delivery per scrape: healthy.
+	srv := metricsServer(t, func(n int) string {
+		return "brevis_gateway_events_received_total{stream=\"clicks\",format=\"json\"} " + strings.Repeat("1", n) + "\n" +
+			"brevis_gateway_batches_total{stream=\"clicks\",sink=\"x\",outcome=\"delivered\"} " + strings.Repeat("1", n) + "\n"
+	})
+	ui := dataUI(namedStream()).WithMetrics(scraped(t, metrics.Gateway, "edge", srv.URL))
+	_, body = ingestJSON(t, ui, "/api/ingest/streams")
+	row = list(t, body, "rows")[0].(map[string]any)
+	if h := row["health"].(map[string]any); h["state"] != "healthy" || h["reason"] != "delivering" || h["windowMinutes"] != float64(5) {
+		t.Errorf("list: %v", h)
+	}
+	if c := body["healthCounts"].(map[string]any); c["healthy"] != float64(1) || len(c) != 1 {
+		t.Errorf("counts: %v", c)
+	}
+	_, one := ingestJSON(t, ui, "/api/ingest/streams/edge/v1/clicks")
+	if h := one["health"].(map[string]any); h["state"] != "healthy" {
+		t.Errorf("detail: %v", h)
+	}
+}

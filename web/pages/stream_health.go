@@ -1,5 +1,7 @@
 package pages
 
+import "brevis.sh/brevis/internal/metrics"
+
 // A stream's health, as far as the console can truthfully say it.
 //
 // WHAT THE ENGINE HOLDS: a stream's published CONFIGURATION (gateway_streams,
@@ -19,29 +21,28 @@ package pages
 // arriving). What can be said truthfully is whether the console is able to
 // know anything, and why not.
 
-// HealthUnknown is the only state the console can honestly report for a
-// gateway stream until the gateway reports its traffic.
-const HealthUnknown = "unknown"
+// HealthUnknown is what the console says when it cannot tell: the static
+// answer below, and the live one (internal/metrics.Assess) when the gateway's
+// /metrics say nothing usable.
+const HealthUnknown = metrics.HealthUnknown
 
-// The reasons a stream's health is unknown. They are machine keys; the app
-// writes the sentence in the reader's language.
+// The reasons a stream's health is unknown that the manifest decides. They are
+// machine keys; the app writes the sentence in the reader's language.
 const (
-	// ReasonNotReported: the stream's destination is known, but its traffic
-	// is only on the gateway's /metrics.
-	ReasonNotReported = "not_reported"
+	// ReasonNotReported: the stream has no name to match the gateway's series
+	// by, so nothing it reports can be attributed to it.
+	ReasonNotReported = metrics.ReasonNotReported
 
 	// ReasonDestinationUnnamed: the manifest could not name where the stream
 	// lands, so there is not even a destination to look at.
-	ReasonDestinationUnnamed = "destination_unnamed"
+	ReasonDestinationUnnamed = metrics.ReasonDestinationUnnamed
 )
 
-// StreamHealth is a stream's state and the stable key of its reason.
-type StreamHealth struct {
-	State  string `json:"state"`
-	Reason string `json:"reason"`
-}
+// StreamHealth is a stream's state, the key of its reason and the numbers that
+// justify it (see internal/metrics.Health).
+type StreamHealth = metrics.Health
 
-// Health is what the console can say about the stream (see the file comment).
+// Health is what the console can say about the stream with no live source.
 func (s Stream) Health() StreamHealth {
 	if s.Sink.URI == "" {
 		return StreamHealth{State: HealthUnknown, Reason: ReasonDestinationUnnamed}

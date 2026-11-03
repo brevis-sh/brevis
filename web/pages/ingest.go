@@ -536,8 +536,11 @@ type StreamsView struct {
 	Total, Gateways, WithDeadLetter int
 	// HealthCounts is every stream's health state, whatever the filter shows.
 	HealthCounts map[string]int
-	Kinds        []string
-	Filter       StreamFilter
+	// Healths is each stream's health by Stream.Key, the live one when the
+	// builder was given a source.
+	Healths map[string]StreamHealth
+	Kinds   []string
+	Filter  StreamFilter
 }
 
 // SearchText is what a search looks in, lower-cased: the gateway, the path,
@@ -557,13 +560,21 @@ func (s Stream) Key() string { return s.Gateway + " " + s.Path }
 // kind and the search drop what they exclude, on the server, so a filtered
 // list is a link. The counts are every stream's.
 func BuildStreams(entries []postgres.CatalogEntry, f StreamFilter) StreamsView {
-	v := StreamsView{Filter: f, HealthCounts: map[string]int{}}
+	return BuildStreamsWith(entries, f, Stream.Health)
+}
+
+// BuildStreamsWith is BuildStreams with the health of each stream said by
+// health, which is how the live metrics reach the list and its counts.
+func BuildStreamsWith(entries []postgres.CatalogEntry, f StreamFilter, health func(Stream) StreamHealth) StreamsView {
+	v := StreamsView{Filter: f, HealthCounts: map[string]int{}, Healths: map[string]StreamHealth{}}
 	q := strings.ToLower(f.Q)
 	for _, g := range StreamsOf(entries) {
 		v.Gateways++
 		for _, s := range g.Streams {
 			v.Total++
-			v.HealthCounts[s.Health().State]++
+			h := health(s)
+			v.HealthCounts[h.State]++
+			v.Healths[s.Key()] = h
 			if s.DeadLetter != nil {
 				v.WithDeadLetter++
 			}
@@ -670,6 +681,10 @@ func placeName(ctx context.Context, p Place) string {
 // StreamView is one stream's page.
 type StreamView struct {
 	Stream
+
+	// Live is the stream's health from the source, when there is one; the
+	// static Health is used otherwise.
+	Live *StreamHealth
 
 	// Configured is the stream's configuration card -- settings by section,
 	// the file's notes and the history of changes -- read from the sink's

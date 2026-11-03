@@ -88,7 +88,7 @@ type spec struct {
 // Measure names are the JSON keys the SPA reads.
 var (
 	// GatewayMeasures and EndpointMeasures are exported for the API tests.
-	GatewayMeasures  = []string{"received", "rejected", "dropped", "deadLetter", "delivered"}
+	GatewayMeasures  = []string{"received", "rejected", "dropped", "deadLetter", "delivered", "retried", "buried", "saturated"}
 	EndpointMeasures = []string{"ok", "rateLimited", "clientError", "serverError", "cacheHit", "cacheMiss", "cacheOther", "hookFailed"}
 )
 
@@ -114,9 +114,16 @@ var specs = map[Kind]*spec{
 				// Batches, not events: the gateway has no per-event delivery
 				// counter unless the opt-in ingestion switch is on. Said as
 				// "delivered batches" on screen rather than converted.
-				if s.Labels["outcome"] == "delivered" {
+				switch s.Labels["outcome"] {
+				case "delivered":
 					return ent, counter, 4
+				case "retried":
+					return ent, counter, 5
+				case "buried":
+					return ent, counter, 6
 				}
+			case "brevis_gateway_saturated_total":
+				return ent, counter, 7
 			case "brevis_gateway_buffer_records":
 				return ent, gauge, 0
 			case "brevis_gateway_queue_batches":
