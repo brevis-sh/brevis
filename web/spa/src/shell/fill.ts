@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 
 /**
  * A fill page (Runs, SQL) takes the whole viewport and scrolls its panes itself,
@@ -8,7 +8,9 @@ import { useEffect } from "react";
  * page gets as tall as the longest list (Runs was 1663px tall at 900px).
  */
 export function useFill() {
-  useEffect(() => {
+  // Layout effect: before the first paint. As a passive effect the first frame drew the
+  // panes at their full content height (a scrolling page), then snapped to the viewport.
+  useLayoutEffect(() => {
     const main = document.querySelector("main");
     main?.setAttribute("data-fill", "");
     return () => main?.removeAttribute("data-fill");

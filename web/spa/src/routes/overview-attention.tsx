@@ -8,7 +8,6 @@ import { buttonClass } from "../ui/button";
 import { Icon } from "../ui/icon";
 import { LoadError } from "../ui/query-boundary";
 import { StatusMark, runKind, useStatusWord } from "../ui/status";
-import { Skeleton } from "../ui/skeleton";
 import { useQuickRun } from "./run-now";
 
 type Cause = { step: string; mapIndex: number | null; exitCode: number | null; line: string };
@@ -32,14 +31,21 @@ export const attentionQuery = {
 };
 export const useAttention = () => useQuery({ ...attentionQuery, refetchInterval: useFallbackInterval() });
 
-/** The card that stands where the section will be: the same box as "all is well", its text on its way. */
+/** The card that stands where the section will be: the "all is well" card (the usual answer) drawn as a ghost, so its box is the real one. */
 export function AttentionSkeleton() {
+  const { t } = useT();
+  return <NoneCard ghost label={t("overview.attention.none")} hint={t("overview.attention.none_hint")} />;
+}
+
+function NoneCard({ ghost, label, hint }: { ghost?: boolean; label: string; hint: string }) {
   return (
-    <section aria-busy="true" aria-label="Loading" className="mb-3 flex items-start gap-3 rounded-card border border-line bg-surface px-4 py-3">
-      <Skeleton w="16px" h="16px" />
-      <div className="grid gap-1.5">
-        <Skeleton w="14rem" h="16px" />
-        <Skeleton w="22rem" h="14px" />
+    <section data-attention={ghost ? undefined : ""} aria-busy={ghost || undefined} aria-hidden={ghost || undefined} className="mb-3">
+      <div data-attention-empty={ghost ? undefined : ""} className={`flex items-start gap-3 rounded-card border px-4 py-3 ${ghost ? "border-line bg-surface" : "border-state-success/30 bg-state-success/5"}`}>
+        <Icon name="check" className={`mt-0.5 h-4 w-4 text-state-success ${ghost ? "sk-ghost" : ""}`} />
+        <div className={ghost ? "sk-ghost" : undefined}>
+          <p className="text-[13.5px] font-medium text-ink">{label}</p>
+          <p className="mt-0.5 text-[12.5px] text-muted">{hint}</p>
+        </div>
       </div>
     </section>
   );
@@ -133,19 +139,7 @@ export function AttentionSection() {
   if (q.isError && !a) return <section className="mb-3"><LoadError onRetry={() => void q.refetch()} /></section>;
   if (!a) return <AttentionSkeleton />;
 
-  if (a.total === 0) {
-    return (
-      <section data-attention className="mb-3">
-        <div data-attention-empty className="flex items-start gap-3 rounded-card border border-state-success/30 bg-state-success/5 px-4 py-3">
-          <Icon name="check" className="mt-0.5 h-4 w-4 text-state-success" />
-          <div>
-            <p className="text-[13.5px] font-medium text-ink">{t("overview.attention.none")}</p>
-            <p className="mt-0.5 text-[12.5px] text-muted">{t("overview.attention.none_hint")}</p>
-          </div>
-        </div>
-      </section>
-    );
-  }
+  if (a.total === 0) return <NoneCard label={t("overview.attention.none")} hint={t("overview.attention.none_hint")} />;
   return (
     <section data-attention className="mb-3">
       <div className="overflow-hidden rounded-card border border-state-failed/40 bg-state-failed/5">

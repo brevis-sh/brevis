@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Brevis</title>
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
-    <!-- The same URL the stylesheet's @font-face names, so the preload is the file it uses. -->
-    <link rel="preload" href="/assets/fonts/plex-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- The same URL the stylesheet's @font-face names, version query included: a preload
+         under another URL is a second download and the text still swaps late (a layout shift).
+         The ?v= is the file's content hash from /assets/app.css; when the fonts change it goes
+         stale, which costs one wasted request and the old swap, never a broken page. -->
+    <link rel="preload" href="/assets/fonts/plex-sans-latin.woff2?v=056e4e2459f5" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/assets/fonts/plex-mono-latin.woff2?v=c36f509c0a8f" as="font" type="font/woff2" crossorigin />
     <!--brevis:app-css-->
     <!-- The theme before the first paint, as the server's pages do (base.templ): the
          visitor's choice (or the system's) on <html>, so nothing flashes. -->

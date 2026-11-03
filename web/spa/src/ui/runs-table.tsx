@@ -4,7 +4,6 @@ import { useT } from "../i18n";
 import { linkClass } from "./card";
 import { useAgo, useBrief, useNumbers } from "./format";
 import { Logos } from "./logo";
-import { Skeleton } from "./skeleton";
 import { RetryMark, Status, runKind } from "./status";
 
 /** A run as /api/overview and /api/runs send it. */
@@ -88,7 +87,7 @@ type Props = {
   workflow?: boolean;
   /** Bare: the table sits inside a panel and draws no card of its own. */
   bare?: boolean;
-  /** How many skeleton rows to draw while loading. */
+  /** How many ghost rows to draw while loading. */
   rows?: number;
   /** Names the table for assistive technology. */
   label: string;
@@ -105,6 +104,13 @@ export function RunsTable({ runs, workflow = true, bare = false, rows = 5, label
   const trigger = useTrigger();
   const { elapsed } = useNumbers();
   const [failed, setFailed] = useState<RunRow | null>(null);
+  // While the runs are on their way the table draws the REAL row with placeholder
+  // values (a ghost, see .sk-ghost): same height by construction.
+  const ghosts = Array.from({ length: rows }, (_, i): RunRow => ({
+    id: `ghost-${i}`, workflow: "workflow_name", status: "success", trigger: "schedule", attempt: 1, logicalDate: "2026-01-01T00:00:00Z",
+    createdAt: "2026-01-01T00:00:00Z", startedAt: null, durationMs: 1000, error: "", logos: [],
+  }));
+  const rowsToDraw = runs ?? ghosts;
   const longest = Math.max(0, ...(runs ?? []).map((r) => r.durationMs ?? 0));
 
   return (
@@ -125,20 +131,8 @@ export function RunsTable({ runs, workflow = true, bare = false, rows = 5, label
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line-soft">
-              {runs === undefined
-                ? Array.from({ length: rows }, (_, i) => (
-                    <tr key={i} aria-hidden="true">
-                      <td className={`${td} pl-6`}><Skeleton w="4.5rem" h="14px" /></td>
-                      {workflow && <td className={td}><Skeleton w="8rem" h="14px" /></td>}
-                      <td className={td}><Skeleton w="3.5rem" h="12px" /></td>
-                      <td className={td}><Skeleton w="5rem" h="12px" /></td>
-                      <td className={td}><Skeleton w="3rem" h="12px" /></td>
-                      <td className={td}><Skeleton w="4rem" h="12px" className="ml-auto" /></td>
-                      <td className={`${td} pr-6`} />
-                    </tr>
-                  ))
-                : runs.map((r) => (
+            <tbody className={`divide-y divide-line-soft ${runs ? "" : "sk-ghost"}`} aria-hidden={runs ? undefined : true}>
+              {rowsToDraw.map((r) => (
                     <tr key={r.id} data-run-id={r.id} data-status={r.status} className="transition-colors hover:bg-hover">
                       <td className={`${td} pl-6`}>
                         {workflow ? (
@@ -188,7 +182,7 @@ export function RunsTable({ runs, workflow = true, bare = false, rows = 5, label
                         )}
                       </td>
                     </tr>
-                  ))}
+              ))}
             </tbody>
           </table>
         </div>

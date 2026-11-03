@@ -1,5 +1,5 @@
 import { useFill } from "../shell/fill";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { Link, Navigate, Outlet, useLocation, useParams, useSearchParams } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getJSON } from "../api/client";
@@ -11,8 +11,8 @@ import { useAgo, useNumbers } from "../ui/format";
 import { Icon } from "../ui/icon";
 import { Logos } from "../ui/logo";
 import { LoadError } from "../ui/query-boundary";
+import { recalled, remember } from "../ui/remembered";
 import { type RunRow } from "../ui/runs-table";
-import { Skeleton } from "../ui/skeleton";
 import { RetryMark, StatusMark, runKind } from "../ui/status";
 
 type RunsData = {
@@ -59,6 +59,44 @@ function useLiveChoice(): [boolean, (on: boolean) => void] {
       }
     },
   ];
+}
+
+// A run that is NEW against the previous answer of the SAME query enters from the top: the new
+// rows fade in from above while the old ones glide down by their height (FLIP: the layout jumps
+// at once, a transform starts it back at the old place and runs it to zero, so nothing counts as
+// a layout shift). Never on the first answer, never on another filter or page (the key resets
+// it), never for a row that only changed status (same id). A reader scrolled down keeps what they
+// read: the list is moved by the inserted height instead of animating.
+function useEnterFromTop(list: RefObject<HTMLElement | null>, data: RunsData | undefined, key: string, stale: boolean) {
+  const seen = useRef<{ key: string; ids: Set<string> } | null>(null);
+  useLayoutEffect(() => {
+    const el = list.current;
+    if (!data || stale || !el) return;
+    const ids = new Set(data.runs.map((r) => r.id));
+    const prev = seen.current;
+    seen.current = { key, ids };
+    if (!prev || prev.key !== key) return;
+    const fresh = [...el.querySelectorAll<HTMLElement>("[data-run-id]")].filter((n) => !prev.ids.has(n.dataset.runId ?? ""));
+    if (fresh.length === 0 || fresh.length === ids.size) return;
+    const h = fresh.reduce((sum, n) => sum + n.offsetHeight, 0);
+    if (el.scrollTop > 0) {
+      el.scrollTop += h;
+      return;
+    }
+    const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    for (const n of fresh) {
+      // token colours only: the highlight fades from a surface tone to the row's own background
+      n.animate({ backgroundColor: ["var(--color-surface-3)", "transparent"] }, { duration: 1500, easing: "ease-out" });
+    }
+    if (calm || !el.animate) return;
+    for (const n of el.querySelectorAll<HTMLElement>("[data-run-id]")) {
+      const entering = fresh.includes(n);
+      n.animate(
+        { transform: [`translateY(${-h}px)`, "translateY(0)"], ...(entering ? { opacity: [0, 1] } : {}) },
+        { duration: 220, easing: "ease-out" },
+      );
+    }
+  }, [list, data, key, stale]);
 }
 
 // The list follows the `runs` topic only when Live is on; off means no subscription and no polling.
@@ -175,8 +213,8 @@ function Filters({ params, data }: { params: URLSearchParams; data?: RunsData })
         {choices.map((c) => (
           <Link key={c.key} to={{ search: withParam(params, "state", c.key) }} aria-current={c.current ? "true" : undefined} className={c.current ? segOn : segOff}>
             {c.label}
-            <span className={`text-[0.72rem] tabular-nums ${c.current ? "text-muted" : "text-faint"}`}>
-              {c.count}
+            <span className={`text-[0.72rem] tabular-nums ${c.current ? "text-muted" : "text-faint"} ${data ? "" : "sk-ghost"}`}>
+              {c.count ?? 0}
             </span>
           </Link>
         ))}
@@ -219,17 +257,29 @@ function RunItem({ r, current, search }: { r: RunRow; current: boolean; search: 
   );
 }
 
+// 25 is the server's page size: what a first visit draws before it has seen the list.
+const PAGE = 25;
+const GHOST: RunRow = {
+  id: "ghost", workflow: "workflow_name", status: "success", trigger: "schedule", attempt: 1, logicalDate: "2026-01-01T00:00:00Z",
+  createdAt: "2026-01-01T00:00:00Z", startedAt: null, durationMs: 1000, error: "", logos: [],
+};
+
+// The list while it waits: the REAL row with placeholder values (a ghost), as many as last
+// time, so the loaded list is as tall as this one by construction and nothing pops in after it.
 function ItemsSkeleton() {
+  const [rows] = useState(() => recalled("runs.list", PAGE));
   return (
-    <div className="border-t border-line-soft" aria-hidden="true">
-      {Array.from({ length: 8 }, (_, i) => (
-        <div key={i} className="grid grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-0.5 border-b border-line-soft px-4 py-2.5">
-          <span className="row-span-2 flex justify-center"><Skeleton w="8px" h="8px" /></span>
-          <span className="flex items-center gap-1.5"><Skeleton w="18px" h="18px" /><Skeleton w="8rem" h="14px" /></span>
-          <Skeleton w="3.5rem" h="12px" />
-          <span className="col-start-2 col-end-4"><Skeleton w="6rem" h="12px" /></span>
-        </div>
-      ))}
+    <div className="sk-ghost" aria-hidden="true">
+      <nav className="border-t border-line-soft">
+        {Array.from({ length: rows }, (_, i) => (
+          <RunItem key={i} r={GHOST} current={false} search="" />
+        ))}
+      </nav>
+      <div className="flex items-center justify-between gap-3 px-4 py-3 text-xs text-muted">
+        <span />
+        <span className="tabular-nums">1–25 of 25</span>
+        <span />
+      </div>
     </div>
   );
 }
@@ -301,6 +351,11 @@ export default function RunsRoute() {
   const clean = cleanParams(params);
   const q = useRuns(clean.toString(), live);
   const data = q.data;
+  const listRef = useRef<HTMLDivElement>(null);
+  useEnterFromTop(listRef, data, clean.toString(), q.isPlaceholderData);
+  useEffect(() => {
+    if (data) remember("runs.list", data.runs.length);
+  }, [data]);
   return (
     <div className="px-3 pb-10 min-[860px]:px-6 flex min-h-0 flex-1 flex-col">
       <div data-runs-screen className="-mx-3 -mb-10 flex min-h-0 flex-1 flex-col min-[860px]:-mx-6 min-[1001px]:flex-row">
@@ -309,7 +364,7 @@ export default function RunsRoute() {
             <h1 className="text-[20px] leading-tight font-semibold tracking-[-0.018em] text-ink">
               {t("runs.title")}
               <span className="ml-1.5 inline-flex items-center font-mono text-[13px] font-normal text-muted tabular-nums">
-                {data ? f.number(data.total) : <Skeleton w="1.5ch" h="12px" className="inline-block" />}
+                <span className={data ? undefined : "sk-ghost"}>{data ? f.number(data.total) : "0"}</span>
               </span>
             </h1>
             <LiveSwitch on={live} onChange={setLive} />
@@ -320,7 +375,7 @@ export default function RunsRoute() {
           <div className="flex flex-wrap items-center gap-2 px-4 pb-2">
             <Filters params={params} data={data} />
           </div>
-          <div id="runs-list" aria-busy={q.isPlaceholderData || !data} className={`min-h-0 flex-1 overflow-y-auto ${q.isPlaceholderData ? "opacity-60 transition-opacity" : ""}`}>
+          <div id="runs-list" ref={listRef} style={{ overflowAnchor: "none" }} aria-busy={q.isPlaceholderData || !data} className={`min-h-0 flex-1 overflow-y-auto ${q.isPlaceholderData ? "opacity-60 transition-opacity" : ""}`}>
             {q.isError && !data ? (
               <div className="px-4 pb-4"><LoadError onRetry={() => void q.refetch()} /></div>
             ) : data ? (
