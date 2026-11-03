@@ -1,0 +1,1 @@
+import{h as e,m as t}from"./skeleton-V6DDmOgS.js";function n(n,r){return t(n,e,r)}export{n as t};

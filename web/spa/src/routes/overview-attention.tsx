@@ -8,6 +8,7 @@ import { Icon } from "../ui/icon";
 import { LoadError } from "../ui/query-boundary";
 import { StatusMark, runKind, useStatusWord } from "../ui/status";
 import { Skeleton } from "../ui/skeleton";
+import { useQuickRun } from "./run-now";
 
 type Cause = { step: string; mapIndex: number | null; exitCode: number | null; line: string };
 type Item = {
@@ -56,6 +57,7 @@ function useWhy() {
 function ItemRow({ it }: { it: Item }) {
   const { t, n } = useT();
   const ago = useAgo();
+  const quick = useQuickRun(true);
   const why = useWhy();
   const streak = it.streak < 2 ? "" : it.streak === 2 ? t("overview.second_time") : n("run.why.streak", it.streak);
   return (
@@ -90,17 +92,11 @@ function ItemRow({ it }: { it: Item }) {
           </Link>
         ) : (
           it.rerunnable && (
-            // The server's trigger, as the old page posts it; it comes back to the app.
-            <form method="post" action={`/workflows/${encodeURIComponent(it.workflow)}/trigger`}>
-              <input type="hidden" name="back" value="/app/" />
-              {Object.entries(it.params).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => (
-                <input key={k} type="hidden" name={`param.${k}`} value={v} />
-              ))}
-              <button type="submit" className={buttonClass("secondary", "small")}>
-                <Icon name="refresh-cw" className="h-3 w-3" />
-                {t("overview.rerun")}
-              </button>
-            </form>
+            // The values are the failed run's: no questions, a toast that follows the new run.
+            <button type="button" disabled={quick.pending === it.workflow} className={buttonClass("secondary", "small")} onClick={() => void quick.run(it.workflow, it.params, it.runId)}>
+              <Icon name="refresh-cw" className="h-3 w-3" />
+              {t("overview.rerun")}
+            </button>
           )
         )}
       </div>
