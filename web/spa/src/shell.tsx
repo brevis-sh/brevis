@@ -44,12 +44,14 @@ function IdentitySkeleton() {
 // fixes the responsive contract now: a column from 768px up, a bar below it.
 function Nav() {
   const { t } = useT();
+  const { sql } = useConfig();
   return (
     <>
       <NavLink to="/" end>
         {t("nav.overview")}
       </NavLink>
       <NavLink to="/projects">{t("nav.projects")}</NavLink>
+      {sql && <NavLink to="/sql">{t("nav.sql")}</NavLink>}
     </>
   );
 }

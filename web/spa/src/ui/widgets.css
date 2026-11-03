@@ -1,0 +1,37 @@
+/* Shared by DataGrid, Tree, Drawer and CodeEditor. Colors come from styles.css. */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.dg { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.dg-scroll { position: relative; overflow: auto; flex: 1; min-height: 8rem; border: 1px solid var(--line); border-radius: .4rem; font-size: .75rem; }
+.dg-head { position: sticky; top: 0; z-index: 2; display: flex; background: var(--card); border-bottom: 1px solid var(--line); font-weight: 600; }
+.dg-body { position: relative; }
+.dg-row { position: absolute; left: 0; display: flex; border-top: 1px solid var(--line); }
+.dg-num { flex: 0 0 56px; padding: 0 .5rem; text-align: right; line-height: 28px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dg-cell { flex: 0 0 auto; padding: 0 .75rem; line-height: 28px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: ui-monospace, monospace; }
+.dg-head .dg-cell { font-family: inherit; }
+.dg-numeric { text-align: right; font-variant-numeric: tabular-nums; }
+.dg-null { color: var(--muted); font-style: italic; }
+.dg-cell[aria-selected="true"] { outline: 2px solid var(--fg); outline-offset: -2px; }
+.dg-scroll:focus-visible { outline: 2px solid var(--fg); outline-offset: 1px; }
+.dg-empty { position: absolute; top: 30px; margin: 0; padding: .5rem .75rem; }
+.dg-viewer { margin: .4rem 0 0; padding: .4rem .6rem; max-height: 6rem; overflow: auto; white-space: pre-wrap; word-break: break-all; background: var(--card); border: 1px solid var(--line); border-radius: .4rem; font-size: .75rem; }
+
+.tree { list-style: none; margin: 0; padding: 0; font-size: .75rem; }
+.tree li { display: flex; align-items: center; gap: .35rem; padding-block: .2rem; padding-inline-end: .4rem; border-radius: .3rem; cursor: pointer; }
+.tree li:hover { background: var(--card); }
+.tree li:focus-visible { outline: 2px solid var(--fg); outline-offset: -2px; }
+
+.drawer-backdrop { display: none; }
+@media (max-width: 767px) {
+  .drawer { position: fixed; inset: 0 auto 0 0; z-index: 20; width: min(20rem, 88vw); padding: 1rem; overflow: auto; background: var(--bg); border-right: 1px solid var(--line); transform: translateX(-100%); visibility: hidden; transition: transform .15s; }
+  .drawer[data-open="true"] { transform: none; visibility: visible; }
+  .drawer-backdrop { display: block; position: fixed; inset: 0; z-index: 19; background: rgb(0 0 0 / .4); }
+}
+@media (prefers-reduced-motion: reduce) { .drawer { transition: none; } }
+
+.editor { display: flex; border: 1px solid var(--line); border-radius: .4rem; overflow: hidden; background: var(--bg); min-height: 8rem; height: 12rem; resize: vertical; }
+.editor:focus-within { outline: 2px solid var(--fg); outline-offset: 1px; }
+.editor-gutter { flex: 0 0 auto; padding: .5rem .5rem .5rem .6rem; overflow: hidden; text-align: right; color: var(--muted); user-select: none; border-right: 1px solid var(--line); background: var(--card); }
+.editor-gutter span { display: block; }
+.editor-gutter, .editor-text { font: 12px/18px ui-monospace, monospace; }
+.editor-text { flex: 1; min-width: 0; padding: .5rem .75rem; border: 0; outline: 0; resize: none; background: transparent; color: var(--fg); white-space: pre; overflow: auto; }
