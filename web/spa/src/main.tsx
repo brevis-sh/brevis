@@ -18,6 +18,12 @@ const SqlRoute = lazy(() => import("./routes/sql"));
 // Screens load on their own, so the first paint pays for the shell alone.
 const OverviewRoute = lazy(() => import("./routes/overview"));
 const RunsRoute = lazy(() => import("./routes/runs"));
+import { lazyRoute } from "./ui/lazy-route";
+import "./styles.css";
+
+const CatalogRoute = lazyRoute(() => import("./routes/catalog"));
+const EndpointsRoute = lazyRoute(() => import("./routes/endpoints"));
+const EndpointRoute = lazyRoute(() => import("./routes/endpoint"));
 
 // Data stays fresh for 5s: moving between screens does not refetch what was
 // just read, and a screen that comes back shows the old data while it renews.
@@ -40,6 +46,10 @@ createRoot(document.getElementById("root")!).render(
             <Route path="ingest/streams/:gateway/*" element={<StreamRoute />} />
             <Route path="ingest/loads" element={<LoadsRoute />} />
             <Route path="ingest/loads/:workflow/:step" element={<LoadRoute />} />
+            <Route path="data" element={<CatalogRoute />} />
+            <Route path="data/target" element={<CatalogRoute />} />
+            <Route path="data/endpoints" element={<EndpointsRoute />} />
+            <Route path="data/endpoints/:api/:name" element={<EndpointRoute />} />
             <Route path="*" element={<p>Not found.</p>} />
           </Route>
         </Routes>

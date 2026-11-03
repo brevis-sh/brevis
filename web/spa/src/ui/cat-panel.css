@@ -1,0 +1,5 @@
+.cat-panel { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: .6rem; background: var(--bg); }
+.cat-panel-head { display: flex; align-items: baseline; gap: .6rem; min-height: 2.4rem; padding: .5rem .9rem; border-bottom: 1px solid var(--line); }
+.cat-panel-head h2 { margin: 0; font-size: .85rem; font-weight: 600; }
+.cat-panel-head .cat-muted { font-size: .75rem; }
+.cat-kind-mark { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 1.35rem; height: 1.35rem; border: 1px solid var(--line); border-radius: .3rem; background: var(--card); color: var(--muted); font: 600 .55rem/1 ui-monospace, monospace; text-transform: uppercase; }

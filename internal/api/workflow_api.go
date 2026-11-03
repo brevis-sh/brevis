@@ -49,7 +49,7 @@ type stepView struct {
 	LastMs     int64      `json:"lastMs"`
 }
 
-type runView struct {
+type workflowRunView struct {
 	ID          string     `json:"id"`
 	Status      string     `json:"status"`
 	Trigger     string     `json:"trigger"`
@@ -72,27 +72,27 @@ type paramView struct {
 }
 
 type workflowDetailView struct {
-	Slug        string       `json:"slug"`
-	Description string       `json:"description"`
-	Project     string       `json:"project"`
-	HasSchedule bool         `json:"hasSchedule"`
-	Active      bool         `json:"active"`
-	Cron        string       `json:"cron"`
-	Schedule    string       `json:"schedule"`
-	Timezone    string       `json:"timezone"`
-	NextRun     *time.Time   `json:"nextRun"`
-	Tags        []string     `json:"tags"`
-	Langs       []logoView   `json:"langs"`
-	Edges       int          `json:"edges"`
-	Stages      int          `json:"stages"`
-	Stats       statsView    `json:"stats"`
-	Calendar    calendarView `json:"calendar"`
-	Steps       []stepView   `json:"steps"`
-	Runs        []runView    `json:"runs"`
-	Day         *string      `json:"day"`
-	Params      []paramView  `json:"params"`
-	YAML        string       `json:"yaml"`
-	Now         time.Time    `json:"now"`
+	Slug        string            `json:"slug"`
+	Description string            `json:"description"`
+	Project     string            `json:"project"`
+	HasSchedule bool              `json:"hasSchedule"`
+	Active      bool              `json:"active"`
+	Cron        string            `json:"cron"`
+	Schedule    string            `json:"schedule"`
+	Timezone    string            `json:"timezone"`
+	NextRun     *time.Time        `json:"nextRun"`
+	Tags        []string          `json:"tags"`
+	Langs       []logoView        `json:"langs"`
+	Edges       int               `json:"edges"`
+	Stages      int               `json:"stages"`
+	Stats       statsView         `json:"stats"`
+	Calendar    calendarView      `json:"calendar"`
+	Steps       []stepView        `json:"steps"`
+	Runs        []workflowRunView `json:"runs"`
+	Day         *string           `json:"day"`
+	Params      []paramView       `json:"params"`
+	YAML        string            `json:"yaml"`
+	Now         time.Time         `json:"now"`
 }
 
 func dayString(t *time.Time) *string {
@@ -121,7 +121,7 @@ func (u *UI) workflowJSON(w http.ResponseWriter, r *http.Request) {
 	out := workflowDetailView{
 		Slug: def.Slug, Description: def.Description, Cron: def.Schedule, Tags: nonNil(def.Tags),
 		Schedule: pages.CronTextIn(ctx, def.Schedule), Langs: logosOf(r, runsIn(def, 0)),
-		Edges: len(def.Edges), Steps: []stepView{}, Runs: []runView{}, Params: []paramView{},
+		Edges: len(def.Edges), Steps: []stepView{}, Runs: []workflowRunView{}, Params: []paramView{},
 		Calendar: calendarView{Days: []calendarDayView{}}, Day: dayString(day), Now: now,
 	}
 
@@ -130,7 +130,7 @@ func (u *UI) workflowJSON(w http.ResponseWriter, r *http.Request) {
 		u.log.Warn("the workflow's history is unavailable", "workflow", slug, "error", err)
 	}
 	for _, rs := range latest {
-		rv := runView{ID: rs.ID, Status: rs.Status, Trigger: rs.TriggerType, Slot: rs.TriggerType == "manual" && rs.LogicalDate != nil,
+		rv := workflowRunView{ID: rs.ID, Status: rs.Status, Trigger: rs.TriggerType, Slot: rs.TriggerType == "manual" && rs.LogicalDate != nil,
 			LogicalDate: rs.LogicalDate, Given: nonNil(givenParams(def.Params, rs.Params)), CreatedAt: rs.CreatedAt}
 		if rs.Duration != nil {
 			ms := rs.Duration.Milliseconds()

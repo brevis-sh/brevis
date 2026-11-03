@@ -60,6 +60,10 @@ function Nav() {
         <NavLink to="/ingest/streams">{t("nav.streams")}</NavLink>
         <NavLink to="/ingest/loads">{t("nav.loads")}</NavLink>
       </div>
+      <NavLink to="/data" end>
+        {t("nav.catalog")}
+      </NavLink>
+      <NavLink to="/data/endpoints">{t("nav.endpoints")}</NavLink>
     </>
   );
 }

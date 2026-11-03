@@ -1,0 +1,23 @@
+.cat-dt-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: .6rem; background: var(--bg); }
+.cat-dt { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.cat-dt th { padding: .5rem .65rem; border-bottom: 1px solid var(--line); background: var(--card); color: var(--muted); font-size: .72rem; font-weight: 500; text-align: left; white-space: nowrap; }
+.cat-dt td { padding: .7rem .65rem; border-top: 1px solid var(--line); vertical-align: top; }
+.cat-dt tbody tr:first-child td { border-top: 0; }
+.cat-dt tbody tr:hover { background: var(--card); }
+.cat-dt th:first-child, .cat-dt td:first-child { padding-left: 1rem; }
+.cat-dt th:last-child, .cat-dt td:last-child { padding-right: 1rem; }
+.cat-dt .cat-num { text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 1279px) { .cat-dt-hide-xl { display: none; } }
+@media (max-width: 1099px) { .cat-dt-hide-lg { display: none; } }
+@media (max-width: 959px) { .cat-dt-hide-md { display: none; } }
+/* Under 768px a row is a card: the header row goes, each cell says its column. */
+@media (max-width: 767px) {
+  .cat-dt-wrap { border: 0; background: none; overflow: visible; }
+  .cat-dt, .cat-dt tbody { display: block; }
+  .cat-dt thead { display: none; }
+  .cat-dt tr { display: grid; gap: .3rem; margin-bottom: .6rem; padding: .75rem .9rem; border: 1px solid var(--line); border-radius: .6rem; background: var(--bg); }
+  .cat-dt td, .cat-dt td:first-child, .cat-dt td:last-child { display: flex; align-items: baseline; gap: .6rem; padding: 0; border: 0; }
+  .cat-dt td[data-label]::before { content: attr(data-label); flex: none; min-width: 5.5rem; color: var(--muted); font-size: .72rem; }
+  .cat-dt-hide-xl, .cat-dt-hide-lg, .cat-dt-hide-md { display: flex; }
+  .cat-dt td.dt-go { display: none; }
+}
