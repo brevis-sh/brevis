@@ -533,7 +533,7 @@ function Workbench({ state }: { state: State | undefined }) {
             ) : res && res.wrote ? (
               <p className="px-3 py-4 text-sm text-ink">{changed}</p>
             ) : res ? (
-              <DataGrid columns={res.columns} rows={res.rows} label={t("sql.result.tab.results")} rowLabel="Row" emptyText="No rows." />
+              <DataGrid columns={res.columns} rows={res.rows} label={t("sql.result.tab.results")} rowLabel="Row" emptyText={n("sql.result.rows", 0)} />
             ) : null}
           </div>
         </section>
