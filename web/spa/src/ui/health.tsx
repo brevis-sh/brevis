@@ -15,13 +15,15 @@ export const severity = (h?: StreamHealth) => SEVERITY[healthKind(h)] ?? 2;
 
 /** The sentence for a health reason, with the numbers that justify it. Every key is written out so the i18n scan sees it. */
 export function useHealthReason() {
-  const { t, n } = useT();
+  const { t, n, lang } = useT();
   const { clock } = useFormat();
-  const { count, percent } = useCounts();
+  const { count } = useCounts();
+  // Whole percents: "56%" is the claim; the decimal would be precision the window does not have.
+  const pct = new Intl.NumberFormat(lang, { style: "percent", maximumFractionDigits: 0 });
   return (h?: StreamHealth) => {
     const minutes = h?.windowMinutes ?? 5;
     const w = h?.window;
-    const p = (r?: number) => percent(r ?? 0, 1);
+    const p = (r?: number) => pct.format(r ?? 0);
     switch (h?.reason) {
       case "destination_unnamed":
         return t("streams.health.destination_unnamed");
