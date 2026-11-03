@@ -1,0 +1,1 @@
+export{t as EndpointFreshness,r as EndpointsSkeleton,n as default,i as endpointHref,a as splitTarget,o as useParamsSaid}from"./endpoints-ByVlVTf8.js";

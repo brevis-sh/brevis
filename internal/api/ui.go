@@ -385,6 +385,8 @@ func (u *UI) Registrar(mux *http.ServeMux) {
 	// screen at a time. Behind the same login as everything else.
 	mux.Handle("GET "+spa.Prefix, spa.Handler())
 	mux.HandleFunc("GET /api/session", u.session)
+	mux.HandleFunc("GET /api/nav/runs", u.navRunsJSON)
+	mux.HandleFunc("GET /api/release", u.release)
 	mux.HandleFunc("GET /api/config", u.config)
 	mux.HandleFunc("GET /api/projects", u.projects)
 	mux.HandleFunc("GET /api/messages", u.messages)

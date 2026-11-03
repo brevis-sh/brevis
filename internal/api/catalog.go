@@ -99,19 +99,29 @@ const attentionTTL = 30 * time.Second
 // when it cannot be read, the error is logged and the page is drawn without
 // it.
 func (u *UI) withAttention(ctx context.Context, r *http.Request) context.Context {
-	if u.catalog == nil {
+	n, ok := u.attentionCount(ctx, r.URL.Path)
+	if !ok {
 		return ctx
+	}
+	return layouts.WithAttention(ctx, n)
+}
+
+// attentionCount is the count behind the badge, kept for attentionTTL. ok is
+// false when there is no catalog or it cannot be read (logged under path).
+func (u *UI) attentionCount(ctx context.Context, path string) (n int, ok bool) {
+	if u.catalog == nil {
+		return 0, false
 	}
 	u.attentionMu.Lock()
 	defer u.attentionMu.Unlock()
 	if time.Since(u.attentionAt) > attentionTTL {
 		entries, err := u.catalog.Catalog(ctx)
 		if err != nil {
-			u.log.Error("counting the destinations that need attention", "path", r.URL.Path, "error", err)
-			return ctx
+			u.log.Error("counting the destinations that need attention", "path", path, "error", err)
+			return 0, false
 		}
 		u.attentionN = pages.BuildCatalog(entries, pages.DataFilter{}, time.Now()).Count("attention")
 		u.attentionAt = time.Now()
 	}
-	return layouts.WithAttention(ctx, u.attentionN)
+	return u.attentionN, true
 }

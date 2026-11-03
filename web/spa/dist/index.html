@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="h-full">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -12,22 +12,24 @@
         var d = document.documentElement, p = "auto";
         try { p = localStorage.getItem("brevis_theme") || "auto"; } catch (e) {}
         if (p !== "light" && p !== "dark") p = "auto";
+        d.classList.add("js");
         d.dataset.themePref = p;
+        try { d.dataset.navMode = localStorage.getItem("brevis_sidebar") === "short" ? "short" : "full"; } catch (e) { d.dataset.navMode = "full"; }
         d.dataset.theme = p === "auto" ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : p;
       })();
     </script>
-    <script type="module" crossorigin src="/app/assets/index-B1KvGOhQ.js"></script>
-    <link rel="modulepreload" crossorigin href="/app/assets/skeleton-C6mqHVzo.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/status-badge-DwH4SreY.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/hooks-BcyPKHjs.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/lib-CvgHAESz.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/useMutation-Bamv7OYa.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/useQuery-BY8zEUhD.js">
+    <script type="module" crossorigin src="/app/assets/index-EX2VjF6k.js"></script>
+    <link rel="modulepreload" crossorigin href="/app/assets/i18n-DU6C_rlt.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/status-badge-CMpNnzC8.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/hooks-BTpcNdPE.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/lib-B1Ax7Xyt.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/useMutation-l5xT1OXR.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/useQuery-B6LAaakq.js">
     <link rel="modulepreload" crossorigin href="/app/assets/preload-helper-yvApXQsr.js">
     <link rel="stylesheet" crossorigin href="/app/assets/status-badge-967GcZiZ.css">
-    <link rel="stylesheet" crossorigin href="/app/assets/index-C4RFUYQR.css">
+    <link rel="stylesheet" crossorigin href="/app/assets/index-CROMktd6.css">
   </head>
-  <body>
+  <body class="h-full font-sans text-ink antialiased">
     <div id="root"></div>
   </body>
 </html>
