@@ -68,6 +68,42 @@ async function mockMetrics(page: Page, state: State, hits: string[] = []) {
   await page.route(/\/api\/endpoints\/[^/]+\/[^/]+\/metrics/, fix("endpoint"));
 }
 
+
+// The Endpoints list with one published endpoint: the band and the rows only exist when there is
+// something listed, and a clean database (CI, a fresh checkout) has no published endpoint.
+async function mockEndpointsList(page: Page) {
+  await page.route(/\/api\/endpoints(\?.*)?$/, (r) =>
+    r.fulfill({
+      json: {
+        now: new Date().toISOString(),
+        total: 1,
+        apis: 1,
+        fresh: 1,
+        stale: 0,
+        caches: [],
+        connections: ["warehouse"],
+        apiNames: ["example-api"],
+        rows: [
+          {
+            api: "example-api",
+            name: "orders",
+            path: "/v1/orders",
+            keyed: true,
+            about: "Orders per day.",
+            freshness: "fresh",
+            reads: ["sales.orders"],
+            rebuilt: null,
+            ttl: "6h",
+            params: 1,
+            required: 0,
+            publishedAt: new Date().toISOString(),
+          },
+        ],
+      },
+    }),
+  );
+}
+
 const STREAMS = "/app/ingest/streams";
 const STREAM = "/app/ingest/streams/events_gateway/v1/clicks";
 const ENDPOINTS = "/app/data/endpoints";
@@ -135,6 +171,7 @@ test.describe("streams", () => {
 test.describe("endpoints", () => {
   test("list: the band has requests, error rate and cache hits; rows a rate", async ({ page }) => {
     await mockMetrics(page, "ready");
+    await mockEndpointsList(page);
     await page.goto(ENDPOINTS);
     const band = page.locator(".mx-strip");
     await expect(band.locator(".mx-big")).toContainText("requests/min");
@@ -144,6 +181,7 @@ test.describe("endpoints", () => {
 
   test("list: not configured names its own variable", async ({ page }) => {
     await mockMetrics(page, "not_configured");
+    await mockEndpointsList(page);
     await page.goto(ENDPOINTS);
     await expect(page.locator(".mx-strip code")).toContainText("BREVIS_ENDPOINTS_METRICS_URLS=");
   });

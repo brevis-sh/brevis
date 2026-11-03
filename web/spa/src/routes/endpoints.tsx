@@ -305,7 +305,10 @@ function Endpoints({ filter }: { filter: Filter }) {
   const none = d.rows.length === 0;
   return (
     <>
-      {(d.total > 0 || ghost) && <EndpointsStrip />}
+      {/* Only where there is something listed — and, while the first answer is on its way, where the
+          remembered shape says there was (ghostOf): drawing the band for everyone and removing it for an
+          empty list moved the whole page up by its height. */}
+      {d.total > 0 && <EndpointsStrip />}
       <Summary d={d} ghost={ghost} />
       {d.total > 0 && (
         <EndpointsBar filter={filter} d={d} ghost={ghost} />
