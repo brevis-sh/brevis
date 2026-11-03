@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="h-full">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -12,12 +12,14 @@
         var d = document.documentElement, p = "auto";
         try { p = localStorage.getItem("brevis_theme") || "auto"; } catch (e) {}
         if (p !== "light" && p !== "dark") p = "auto";
+        d.classList.add("js");
         d.dataset.themePref = p;
+        try { d.dataset.navMode = localStorage.getItem("brevis_sidebar") === "short" ? "short" : "full"; } catch (e) { d.dataset.navMode = "full"; }
         d.dataset.theme = p === "auto" ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : p;
       })();
     </script>
   </head>
-  <body>
+  <body class="h-full font-sans text-ink antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
