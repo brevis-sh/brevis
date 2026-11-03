@@ -390,6 +390,7 @@ func (u *UI) Registrar(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/messages", u.messages)
 	u.registerSQLJSON(mux)
 	u.registerWorkflowsAPI(mux)
+	u.registerRunAPI(mux)
 }
 
 // loads is Ingest → Batch loads (screen-loads): one row per step and
