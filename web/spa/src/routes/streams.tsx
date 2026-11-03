@@ -220,7 +220,7 @@ function StreamsData({ filter }: { filter: Filter }) {
   const oneGateway = v.gateways === 1 ? v.rows[0]?.gateway : "";
   return (
     <>
-      {v.total > 0 && <StreamsStrip />}
+      {(v.total > 0 || ghost) && <StreamsStrip />}
       {v.total > 0 && (
         <div aria-hidden={ghost || undefined} className={`stl-sum ${ghost ? "sk-ghost" : ""}`}>
           <span>{n("streams.summary.streams", v.total)}</span>

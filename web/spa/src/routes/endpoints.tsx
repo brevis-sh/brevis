@@ -305,7 +305,7 @@ function Endpoints({ filter }: { filter: Filter }) {
   const none = d.rows.length === 0;
   return (
     <>
-      {d.total > 0 && <EndpointsStrip />}
+      {(d.total > 0 || ghost) && <EndpointsStrip />}
       <Summary d={d} ghost={ghost} />
       {d.total > 0 && (
         <EndpointsBar filter={filter} d={d} ghost={ghost} />

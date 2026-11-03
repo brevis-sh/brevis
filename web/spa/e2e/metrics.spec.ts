@@ -122,7 +122,8 @@ test.describe("streams", () => {
       await mockMetrics(page, state);
       await page.goto(STREAM);
       await expect(card.locator(".mx-fig").first()).toBeVisible();
-      await expect.poll(async () => (await card.boundingBox())!.height, { message: state }).toBe(height);
+      await page.waitForTimeout(300);
+      expect({ state, height: (await card.boundingBox())!.height }).toEqual({ state, height });
     }
     await page.unrouteAll({ behavior: "ignoreErrors" });
     await mockMetrics(page, "quiet");
@@ -181,9 +182,12 @@ test("a screen asks for the metrics once, and the event stream carries the topic
   });
   await page.goto(STREAMS);
   await expect(page.locator(".mx-strip .mx-big")).toBeVisible();
-  await page.waitForTimeout(1500);
   // One request however many rows draw their rate: the key is shared.
+  await page.waitForTimeout(700);
   expect(hits.filter((h) => isMetricsRead(h))).toHaveLength(1);
+  // After that, at most one per scrape (5 s) from the events the real console sends: never a poll of our own.
+  await page.waitForTimeout(6000);
+  expect(hits.length).toBeLessThanOrEqual(3);
   await expect.poll(() => streams.some((t) => t.includes("metrics:streams"))).toBe(true);
   // A screen with no metrics does not keep asking: the topic leaves the connection.
   const before = streams.length;
