@@ -1,1 +1,0 @@
-import{_ as e,g as t}from"./logo-C7YTBcAs.js";function n(n,r){return t(n,e,r)}export{n as t};

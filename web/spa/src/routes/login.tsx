@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { getJSON } from "../api/client";
 import { safeNext, signIn } from "../api/login";
-import { useConfig, useSession, type Session } from "../api/session";
+import { useConfig, useSession, type Config, type Session } from "../api/session";
 import { bindOperator } from "../ui/seen";
 import "./login.css";
 
@@ -108,12 +108,15 @@ export default function LoginRoute() {
       }
       return;
     }
-    // The cookie is set; the cached session is still the anonymous one, so it is
-    // replaced by the real one before the app draws.
+    // The cookie is set; the cached session AND config are still the anonymous
+    // ones (the config a stranger gets has no version and no services), so both are
+    // replaced by what this operator may see before the app draws: without the
+    // config the SQL entry and the version row would be missing until a reload.
     try {
-      const real = await getJSON<Session>("/api/session");
+      const [real, config] = await Promise.all([getJSON<Session>("/api/session"), getJSON<Config>("/api/config")]);
       bindOperator(real.operator);
       client.setQueryData(["session"], real);
+      client.setQueryData(["config"], config);
     } catch {
       // The sign-in worked; a full load re-reads everything.
       location.assign(res.next);

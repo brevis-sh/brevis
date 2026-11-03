@@ -138,3 +138,49 @@ func TestAFailingProjectsReadIsAJSON500(t *testing.T) {
 		t.Errorf("%d %q; want a JSON 500", rec.Code, rec.Header().Get("Content-Type"))
 	}
 }
+
+// THE CONFIG IS PUBLIC (the sign-in screen draws the brand from it), so a
+// stranger gets the brand and neither the engine's version nor the services; a
+// signed-in operator gets everything. Through the real Gate, not a stand-in.
+func TestTheConfigHidesTheInstallationFromAStranger(t *testing.T) {
+	hash, err := auth.GenerateHash("senha-de-teste-longa")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mux := http.NewServeMux()
+	sessionUI(branding.Default()).Registrar(mux)
+	gate := &auth.Gate{
+		Cred: auth.Credential{User: "ana", Hash: hash, Secret: []byte("um-segredo-de-teste-com-mais-de-32-bytes")},
+		Next: mux,
+	}
+	get := func(cookie *http.Cookie) map[string]any {
+		r := httptest.NewRequest(http.MethodGet, "/api/config", nil)
+		if cookie != nil {
+			r.AddCookie(cookie)
+		}
+		rec := httptest.NewRecorder()
+		gate.ServeHTTP(rec, r)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("/api/config answered %d: the sign-in screen needs it with no session", rec.Code)
+		}
+		var body map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+			t.Fatal(err)
+		}
+		return body
+	}
+	stranger := get(nil)
+	if brand, _ := stranger["brand"].(map[string]any); brand["title"] == nil || brand["title"] == "" {
+		t.Errorf("a stranger lost the brand: %v", stranger)
+	}
+	if stranger["version"] != "" || stranger["sql"] != false {
+		t.Errorf("a stranger saw the installation: version %q sql %v", stranger["version"], stranger["sql"])
+	}
+	login := httptest.NewRecorder()
+	if !gate.SignIn(login, "ana", "senha-de-teste-longa") {
+		t.Fatal("the right credential was refused")
+	}
+	if signedIn := get(login.Result().Cookies()[0]); signedIn["version"] != "1.2.3" {
+		t.Errorf("an operator did not get the version: %v", signedIn["version"])
+	}
+}

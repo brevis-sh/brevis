@@ -50,7 +50,7 @@ type brandView struct {
 	CSS         string `json:"css"`
 }
 
-func (u *UI) config(w http.ResponseWriter, _ *http.Request) {
+func (u *UI) config(w http.ResponseWriter, r *http.Request) {
 	logo := u.brand.Logo
 	if logo == "" {
 		logo = branding.DefaultLogo
@@ -59,6 +59,14 @@ func (u *UI) config(w http.ResponseWriter, _ *http.Request) {
 	// changed one arrives with the next deploy. no-cache: the app keeps it, but
 	// asks again when it starts.
 	w.Header().Set("Cache-Control", "no-cache")
+	// This endpoint is public (the sign-in screen draws the brand and its words
+	// from it), so a stranger gets the brand and nothing about the installation:
+	// not the engine's version (it tells an attacker which flaws to try) and not
+	// which services exist. A signed-in visitor, or an open console, gets all.
+	version, sql := u.version, u.preview.Configured()
+	if auth.Anonymous(r.Context()) {
+		version, sql = "", false
+	}
 	writeJSON(w, http.StatusOK, configView{
 		Brand: brandView{
 			Title:       u.brand.Title,
@@ -68,8 +76,8 @@ func (u *UI) config(w http.ResponseWriter, _ *http.Request) {
 			Attribution: branding.Attribution,
 			CSS:         u.brand.CSS(),
 		},
-		Version: u.version,
-		SQL:     u.preview.Configured(),
+		Version: version,
+		SQL:     sql,
 	})
 }
 

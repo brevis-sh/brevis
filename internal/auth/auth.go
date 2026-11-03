@@ -262,8 +262,21 @@ func free(path string) bool {
 
 func (p *Gate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
-	case !p.Cred.Enabled(), free(r.URL.Path):
+	case !p.Cred.Enabled():
 		p.Next.ServeHTTP(w, r)
+		return
+	case free(r.URL.Path):
+		// A public path is served either way, but the handler is told WHO is
+		// asking: a visitor with a valid session gets the operator in the
+		// context, an anonymous one is marked, so what a public endpoint says
+		// can differ (the config hides the engine's version from a stranger).
+		ctx := r.Context()
+		if cookie, err := r.Cookie(CookieName); err == nil && p.Cred.checkSession(cookie.Value, time.Now()) {
+			ctx = IntoContext(ctx, p.Cred.User)
+		} else {
+			ctx = context.WithValue(ctx, anonymousKey{}, true)
+		}
+		p.Next.ServeHTTP(w, r.WithContext(ctx))
 		return
 	}
 
@@ -440,6 +453,17 @@ type key struct{}
 // should not display a button that does nothing.
 func IntoContext(ctx context.Context, user string) context.Context {
 	return context.WithValue(ctx, key{}, user)
+}
+
+type anonymousKey struct{}
+
+// Anonymous reports that the console has a credential and this request has no
+// valid session, on a path the Gate lets through without one. False on an open
+// console (nobody is asked to sign in, so nobody is a stranger) and on every
+// request that did sign in.
+func Anonymous(ctx context.Context) bool {
+	v, _ := ctx.Value(anonymousKey{}).(bool)
+	return v
 }
 
 // De returns the request's operator, or empty when there is no session.

@@ -101,3 +101,43 @@ func TestAValidSessionStillReachesAnAPIPath(t *testing.T) {
 		t.Errorf("user = %q", user)
 	}
 }
+
+// A PUBLIC PATH KNOWS WHO IS ASKING: an anonymous visitor is marked, one with a
+// session carries the operator, and an open console marks nobody. The config
+// endpoint uses it to keep the engine's version from a stranger.
+func TestAPublicPathTellsAStrangerFromAnOperator(t *testing.T) {
+	var anonymous bool
+	var who string
+	gate := &auth.Gate{
+		Cred: credential(t, "operador", "senha-de-teste-longa"),
+		Next: http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+			anonymous, who = auth.Anonymous(r.Context()), auth.De(r.Context())
+		}),
+	}
+	gate.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/api/config", nil))
+	if !anonymous || who != "" {
+		t.Errorf("a stranger: anonymous=%v operator=%q; want true and none", anonymous, who)
+	}
+	login := httptest.NewRecorder()
+	if !gate.SignIn(login, "operador", "senha-de-teste-longa") {
+		t.Fatal("the right credential was refused")
+	}
+	req := httptest.NewRequest("GET", "/api/config", nil)
+	req.AddCookie(login.Result().Cookies()[0])
+	gate.ServeHTTP(httptest.NewRecorder(), req)
+	if anonymous || who != "operador" {
+		t.Errorf("an operator on a public path: anonymous=%v operator=%q", anonymous, who)
+	}
+	forged := httptest.NewRequest("GET", "/api/config", nil)
+	forged.AddCookie(&http.Cookie{Name: auth.CookieName, Value: "operador.9999999999.forged"})
+	gate.ServeHTTP(httptest.NewRecorder(), forged)
+	if !anonymous {
+		t.Error("a forged cookie on a public path was not treated as a stranger")
+	}
+	var open bool
+	openGate := &auth.Gate{Next: http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) { open = auth.Anonymous(r.Context()) })}
+	openGate.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/api/config", nil))
+	if open {
+		t.Error("an open console marked its visitor as a stranger")
+	}
+}
