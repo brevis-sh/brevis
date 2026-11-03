@@ -26,7 +26,7 @@ const FIRST_FIELD = "[data-dialog-body] :is(input, select, textarea, button, a[h
  * drawers. Below 560px both are a full-screen sheet (width is min(…, 100vw)).
  */
 export function Drawer({
-  id, title, lead, kicker, width = 560, plain, foot, bodyClass = "text-[12.5px]", children,
+  id, title, lead, kicker, width = 560, plain, foot, bodyClass = "text-[12.5px]", head, open: openProp, onHide, children,
 }: {
   id: string;
   title: string;
@@ -37,10 +37,17 @@ export function Drawer({
   foot?: ReactNode;
   /** Type size of the body: the "how it is made" drawers set 12.5px, the test event inherits. */
   bodyClass?: string;
+  /** A drawer that lives at a path, not a hash (the load's): the caller says whether it is open and what closing does. */
+  open?: boolean;
+  onHide?: () => void;
+  /** Replaces the plain head's title; it must carry the `${id}-title` id. */
+  head?: ReactNode;
   children: ReactNode;
 }) {
   const { t } = useT();
-  const { open, hide } = useDrawer(id);
+  const hash = useDrawer(id);
+  const open = openProp ?? hash.open;
+  const hide = onHide ?? hash.hide;
   const ref = useRef<HTMLDialogElement>(null);
   const opener = useRef<Element | null>(null);
 
@@ -115,7 +122,7 @@ export function Drawer({
       {plain ? (
         <>
           <header className="dialog-head">
-            <h2 id={titleId} className="text-[0.95rem] font-semibold text-ink">{title}</h2>
+            {head ?? <h2 id={titleId} className="text-[0.95rem] font-semibold text-ink">{title}</h2>}
             {closeBtn}
           </header>
           <div className="dialog-body" data-dialog-body>{children}</div>
