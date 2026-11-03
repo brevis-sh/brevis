@@ -5,6 +5,7 @@ import { Icon } from "../ui/icon";
 import { langLabel } from "../ui/lang";
 import { KV, Panel, PanelEmpty } from "../ui/panel";
 import { Skeleton } from "../ui/skeleton";
+import { dagHeight } from "../ui/dag/height";
 import { Retry, Status, StatusMark } from "../ui/status";
 
 // The graph's chunk (React Flow) loads only when the Steps tab is first opened.
@@ -246,7 +247,7 @@ function Alerts({ run }: { run: Run }) {
 export function StepsPanel({ run, active, id }: { run: Run | undefined; active: boolean; id: string }) {
   const graph = (
     <div className="mb-3">
-      <Suspense fallback={<div aria-busy="true" style={{ height: 380 }} className="rounded-card border border-line bg-surface"><Skeleton h="100%" /></div>}>
+      <Suspense fallback={<div aria-busy="true" style={{ height: dagHeight(`/api/runs/${id}/graph`) }} className="rounded-card border border-line bg-surface"><Skeleton h="100%" /></div>}>
         <Dag runId={id} />
       </Suspense>
     </div>

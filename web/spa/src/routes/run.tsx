@@ -9,7 +9,7 @@ import { buttonClass } from "../ui/buttons";
 import { CopyIcon } from "../ui/copy";
 import { Icon } from "../ui/icon";
 import { LogView } from "../ui/log-view";
-import { Skeleton } from "../ui/skeleton";
+import { Ghost, Skeleton } from "../ui/skeleton";
 import { Retry, Status } from "../ui/status";
 import { Tabs } from "../ui/tabs";
 import { useCrumb } from "../shell/nav";
@@ -79,9 +79,10 @@ function Phases({ run }: { run: Run | undefined }) {
               </p>
             </>
           ) : (
-            <div className="grid gap-1.5" aria-label={t("run.tabs")}>
-              <Skeleton w="45%" h="0.7rem" />
-              <Skeleton w="75%" h="0.8rem" />
+            // The loaded lines with ghosts in them: the strip is as tall as the real one by construction.
+            <div aria-label={t("run.tabs")}>
+              <p className="text-[11.5px] text-muted"><Ghost>0000000</Ghost></p>
+              <p className="mt-px truncate font-mono text-[12.5px] text-ink-2"><Ghost>00000000</Ghost></p>
             </div>
           )}
         </li>
@@ -146,7 +147,7 @@ function RunHead({ id, run, onGoto }: { id: string; run: Run | undefined; onGoto
               <Skeleton w="4.5rem" h="0.9rem" />
             )}
           </div>
-          <h2 className="flex min-w-0 items-center gap-2 font-mono text-[22px] leading-tight font-medium text-ink">
+          <h2 style={{ minHeight: 28 }} className="flex min-w-0 items-center gap-2 font-mono text-[22px] leading-tight font-medium text-ink">
             {run ? (
               <>
                 <Logos keys={run.logos} size={28} />
@@ -212,7 +213,7 @@ function RunHead({ id, run, onGoto }: { id: string; run: Run | undefined; onGoto
       <dl className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px]">
         <div className="flex items-baseline gap-1.5">
           <dt className="text-muted">{t("run.trigger")}</dt>
-          <dd className="text-ink">{run ? run.trigger : <Skeleton w="3.5rem" h="0.8rem" />}</dd>
+          <dd className="text-ink">{run ? run.trigger : <Ghost>000000</Ghost>}</dd>
         </div>
         {run?.slot && (
           <div className="flex items-baseline gap-1.5">
@@ -222,7 +223,7 @@ function RunHead({ id, run, onGoto }: { id: string; run: Run | undefined; onGoto
         )}
         <div className="flex items-baseline gap-1.5">
           <dt className="text-muted">{t("run.duration")}</dt>
-          <dd className="text-ink">{!run ? <Skeleton w="3rem" h="0.8rem" /> : run.inFlight ? t("run.in_progress") : run.durationMs !== null ? duration(run.durationMs) : "—"}</dd>
+          <dd className="text-ink">{!run ? <Ghost>00s</Ghost> : run.inFlight ? t("run.in_progress") : run.durationMs !== null ? duration(run.durationMs) : "—"}</dd>
         </div>
         <div className="flex items-center gap-1">
           <dt className="sr-only">ID</dt>
@@ -266,7 +267,7 @@ function RunScreen({ id }: { id: string }) {
   const wanted = hash.slice(1);
   const tab: Tab = (TABS as readonly string[]).includes(wanted) ? (wanted as Tab) : "logs";
   const pick = (k: string) => void navigate({ hash: `#${k}` }, { replace: true });
-  const count = (n: number | undefined) => (n === undefined ? <span className="inline-flex"><Skeleton w="0.9rem" h="0.65rem" /></span> : n);
+  const count = (n: number | undefined) => (n === undefined ? <Ghost>0</Ghost> : n);
   const panel = (k: Tab, body: ReactNode) => (
     <div role="tabpanel" id={`run-tab-panel-${k}`} aria-labelledby={`run-tab-${k}`} hidden={tab !== k} className="mb-3">
       {body}
@@ -285,7 +286,7 @@ function RunScreen({ id }: { id: string }) {
       />
       <p role="status" className="mb-3 flex items-center gap-1.5 text-[0.7rem] text-muted">
         <span className={`h-1.5 w-1.5 rounded-full ${run?.terminal ? "bg-state-pending" : "bg-state-running"}`} />
-        {run ? (run.terminal ? t("run.live.finished") : t("run.live.following")) : <Skeleton w="7rem" h="0.7rem" />}
+        {run ? (run.terminal ? t("run.live.finished") : t("run.live.following")) : <Ghost>00000000000</Ghost>}
       </p>
       <div className="mb-3">
         <Tabs
