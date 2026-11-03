@@ -6,8 +6,8 @@
     <title>Brevis</title>
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
     <!-- The faces above the fold, preloaded at the EXACT URLs the server sheet's @font-face names (the ?v= is the
-         file's content hash). Added by script because Vite rewrites a <link href="/assets/..."> to /app/assets/...,
-         which is no file: the old preload here fetched nothing useful and warned. Without the preload the swap
+         file's content hash). Added by script because a <link> would be resolved by Vite at build time
+         and warn about a file it does not own. Without the preload the swap
          after the first paint rewraps text on a phone (measured 0.025 CLS at 390px; under 0.001 on a desktop).
          If a font file ever changes its hash changes and this only costs a duplicate fetch until updated; the
          server writing these where it writes the app.css link (spa.go) would remove the hard-coded hash. -->
@@ -32,14 +32,14 @@
         d.dataset.theme = p === "auto" ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : p;
       })();
     </script>
-    <script type="module" crossorigin src="/app/assets/index-DWNWTcW0.js"></script>
-    <link rel="modulepreload" crossorigin href="/app/assets/logo-DbUlVRkQ.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/height-88JedyO7.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/icon-CFDHcEup.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/sparkline-CwW9y-ab.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/run-now-DET8CFIc.js">
-    <link rel="modulepreload" crossorigin href="/app/assets/useQuery-DsvcBoOm.js">
-    <link rel="stylesheet" crossorigin href="/app/assets/index-CIG6PiIB.css">
+    <script type="module" crossorigin src="/static/index-CKGNTJyt.js"></script>
+    <link rel="modulepreload" crossorigin href="/static/logo-DQ996wpb.js">
+    <link rel="modulepreload" crossorigin href="/static/height-DceiGS0e.js">
+    <link rel="modulepreload" crossorigin href="/static/icon-BDFretK-.js">
+    <link rel="modulepreload" crossorigin href="/static/sparkline-CeO2aMEI.js">
+    <link rel="modulepreload" crossorigin href="/static/run-now-BcEqLEkC.js">
+    <link rel="modulepreload" crossorigin href="/static/useQuery-IleqNiyq.js">
+    <link rel="stylesheet" crossorigin href="/static/index-CIG6PiIB.css">
   </head>
   <body class="h-full font-sans text-ink antialiased">
     <div id="root"></div>
