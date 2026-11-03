@@ -23,6 +23,8 @@ const LOOK: Record<string, [shape: string, colour: string]> = {
   no_schedule: ["ring", "text-muted"],
   unidentified: ["ring-dashed", "text-muted"],
   live: ["pulse", "text-state-success"],
+  // Nothing to report is a dashed ring, the vocabulary's shape for "no information" (as unidentified and never_ran).
+  unknown: ["ring-dashed", "text-muted"],
 };
 
 /** A run's or step's status as a kind: the engine says "" for a node that never ran. */

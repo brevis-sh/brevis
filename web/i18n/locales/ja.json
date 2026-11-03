@@ -1,5 +1,5 @@
 {
-  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count",
+  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count, state.unknown, streams.health.*",
   "app.not_found": "見つかりません。",
   "auto.adjusted_at": "now() の代わりに読む時計",
   "auto.date": "adjusted_at の UTC の日付。パーティション",
@@ -814,6 +814,7 @@
   "state.stale": "古い",
   "state.success": "成功",
   "state.unidentified": "未特定",
+  "state.unknown": "データなし",
   "streamcfg.buffer.claim": "レプリカ間で書き込みを調整",
   "streamcfg.buffer.durability": "永続性",
   "streamcfg.buffer.every": "書き込み間隔",
@@ -885,6 +886,8 @@
   "streams.empty": "stream はまだありません。Gateway を公開すると表示されます:",
   "streams.empty.filtered": "このフィルタに一致するものはありません。",
   "streams.gateway": "Gateway HTTP",
+  "streams.health.destination_unnamed": "公開されたマニフェストがこのストリームの宛先を特定できなかったため、Brevis が読めるものがありません。",
+  "streams.health.not_reported": "Brevis はこのストリームの設定を保持しますが、トラフィックは保持しません。受理・拒否・dead letter の件数は gateway の /metrics にあります。",
   "streams.how.1": "1 · 取得元",
   "streams.how.2": "2 · バッチ",
   "streams.how.3": "3 · 宛先",

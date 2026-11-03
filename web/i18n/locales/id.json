@@ -1,5 +1,5 @@
 {
-  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count",
+  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count, state.unknown, streams.health.*",
   "app.not_found": "Tidak ditemukan.",
   "auto.adjusted_at": "jam yang dibaca sebagai pengganti now()",
   "auto.date": "hari UTC dari adjusted_at — partisinya",
@@ -814,6 +814,7 @@
   "state.stale": "basi",
   "state.success": "berhasil",
   "state.unidentified": "tidak teridentifikasi",
+  "state.unknown": "tidak ada data",
   "streamcfg.buffer.claim": "Mengoordinasikan penulisan antar replika",
   "streamcfg.buffer.durability": "Durabilitas",
   "streamcfg.buffer.every": "Menulis setiap",
@@ -885,6 +886,8 @@
   "streams.empty": "Belum ada stream. Satu akan muncul saat sebuah gateway dipublikasikan:",
   "streams.empty.filtered": "Tidak ada yang cocok dengan filter ini.",
   "streams.gateway": "Gateway HTTP",
+  "streams.health.destination_unnamed": "Manifes yang dipublikasikan tidak dapat menyebutkan tujuan stream ini, sehingga Brevis tidak punya apa pun untuk dibaca.",
+  "streams.health.not_reported": "Brevis menyimpan konfigurasi stream ini, bukan lalu lintasnya: hitungan yang diterima, ditolak, dan masuk dead letter ada di /metrics gateway.",
   "streams.how.1": "1 · Asal",
   "streams.how.2": "2 · Batch",
   "streams.how.3": "3 · Tujuan",

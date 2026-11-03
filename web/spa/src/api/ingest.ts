@@ -117,6 +117,12 @@ export type Load = {
   detail: LoadDetail | null;
 };
 
+/**
+ * What the console can say about a stream's health. `state` is "unknown" until the gateway reports its traffic
+ * (the engine holds configuration only); `reason` is a stable key the app translates, never a sentence.
+ */
+export type StreamHealth = { state: string; reason: string };
+
 export type StreamRow = {
   gateway: string;
   path: string;
@@ -128,6 +134,8 @@ export type StreamRow = {
   batchEvery?: string;
   batchRecords?: number | null;
   deadLetter: Place | null;
+  // Optional so an older server still draws the row (as "no data").
+  health?: StreamHealth;
 };
 
 export type Streams = {
@@ -135,6 +143,7 @@ export type Streams = {
   total: number;
   gateways: number;
   withDeadLetter: number;
+  healthCounts?: Record<string, number>;
   kinds: Choice[];
   filter: { kind: string; q: string };
 };
@@ -142,6 +151,7 @@ export type Streams = {
 export type Stream = {
   gateway: string;
   path: string;
+  health?: StreamHealth;
   sink: Place;
   deadLetter: Place | null;
   publishedAt: string | null;

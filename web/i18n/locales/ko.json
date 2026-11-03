@@ -1,5 +1,5 @@
 {
-  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count",
+  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count, state.unknown, streams.health.*",
   "app.not_found": "찾을 수 없습니다.",
   "auto.adjusted_at": "now() 대신 읽을 시계",
   "auto.date": "adjusted_at의 UTC 날짜 — 파티션",
@@ -814,6 +814,7 @@
   "state.stale": "오래됨",
   "state.success": "성공",
   "state.unidentified": "미확인",
+  "state.unknown": "데이터 없음",
   "streamcfg.buffer.claim": "복제본 간 쓰기를 조율",
   "streamcfg.buffer.durability": "내구성",
   "streamcfg.buffer.every": "쓰기 주기",
@@ -885,6 +886,8 @@
   "streams.empty": "아직 stream이 없습니다. Gateway를 게시하면 나타납니다:",
   "streams.empty.filtered": "이 필터에 맞는 항목이 없습니다.",
   "streams.gateway": "Gateway HTTP",
+  "streams.health.destination_unnamed": "게시된 매니페스트가 이 스트림의 대상 위치를 알아내지 못해 Brevis가 읽을 수 있는 것이 없습니다.",
+  "streams.health.not_reported": "Brevis는 이 스트림의 구성만 보관하고 트래픽은 보관하지 않습니다. 수락, 거부, dead letter 건수는 gateway의 /metrics에 있습니다.",
   "streams.how.1": "1 · 원본",
   "streams.how.2": "2 · 배치",
   "streams.how.3": "3 · 목적지",

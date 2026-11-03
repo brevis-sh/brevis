@@ -1,5 +1,5 @@
 {
-  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count",
+  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count, state.unknown, streams.health.*",
   "app.not_found": "未找到。",
   "auto.adjusted_at": "用于替代 now() 的时钟",
   "auto.date": "adjusted_at 的 UTC 日期，即分区",
@@ -814,6 +814,7 @@
   "state.stale": "过期",
   "state.success": "成功",
   "state.unidentified": "未识别",
+  "state.unknown": "无数据",
   "streamcfg.buffer.claim": "协调各副本间的写入",
   "streamcfg.buffer.durability": "持久性",
   "streamcfg.buffer.every": "写入间隔",
@@ -885,6 +886,8 @@
   "streams.empty": "尚无 stream。发布 gateway 后会出现一个：",
   "streams.empty.filtered": "没有符合此筛选条件的内容。",
   "streams.gateway": "Gateway HTTP",
+  "streams.health.destination_unnamed": "已发布的清单无法确定此流的落地位置，因此 Brevis 没有可读取的内容。",
+  "streams.health.not_reported": "Brevis 只保存此流的配置，不保存其流量：已接收、被拒绝和进入 dead letter 的计数在 gateway 的 /metrics 上。",
   "streams.how.1": "1 · 来源",
   "streams.how.2": "2 · 批次",
   "streams.how.3": "3 · 目标",
