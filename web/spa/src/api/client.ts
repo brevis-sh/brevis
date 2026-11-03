@@ -26,11 +26,11 @@ export async function getJSON<T>(path: string, signal?: AbortSignal): Promise<T>
 }
 
 /** POST a JSON body; resolves undefined on 204. A failure carries the server's {"error"} as the message. */
-export async function postJSON<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T | undefined> {
+export async function postJSON<T>(path: string, body?: unknown, signal?: AbortSignal): Promise<T | undefined> {
   const res = await fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify(body),
+    headers: { Accept: "application/json", ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
     signal,
   });
   if (res.redirected && new URL(res.url).pathname === "/login") {

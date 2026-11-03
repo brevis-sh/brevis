@@ -6,6 +6,8 @@ import { Shell } from "./shell";
 import HomeRoute from "./routes/home";
 import ProjectsRoute from "./routes/projects";
 import { Skeleton } from "./ui/skeleton";
+import WorkflowsRoute from "./routes/workflows";
+import WorkflowRoute from "./routes/workflow";
 import "./styles.css";
 
 const SqlRoute = lazy(() => import("./routes/sql"));
@@ -23,6 +25,8 @@ createRoot(document.getElementById("root")!).render(
             <Route index element={<HomeRoute />} />
             <Route path="projects" element={<ProjectsRoute />} />
             <Route path="sql" element={<Suspense fallback={<Skeleton h="60vh" />}><SqlRoute /></Suspense>} />
+            <Route path="workflows" element={<WorkflowsRoute />} />
+            <Route path="workflows/:slug" element={<WorkflowRoute />} />
             <Route path="*" element={<p>Not found.</p>} />
           </Route>
         </Routes>
