@@ -35,7 +35,7 @@ test("the list says no data, never continuous, and counts it in the summary", as
   await expect(page.locator(".stl-sum")).not.toContainText("continuous");
 });
 
-for (const [reason, sentence] of [["not_reported", /not its traffic/], ["destination_unnamed", /could not name where this stream lands/]] as const) {
+for (const [reason, sentence] of [["not_reported", /has no name in its published configuration/], ["destination_unnamed", /could not name where this stream lands/]] as const) {
   test(`the stream page says no data and why (${reason})`, async ({ page }) => {
     await page.route("**/api/ingest/streams/**", (r) => r.fulfill({ json: detail({ state: "unknown", reason }) }));
     await page.goto("/app/ingest/streams/events_gateway/v1/stream_0");
