@@ -458,13 +458,17 @@ func LoadAsJSON(ctx context.Context, l LoadView) LoadJSON {
 
 // StreamRowJSON is one gateway stream.
 type StreamRowJSON struct {
-	Gateway    string     `json:"gateway"`
-	Path       string     `json:"path"`
-	Href       string     `json:"href"`
-	Note       string     `json:"note"`
-	Sink       PlaceJSON  `json:"sink"`
-	Batch      string     `json:"batch"`
-	DeadLetter *PlaceJSON `json:"deadLetter"`
+	Gateway string    `json:"gateway"`
+	Path    string    `json:"path"`
+	Href    string    `json:"href"`
+	Note    string    `json:"note"`
+	Sink    PlaceJSON `json:"sink"`
+	Batch   string    `json:"batch"`
+	// BatchEvery and BatchRecords are the same batch as the declared values ("2m", 2000), for a
+	// compact cell that reads the same in every language; Batch is the sentence for a tooltip.
+	BatchEvery   string     `json:"batchEvery"`
+	BatchRecords *int64     `json:"batchRecords"`
+	DeadLetter   *PlaceJSON `json:"deadLetter"`
 }
 
 // StreamsJSON is /api/ingest/streams.
@@ -482,7 +486,10 @@ type StreamsJSON struct {
 
 func streamRowJSON(ctx context.Context, s Stream) StreamRowJSON {
 	out := StreamRowJSON{Gateway: s.Gateway, Path: s.Path, Href: s.Href(), Note: s.Note(),
-		Sink: placeJSON(ctx, s.Sink), Batch: s.BatchIn(ctx)}
+		Sink: placeJSON(ctx, s.Sink), Batch: s.BatchIn(ctx), BatchEvery: s.Field("buffer.flush.every")}
+	if n, err := strconv.ParseInt(s.Field("buffer.flush.records"), 10, 64); err == nil {
+		out.BatchRecords = &n
+	}
 	if dl := s.DeadLetterShown(); dl != nil {
 		p := placeJSON(ctx, *dl)
 		out.DeadLetter = &p
