@@ -286,7 +286,7 @@ function Catalog() {
 
   // /data/target?u= is the catalog with one destination's drawer open over it.
   const u = pathname.endsWith("/data/target") ? (params.get("u") ?? "") : null;
-  const target = useData<TargetDetail>(["catalog-target", u], `/api/catalog/target?u=${encodeURIComponent(u ?? "")}`, 30_000, !!u);
+  const target = useData<TargetDetail>(["catalog-target", u], `/api/catalog/target?u=${encodeURIComponent(u ?? "")}`, { enabled: !!u, keep: false });
   const missing = u !== null && target.error instanceof ApiError && target.error.status === 404;
 
   return (

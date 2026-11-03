@@ -9,6 +9,8 @@ import { lazyRoute } from "./ui/lazy-route";
 import "./styles.css";
 
 const CatalogRoute = lazyRoute(() => import("./routes/catalog"));
+const EndpointsRoute = lazyRoute(() => import("./routes/endpoints"));
+const EndpointRoute = lazyRoute(() => import("./routes/endpoint"));
 
 // Data stays fresh for 5s: moving between screens does not refetch what was
 // just read, and a screen that comes back shows the old data while it renews.
@@ -24,6 +26,8 @@ createRoot(document.getElementById("root")!).render(
             <Route path="projects" element={<ProjectsRoute />} />
             <Route path="data" element={<CatalogRoute />} />
             <Route path="data/target" element={<CatalogRoute />} />
+            <Route path="data/endpoints" element={<EndpointsRoute />} />
+            <Route path="data/endpoints/:api/:name" element={<EndpointRoute />} />
             <Route path="*" element={<p>Not found.</p>} />
           </Route>
         </Routes>
