@@ -1,0 +1,89 @@
+// Package events tells the browser WHEN a screen may have changed, so it can
+// refetch, instead of every tab polling the REST API on its own timer.
+//
+// The cost model is the point of the design: one detector goroutine per ACTIVE
+// topic, shared by every client watching it, each running one cheap
+// fingerprint query. A hundred tabs on the Runs screen cost one query per
+// second, not a hundred.
+package events
+
+import (
+	"errors"
+	"fmt"
+	"regexp"
+	"strings"
+
+	"github.com/google/uuid"
+)
+
+// MaxTopics bounds one connection's subscriptions: each is a detector
+// (a database query per tick), and a client has no reason to want more.
+const MaxTopics = 20
+
+// Fixed topics. The parameterized ones are `run:<uuid>` and `workflow:<slug>`.
+const (
+	Runs      = "runs"
+	Workflows = "workflows"
+	Catalog   = "catalog"
+	Ingest    = "ingest"
+	Overview  = "overview"
+	Nav       = "nav"
+)
+
+var (
+	fixed = map[string]bool{Runs: true, Workflows: true, Catalog: true, Ingest: true, Overview: true, Nav: true}
+	// A slug is what the rest of the console accepts in a path: it ends up as
+	// a bound query parameter, so this is about refusing junk early (and
+	// bounding the key), not about SQL safety.
+	slugRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$`)
+)
+
+// ErrTopics is the 400 for a topic list that cannot be served.
+var ErrTopics = errors.New("invalid topics")
+
+// ParseTopics splits "a,b,c", drops duplicates (keeping first-seen order) and
+// refuses anything outside the contract, so that an unbounded or malformed
+// name never becomes a goroutine.
+func ParseTopics(raw string) ([]string, error) {
+	if strings.TrimSpace(raw) == "" {
+		return nil, fmt.Errorf("%w: no topics given", ErrTopics)
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, t := range strings.Split(raw, ",") {
+		if err := validTopic(t); err != nil {
+			return nil, err
+		}
+		if !seen[t] {
+			seen[t] = true
+			out = append(out, t)
+		}
+	}
+	if len(out) > MaxTopics {
+		return nil, fmt.Errorf("%w: at most %d topics", ErrTopics, MaxTopics)
+	}
+	return out, nil
+}
+
+func validTopic(t string) error {
+	switch {
+	case fixed[t]:
+		return nil
+	case strings.HasPrefix(t, "run:"):
+		if _, err := uuid.Parse(t[4:]); err == nil {
+			return nil
+		}
+	case strings.HasPrefix(t, "workflow:"):
+		if slugRe.MatchString(t[9:]) {
+			return nil
+		}
+	}
+	return fmt.Errorf("%w: unknown topic %q", ErrTopics, truncate(t, 40))
+}
+
+func truncate(s string, n int) string {
+	if len(s) > n {
+		return s[:n] + "..."
+	}
+	return s
+}

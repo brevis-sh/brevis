@@ -133,6 +133,11 @@ type gravador struct {
 	status int
 }
 
+// Unwrap lets http.ResponseController reach the real connection: without it
+// Flush and SetWriteDeadline report "not supported" through this wrapper and a
+// server-sent stream would end right after its first write.
+func (g *gravador) Unwrap() http.ResponseWriter { return g.ResponseWriter }
+
 func (g *gravador) WriteHeader(codigo int) {
 	g.status = codigo
 	g.ResponseWriter.WriteHeader(codigo)
