@@ -56,3 +56,33 @@ export function useBrief() {
     return lang.startsWith("en") ? `${m} ${d.getUTCDate()} ${clock.format(d)}` : `${d.getUTCDate()} ${m} ${clock.format(d)}`;
   };
 }
+
+/** The server's UTCStamp: "2026-11-03 04:57:38 UTC". */
+export const stamp = (iso: string) => `${new Date(iso).toISOString().slice(0, 19).replace("T", " ")} UTC`;
+
+/** The server's i18n.Since: "now", "3 min ago", "in 5 min" up to a day, then the short date ("Nov 03 04:57"). */
+export function useSince() {
+  const { t } = useT();
+  const { lang } = useSession();
+  const month = new Intl.DateTimeFormat(lang, { month: "short" });
+  const clock = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  return (iso: string, now: string | number = Date.now()) => {
+    const at = new Date(iso);
+    const d = new Date(now).getTime() - at.getTime();
+    const span = (ms: number) => (ms < 3_600_000 ? `${Math.floor(ms / 60_000)} min` : ms < 86_400_000 ? `${Math.floor(ms / 3_600_000)}h` : `${Math.floor(ms / 86_400_000)}d`);
+    if (d < 0) return t("time.in", { span: span(-d) });
+    if (d < 60_000) return t("time.now");
+    if (d < 86_400_000) return t("time.ago", { span: span(d) });
+    const m = month.format(at).replace(".", "");
+    const day = String(at.getDate()).padStart(2, "0");
+    return lang.startsWith("en") ? `${m} ${day} ${clock.format(at)}` : `${day} ${m} ${clock.format(at)}`;
+  };
+}
+
+/** The server's Timestamp (a title): the instant in the reader's zone, "2026-11-03 04:57:38 GMT-3". */
+export function localStamp(iso: string): string {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  const zone = new Intl.DateTimeFormat("en", { timeZoneName: "short" }).formatToParts(d).find((x) => x.type === "timeZoneName")?.value ?? "";
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())} ${zone}`;
+}

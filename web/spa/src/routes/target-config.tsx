@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import type { CfgRow } from "../api/ingest";
-import { useFormat, useT } from "../i18n";
+import { useT } from "../i18n";
+import { stamp, useBrief } from "../ui/format";
 import { ConfigNote, CfgRows, DeadLetterPanel } from "../ui/cfg";
 import { FlowDiagram } from "../ui/flow";
 import { linkUnderline } from "../ui/kit";
@@ -33,7 +34,7 @@ const asRows = (rows: Row[]): CfgRow[] =>
 
 function One({ c }: { c: WriterConfig }) {
   const { t } = useT();
-  const f = useFormat();
+  const brief = useBrief();
   return (
     <section className="mb-3" data-config={c.key}>
       <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -42,7 +43,7 @@ function One({ c }: { c: WriterConfig }) {
           {c.gateway ? (
             <>
               gateway <span className="font-medium text-ink">{c.gateway}</span> · <span className="font-mono">{c.stream}</span> · {c.role} ·{" "}
-              {t("config.published", { at: c.publishedAt ? f.utc(c.publishedAt) : "" })}
+              {t("config.published", { at: c.publishedAt ? `${brief(c.publishedAt)} UTC` : "" })}
             </>
           ) : (
             <>
@@ -90,24 +91,24 @@ function One({ c }: { c: WriterConfig }) {
               <ol className="mt-2 space-y-2">
                 {c.changes.map((ch) => (
                   <li key={ch.at} className="text-xs">
-                    <span className="text-muted tabular-nums">{f.utc(ch.at)}</span>
+                    <span className="text-muted tabular-nums">{stamp(ch.at)}</span>{" "}
                     {ch.runId && (
                       <Link to={`/runs/${ch.runId}`} className={`ml-2 font-mono ${linkUnderline}`}>
                         {t("config.run", { run: ch.runId.slice(0, 8) })}
                       </Link>
-                    )}
+                    )}{" "}
                     {ch.first && c.gateway ? (
                       <span className="ml-2 text-muted">{t("config.first_published")}</span>
                     ) : ch.first ? (
                       <span className="ml-2 text-muted">{t("config.first_recorded")}</span>
                     ) : ch.lines.length === 0 ? (
                       <span className="ml-2 text-muted">{t("config.earlier")}</span>
-                    ) : null}
+                    ) : null}{" "}
                     {ch.lines.length > 0 && (
                       <ul className="mt-1 space-y-0.5 pl-4">
                         {ch.lines.map((l) => (
                           <li key={l.path}>
-                            <span className="font-mono text-muted">{l.path}</span>
+                            <span className="font-mono text-muted">{l.path}</span>{" "}
                             <span className="ml-2 font-mono break-all text-ink">{l.text}</span>
                           </li>
                         ))}

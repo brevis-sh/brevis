@@ -271,6 +271,10 @@ func TestAStreamCarriesItsFlowSettingsAndDeadLetter(t *testing.T) {
 	if te["format"] != "ndjson" || !strings.Contains(te["curlHead"].(string), "/v1/clicks") {
 		t.Errorf("testEvent = %v", te)
 	}
+	// What an auto_table's event is checked by is always a list and a string, never null.
+	if _, ok := te["allow"].([]any); !ok || te["dataset"] == nil {
+		t.Errorf("testEvent has no allow list or dataset: %v", te)
+	}
 	for _, k := range []string{"tables", "readBy", "changes"} {
 		list(t, body, k)
 	}

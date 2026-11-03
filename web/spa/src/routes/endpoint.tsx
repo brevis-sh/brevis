@@ -4,10 +4,11 @@ import { Link, useParams } from "react-router";
 import { ApiError, postJSON } from "../api/client";
 import { useData } from "../api/live";
 import { useFormat, useT } from "../i18n";
+import { useSince } from "../ui/format";
 import { useCrumb } from "../shell/nav";
 import { CodeBlock } from "../ui/copy";
 import { Icon } from "../ui/icon";
-import { btn, Card, MethodPill, PageHead, StatCells, linkUnderline, Page } from "../ui/kit";
+import { btn, Card, Empty, MethodPill, PageHead, StatCells, linkUnderline, Page } from "../ui/kit";
 import { Logo } from "../ui/logo";
 import { Skeleton } from "../ui/skeleton";
 import { Freshness, FreshnessMark } from "../ui/status";
@@ -72,7 +73,7 @@ const required = "rounded-card bg-state-queued/13 px-1.5 py-px text-[0.68rem] fo
 /** The line above the path: back to every endpoint, then what it is. The method and the API are known from the address; the rest arrives. */
 function Eyebrow({ api, d }: { api: string; d: Endpoint | undefined }) {
   const { t } = useT();
-  const f = useFormat();
+  const since = useSince();
   return (
     <>
       <Link to="/data/endpoints" className="text-[0.75rem] text-muted hover:text-ink">
@@ -83,7 +84,7 @@ function Eyebrow({ api, d }: { api: string; d: Endpoint | undefined }) {
       <span className="font-mono text-[0.75rem] text-ink-2">{api}</span>
       {d ? (
         <>
-          <span className="text-[0.72rem] text-muted">{t("endpoint.published", { when: f.since(d.publishedAt) })}</span>
+          <span className="text-[0.72rem] text-muted">{t("endpoint.published", { when: since(d.publishedAt) })}</span>
           {d.freshness && <EndpointFreshness value={d.freshness} />}
         </>
       ) : (
@@ -131,7 +132,7 @@ const lineageRow =
 /** Where the data comes from: per table read, origin, writer, table and this endpoint; stacked on a narrow screen. */
 function LineagePanel({ d }: { d: Endpoint | undefined }) {
   const { t } = useT();
-  const f = useFormat();
+  const since = useSince();
   return (
     <Card title={t("endpoint.lineage")} count={d ? String(d.lineage.length) : undefined} id="lineage">
       <ul className="divide-y divide-line-soft">
@@ -184,7 +185,7 @@ function LineagePanel({ d }: { d: Endpoint | undefined }) {
                 {l.known ? (
                   <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11.5px] text-muted">
                     <Freshness status={l.status} />
-                    {l.lastAt && <span>· {t("endpoint.lineage.rebuilt", { when: f.since(l.lastAt) })}</span>}
+                    {l.lastAt && <span>· {t("endpoint.lineage.rebuilt", { when: since(l.lastAt) })}</span>}
                   </p>
                 ) : (
                   <p className="mt-0.5 text-[11.5px] text-faint">{t("endpoint.lineage.unknown")}</p>
@@ -282,7 +283,7 @@ function ParamsPanel({ d }: { d: Endpoint | undefined }) {
               {d.params.map((p) => (
                 <tr key={p.name} className="align-top">
                   <td className={`${pd} pl-4`}>
-                    <span className="font-mono text-[0.8rem] text-ink">{p.name}</span>
+                    <span className="font-mono text-[0.8rem] text-ink">{p.name}</span>{" "}
                     {p.required && <span className={`ml-1.5 ${required}`}>{t("endpoint.params.required")}</span>}
                     {p.note && <p className="mt-1 max-w-md text-[0.75rem] whitespace-pre-line text-muted">{p.note}</p>}
                   </td>
@@ -501,19 +502,21 @@ function EndpointPage({ api, d }: { api: string; d: Endpoint | undefined }) {
 }
 
 export default function EndpointRoute() {
+  const { t } = useT();
   const { api = "", name = "" } = useParams();
   const q = useData<Endpoint>(["endpoint", api, name], `/api/endpoints/${encodeURIComponent(api)}/${encodeURIComponent(name)}`, { keep: false });
   useCrumb(q.data?.path ?? "", { mono: true });
   if (q.isError)
     return (
-      <p role="alert" className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">
-        {q.error instanceof ApiError && q.error.status === 404 ? (
-          <Link to="/data/endpoints" className={linkUnderline}>
-            &larr; {"All endpoints"}
-          </Link>
-        ) : null}{" "}
-        {q.error.message}
-      </p>
+      <Page>
+        <div className="pt-3">
+          <Empty msg={q.error.message}>
+            <Link to="/data/endpoints" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
+              &larr; {t("endpoint.back")}
+            </Link>
+          </Empty>
+        </div>
+      </Page>
     );
   // The key resets Try it when another endpoint opens; a poll keeps what was typed.
   return <EndpointPage key={q.data ? endpointHref(q.data) : "loading"} api={api} d={q.data} />;

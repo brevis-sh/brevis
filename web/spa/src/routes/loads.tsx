@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router";
 import { useData } from "../api/live";
 import type { LoadRow, Loads, Source } from "../api/ingest";
 import { useFormat, useT } from "../i18n";
+import { localStamp, useSince } from "../ui/format";
 import { Icon } from "../ui/icon";
 import { ButtonLink, Empty, FilterRow, Lead, PageHead, linkUnderline, Page } from "../ui/kit";
 import { Logo } from "../ui/logo";
@@ -57,7 +58,8 @@ function Head() {
 
 function Rows({ rows }: { rows: LoadRow[] }) {
   const { t, n } = useT();
-  const { since, number, dateTime } = useFormat();
+  const { number } = useFormat();
+  const since = useSince();
   const navigate = useNavigate();
   return (
     <>
@@ -94,7 +96,7 @@ function Rows({ rows }: { rows: LoadRow[] }) {
               </Link>
             )}
           </Td>
-          <Td cls="text-xs whitespace-nowrap text-muted max-[640px]:hidden" title={r.lastLoaded ? dateTime(r.lastLoaded) : undefined}>
+          <Td cls="text-xs whitespace-nowrap text-muted max-[640px]:hidden" title={r.lastLoaded ? localStamp(r.lastLoaded) : undefined}>
             {r.lastLoaded ? since(r.lastLoaded) : "—"}
           </Td>
           <Td cls="text-right text-xs tabular-nums text-ink-2 max-[1100px]:hidden">
@@ -127,7 +129,7 @@ function SkeletonRows() {
           <Td cls="max-[860px]:hidden"><Skeleton w="20rem" h="34px" /></Td>
           <Td><Skeleton w="5rem" h="18px" /></Td>
           <Td cls="max-[640px]:hidden"><Skeleton w="4rem" h="18px" /></Td>
-          <Td cls="max-[1100px]:hidden"><Skeleton w="3rem" h="18px" /></Td>
+          <Td cls="max-[1100px]:hidden"><Skeleton w="3rem" h="18px" className="ml-auto" /></Td>
           <Td edge="last" cls="max-[1100px]:hidden"><Skeleton w="120px" h="24px" /></Td>
         </tr>
       ))}
@@ -251,7 +253,8 @@ function LoadsData({ filter }: { filter: Filter }) {
   );
 }
 
-export default function LoadsRoute() {
+/** The list; `missing` names a step the address asked for that writes no destination (the server draws the list with that note). */
+export default function LoadsRoute({ missing = "" }: { missing?: string }) {
   const { t } = useT();
   const filter = useFilter(FIELDS, "/ingest/loads");
   return (
@@ -265,6 +268,9 @@ export default function LoadsRoute() {
         }
       />
       <Lead before={t("loads.lead.before")} strong={t("loads.lead.strong")} after={` ${t("loads.lead.after")}`} />
+      {missing !== "" && (
+        <p className="mb-3 rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">{t("loads.missing", { step: missing })}</p>
+      )}
       <LoadsData filter={filter} />
     </Page>
   );

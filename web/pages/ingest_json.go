@@ -534,6 +534,10 @@ type TestEventJSON struct {
 	CurlHead string `json:"curlHead"`
 	Lands    string `json:"lands"`
 	Table    string `json:"table"`
+	// Allow and Dataset are what an auto_table's test event is checked by: the
+	// prefixes a table name may start with ([] is any) and where the tables are.
+	Allow   []string `json:"allow"`
+	Dataset string   `json:"dataset"`
 }
 
 // StreamChangeJSON is one publish in a stream's history line, said in words.
@@ -574,7 +578,7 @@ func StreamAsJSON(ctx context.Context, v StreamView) StreamJSON {
 		Tables: append([]string{}, v.Tables()...), ReadBy: readersJSON(v.ReadBy), HasConfig: v.Config != nil,
 		Cards: []CardJSON{}, Changes: []StreamChangeJSON{}, BuriedMetric: v.BuriedMetric(),
 		TestEvent: TestEventJSON{Format: v.TestFormat(), Body: v.TestBody(), CurlHead: v.TestCurlHead(),
-			Lands: v.TestLands(), Table: v.TestTable()},
+			Lands: v.TestLands(), Table: v.TestTable(), Allow: splitList(v.TestAllow()), Dataset: v.TestDataset()},
 	}
 	if dl := v.DeadLetterShown(); dl != nil {
 		p := placeJSON(ctx, *dl)
@@ -603,6 +607,18 @@ func StreamAsJSON(ctx context.Context, v StreamView) StreamJSON {
 	}
 	if p := v.DeadLetterPanel(); p != nil {
 		out.DeadPanel = &DeadLetterJSON{Where: p.WhereIn(ctx), Commands: p.Commands(), Readable: p.Readable, Write: p.Write}
+	}
+	return out
+}
+
+// splitList is a comma separated list as a slice; nothing is an empty one, so
+// the JSON says [] and not null.
+func splitList(s string) []string {
+	out := []string{}
+	for _, p := range strings.Split(s, ",") {
+		if p != "" {
+			out = append(out, p)
+		}
 	}
 	return out
 }

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import { ApiError } from "../api/client";
 import { useData } from "../api/live";
 import { useFormat, useT } from "../i18n";
+import { useSince } from "../ui/format";
 import { Icon } from "../ui/icon";
 import { Empty, FilterRow, Lead, PageHead, linkUnderline, Page } from "../ui/kit";
 import { Logo, useLogoTitle } from "../ui/logo";
@@ -80,9 +81,10 @@ function Head() {
   );
 }
 
-function CatalogRows({ rows, filter }: { rows: CatalogRow[]; filter: Filter }) {
+function CatalogRows({ rows, filter, now }: { rows: CatalogRow[]; filter: Filter; now: string }) {
   const { t } = useT();
   const f = useFormat();
+  const since = useSince();
   const navigate = useNavigate();
   return (
     <>
@@ -104,8 +106,8 @@ function CatalogRows({ rows, filter }: { rows: CatalogRow[]; filter: Filter }) {
                     <span className="font-medium text-ink">{r.what}</span>
                   </>
                 )}
-              </Link>
-              {r.legacy && <span className={legacyChip}>{t("catalog.chip.legacy")}</span>}
+              </Link>{" "}
+              {r.legacy && <span className={legacyChip}>{t("catalog.chip.legacy")}</span>}{" "}
               {r.autoTable && <span className={legacyChip}>auto_table</span>}
             </Td>
             <Td>
@@ -116,7 +118,7 @@ function CatalogRows({ rows, filter }: { rows: CatalogRow[]; filter: Filter }) {
               {r.writer}
               {r.more > 0 && <span className="ml-1 font-sans text-faint">+{r.more}</span>}
             </Td>
-            <Td cls="text-xs whitespace-nowrap text-muted max-[640px]:hidden">{r.lastAt ? f.since(r.lastAt) : "—"}</Td>
+            <Td cls="text-xs whitespace-nowrap text-muted max-[640px]:hidden">{r.lastAt ? since(r.lastAt, now) : "—"}</Td>
             <Td cls="text-right text-xs tabular-nums text-ink-2 max-[1100px]:hidden">
               {r.lastRows !== null ? f.number(r.lastRows) : <span title={t("catalog.no_rows")} className="text-faint">—</span>}
             </Td>
@@ -143,7 +145,7 @@ function SkeletonRows() {
           <Td><Skeleton w="5rem" h="18px" /></Td>
           <Td cls="max-[860px]:hidden"><Skeleton w="8rem" h="18px" /></Td>
           <Td cls="max-[640px]:hidden"><Skeleton w="4rem" h="18px" /></Td>
-          <Td cls="max-[1100px]:hidden"><Skeleton w="3rem" h="18px" /></Td>
+          <Td cls="max-[1100px]:hidden"><Skeleton w="3rem" h="18px" className="ml-auto" /></Td>
           <Td cls="max-[1100px]:hidden"><Skeleton w="4rem" h="20px" /></Td>
           <Td edge="last" />
         </tr>
@@ -230,7 +232,7 @@ function Catalog({ filter }: { filter: Filter }) {
         </Empty>
       ) : (
         <Table catalog head={<Head />} foot={t("catalog.order")}>
-          {data ? <CatalogRows rows={data.rows} filter={filter} /> : <SkeletonRows />}
+          {data ? <CatalogRows rows={data.rows} filter={filter} now={data.now} /> : <SkeletonRows />}
         </Table>
       )}
     </div>

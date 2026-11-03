@@ -8,6 +8,7 @@ import { CodeEditor } from "../ui/CodeEditor";
 import { DataGrid } from "../ui/DataGrid";
 import { buttonClass } from "../ui/buttons";
 import { Icon } from "../ui/icon";
+import { Page } from "../ui/kit";
 import { Kbd } from "../ui/kbd";
 import { Tree, type TreeItem } from "../ui/Tree";
 import { Skeleton } from "../ui/skeleton";
@@ -532,7 +533,7 @@ function Workbench({ state }: { state: State | undefined }) {
             ) : res && res.wrote ? (
               <p className="px-3 py-4 text-sm text-ink">{changed}</p>
             ) : res ? (
-              <DataGrid columns={res.columns} rows={res.rows} label={t("sql.result.tab.results")} rowLabel="Row" emptyText="No rows." />
+              <DataGrid columns={res.columns} rows={res.rows} label={t("sql.result.tab.results")} rowLabel="Row" emptyText={n("sql.result.rows", 0)} />
             ) : null}
           </div>
         </section>
@@ -541,8 +542,12 @@ function Workbench({ state }: { state: State | undefined }) {
   );
 }
 
-function Screen() {
+function Unavailable() {
   const { t } = useT();
+  return <p className="max-w-3xl rounded-card border border-line-soft px-4 py-3 text-sm text-muted">{t("sql.empty.catalog")}</p>;
+}
+
+function Screen() {
   const { search } = useLocation();
   // The workbench is drawn at once; the state (connections, the tree's first level) fills it in.
   const { data, isPending } = useQuery({
@@ -553,7 +558,7 @@ function Screen() {
     retry: (c, e) => !(e instanceof ApiError && e.status === 404) && c < 1,
   });
   const none = !isPending && data && data.connections.length === 0;
-  if (none) return <p className="max-w-3xl rounded-card border border-line-soft px-4 py-3 text-sm text-muted">{t("sql.empty.catalog")}</p>;
+  if (none) return <Unavailable />;
   return <Workbench key={search} state={data} />;
 }
 
@@ -565,11 +570,7 @@ export default function SqlRoute() {
     main?.setAttribute("data-fill", "");
     return () => main?.removeAttribute("data-fill");
   }, []);
-  if (!sql) return <p className="max-w-3xl rounded-card border border-line-soft px-4 py-3 text-sm text-muted">SQL is not configured on this console.</p>;
-  // main[data-fill] > :last-child is the one flex column; the workbench sits inside it, as in the server page.
-  return (
-    <div>
-      <Screen />
-    </div>
-  );
+  // main[data-fill] > :last-child is the one flex column; the workbench sits inside the page's gutters, as in the server page.
+  // Without a SQL service the server has no such page (a 404); here the path says so in the empty-catalog voice.
+  return <Page>{sql ? <Screen /> : <Unavailable />}</Page>;
 }

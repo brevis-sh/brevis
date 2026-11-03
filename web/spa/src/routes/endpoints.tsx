@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useData } from "../api/live";
-import { useFormat, useT, type Vars } from "../i18n";
+import { useT, type Vars } from "../i18n";
+import { useSince } from "../ui/format";
 import { HowDrawer, HowSteps } from "../ui/how";
 import { btn, Empty, FilterRow, Lead, MethodPill, PageHead, linkUnderline, Page } from "../ui/kit";
 import { Icon } from "../ui/icon";
@@ -125,9 +126,9 @@ function Head() {
   );
 }
 
-function Rows({ rows }: { rows: EndpointRow[] }) {
+function Rows({ rows, now }: { rows: EndpointRow[]; now: string }) {
   const { t } = useT();
-  const f = useFormat();
+  const since = useSince();
   const navigate = useNavigate();
   const paramsSaid = useParamsSaid();
   return (
@@ -165,7 +166,7 @@ function Rows({ rows }: { rows: EndpointRow[] }) {
                       </span>
                     )}
                   </p>
-                  {r.rebuilt && <p className="mt-0.5 truncate text-[11.5px] text-muted">{t("endpoints.rebuilt", { when: f.since(r.rebuilt.at), by: r.rebuilt.by })}</p>}
+                  {r.rebuilt && <p className="mt-0.5 truncate text-[11.5px] text-muted">{t("endpoints.rebuilt", { when: since(r.rebuilt.at, now), by: r.rebuilt.by })}</p>}
                 </div>
               )}
             </Td>
@@ -176,7 +177,7 @@ function Rows({ rows }: { rows: EndpointRow[] }) {
             <Td cls="whitespace-nowrap">
               <EndpointFreshness value={r.freshness} />
             </Td>
-            <Td cls="text-xs whitespace-nowrap text-muted max-[1280px]:hidden">{f.since(r.publishedAt)}</Td>
+            <Td cls="text-xs whitespace-nowrap text-muted max-[1280px]:hidden">{since(r.publishedAt, now)}</Td>
             <Td edge="last" cls="text-right text-faint">
               <Icon name="chevron-right" className="ml-auto h-4 w-4" />
             </Td>
@@ -319,7 +320,7 @@ function Endpoints({ filter }: { filter: Filter }) {
           </Empty>
         ) : (
           <Table id="endpoint-rows" head={<Head />}>
-            {d ? <Rows rows={d.rows} /> : <SkeletonRows />}
+            {d ? <Rows rows={d.rows} now={d.now} /> : <SkeletonRows />}
           </Table>
         )}
       </div>

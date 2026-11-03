@@ -43,6 +43,7 @@ export function SearchBox({ value, onChange, label }: { value: string; onChange:
           placeholder={label}
           aria-label={label}
           maxLength={200}
+          data-hotkey="/"
           autoComplete="off"
           className="h-8 w-full rounded-card border border-line bg-surface pr-9 pl-8 text-[0.82rem] text-ink placeholder:text-faint focus:border-accent-strong focus:outline-none"
         />

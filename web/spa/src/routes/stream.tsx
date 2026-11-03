@@ -3,7 +3,8 @@ import { Link, useParams } from "react-router";
 import { ApiError } from "../api/client";
 import { useData } from "../api/live";
 import type { Stream } from "../api/ingest";
-import { useFormat, useT } from "../i18n";
+import { useT } from "../i18n";
+import { useBrief } from "../ui/format";
 import { useCrumb } from "../shell/nav";
 import { ConfigNote, DeadLetterPanel } from "../ui/cfg";
 import { CopyButton } from "../ui/copy";
@@ -16,11 +17,12 @@ import { Skeleton } from "../ui/skeleton";
 import { Status } from "../ui/status";
 
 const pill = "inline-flex items-center gap-1.5 rounded-card border border-line px-2 py-0.5 text-ink-2";
-const h2 = "mb-3 text-[13px] font-semibold text-ink";
+// The tab names the panel; the server hides this heading when the tabs are there.
+const h2 = "mb-3 hidden text-[13px] font-semibold text-ink";
 
 function Strip({ gateway, v }: { gateway: string; v: Stream | undefined }) {
   const { t } = useT();
-  const { utc } = useFormat();
+  const brief = useBrief();
   const kind = useLogoTitle();
   return (
     <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border border-line bg-surface px-4 py-3 text-[12.5px] text-muted">
@@ -48,7 +50,7 @@ function Strip({ gateway, v }: { gateway: string; v: Stream | undefined }) {
             </span>
           </span>
           {v.format !== "" && <span>{t("streams.page.format", { format: v.format })}</span>}
-          {v.publishedAt && <span>{t("streams.page.published", { at: utc(v.publishedAt) })}</span>}
+          {v.publishedAt && <span>{t("streams.page.published", { at: `${brief(v.publishedAt)} UTC` })}</span>}
         </>
       )}
     </div>
@@ -106,7 +108,7 @@ function Overview({ path, v }: { path: string; v: Stream | undefined }) {
                     <li key={e.href}>
                       <Link to={e.href} className="font-mono text-ink hover:underline">
                         GET {e.path}
-                      </Link>
+                      </Link>{" "}
                       <span className="ml-1.5 text-muted">{e.api}</span>
                     </li>
                   ))}
@@ -122,7 +124,7 @@ function Overview({ path, v }: { path: string; v: Stream | undefined }) {
 
 function Config({ v }: { v: Stream | undefined }) {
   const { t } = useT();
-  const { utc } = useFormat();
+  const brief = useBrief();
   const [view, setView] = useState<"explained" | "yaml">("explained");
   const toggle = (k: "explained" | "yaml", label: string) => (
     <button
@@ -162,7 +164,7 @@ function Config({ v }: { v: Stream | undefined }) {
                           <span className="mt-0.5 block font-mono text-[11px] text-faint">{r.path}</span>
                         </dt>
                         <dd className="min-w-0">
-                          <span className="font-mono break-all text-ink">{r.value}</span>
+                          <span className="font-mono break-all text-ink">{r.value}</span>{" "}
                           {r.default && (
                             <span className="ml-2 rounded-card border border-line px-1 py-px text-[0.65rem] text-muted uppercase" title={t("config.default.tip")}>
                               {t("config.default")}
@@ -198,7 +200,7 @@ function Config({ v }: { v: Stream | undefined }) {
               {v.changes.map((c, i) => (
                 <span key={c.at}>
                   {i > 0 && <span className="text-faint"> · </span>}
-                  {utc(c.at)} — {c.text}
+                  {brief(c.at)} UTC — {c.text}
                 </span>
               ))}
             </p>
@@ -247,16 +249,70 @@ function DeadLetter({ v }: { v: Stream | undefined }) {
   );
 }
 
+type Verdict = { kind: "valid" | "warning" | "problem"; text: string };
+
+// The server's rules for a test event (ui.js testEvent), in the server's words: the body is one object for json, a list of
+// them for array, one per line for ndjson; for an auto_table the table each event names must be there and start with an
+// accepted prefix; then it says where the event would land.
+function checkEvent(
+  body: string,
+  te: Stream["testEvent"],
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): Verdict {
+  const isObject = (v: unknown) => v !== null && typeof v === "object" && !Array.isArray(v);
+  const problem = (text: string): Verdict => ({ kind: "problem", text });
+  const text = body.replace(/\s+$/, "");
+  let events: Record<string, unknown>[] = [];
+  try {
+    if (te.format === "array") {
+      const list: unknown = JSON.parse(text);
+      if (!Array.isArray(list)) return problem(t("testevent.array"));
+      if (!list.every(isObject)) return problem(t("testevent.items"));
+      events = list;
+    } else if (te.format === "ndjson") {
+      const lines = text.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i]!.trim() === "") continue;
+        try {
+          const one: unknown = JSON.parse(lines[i]!);
+          if (!isObject(one)) return problem(t("testevent.line", { n: i + 1, e: t("testevent.object") }));
+          events.push(one as Record<string, unknown>);
+        } catch (e) {
+          return problem(t("testevent.line", { n: i + 1, e: (e as Error).message }));
+        }
+      }
+    } else {
+      const one: unknown = JSON.parse(text);
+      if (!isObject(one)) return problem(t("testevent.object"));
+      events = [one as Record<string, unknown>];
+    }
+  } catch (e) {
+    return problem(t("testevent.invalid", { e: (e as Error).message }));
+  }
+  const lands: string[] = [];
+  if (te.table !== "") {
+    for (const ev of events) {
+      const name = ev[te.table];
+      if (typeof name !== "string" || name === "") return problem(t("testevent.no_table", { field: te.table }));
+      if (te.allow.length > 0 && !te.allow.some((p) => name.startsWith(p)))
+        return { kind: "warning", text: t("testevent.refused", { name, allow: te.allow.join(", ") }) };
+      const to = te.dataset ? `${te.dataset}.${name}` : name;
+      if (!lands.includes(to)) lands.push(to);
+    }
+  } else lands.push(te.lands);
+  return { kind: "valid", text: `${t("testevent.valid", { format: te.format })} ${t("testevent.lands", { to: lands.join(", ") })}` };
+}
+
 // The example event in the stream's format and the curl that would send it.
 // It sends nothing: the console holds no token for the gateway. The body is
-// editable and the curl follows it. (The old drawer also validated the body
-// against the format; that check is not carried over.)
+// editable, the curl follows it and the body is checked against the format as the server's page did.
 function TestEvent({ path, v }: { path: string; v: Stream | undefined }) {
   const { t } = useT();
   const dialog = useRef<HTMLDialogElement>(null);
   const [edited, setEdited] = useState<string | null>(null);
   const body = edited ?? v?.testEvent.body ?? "";
-  const curl = v ? `${v.testEvent.curlHead}\n${body}\nEOF` : "";
+  const curl = v ? `${v.testEvent.curlHead}\n${body.replace(/\s+$/, "")}\nEOF` : "";
+  const verdict = v ? checkEvent(body, v.testEvent, t) : null;
   return (
     <>
       <button type="button" className={btn(true)} aria-haspopup="dialog" disabled={!v} onClick={() => dialog.current?.showModal()}>
@@ -280,7 +336,7 @@ function TestEvent({ path, v }: { path: string; v: Stream | undefined }) {
               </p>
               <p className="mt-1 text-[12.5px] text-muted">{t("testevent.lead")}</p>
             </div>
-            <button type="button" aria-label={t("dialog.close")} onClick={() => dialog.current?.close()} className="flex h-8 w-8 items-center justify-center rounded-card text-muted transition-colors hover:bg-surface-2 hover:text-ink">
+            <button type="button" aria-label={t("dialog.close")} onClick={() => dialog.current?.close()} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-card text-muted transition-colors hover:bg-surface-2 hover:text-ink">
               <Icon name="x" className="h-4 w-4" />
             </button>
           </div>
@@ -295,6 +351,9 @@ function TestEvent({ path, v }: { path: string; v: Stream | undefined }) {
                 className="w-full rounded-card border border-line bg-canvas px-3 py-2 font-mono text-[0.78rem] text-ink focus:border-accent-strong focus:outline-none"
               />
             </label>
+            <p aria-live="polite" className={`text-[12px] ${verdict?.kind === "problem" ? "text-state-failed" : verdict?.kind === "warning" ? "text-state-queued" : verdict ? "text-state-success" : "text-muted"}`}>
+              {verdict?.text}
+            </p>
             <div>
               <div className="mb-1.5 flex items-center justify-between">
                 <span className="text-[12.5px] text-muted">{t("testevent.send_with")}</span>
@@ -325,11 +384,15 @@ export default function StreamRoute() {
   const v = q.data;
   if (q.error instanceof ApiError && q.error.status === 404)
     return (
-      <Empty msg={t("streams.empty.filtered")}>
-        <Link to="/ingest/streams" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
-          {t("nav.streams")}
-        </Link>
-      </Empty>
+      <Page>
+        <div className="pt-3">
+          <Empty msg={t("streams.empty.filtered")}>
+            <Link to="/ingest/streams" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
+              {t("nav.streams")}
+            </Link>
+          </Empty>
+        </div>
+      </Page>
     );
   return (
     <Page>
@@ -338,10 +401,6 @@ export default function StreamRoute() {
         title={`POST ${path}`}
         eyebrow={
           <>
-            <Link to="/ingest/streams" className="text-[0.75rem] text-muted hover:text-ink">
-              &larr; {t("nav.streams")}
-            </Link>
-            <span className="text-faint">·</span>
             <span className="text-[0.7rem] font-medium tracking-[0.08em] text-muted uppercase">{t("streams.page.kicker")}</span>
             <span className="font-mono text-[0.75rem] text-ink-2">{gateway}</span>
           </>
@@ -362,7 +421,7 @@ export default function StreamRoute() {
           {(q.error as Error).message}
         </p>
       )}
-      <div className="mb-4 max-w-3xl text-[13.5px] text-muted">{v ? v.lede : <Skeleton w="36rem" h="1.1rem" className="max-w-full" />}</div>
+      <div className="mb-4 max-w-3xl text-[13.5px] text-muted">{v ? v.lede : <Skeleton w="36rem" h="2.5rem" className="max-w-full" />}</div>
       <Strip gateway={gateway} v={v} />
       <HashTabs
         id="stream-tabs"

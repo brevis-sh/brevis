@@ -8,7 +8,7 @@ function fromHash(tabs: HashTab[]): string {
 }
 
 /** Tabs per the ARIA pattern (arrow keys move, Home/End jump); the open one is kept in the URL hash. */
-export function HashTabs({ label, tabs, id }: { label: string; tabs: HashTab[]; id: string }) {
+export function HashTabs({ label, tabs, id, barClass = "mb-3" }: { label: string; tabs: HashTab[]; id: string; barClass?: string }) {
   const [open, setOpen] = useState(() => fromHash(tabs));
   const current = tabs.some((t) => t.key === open) ? open : tabs[0]!.key;
 
@@ -27,7 +27,7 @@ export function HashTabs({ label, tabs, id }: { label: string; tabs: HashTab[]; 
 
   return (
     <div>
-      <div className="px-2 pt-1">
+      <div className={barClass}>
       <div role="tablist" aria-label={label} onKeyDown={onKey} className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-line-soft">
         {tabs.map((t) => (
           <button

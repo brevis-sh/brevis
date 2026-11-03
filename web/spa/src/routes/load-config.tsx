@@ -5,7 +5,8 @@ import { FlowDiagram } from "../ui/flow";
 import { HashTabs, type HashTab } from "../ui/hash-tabs";
 import { DefinitionList } from "../ui/kit";
 
-const h3 = "px-3.5 pt-3 text-[12.5px] font-semibold text-ink";
+// Hidden: the tab names the panel (the server hides it too when the tabs are there).
+const h3 = "hidden px-3.5 pt-3 text-[12.5px] font-semibold text-ink";
 const th = "px-2.5 py-2 text-[11.5px] font-medium whitespace-nowrap text-faint";
 
 function Stage({ c }: { c: StepConfig["stage"] }) {
@@ -224,5 +225,5 @@ export function StepConfigPanel({ c }: { c: StepConfig }) {
       ),
     });
   }
-  return <HashTabs id="load-config" label={t("config.title")} tabs={tabs} />;
+  return <HashTabs id="load-config" label={t("config.title")} tabs={tabs} barClass="px-2 pt-1" />;
 }

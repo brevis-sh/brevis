@@ -3,9 +3,11 @@ import { ApiError } from "../api/client";
 import { useData } from "../api/live";
 import type { Change, Load, LoadDetail } from "../api/ingest";
 import { useFormat, useT } from "../i18n";
+import { useSince } from "../ui/format";
+import LoadsRoute from "./loads";
 import { useCrumb } from "../shell/nav";
 import { Icon } from "../ui/icon";
-import { btn, ButtonLink, Card, Empty, FilterRow, PageHead, ShortStamp, linkUnderline, Page } from "../ui/kit";
+import { btn, ButtonLink, Card, FilterRow, PageHead, ShortStamp, linkUnderline, Page } from "../ui/kit";
 import { Logo, useLogoTitle } from "../ui/logo";
 import { Skeleton } from "../ui/skeleton";
 import { LoadBars } from "../ui/sparkline";
@@ -25,18 +27,18 @@ function Changes({ changes }: { changes: Change[] }) {
           <li key={c.at + c.runId} className="px-3.5 py-2 text-[12px]">
             <span className="font-mono text-muted tabular-nums">
               <ShortStamp at={c.at} />
-            </span>
+            </span>{" "}
             {c.runId !== "" && (
               <Link to={`/runs/${c.runId}`} className={`ml-2 font-mono ${linkUnderline}`}>
                 {short(c.runId)}
               </Link>
-            )}
-            {c.first ? <span className="ml-2 text-muted">{t("config.first_recorded")}</span> : c.earlier ? <span className="ml-2 text-muted">{t("config.earlier")}</span> : null}
+            )}{" "}
+            {c.first ? <span className="ml-2 text-muted">{t("config.first_recorded")}</span> : c.earlier ? <span className="ml-2 text-muted">{t("config.earlier")}</span> : null}{" "}
             {c.lines.length > 0 && (
               <ul className="mt-1 space-y-0.5">
                 {c.lines.map((l) => (
                   <li key={l.path}>
-                    <span className="font-mono text-muted">{l.path}</span>
+                    <span className="font-mono text-muted">{l.path}</span>{" "}
                     <span className="ml-2 font-mono break-all text-ink">{l.text}</span>
                   </li>
                 ))}
@@ -56,7 +58,8 @@ function Skel({ w = "8rem" }: { w?: string }) {
 /** The facts of the load: from where to where, when it runs, its last load. The labels are static; the values arrive. */
 function Facts({ step, d }: { step: string; d: LoadDetail | undefined }) {
   const { t, n } = useT();
-  const { since, number, dateTime } = useFormat();
+  const { number } = useFormat();
+  const since = useSince();
   const kindName = useLogoTitle();
   return (
     <dl className="grid grid-cols-[8rem_minmax(0,1fr)] gap-x-4 gap-y-3 rounded-card border border-line bg-surface px-4 py-3.5 text-[12.5px]">
@@ -119,7 +122,7 @@ function Facts({ step, d }: { step: string; d: LoadDetail | undefined }) {
           <Skel w="12rem" />
         ) : (
           <>
-            {d.lastLoaded ? <span title={dateTime(d.lastLoaded)}>{since(d.lastLoaded)}</span> : "—"}
+            {d.lastLoaded ? since(d.lastLoaded) : "—"}
             {d.lastRows !== null && <span className={`ml-1 ${d.readNothing ? "text-state-failed" : ""}`}>· {n("loads.drawer.rows", d.lastRows)}</span>}
             {d.read !== null && <span className="ml-1 text-muted">{t("loads.drawer.read", { n: number(d.read) })}</span>}
           </>
@@ -131,7 +134,7 @@ function Facts({ step, d }: { step: string; d: LoadDetail | undefined }) {
 
 function Body({ workflow, step, d }: { workflow: string; step: string; d: LoadDetail | undefined }) {
   const { t } = useT();
-  const { number, dateTime } = useFormat();
+  const { number } = useFormat();
   return (
     <div className="space-y-3">
       {d && d.reason !== "" && <p className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-ink-2">{d.reason}</p>}
@@ -181,14 +184,15 @@ function Body({ workflow, step, d }: { workflow: string; step: string; d: LoadDe
               {!d
                 ? [0, 1, 2].map((i) => (
                     <tr key={i} aria-hidden="true">
-                      {[0, 1, 2, 3].map((j) => (
-                        <td key={j} className="px-2.5 pl-3.5"><Skeleton w="5rem" h="1rem" /></td>
-                      ))}
+                      <td className="px-2.5 pl-3.5"><Skeleton w="5rem" h="1rem" /></td>
+                      <td className="px-2.5"><Skeleton w="3rem" h="1rem" className="ml-auto" /></td>
+                      <td className="px-2.5"><Skeleton w="3rem" h="1rem" className="ml-auto" /></td>
+                      <td className="px-2.5 pr-3.5"><Skeleton w="4rem" h="1rem" /></td>
                     </tr>
                   ))
                 : d.loads.map((l) => (
                     <tr key={l.runId}>
-                      <td className="px-2.5 pl-3.5 font-mono text-[12px] whitespace-nowrap text-muted tabular-nums" title={dateTime(l.loadedAt)}>
+                      <td className="px-2.5 pl-3.5 font-mono text-[12px] whitespace-nowrap text-muted tabular-nums">
                         <ShortStamp at={l.loadedAt} />
                       </td>
                       <td className="px-2.5 text-right tabular-nums">{l.rows === null ? "—" : number(l.rows)}</td>
@@ -213,7 +217,7 @@ function Body({ workflow, step, d }: { workflow: string; step: string; d: LoadDe
               <li key={e.href}>
                 <Link to={e.href} className="font-mono text-ink hover:underline">
                   GET {e.path}
-                </Link>
+                </Link>{" "}
                 <span className="ml-1.5 text-muted">{e.api}</span>
               </li>
             ))}
@@ -273,13 +277,7 @@ export default function LoadRoute() {
   const back = `/ingest/loads${list.toString() === "" ? "" : `?${list}`}`;
 
   if (q.error instanceof ApiError && q.error.status === 404)
-    return (
-      <Empty msg={t("loads.missing", { step: `${workflow} · ${step}` })}>
-        <Link to="/ingest/loads" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
-          {t("nav.loads")}
-        </Link>
-      </Empty>
-    );
+    return <LoadsRoute missing={`${workflow} · ${step}`} />;
   return (
     <Page>
       <PageHead
@@ -292,7 +290,7 @@ export default function LoadRoute() {
             </Link>
             <span className="text-faint">·</span>
             <span className="text-[0.7rem] font-medium tracking-[0.08em] text-muted uppercase">{t("loads.drawer.kicker", { workflow })}</span>
-            {v?.detail ? <Freshness status={v.detail.status} /> : !v ? <Skeleton w="5rem" h=".8rem" /> : null}
+            {v?.detail ? <Freshness status={v.detail.status} /> : !v && !q.isError ? <Skeleton w="5rem" h=".8rem" /> : null}
           </>
         }
         actions={<Actions workflow={workflow} d={v?.detail ?? undefined} />}
