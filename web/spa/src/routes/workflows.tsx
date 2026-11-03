@@ -14,8 +14,8 @@ import { Icon } from "../ui/icon";
 import { Logo } from "../ui/logo";
 import { PageFrame } from "../ui/page-frame";
 import { Pagination } from "../ui/pagination";
+import { recalled, remember } from "../ui/remembered";
 import { LoadError } from "../ui/query-boundary";
-import { Skeleton } from "../ui/skeleton";
 import { useRunDrawer } from "./run-now";
 import { ToggleSwitch } from "../ui/toggle-switch";
 
@@ -205,21 +205,23 @@ function Row({ w, links, busy, onToggle, onRun }: { w: WorkflowRow; links: Links
   );
 }
 
-function RowsSkeleton() {
+// The row a list of workflows draws while it waits: the REAL Row with placeholder values
+// inside a .sk-ghost body, so its height is the loaded row's by construction.
+const GHOST: WorkflowRow = {
+  slug: "workflow_name", project: "default", steps: 3, failing: false, inFlight: false, hasParams: false,
+  runsIn: [{ key: "python", name: "Python" }], connects: [{ key: "postgres", name: "PostgreSQL" }], hasSchedule: true, active: true,
+  cron: "0 * * * *", schedule: "Every hour", timezone: "UTC", catchup: false, nextRun: "2026-01-01T00:00:00Z", lastRunAt: null, totalRuns: 10,
+  recent: Array.from({ length: 5 }, (_, i) => ({ id: `ghost-${i}`, status: "success", at: "2026-01-01T00:00:00Z" })), tags: ["tag"],
+};
+// 25 is the server's page size: what a first visit draws before it has seen the list.
+const PAGE = 25;
+
+function RowsSkeleton({ links }: { links: Links }) {
+  const [rows] = useState(() => recalled("workflows.rows", PAGE));
   return (
     <>
-      {Array.from({ length: 8 }, (_, i) => (
-        <tr key={i} aria-hidden="true" className="align-top">
-          <td className="py-3 pl-5 max-[640px]:hidden"><Skeleton w="30px" h="18px" /></td>
-          <td className="py-3 pr-3 max-[640px]:pl-4"><Skeleton w="9rem" h="16px" /><div className="mt-1"><Skeleton w="6rem" h="14px" /></div></td>
-          <td className="py-3 pr-3 max-[640px]:hidden"><Skeleton w="6rem" h="18px" /></td>
-          <td className="py-3 pr-3 max-[1100px]:hidden"><Skeleton w="3rem" h="18px" /></td>
-          <td className="py-3 pr-3"><Skeleton w="8rem" h="14px" /><div className="mt-1"><Skeleton w="5rem" h="12px" /></div></td>
-          <td className="py-3 pr-3 max-[640px]:hidden"><Skeleton w="3.5rem" h="14px" /></td>
-          <td className="py-3 pr-3 max-[860px]:hidden"><Skeleton w="7rem" h="12px" /><div className="mt-1"><Skeleton w="4rem" h="11px" /></div></td>
-          <td className="py-3 pr-3 max-[1100px]:hidden"><Skeleton w="4rem" h="18px" /></td>
-          <td className="py-3 pr-5 text-right"><Skeleton w="2rem" h="2rem" className="ml-auto" /></td>
-        </tr>
+      {Array.from({ length: rows }, (_, i) => (
+        <Row key={i} w={{ ...GHOST, slug: `${GHOST.slug}_${i}` }} links={links} busy={false} onToggle={() => {}} onRun={() => {}} />
       ))}
     </>
   );
@@ -296,7 +298,7 @@ function Filters({ data, links }: { data?: WorkflowsList; links: Links }) {
         {STATES.map((s) => (
           <Link key={s} to={links.hrefWith({ state: s })} aria-current={state === s ? "true" : undefined} className={state === s ? segOn : segOff}>
             {t(`workflows.state.${s || "all"}`)}
-            {data && <span className={`text-[0.72rem] tabular-nums ${state === s ? "text-muted" : "text-faint"}`}>{number(data.counts[s] ?? 0)}</span>}
+            <span className={`text-[0.72rem] tabular-nums ${state === s ? "text-muted" : "text-faint"} ${data ? "" : "sk-ghost"}`}>{data ? number(data.counts[s] ?? 0) : "0"}</span>
           </Link>
         ))}
       </div>
@@ -318,12 +320,22 @@ function Filters({ data, links }: { data?: WorkflowsList; links: Links }) {
 function LangFilter({ data, links }: { data?: WorkflowsList; links: Links }) {
   const { t } = useT();
   const { number } = useFormat();
+  useEffect(() => {
+    if (data) remember("workflows.langs", data.langs.length);
+  }, [data]);
   const lang = data ? data.filter.lang : (links.sp.get("lang") ?? "");
   return (
     <div role="group" aria-label={t("workflows.filter.lang")} className="flex shrink-0 items-center gap-1.5">
       <span className="text-[0.75rem] text-faint">{t("workflows.filter.lang")}</span>
       <div className={segGroup}>
         <Link to={links.hrefWith({ lang: null })} aria-current={lang === "" ? "true" : undefined} className={lang === "" ? segOn : segOff}>{t("workflows.lang.all")}</Link>
+        {!data && Array.from({ length: recalled("workflows.langs", 2) }, (_, i) => (
+          <span key={i} aria-hidden="true" className={`${segOff} sk-ghost`}>
+            <Logo k="python" />
+            <span>language</span>
+            <span className="text-[0.72rem] tabular-nums">0</span>
+          </span>
+        ))}
         {data?.langs.map((l: LogoRef & { count: number }) => (
           <Link key={l.key} to={links.hrefWith({ lang: l.key })} aria-current={lang === l.key ? "true" : undefined} className={lang === l.key ? segOn : segOff}>
             <Logo k={l.key} />
@@ -339,7 +351,7 @@ function LangFilter({ data, links }: { data?: WorkflowsList; links: Links }) {
 function Count({ data }: { data?: WorkflowsList }) {
   const { t, n } = useT();
   const { number } = useFormat();
-  if (!data) return <p className="mb-2" style={{ height: 19.5 }}><Skeleton w="12rem" h="14px" /></p>;
+  if (!data) return <p className="sk-ghost mb-2 text-[13px] text-muted" aria-hidden="true"><span className="font-semibold tabular-nums">00</span> {n("workflows.count", 2)}</p>;
   const f = data.filter;
   return (
     <p className="mb-2 text-[13px] text-muted">
@@ -365,6 +377,12 @@ function Table({ data, links, toggler, onRun }: { data?: WorkflowsList; links: L
     );
   }
   const f = data?.filter;
+  useEffect(() => {
+    if (data) {
+      remember("workflows.rows", data.rows.length);
+      remember("workflows.pages", Math.max(1, Math.ceil(data.filtered / data.filter.perPage)));
+    }
+  }, [data]);
   return (
     <div className="overflow-x-auto rounded-card border border-line bg-surface shadow-warm-sm">
       <table className="ct w-full text-sm min-[860px]:min-w-[60rem]" aria-busy={!data}>
@@ -381,11 +399,17 @@ function Table({ data, links, toggler, onRun }: { data?: WorkflowsList; links: L
             <th className={th("w-24 pr-5 text-right")}><span className="sr-only">{t("workflows.run.tip")}</span></th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-line-soft">
-          {data ? data.rows.map((w) => <Row key={w.slug} w={w} links={links} busy={toggler.pending === w.slug} onToggle={() => toggler.toggle(w.slug)} onRun={onRun} />) : <RowsSkeleton />}
+        <tbody className={`divide-y divide-line-soft ${data ? "" : "sk-ghost"}`} aria-hidden={data ? undefined : true}>
+          {data ? data.rows.map((w) => <Row key={w.slug} w={w} links={links} busy={toggler.pending === w.slug} onToggle={() => toggler.toggle(w.slug)} onRun={onRun} />) : <RowsSkeleton links={links} />}
         </tbody>
       </table>
-      {data && f && <Pagination page={f.page} perPage={f.perPage} total={data.filtered} pages={Math.ceil(data.filtered / f.perPage)} to={(p) => links.hrefWith({ page: p > 1 ? String(p) : null }, true)} />}
+      {data && f ? (
+        <Pagination page={f.page} perPage={f.perPage} total={data.filtered} pages={Math.ceil(data.filtered / f.perPage)} to={(p) => links.hrefWith({ page: p > 1 ? String(p) : null }, true)} />
+      ) : (
+        <div className="sk-ghost" aria-hidden="true">
+          <Pagination page={1} perPage={PAGE} total={PAGE} pages={recalled("workflows.pages", 1)} to={() => ""} />
+        </div>
+      )}
     </div>
   );
 }

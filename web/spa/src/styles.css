@@ -30,8 +30,18 @@
 body { margin: 0; background: var(--bg); color: var(--fg); }
 .sk { display: block; border-radius: .3rem; background: linear-gradient(90deg, var(--sk) 25%, var(--sk-hi) 50%, var(--sk) 75%); background-size: 200% 100%; animation: sk 1.4s linear infinite; }
 .sk-text { display: grid; gap: .5rem; }
+/* A ghost is the REAL markup drawn with placeholder values: the text turns into
+   skeleton blocks but keeps its font, line height and wrapping, so the ghost is
+   exactly as tall as the loaded thing by construction (hand-sized grey boxes
+   never were). Only leaf elements paint the block, so a wrapper does not. */
+.sk-ghost { pointer-events: none; user-select: none; }
+.sk-ghost, .sk-ghost * { color: transparent !important; box-shadow: none !important; }
+.sk-ghost :is(span, time, a, code, dd, td, p, b, strong, i, button, svg):not(:has(*)), .sk-ghost .cg, .sk-ghost svg {
+  border-radius: .3rem; background: linear-gradient(90deg, var(--sk) 25%, var(--sk-hi) 50%, var(--sk) 75%) 0 0 / 200% 100% !important; animation: sk 1.4s linear infinite;
+}
+.sk-ghost .cg svg { visibility: hidden; }
 @keyframes sk { to { background-position: -200% 0; } }
-@media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .sk, .sk-ghost * { animation: none !important; } }
 .muted { color: var(--muted); }
 
 /* Visually hidden text (.sr-only, absolutely positioned) inside a table that scrolls
@@ -39,3 +49,12 @@ body { margin: 0; background: var(--bg); color: var(--fg); }
    ancestor it is placed against the page, escapes the box's clipping and widens the
    whole document (the overview's Recent runs did: 159px of sideways scroll on a phone). */
 main table { position: relative; }
+
+/* The server's sheet lets a fill page grow and scroll as one column below 960px
+   (flex: none), so the stacked Runs screen was list + the whole open run tall. Keep it the
+   height of the viewport there too: the list is bounded (max-h-[300px]) and scrolls, and the
+   open run's pane takes the rest and scrolls on its own. */
+@media (max-width: 959.98px) {
+  main[data-fill][data-fill] { overflow: hidden; }
+  main[data-fill][data-fill] > :last-child { flex: 1; }
+}

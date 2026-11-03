@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getJSON } from "../api/client";
@@ -10,6 +10,7 @@ import { until, useNumbers } from "../ui/format";
 import { Logos } from "../ui/logo";
 import { PageFrame } from "../ui/page-frame";
 import { LoadError } from "../ui/query-boundary";
+import { recalled, remember } from "../ui/remembered";
 import { RunsTable, type RunRow } from "../ui/runs-table";
 import { Skeleton } from "../ui/skeleton";
 import { Stats, type StatProps } from "../ui/stat";
@@ -80,11 +81,14 @@ function Kpis({ window, o }: { window: WindowKey; o?: Overview }) {
   // The "still failing" link needs the attention list, which the section above already follows.
   const attention = useQuery(attentionQuery).data;
 
+  // Every cell holds its foot line open (a no-break space) so a link or a mean that
+  // arrives later (the attention list is a second request) fills a slot, not a gap.
+  const foot = "\u00a0";
   const labels = {
-    success: { label: t("overview.kpi.success"), sub: t(`window.${window}`), dot: "var(--st-success)" },
-    failures: { label: t("overview.kpi.failures") },
-    running: { label: t("overview.kpi.running"), dot: "var(--st-running)" },
-    next: { label: t("overview.kpi.next") },
+    success: { label: t("overview.kpi.success"), sub: t(`window.${window}`), dot: "var(--st-success)", foot, bar: 0 },
+    failures: { label: t("overview.kpi.failures"), foot },
+    running: { label: t("overview.kpi.running"), dot: "var(--st-running)", foot },
+    next: { label: t("overview.kpi.next"), foot },
   };
   if (!o) return <Stats items={Object.values(labels).map((l) => ({ ...l, loading: true }))} />;
 
@@ -183,6 +187,11 @@ const pill = "rounded-[5px] px-2.5 py-1 text-[12.5px] text-muted hover:text-ink 
 function RecentRuns({ runs }: { runs?: RunRow[] }) {
   const { t } = useT();
   const [filter, setFilter] = useState<RecentFilter>("all");
+  // The ghost rows are as many as the list had last time (20 is what the server sends).
+  const [ghosts] = useState(() => recalled("overview.recent", 20));
+  useEffect(() => {
+    if (runs) remember("overview.recent", runs.length);
+  }, [runs]);
   const shown = runs?.filter((r) => filter === "all" || (filter === "running" ? IN_FLIGHT.includes(r.status) : r.status === filter));
   const choices: [RecentFilter, string][] = [["all", t("runs.all")], ["failed", t("runs.failed")], ["running", t("runs.in_flight")]];
   return (
@@ -200,7 +209,7 @@ function RecentRuns({ runs }: { runs?: RunRow[] }) {
       ) : shown && shown.length === 0 ? (
         <div className="px-3.5 pb-3"><Empty text={t("runs.none")} /></div>
       ) : (
-        <RunsTable runs={shown} bare label={t("overview.recent")} />
+        <RunsTable runs={shown} rows={ghosts} bare label={t("overview.recent")} />
       )}
     </>
   );
@@ -210,24 +219,16 @@ function EventLog({ events }: { events?: EventRow[] }) {
   const { t } = useT();
   const { lang } = useSession();
   const clock = new Intl.DateTimeFormat(lang, { hour: "2-digit", minute: "2-digit", hour12: false });
-  if (!events) {
-    return (
-      <ol className="divide-y divide-line-soft border-t border-line-soft" aria-hidden="true">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <li key={i} className="grid grid-cols-[auto_6.5rem_minmax(0,1fr)_auto] items-center gap-x-3 px-3.5 py-2 max-[640px]:grid-cols-[auto_minmax(0,1fr)]">
-            <Skeleton w="2.5rem" h="14px" />
-            <Skeleton w="4rem" h="14px" className="max-[640px]:hidden" />
-            <Skeleton w="60%" h="14px" />
-            <span className="max-[640px]:hidden"><Skeleton w="8px" h="8px" /></span>
-          </li>
-        ))}
-      </ol>
-    );
-  }
-  if (events.length === 0) return <p className="px-3.5 py-4 text-[12.5px] text-muted">{t("overview.events.none")}</p>;
+  const [ghosts] = useState(() => recalled("overview.events", 50));
+  useEffect(() => {
+    if (events) remember("overview.events", events.length);
+  }, [events]);
+  // Without the events the log draws the real rows with placeholder values (a ghost).
+  const rows: EventRow[] = events ?? Array.from({ length: ghosts }, () => ({ at: "2026-01-01T00:00:00Z", source: "source", before: "", subject: "subject name", after: "", actor: "", href: "", state: "success" }));
+  if (events?.length === 0) return <p className="px-3.5 py-4 text-[12.5px] text-muted">{t("overview.events.none")}</p>;
   return (
-    <ol className="divide-y divide-line-soft border-t border-line-soft">
-      {events.map((e, i) => {
+    <ol className={`divide-y divide-line-soft border-t border-line-soft ${events ? "" : "sk-ghost"}`} aria-hidden={events ? undefined : true}>
+      {rows.map((e, i) => {
         const subject = (
           <>
             {e.before}
