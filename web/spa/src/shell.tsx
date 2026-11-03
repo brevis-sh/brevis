@@ -5,9 +5,9 @@ import { useT } from "./i18n";
 import { Skeleton } from "./ui/skeleton";
 import "./ui/nav-group.css";
 
-// The sidebar's identity block. It suspends on the session and the branding,
-// so the shell around it draws at once and this part shows a skeleton of the
-// same size.
+// The sidebar's identity block. Static: the brand and the session are read
+// before the first render (boot.ts), so it never waits and never shows a
+// skeleton.
 function Identity() {
   const { brand } = useConfig();
   const session = useSession();
@@ -33,8 +33,7 @@ function Identity() {
   );
 }
 
-// The shell is a placeholder for the real sidebar and topbar (base.templ). It
-// fixes the responsive contract now: a column from 768px up, a bar below it.
+// The menu is static: real words from the start, never a skeleton.
 function Nav() {
   const { t } = useT();
   const { sql } = useConfig();
