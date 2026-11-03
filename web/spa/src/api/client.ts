@@ -22,3 +22,18 @@ export async function getJSON<T>(path: string, signal?: AbortSignal): Promise<T>
   if (!res.ok) throw new ApiError(res.status, `${path}: HTTP ${res.status}`);
   return (await res.json()) as T;
 }
+
+// postJSON sends an action with no body (cancel, rerun) and reads the answer.
+// A failure carries the server's {"error"} as the message.
+export async function postJSON<T>(path: string, body?: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { Accept: "application/json", ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const msg = ((await res.json().catch(() => null)) as { error?: string } | null)?.error;
+    throw new ApiError(res.status, msg ?? `${path}: HTTP ${res.status}`);
+  }
+  return (await res.json()) as T;
+}

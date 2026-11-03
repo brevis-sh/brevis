@@ -47,6 +47,18 @@ export function useFormat() {
     number: (v: number) => new Intl.NumberFormat(lang).format(v),
     date: (iso: string) => new Intl.DateTimeFormat(lang, { dateStyle: "medium" }).format(new Date(iso)),
     dateTime: (iso: string) => new Intl.DateTimeFormat(lang, { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso)),
+    /** The instant to the second, in UTC (a run's slot is a UTC schedule). */
+    utc: (iso: string) =>
+      `${new Intl.DateTimeFormat(lang, { dateStyle: "medium", timeStyle: "medium", timeZone: "UTC" }).format(new Date(iso))} UTC`,
+    /** 1.5s, 2m 05s, 1h 04m: a duration in milliseconds, as the server's Elapsed writes it. */
+    duration: (ms: number) => {
+      if (ms < 1000) return `${Math.round(ms)}ms`;
+      if (ms < 60_000) return `${new Intl.NumberFormat(lang, { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(ms / 1000)}s`;
+      const s = Math.floor(ms / 1000);
+      const two = (v: number) => String(v).padStart(2, "0");
+      if (ms < 3_600_000) return `${Math.floor(s / 60)}m ${two(s % 60)}s`;
+      return `${Math.floor(s / 3600)}h ${two(Math.floor(s / 60) % 60)}m`;
+    },
     since: (iso: string, now = Date.now()) => {
       const s = Math.round((new Date(iso).getTime() - now) / 1000);
       const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });

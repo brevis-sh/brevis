@@ -1,0 +1,143 @@
+import type { CSSProperties } from "react";
+import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { useFormat, useT } from "../../i18n";
+
+// The wire keys (nome, estado, numeros, rotulo, acao, erro, tentativa,
+// duracao_ms, instancias, grupo, node type `etapa`) are internal/api/graph.go's
+// payload, shared with the old island; they are read here as they arrive.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type NodeData = Record<string, any>;
+type P = NodeProps & { data: NodeData };
+
+const known = new Set(["success", "failed", "running", "retrying", "queued", "canceled", "pending", "skipped"]);
+/** A step's state as the colour token it is drawn in. */
+export const tone = (s: string | undefined) => (s && known.has(s) ? s : "pending");
+// A stage's state reuses the steps' palette: `done` is the same green as `success`.
+const STAGE_TONE: Record<string, string> = { done: "success", running: "running", failed: "failed", aborted: "canceled" };
+export const stageTone = (s: string | undefined) => STAGE_TONE[s ?? ""] ?? "pending";
+const colour = (t: string) => ({ "--c": `var(--st-${t})` }) as CSSProperties;
+
+const LANG: Record<string, string> = {
+  python: "Python", go: "Go", node: "Node.js", java: "Java", rust: "Rust", php: "PHP", ruby: "Ruby", dotnet: ".NET",
+  sql: "SQL", shell: "Shell", dbt: "dbt", spark: "Spark", airbyte: "Airbyte", soda: "Soda", sqlmesh: "SQLMesh",
+  meltano: "Meltano", dlt: "dlt", duckdb: "DuckDB", pandas: "pandas", polars: "Polars", airflow: "Airflow", terraform: "Terraform",
+};
+export const langLabel = (id: string) => LANG[id] ?? id;
+
+// The numbers worth showing on a stage's line, in order (dag.js's HIGHLIGHT).
+const HIGHLIGHT = ["in", "out", "groups", "rows", "pages", "objects"];
+
+export function StepCard({ data: d }: P) {
+  const { t } = useT();
+  const { duration, number } = useFormat();
+  // A workflow's graph draws no run: its cards are pending and say how the step went last time.
+  const last = d.status === "pending" && d.last_status;
+  const st = tone(last ? d.last_status : d.status);
+  const took = last ? d.last_duration_ms : d.duracao_ms;
+  const tools: string[] = d.tools ?? [];
+  const inferred = d.runtime_source === "inferred";
+  const published = d.context ? Object.keys(d.context).length : 0;
+  return (
+    <div className="dag-card" style={colour(st)} data-status={d.status} data-tall={d.hasStages ? "" : undefined}>
+      <Handle type="target" position={Position.Left} />
+      <div className="dag-row">
+        <span className="dag-dot" />
+        <span className="dag-name" title={d.label}>
+          {d.label}
+        </span>
+        {d.instancias ? (
+          <span className="dag-inst" title={`${d.instancias_ok} / ${d.instancias}`}>
+            {d.instancias_ok === d.instancias ? `[${d.instancias}]` : `[${d.instancias_ok || 0}/${d.instancias}]`}
+          </span>
+        ) : null}
+        {d.hasStages && (
+          <button
+            type="button"
+            className="dag-toggle nodrag"
+            aria-expanded={!d.collapsed}
+            aria-label={d.collapsed ? "show the stages" : "collapse the stages"}
+            onClick={(e) => {
+              e.stopPropagation();
+              d.toggle();
+            }}
+          >
+            {d.collapsed ? "▸" : "▾"}
+          </button>
+        )}
+      </div>
+      {d.acao && <div className="dag-cmd">{d.acao}</div>}
+      {(d.runtime || tools.length > 0) && (
+        <div className="dag-chips">
+          {d.runtime && (
+            <span className={`dag-chip strong${inferred ? " inferred" : ""}`} title={inferred ? "inferred from the command" : d.runtime_source}>
+              {langLabel(d.runtime)}
+            </span>
+          )}
+          {tools.map((x) => (
+            <span key={x} className={`dag-chip${inferred ? " inferred" : ""}`}>
+              {langLabel(x)}
+            </span>
+          ))}
+          {d.image && (
+            <span className="dag-image" title={d.image}>
+              {d.image}
+            </span>
+          )}
+        </div>
+      )}
+      {published > 0 && <div className="dag-pub">{published} {published === 1 ? "value" : "values"} published</div>}
+      <div className="dag-status">
+        <span>{t(`state.${st}`)}</span>
+        {took ? <span className="took">{duration(took)}</span> : null}
+        {d.tentativa ? <span className="retry">retry {number(d.tentativa)}</span> : null}
+        {d.sdk && <span className="dag-sdk">SDK {d.sdk}</span>}
+      </div>
+      <Handle type="source" position={Position.Right} />
+    </div>
+  );
+}
+
+/** A phase inside an SDK step: the source, each stage in the order it runs, the target. */
+export function StageBox({ data: d }: P) {
+  const { number, duration } = useFormat();
+  const nums = HIGHLIGHT.flatMap((k) => {
+    const v = d.numeros?.[k];
+    return v === null || v === undefined || v === "" ? [] : [{ k, v: typeof v === "number" ? number(v) : String(v) }];
+  }).slice(0, 2);
+  const detail: string | undefined = d.numeros?.detail;
+  return (
+    <div className="dag-stage" style={colour(stageTone(d.estado))} data-state={d.estado} title={detail ?? ""}>
+      <span className="d" />
+      <b>{d.rotulo || d.nome}</b>
+      <span className="detail">{detail}</span>
+      <span className="nums">
+        {nums.map((n) => (
+          <span key={n.k}>
+            <span>{n.v}</span> {n.k}
+          </span>
+        ))}
+        {d.ms !== null && d.ms !== undefined && <span>{duration(d.ms)}</span>}
+      </span>
+    </div>
+  );
+}
+
+/** The box behind a set of steps. A plain node placed first, so it draws behind the rest. */
+export function GroupBox({ data: d }: P) {
+  return (
+    <div className="dag-group">
+      <button type="button" className="nodrag" aria-expanded={!d.collapsed} onClick={(e) => { e.stopPropagation(); d.onToggle(); }}>
+        <span style={{ fontSize: 9 }}>{d.collapsed ? "▸" : "▾"}</span>
+        {d.label}
+        {d.membros ? <small>· {d.membros} {d.membros === 1 ? "step" : "steps"}</small> : null}
+      </button>
+    </div>
+  );
+}
+
+/** "01 · Stage 1" over each column. A node, so that fitting the view counts it. */
+export function ColumnLabel({ data: d }: P) {
+  return <div className="dag-col">{d.label}</div>;
+}
+
+export const NODE_TYPES = { brevis: StepCard, etapa: StageBox, grupo: GroupBox, stage: ColumnLabel };
