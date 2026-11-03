@@ -17,7 +17,8 @@ import { Skeleton } from "../ui/skeleton";
 import { Status } from "../ui/status";
 
 const pill = "inline-flex items-center gap-1.5 rounded-card border border-line px-2 py-0.5 text-ink-2";
-const h2 = "mb-3 text-[13px] font-semibold text-ink";
+// The tab names the panel; the server hides this heading when the tabs are there.
+const h2 = "mb-3 hidden text-[13px] font-semibold text-ink";
 
 function Strip({ gateway, v }: { gateway: string; v: Stream | undefined }) {
   const { t } = useT();
