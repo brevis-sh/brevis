@@ -161,6 +161,11 @@ type detailReads struct {
 	history []postgres.RunSummary
 	days    []postgres.Day
 	day     **time.Time
+	load    []postgres.LoadDay
+}
+
+func (d detailReads) LoadTrend(context.Context, string, int) ([]postgres.LoadDay, error) {
+	return d.load, nil
 }
 
 func (d detailReads) WorkflowHistory(_ context.Context, _ string, day *time.Time, _ int) ([]postgres.RunSummary, error) {
@@ -230,6 +235,34 @@ func TestTheWorkflowPageIsOneJSONDocument(t *testing.T) {
 	}
 	if body["yaml"] == "" || len(body["params"].([]any)) != 1 {
 		t.Error("yaml or params missing")
+	}
+}
+
+// The "What it loads" panel: the series the server page draws, null without history.
+func TestTheWorkflowJSONCarriesTheLoadTrendWhenThereIsHistory(t *testing.T) {
+	def := wf.Workflow{Slug: "solo", Nodes: []wf.Node{{ID: "only", Run: "python x.py"}}}
+	_, none := getJSON(t, detailUI(def, nil), "/api/workflows/solo", nil)
+	if v, ok := none["load"]; !ok || v != nil {
+		t.Errorf("load without history = %v, %v", v, ok)
+	}
+
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	withLoad := api.NewUI(detailReads{
+		readsFake: readsFake{workflows: []postgres.WorkflowSummary{{Slug: "solo"}}},
+		load: []postgres.LoadDay{
+			{Date: today.AddDate(0, 0, -1), Runs: 1, Rows: 1000, BytesOut: 2000, ExtractMs: 1000, LoadMs: 2000},
+			{Date: today, Runs: 1, Rows: 2000, BytesOut: 4000, ExtractMs: 1000, LoadMs: 2000},
+		},
+	}, defsFake{w: def}, nil, nil, nil, catalogFake{}, branding.Default(), slog.New(slog.DiscardHandler))
+	_, body := getJSON(t, withLoad, "/api/workflows/solo", nil)
+	load, _ := body["load"].(map[string]any)
+	series, _ := load["series"].([]any)
+	if len(series) != 4 || load["window"] == "" {
+		t.Fatalf("load = %v", body["load"])
+	}
+	first := series[0].(map[string]any)
+	if first["label"] != "Rows per run" || first["latest"] != "2.0k" || first["delta"] != "+100%" || len(first["points"].([]any)) != 2 {
+		t.Errorf("first series = %v", first)
 	}
 }
 

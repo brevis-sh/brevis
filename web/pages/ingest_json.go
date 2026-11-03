@@ -534,6 +534,10 @@ type TestEventJSON struct {
 	CurlHead string `json:"curlHead"`
 	Lands    string `json:"lands"`
 	Table    string `json:"table"`
+	// Allow (comma separated) and Dataset complete an auto_table's rules, so the
+	// SPA checks a body as ui.js does; empty for any other sink.
+	Allow   string `json:"allow"`
+	Dataset string `json:"dataset"`
 }
 
 // StreamChangeJSON is one publish in a stream's history line, said in words.
@@ -574,7 +578,7 @@ func StreamAsJSON(ctx context.Context, v StreamView) StreamJSON {
 		Tables: append([]string{}, v.Tables()...), ReadBy: readersJSON(v.ReadBy), HasConfig: v.Config != nil,
 		Cards: []CardJSON{}, Changes: []StreamChangeJSON{}, BuriedMetric: v.BuriedMetric(),
 		TestEvent: TestEventJSON{Format: v.TestFormat(), Body: v.TestBody(), CurlHead: v.TestCurlHead(),
-			Lands: v.TestLands(), Table: v.TestTable()},
+			Lands: v.TestLands(), Table: v.TestTable(), Allow: v.TestAllow(), Dataset: v.TestDataset()},
 	}
 	if dl := v.DeadLetterShown(); dl != nil {
 		p := placeJSON(ctx, *dl)

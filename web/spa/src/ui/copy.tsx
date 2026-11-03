@@ -52,12 +52,12 @@ export function CopyButton({ text, label, primary }: { text: string; label: stri
   );
 }
 
-/** A command or a block of text to copy; it wraps rather than scrolls, so its end is never hidden. */
-export function CodeBlock({ text, id }: { text: string; id?: string }) {
+/** A command or a block of text to copy; it wraps rather than scrolls (so its end is never hidden) unless `scroll`, as the server's did. */
+export function CodeBlock({ text, id, scroll }: { text: string; id?: string; scroll?: boolean }) {
   const { t } = useT();
   return (
     <div className="relative">
-      <pre id={id} className="overflow-x-auto rounded-card border border-line bg-canvas-subtle p-3 pr-11 font-mono text-[0.75rem] leading-relaxed break-all whitespace-pre-wrap text-ink">
+      <pre id={id} className={`overflow-x-auto rounded-card border border-line bg-canvas-subtle p-3 pr-11 font-mono text-[0.75rem] leading-relaxed text-ink${scroll ? "" : " break-all whitespace-pre-wrap"}`}>
         <code>{text}</code>
       </pre>
       <span className="absolute top-1.5 right-1.5">

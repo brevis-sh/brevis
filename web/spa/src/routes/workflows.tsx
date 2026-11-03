@@ -7,6 +7,8 @@ import { useFormat, useT } from "../i18n";
 import { useAgo } from "../ui/format";
 import { buttonClass, chipClass, filterRow, noBar, segGroup, segOff, segOn } from "../ui/button";
 import { linkClass } from "../ui/card";
+import { CodeBlock } from "../ui/copy";
+import { Drawer, useDrawer } from "../ui/drawer";
 import { Icon } from "../ui/icon";
 import { Logo } from "../ui/logo";
 import { PageFrame } from "../ui/page-frame";
@@ -455,22 +457,72 @@ function SearchBox() {
   );
 }
 
-// The docs the two header buttons open: the drawer that explained it is the server's, the page is the same.
-function Actions() {
-  const { t, lang } = useT();
+const CREATE_EXAMPLE = `name: daily_orders
+schedule: "0 4 * * *"
+steps:
+  - id: load
+    run: python load.py
+  - id: build
+    run: dbt build --select orders+`;
+
+function useDocs() {
+  const { lang } = useT();
   const prefix = lang === "pt-BR" ? "pt/" : lang === "zh-CN" ? "zh/" : lang === "en" || !lang ? "" : `${lang}/`;
-  const docs = `https://brevis.sh/${prefix}docs/workflows/`;
+  return `https://brevis.sh/${prefix}docs/workflows/`;
+}
+
+// A workflow is born in the repository and published by the CLI: both header
+// buttons open the drawer that says how. They stay links to the docs, which
+// is what the server's did with no script.
+function Actions() {
+  const { t } = useT();
+  const docs = useDocs();
+  const { show } = useDrawer("how-to-create");
   return (
     <div className="flex items-center gap-2">
-      <a href={docs} className={buttonClass("secondary", "regular")}>
-        <Icon name="book-open" className="h-3.5 w-3.5" />
-        {t("workflows.create.how")}
-      </a>
-      <a href={docs} className={buttonClass("primary", "regular")}>
-        <Icon name="plus" className="h-3.5 w-3.5" />
-        {t("workflows.create.publish")}
-      </a>
+      {(["secondary", "primary"] as const).map((kind) => (
+        <a
+          key={kind}
+          href={docs}
+          onClick={(e) => {
+            e.preventDefault();
+            show();
+          }}
+          className={buttonClass(kind, "regular")}
+        >
+          <Icon name={kind === "primary" ? "plus" : "book-open"} className="h-3.5 w-3.5" />
+          {t(kind === "primary" ? "workflows.create.publish" : "workflows.create.how")}
+        </a>
+      ))}
     </div>
+  );
+}
+
+function HowToCreate() {
+  const { t } = useT();
+  const docs = useDocs();
+  return (
+    <Drawer id="how-to-create" plain title={t("workflows.create.title")}>
+      <div className="space-y-4 px-5 py-4 text-[13px] text-ink-2">
+        <p>{t("workflows.create.lead")}</p>
+        <div>
+          <p className="mb-1.5 font-medium text-ink">1. {t("workflows.create.file")}</p>
+          <CodeBlock scroll text={CREATE_EXAMPLE} />
+        </div>
+        <div>
+          <p className="mb-1.5 font-medium text-ink">2. {t("workflows.create.validate")}</p>
+          <CodeBlock scroll text="brevis validate workflows/" />
+        </div>
+        <div>
+          <p className="mb-1.5 font-medium text-ink">3. {t("workflows.create.publish_step")}</p>
+          <CodeBlock scroll text="brevis publish --project <project> workflows/" />
+          <p className="mt-1.5 text-xs text-muted">{t("workflows.create.publish_note")}</p>
+        </div>
+        <a href={docs} className="inline-block text-ink underline decoration-line-strong underline-offset-2 hover:decoration-ink">
+          {t("workflows.create.docs")}
+        </a>
+      </div>
+    </Drawer>
   );
 }
 
@@ -491,6 +543,7 @@ export default function WorkflowsRoute() {
   const { note, error, dismiss, toggle } = toggler;
   return (
     <PageFrame title={t("nav.workflows")} actions={<Actions />}>
+      <HowToCreate />
       <p className="mb-4 max-w-3xl text-[13.5px] text-muted">
         {t("workflows.lead.before")} <strong className="font-medium text-ink">{t("workflows.lead.strong")}</strong>
         {t("workflows.lead.after")} <Link to="/runs" className={linkClass}>{t("workflows.lead.run")}</Link>.

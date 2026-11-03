@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useData } from "../api/live";
 import type { Streams, StreamRow } from "../api/ingest";
 import { useT } from "../i18n";
+import { useDrawer } from "../ui/drawer";
 import { HowDrawer, HowSteps } from "../ui/how";
 import { Icon } from "../ui/icon";
 import { btn, Empty, FilterRow, Lead, MethodPill, PageHead, linkUnderline, Page } from "../ui/kit";
@@ -211,13 +211,13 @@ function HowItWorks() {
 export default function StreamsRoute() {
   const { t } = useT();
   const filter = useFilter(FIELDS, "/ingest/streams");
-  const [drawer, setDrawer] = useState(false);
+  const { show } = useDrawer("novo");
   return (
     <Page>
       <PageHead
         title={t("streams.title")}
         actions={
-          <button type="button" className={btn(true)} aria-haspopup="dialog" onClick={() => setDrawer(true)}>
+          <button type="button" className={btn(true)} aria-haspopup="dialog" onClick={show}>
             <Icon name="plus" className="h-3.5 w-3.5" />
             {t("streams.new")}
           </button>
@@ -227,8 +227,7 @@ export default function StreamsRoute() {
       <StreamsData filter={filter} />
       <HowItWorks />
       <HowDrawer
-        open={drawer}
-        onClose={() => setDrawer(false)}
+        id="novo"
         title={t("streams.new")}
         lead={t("streams.new.lead")}
         blocks={[

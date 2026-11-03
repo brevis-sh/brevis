@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { ApiError } from "../api/client";
 import { useData } from "../api/live";
@@ -7,6 +7,8 @@ import { useFormat, useT } from "../i18n";
 import { useCrumb } from "../shell/nav";
 import { ConfigNote, DeadLetterPanel } from "../ui/cfg";
 import { CopyButton } from "../ui/copy";
+import { Drawer, useDrawer } from "../ui/drawer";
+import { checkEvent } from "../ui/test-event";
 import { FlowDiagram } from "../ui/flow";
 import { HashTabs } from "../ui/hash-tabs";
 import { Icon } from "../ui/icon";
@@ -251,63 +253,55 @@ function DeadLetter({ v }: { v: Stream | undefined }) {
 // It sends nothing: the console holds no token for the gateway. The body is
 // editable and the curl follows it. (The old drawer also validated the body
 // against the format; that check is not carried over.)
+const STATUS_HUE = { failed: "text-state-failed", queued: "text-state-queued", success: "text-state-success" };
+
 function TestEvent({ path, v }: { path: string; v: Stream | undefined }) {
   const { t } = useT();
-  const dialog = useRef<HTMLDialogElement>(null);
+  const { show } = useDrawer("test-event");
   const [edited, setEdited] = useState<string | null>(null);
   const body = edited ?? v?.testEvent.body ?? "";
-  const curl = v ? `${v.testEvent.curlHead}\n${body}\nEOF` : "";
+  const curl = v ? `${v.testEvent.curlHead}\n${body.replace(/\s+$/, "")}\nEOF` : "";
+  const status = v ? checkEvent(body, v.testEvent, t) : null;
   return (
     <>
-      <button type="button" className={btn(true)} aria-haspopup="dialog" disabled={!v} onClick={() => dialog.current?.showModal()}>
+      <button type="button" className={btn(true)} aria-haspopup="dialog" disabled={!v} onClick={show}>
         <Icon name="send" className="h-3.5 w-3.5" />
         {t("streams.page.test")}
       </button>
-      <dialog
-        ref={dialog}
-        aria-labelledby="test-event-title"
-        onClick={(e) => e.target === dialog.current && dialog.current?.close()}
-        className="run-drawer fixed inset-y-0 right-0 left-auto m-0 h-full max-h-none w-[min(520px,100vw)] border-l border-line bg-surface p-0 text-ink backdrop:bg-ink/40"
+      <Drawer
+        id="test-event"
+        width={520}
+        bodyClass=""
+        title={t("testevent.title")}
+        lead={t("testevent.lead")}
+        kicker={
+          <p className="truncate font-mono text-[11px] tracking-[0.08em] text-muted uppercase">
+            POST {path} · {v?.testEvent.format}
+          </p>
+        }
       >
-        <div className="flex h-full flex-col">
-          <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
-            <div className="min-w-0">
-              <p className="truncate font-mono text-[11px] tracking-[0.08em] text-muted uppercase">
-                POST {path} · {v?.testEvent.format}
-              </p>
-              <p id="test-event-title" className="text-[15px] font-semibold text-ink">
-                {t("testevent.title")}
-              </p>
-              <p className="mt-1 text-[12.5px] text-muted">{t("testevent.lead")}</p>
-            </div>
-            <button type="button" aria-label={t("dialog.close")} onClick={() => dialog.current?.close()} className="flex h-8 w-8 items-center justify-center rounded-card text-muted transition-colors hover:bg-surface-2 hover:text-ink">
-              <Icon name="x" className="h-4 w-4" />
-            </button>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[12.5px] font-medium text-ink">{t("testevent.body")}</span>
+          <textarea
+            rows={8}
+            spellCheck={false}
+            value={body}
+            onChange={(e) => setEdited(e.target.value)}
+            className="w-full rounded-card border border-line bg-canvas px-3 py-2 font-mono text-[0.78rem] text-ink focus:border-accent-strong focus:outline-none"
+          />
+        </label>
+        <p className={`text-[12px] ${status ? STATUS_HUE[status.kind] : "text-muted"}`} aria-live="polite">{status?.text}</p>
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="text-[12.5px] text-muted">{t("testevent.send_with")}</span>
+            <CopyButton text={curl} label={t("testevent.copy")} />
           </div>
-          <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[12.5px] font-medium text-ink">{t("testevent.body")}</span>
-              <textarea
-                rows={8}
-                spellCheck={false}
-                value={body}
-                onChange={(e) => setEdited(e.target.value)}
-                className="w-full rounded-card border border-line bg-canvas px-3 py-2 font-mono text-[0.78rem] text-ink focus:border-accent-strong focus:outline-none"
-              />
-            </label>
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <span className="text-[12.5px] text-muted">{t("testevent.send_with")}</span>
-                <CopyButton text={curl} label={t("testevent.copy")} />
-              </div>
-              <pre className="overflow-x-auto rounded-card border border-line-soft bg-canvas px-3 py-2 font-mono text-[0.72rem] text-ink-2">
-                <code>{curl}</code>
-              </pre>
-            </div>
-            <p className="text-[12px] text-muted">{t("testevent.note", { sink: v?.sink.uri || t("streams.unidentified") })}</p>
-          </div>
+          <pre className="overflow-x-auto rounded-card border border-line-soft bg-canvas px-3 py-2 font-mono text-[0.72rem] text-ink-2">
+            <code>{curl}</code>
+          </pre>
         </div>
-      </dialog>
+        <p className="text-[12px] text-muted">{t("testevent.note", { sink: v?.sink.uri || t("streams.unidentified") })}</p>
+      </Drawer>
     </>
   );
 }

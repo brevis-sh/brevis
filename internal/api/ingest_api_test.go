@@ -271,6 +271,12 @@ func TestAStreamCarriesItsFlowSettingsAndDeadLetter(t *testing.T) {
 	if te["format"] != "ndjson" || !strings.Contains(te["curlHead"].(string), "/v1/clicks") {
 		t.Errorf("testEvent = %v", te)
 	}
+	// Present for every stream (empty without an auto_table) so the SPA can read them blindly.
+	for _, k := range []string{"allow", "dataset"} {
+		if _, ok := te[k]; !ok {
+			t.Errorf("testEvent lacks %q: %v", k, te)
+		}
+	}
 	for _, k := range []string{"tables", "readBy", "changes"} {
 		list(t, body, k)
 	}
