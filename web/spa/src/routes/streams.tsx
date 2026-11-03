@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useData } from "../api/live";
 import type { Choice, Place, Streams, StreamRow } from "../api/ingest";
@@ -9,9 +9,10 @@ import { Icon } from "../ui/icon";
 import { btn, Empty, Lead, MethodPill, PageHead, linkUnderline, Page } from "../ui/kit";
 import { Logo, useLogoTitle } from "../ui/logo";
 import { FilterBar, ResultCount, SearchField, useUrlSearch, type Chip, type FilterDef } from "../ui/filters";
+import { TOPIC_STREAMS } from "../ui/metrics/hooks";
 import { StreamRowRate, StreamsStrip } from "../ui/metrics/streams";
 import { recall, remember, useSeen } from "../ui/seen";
-import { HealthStatus } from "../ui/health";
+import { HEALTH_ORDER, HealthStatus, severity } from "../ui/health";
 import { Status, useStatusWord } from "../ui/status";
 import { Row, Table, Td, Th } from "../ui/table";
 import { useFilter } from "../ui/use-filter";
@@ -181,13 +182,31 @@ const ghostOf = (s: Shape): Streams => ({
 function HealthSummary({ v }: { v: Streams }) {
   const word = useStatusWord();
   const counts = v.healthCounts ?? { unknown: v.total };
+  // What needs a person first; a state this app does not know yet still counts, after the others.
+  const states = [...HEALTH_ORDER, ...Object.keys(counts).filter((s) => !HEALTH_ORDER.includes(s))].filter((s) => counts[s]);
   return (
     <>
-      {Object.entries(counts).map(([state, count]) => (
-        <Status key={state} kind={state} label={`${count} ${word(state)}`} />
+      {states.map((state) => (
+        <Status key={state} kind={state} label={`${counts[state]} ${word(state)}`} />
       ))}
     </>
   );
+}
+
+// Failing streams first, then degraded, then the rest, each group in the order the server sent. The order is
+// decided when data arrives, and not while a hand is on the table: the rows the reader is pointing at or has
+// focused keep their places (their numbers still update) until the pointer and the focus leave.
+function useOrdered(rows: StreamRow[]) {
+  const [held, setHeld] = useState<string[] | null>(null);
+  const sorted = useMemo(() => [...rows].sort((a, b) => severity(a.health) - severity(b.health)), [rows]);
+  const ordered = useMemo(() => {
+    if (!held) return sorted;
+    const at = (r: StreamRow) => held.indexOf(r.href);
+    return [...sorted].sort((a, b) => (at(a) < 0 ? held.length : at(a)) - (at(b) < 0 ? held.length : at(b)));
+  }, [sorted, held]);
+  const hold = () => setHeld((h) => h ?? ordered.map((r) => r.href));
+  const release = () => setHeld(null);
+  return { ordered, hold, release };
 }
 
 // The bar (see ui/filters): a search and the destination kinds, drawn at once from the last shape seen.
@@ -226,8 +245,9 @@ function StreamsData({ filter }: { filter: Filter }) {
   const { t, n } = useT();
   const qs = new URLSearchParams();
   for (const f of FIELDS) if (filter.get(f)) qs.set(f, filter.get(f));
-  const q = useData<Streams>(["ingest", "streams", qs.toString()], `/api/ingest/streams${qs.size ? `?${qs}` : ""}`, { topic: "ingest" });
+  const q = useData<Streams>(["ingest", "streams", qs.toString()], `/api/ingest/streams${qs.size ? `?${qs}` : ""}`, { topic: ["ingest", TOPIC_STREAMS] });
   const ghost = !q.data;
+  const { ordered, hold, release } = useOrdered(q.data?.rows ?? []);
   // Only the unfiltered answer is remembered: a filter's counts are not the list's shape.
   const seen = useSeen("streams", qs.size === 0 && q.data ? shapeOf(q.data) : undefined, FIRST);
   const v = q.data ?? ghostOf(seen);
@@ -250,7 +270,15 @@ function StreamsData({ filter }: { filter: Filter }) {
       {v.total > 0 && (
         <StreamsBar filter={filter} v={v} ghost={ghost} />
       )}
-      <div aria-busy={ghost}>
+      <div
+        aria-busy={ghost}
+        onPointerEnter={hold}
+        onPointerLeave={release}
+        onFocus={hold}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) release();
+        }}
+      >
         {q.isError ? (
           <p role="alert" className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">
             {(q.error as Error).message}
@@ -267,7 +295,7 @@ function StreamsData({ filter }: { filter: Filter }) {
           </div>
         ) : (
           <Table id="stream-rows" cls="stl" head={<Head />} ghost={ghost} memo={phone() ? "streams.phone" : "streams"}>
-            <Rows rows={v.rows} gateway={v.gateways !== 1} />
+            <Rows rows={q.data ? ordered : v.rows} gateway={v.gateways !== 1} />
           </Table>
         )}
       </div>

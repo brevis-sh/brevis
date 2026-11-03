@@ -25,6 +25,12 @@ const LOOK: Record<string, [shape: string, colour: string]> = {
   live: ["pulse", "text-state-success"],
   // Nothing to report is a dashed ring, the vocabulary's shape for "no information" (as unidentified and never_ran).
   unknown: ["ring-dashed", "text-muted"],
+  // A stream's measured health. Four shapes, so colour never carries it alone: settled dot, quiet ring, warning
+  // triangle (as "late"), failed diamond (as "failed").
+  healthy: ["dot", "text-state-success"],
+  quiet: ["ring", "text-muted"],
+  degraded: ["triangle", "text-state-queued"],
+  failing: ["diamond", "text-state-failed"],
 };
 
 /** A run's or step's status as a kind: the engine says "" for a node that never ran. */

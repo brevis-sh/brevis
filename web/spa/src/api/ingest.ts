@@ -121,7 +121,24 @@ export type Load = {
  * What the console can say about a stream's health. `state` is "unknown" until the gateway reports its traffic
  * (the engine holds configuration only); `reason` is a stable key the app translates, never a sentence.
  */
-export type StreamHealth = { state: string; reason: string };
+export type StreamHealth = {
+  state: string;
+  reason: string;
+  /** When the state began, as far as the console watched; for "quiet", the last minute with events. */
+  since?: string;
+  windowMinutes?: number;
+  observedMinutes?: number;
+  recovering?: boolean;
+  /** What the judged window counted: events, except delivered/retried/buried (batches) and saturated (requests). */
+  window?: Record<"received" | "rejected" | "dropped" | "deadLetter" | "delivered" | "retried" | "buried" | "saturated", number>;
+  rejectedRatio?: number;
+  deadLetterRatio?: number;
+  failedBatchRatio?: number;
+  retryRatio?: number;
+  latencyP95Sec?: number;
+  replicas?: number;
+  reachable?: number;
+};
 
 export type StreamRow = {
   gateway: string;
