@@ -1,9 +1,5 @@
 /* Small controls shared by the workflow screens. Colors follow the base
    tokens in styles.css; the state palette is local to these controls. */
-:root { --st-ok: #16a34a; --st-bad: #dc2626; --st-run: #2563eb; --st-wait: #d97706; --st-idle: #9ca3af; --accent: #14181f; }
-@media (prefers-color-scheme: dark) {
-  :root { --st-ok: #4ade80; --st-bad: #f87171; --st-run: #60a5fa; --st-wait: #fbbf24; --st-idle: #6b7280; --accent: #e8ebf0; }
-}
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .st-success { --st: var(--st-ok); } .st-failed { --st: var(--st-bad); }
 .st-running, .st-retrying { --st: var(--st-run); } .st-queued, .st-pending { --st: var(--st-wait); }

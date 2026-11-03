@@ -4,9 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Brevis</title>
-    <script type="module" crossorigin src="/app/assets/index-w97K89Jc.js"></script>
+    <!--brevis:app-css-->
+    <!-- The theme before the first paint, as the server's pages do (base.templ): the
+         visitor's choice (or the system's) on <html>, so nothing flashes. -->
+    <script>
+      (function () {
+        var d = document.documentElement, p = "auto";
+        try { p = localStorage.getItem("brevis_theme") || "auto"; } catch (e) {}
+        if (p !== "light" && p !== "dark") p = "auto";
+        d.dataset.themePref = p;
+        d.dataset.theme = p === "auto" ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : p;
+      })();
+    </script>
+    <script type="module" crossorigin src="/app/assets/index-B1KvGOhQ.js"></script>
     <link rel="modulepreload" crossorigin href="/app/assets/skeleton-C6mqHVzo.js">
-    <link rel="stylesheet" crossorigin href="/app/assets/index-CVEq0H4i.css">
+    <link rel="modulepreload" crossorigin href="/app/assets/status-badge-DwH4SreY.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/hooks-BcyPKHjs.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/lib-CvgHAESz.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/useMutation-Bamv7OYa.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/useQuery-BY8zEUhD.js">
+    <link rel="modulepreload" crossorigin href="/app/assets/preload-helper-yvApXQsr.js">
+    <link rel="stylesheet" crossorigin href="/app/assets/status-badge-967GcZiZ.css">
+    <link rel="stylesheet" crossorigin href="/app/assets/index-C4RFUYQR.css">
   </head>
   <body>
     <div id="root"></div>

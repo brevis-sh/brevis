@@ -1,14 +1,4 @@
 /* The run states' palette, shared by every part that draws a state. */
-:root {
-  --st-success: #2f7d4f; --st-failed: #c0392b; --st-running: #2c6fb0; --st-retrying: #b8651b;
-  --st-queued: #a87a1c; --st-canceled: #7a7f87; --st-pending: #9aa1ab; --st-skipped: #86608a;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --st-success: #4cc27f; --st-failed: #f06a5b; --st-running: #5aa7ec; --st-retrying: #e8934a;
-    --st-queued: #e0b14d; --st-canceled: #98a2b3; --st-pending: #6b7280; --st-skipped: #b78bbb;
-  }
-}
 .st { --c: var(--st-pending); display: inline-flex; align-items: center; gap: .4rem; font-size: .8125rem; color: var(--c); white-space: nowrap; }
 .st::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: var(--c); flex: none; }
 .st-success { --c: var(--st-success); } .st-failed { --c: var(--st-failed); } .st-running { --c: var(--st-running); }

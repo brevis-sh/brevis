@@ -87,9 +87,7 @@ function Title() {
 export default function ProjectsRoute() {
   return (
     <>
-      <Suspense fallback={<Skeleton w="8rem" h="1.5rem" />}>
-        <Title />
-      </Suspense>
+      <Title />
       <Suspense fallback={<ProjectsSkeleton />}>
         <Projects />
       </Suspense>

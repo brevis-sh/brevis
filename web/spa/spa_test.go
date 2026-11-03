@@ -53,3 +53,16 @@ func TestAMissingFileIsNotTheShell(t *testing.T) {
 		t.Errorf("a missing asset: %d, want 404", w.Code)
 	}
 }
+
+// THE SHELL WEARS THE CONSOLE'S OWN DESIGN: it links the server's stylesheet by
+// its versioned URL (not the placeholder), so tokens, fonts and the brand's theme
+// are the ones the server pages use.
+func TestTheShellLinksTheConsolesStylesheet(t *testing.T) {
+	body := get(t, "/app/").Body.String()
+	if strings.Contains(body, "brevis:app-css") {
+		t.Error("the stylesheet placeholder was not replaced")
+	}
+	if !regexp.MustCompile(`href="/assets/app\.css\?v=[0-9a-f]{12}"`).MatchString(body) {
+		t.Errorf("the shell does not link /assets/app.css at its current version:\n%s", body)
+	}
+}

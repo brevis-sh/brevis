@@ -18,9 +18,8 @@ kbd { padding: .05rem .35rem; border: 1px solid var(--line); border-radius: .25r
 .wb-badge { padding: .1rem .5rem; border-radius: .4rem; background: var(--card); border: 1px solid var(--line); font-size: .75rem; font-weight: 600; }
 .wb-writable { margin: 0; padding: .4rem .6rem; border: 1px solid var(--line); border-radius: .4rem; background: var(--card); font-size: .75rem; }
 .wb-cost { min-height: 1.1rem; margin: .4rem 0 0; font-size: .7rem; }
-.wb-bad { color: #c0392b; }
-.wb-ok { color: #1e8449; }
-@media (prefers-color-scheme: dark) { .wb-bad { color: #f1948a; } .wb-ok { color: #7dcea0; } }
+.wb-bad { color: var(--st-failed); }
+.wb-ok { color: var(--st-success); }
 .wb-results { display: flex; flex-direction: column; min-height: 20rem; flex: 1; min-width: 0; }
 .wb-tabs { display: flex; align-items: center; gap: .25rem; border-bottom: 1px solid var(--line); padding-bottom: .25rem; margin-bottom: .5rem; flex-wrap: wrap; }
 .wb-tab { padding: .35rem .75rem; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted); font: inherit; font-size: .8rem; cursor: pointer; }
@@ -31,7 +30,7 @@ kbd { padding: .05rem .35rem; border: 1px solid var(--line); border-radius: .25r
 .wb-none { display: grid; place-content: center; text-align: center; flex: 1; min-height: 8rem; font-size: .85rem; }
 .wb-none p { margin: .2rem 0; }
 .wb-running { display: flex; align-items: center; gap: .6rem; padding: .5rem .75rem; border: 1px solid var(--line); border-radius: .4rem; background: var(--card); font-size: .8rem; }
-.wb-dot { width: .5rem; height: .5rem; border-radius: 50%; background: #2e86c1; animation: wb-pulse 1.2s ease-in-out infinite; }
+.wb-dot { width: .5rem; height: .5rem; border-radius: 50%; background: var(--st-running); animation: wb-pulse 1.2s ease-in-out infinite; }
 @keyframes wb-pulse { 50% { opacity: .3; } }
 @media (prefers-reduced-motion: reduce) { .wb-dot { animation: none; } }
 .tabular { font-variant-numeric: tabular-nums; }

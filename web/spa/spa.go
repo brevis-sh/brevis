@@ -15,6 +15,8 @@ import (
 	"path"
 	"strings"
 	"time"
+
+	"brevis.sh/brevis/web/assets"
 )
 
 //go:embed dist
@@ -36,6 +38,14 @@ const Prefix = "/app/"
 // revalidated by digest.
 func Handler() http.Handler {
 	root, _ := fs.Sub(dist, "dist")
+	// The shell carries a placeholder where the console's own stylesheet goes
+	// (index.html). It is replaced once, here, by the versioned URL -- the one
+	// the server's pages use -- so the app gets the same tokens, fonts and
+	// themes, cached for a year until the sheet changes. Vite's dev server does
+	// the same swap with a plugin (vite.config.ts).
+	shell, _ := fs.ReadFile(root, "index.html")
+	shell = bytes.Replace(shell, []byte("<!--brevis:app-css-->"),
+		[]byte(`<link rel="stylesheet" href="`+assets.URL("app.css")+`">`), 1)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		name := strings.TrimPrefix(r.URL.Path, Prefix)
 		if name != "" && path.Ext(name) != "" {
@@ -52,8 +62,8 @@ func Handler() http.Handler {
 			http.ServeContent(w, r, path.Base(name), time.Time{}, bytes.NewReader(b))
 			return
 		}
-		b, err := fs.ReadFile(root, "index.html")
-		if err != nil {
+		b := shell
+		if len(b) == 0 {
 			http.NotFound(w, r)
 			return
 		}

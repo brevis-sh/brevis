@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Brevis</title>
+    <!--brevis:app-css-->
+    <!-- The theme before the first paint, as the server's pages do (base.templ): the
+         visitor's choice (or the system's) on <html>, so nothing flashes. -->
+    <script>
+      (function () {
+        var d = document.documentElement, p = "auto";
+        try { p = localStorage.getItem("brevis_theme") || "auto"; } catch (e) {}
+        if (p !== "light" && p !== "dark") p = "auto";
+        d.dataset.themePref = p;
+        d.dataset.theme = p === "auto" ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : p;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

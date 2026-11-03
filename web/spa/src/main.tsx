@@ -8,18 +8,19 @@ import { Skeleton } from "./ui/skeleton";
 import WorkflowsRoute from "./routes/workflows";
 import WorkflowRoute from "./routes/workflow";
 import RunRoute from "./routes/run";
+import { boot } from "./boot";
+import "./styles.css";
+import { lazyRoute } from "./ui/lazy-route";
+
 const LoadsRoute = lazy(() => import("./routes/loads"));
 const LoadRoute = lazy(() => import("./routes/load"));
 const StreamsRoute = lazy(() => import("./routes/streams"));
 const StreamRoute = lazy(() => import("./routes/stream"));
-import "./styles.css";
 
 const SqlRoute = lazy(() => import("./routes/sql"));
 // Screens load on their own, so the first paint pays for the shell alone.
 const OverviewRoute = lazy(() => import("./routes/overview"));
 const RunsRoute = lazy(() => import("./routes/runs"));
-import { lazyRoute } from "./ui/lazy-route";
-import "./styles.css";
 
 const CatalogRoute = lazyRoute(() => import("./routes/catalog"));
 const EndpointsRoute = lazyRoute(() => import("./routes/endpoints"));
@@ -28,6 +29,8 @@ const EndpointRoute = lazyRoute(() => import("./routes/endpoint"));
 // Data stays fresh for 5s: moving between screens does not refetch what was
 // just read, and a screen that comes back shows the old data while it renews.
 const client = new QueryClient({ defaultOptions: { queries: { staleTime: 5_000, retry: 1 } } });
+
+await boot(client);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

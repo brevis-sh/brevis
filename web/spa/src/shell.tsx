@@ -33,14 +33,6 @@ function Identity() {
   );
 }
 
-function IdentitySkeleton() {
-  return (
-    <span className="brand" aria-busy="true">
-      <Skeleton w="7rem" h="1.25rem" />
-    </span>
-  );
-}
-
 // The shell is a placeholder for the real sidebar and topbar (base.templ). It
 // fixes the responsive contract now: a column from 768px up, a bar below it.
 function Nav() {
@@ -68,25 +60,12 @@ function Nav() {
   );
 }
 
-function NavSkeleton() {
-  return (
-    <>
-      <Skeleton w="5rem" h="1.5rem" />
-      <Skeleton w="4rem" h="1.5rem" />
-    </>
-  );
-}
-
 export function Shell() {
   return (
     <div className="shell">
       <nav className="side" aria-label="Main">
-        <Suspense fallback={<IdentitySkeleton />}>
-          <Identity />
-        </Suspense>
-        <Suspense fallback={<NavSkeleton />}>
-          <Nav />
-        </Suspense>
+        <Identity />
+        <Nav />
       </nav>
       <main className="main">
         <Suspense fallback={<Skeleton w="8rem" h="1.5rem" />}>

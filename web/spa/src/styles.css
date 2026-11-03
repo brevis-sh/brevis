@@ -1,19 +1,40 @@
+/* THE DESIGN IS THE SERVER'S. /assets/app.css (loaded before this file) holds the
+   console's tokens -- the --color-* names internal/branding writes, the IBM Plex
+   faces, the dark and light themes on <html data-theme> -- so a client's brand.yaml
+   repaints this app exactly as it repaints the server pages. The short names below
+   are the app's own vocabulary and only ever ALIAS those tokens: no colour is
+   written twice. */
 :root {
-  --bg: #fff; --fg: #14181f; --muted: #6b7280; --line: #e5e7eb; --card: #f8fafc; --sk: #e5e7eb; --sk-hi: #f3f4f6;
-  color-scheme: light dark;
-}
-@media (prefers-color-scheme: dark) {
-  :root { --bg: #0f1218; --fg: #e8ebf0; --muted: #98a2b3; --line: #232a35; --card: #151a22; --sk: #232a35; --sk-hi: #2d3644; }
+  --bg: var(--color-canvas);
+  --fg: var(--color-ink);
+  --muted: var(--color-muted);
+  --line: var(--color-line);
+  --card: var(--color-surface);
+  --sk: var(--color-surface-3);
+  --sk-hi: var(--color-surface-2);
+  --accent: var(--color-accent-strong);
+  --accent-bar: var(--color-accent-strong);
+
+  /* One state vocabulary. The alias groups are the names the screens grew while
+     they were built apart; they all land on the same six state tokens. */
+  --st-success: var(--color-state-success); --st-ok: var(--color-state-success);
+  --st-failed: var(--color-state-failed); --st-bad: var(--color-state-failed);
+  --st-running: var(--color-state-running); --st-run: var(--color-state-running); --st-info: var(--color-state-running);
+  --st-queued: var(--color-state-queued); --st-warn: var(--color-state-queued); --st-wait: var(--color-state-queued);
+  --st-retrying: var(--color-state-retrying);
+  --st-canceled: var(--color-state-canceled); --st-idle: var(--color-state-canceled); --st-off: var(--color-state-canceled);
+  --st-pending: var(--color-state-pending);
+  --st-skipped: var(--color-state-skipped);
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 var(--font-sans); }
 .shell { display: grid; grid-template-columns: 14rem 1fr; min-height: 100dvh; }
 .side { display: flex; flex-direction: column; gap: .25rem; padding: 1rem; border-right: 1px solid var(--line); }
 .side a { color: inherit; text-decoration: none; padding: .4rem .6rem; border-radius: .4rem; }
 .side a.active { background: var(--card); font-weight: 600; }
 .brand { margin-bottom: .75rem; }
 .main { padding: 1.25rem; min-width: 0; }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: .6rem; padding: 1rem 1.25rem; display: grid; gap: .75rem; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-panel); padding: 1rem 1.25rem; display: grid; gap: .75rem; }
 .card h1 { margin: 0; font-size: 1.25rem; }
 .sk { display: block; border-radius: .3rem; background: linear-gradient(90deg, var(--sk) 25%, var(--sk-hi) 50%, var(--sk) 75%); background-size: 200% 100%; animation: sk 1.4s linear infinite; }
 .sk-text { display: grid; gap: .5rem; }
@@ -26,11 +47,11 @@ body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system
 }
 .muted { color: var(--muted); }
 .brand { display: flex; align-items: center; gap: .5rem; }
-.mono { font-family: ui-monospace, monospace; font-size: .75rem; }
+.mono { font-family: var(--font-mono); font-size: .75rem; }
 .page-title { margin: 0 0 1rem; font-size: 1.25rem; }
 .lead { max-width: 48rem; margin: 0 0 1rem; font-size: .875rem; }
 .proj-grid { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
-.proj { display: grid; gap: .9rem; padding: 1.1rem; background: var(--card); border: 1px solid var(--line); border-radius: .6rem; color: inherit; text-decoration: none; }
+.proj { display: grid; gap: .9rem; padding: 1.1rem; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-panel); color: inherit; text-decoration: none; }
 a.proj:hover { border-color: var(--muted); }
 .proj-head { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; }
 .proj-head h3 { margin: 0; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
