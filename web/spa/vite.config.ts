@@ -3,6 +3,9 @@ import react from "@vitejs/plugin-react";
 
 // The SPA is served by the Go binary under /app/ (web/spa/spa.go embeds dist/),
 // so every URL the build writes starts there.
+// BREVIS_API points the dev server at another API (a second one on its own port).
+const api = process.env.BREVIS_API ?? "http://localhost:8080";
+
 export default defineConfig({
   base: "/app/",
   plugins: [
@@ -20,9 +23,9 @@ export default defineConfig({
     // `make up` serves the API on 8080; the dev server proxies to it, so the
     // browser sees one origin and the session cookie works without CORS.
     proxy: {
-      "/api": "http://localhost:8080",
-      "/health": "http://localhost:8080",
-      "/assets": "http://localhost:8080",
+      "/api": api,
+      "/health": api,
+      "/assets": api,
     },
   },
 });
