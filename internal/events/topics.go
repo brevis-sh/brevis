@@ -33,10 +33,18 @@ const (
 	Ingest    = "ingest"
 	Overview  = "overview"
 	Nav       = "nav"
+
+	// The live volume screens. Fixed (one detector each, shared) but NOT in
+	// the six every connection carries: the SPA subscribes only while a
+	// screen that draws them is mounted. Their fingerprint is the collector's
+	// scrape counter, so one change event is at most one scrape.
+	MetricsStreams   = "metrics:streams"
+	MetricsEndpoints = "metrics:endpoints"
 )
 
 var (
-	fixed = map[string]bool{Runs: true, Workflows: true, Catalog: true, Ingest: true, Overview: true, Nav: true}
+	fixed = map[string]bool{Runs: true, Workflows: true, Catalog: true, Ingest: true, Overview: true, Nav: true,
+		MetricsStreams: true, MetricsEndpoints: true}
 	// A slug is what the rest of the console accepts in a path: it ends up as
 	// a bound query parameter, so this is about refusing junk early (and
 	// bounding the key), not about SQL safety.

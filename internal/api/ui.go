@@ -34,6 +34,7 @@ import (
 	"brevis.sh/brevis/internal/infrastructure/endpointcall"
 	"brevis.sh/brevis/internal/infrastructure/postgres"
 	"brevis.sh/brevis/internal/infrastructure/sqlserve"
+	"brevis.sh/brevis/internal/metrics"
 	"brevis.sh/brevis/internal/updates"
 	"brevis.sh/brevis/web/assets"
 	"brevis.sh/brevis/web/components"
@@ -179,6 +180,8 @@ type UI struct {
 
 	// hub feeds GET /api/events. See WithChangeHub.
 	hub *events.Hub
+	// scrape is the live volume collector; nil serves "not configured".
+	scrape *metrics.Collector
 }
 
 // WithPreview points the console at a SQL service, and says whether this
@@ -402,6 +405,7 @@ func (u *UI) Registrar(mux *http.ServeMux) {
 	u.registerIngestAPI(mux)
 	u.registerOverviewAndRunsAPI(mux)
 	u.registerCatalogAPI(mux)
+	u.registerMetricsAPI(mux)
 }
 
 // loads is Ingest → Batch loads (screen-loads): one row per step and

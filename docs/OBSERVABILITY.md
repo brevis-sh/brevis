@@ -37,6 +37,66 @@ in a `ServiceMonitor` or a scrape annotation, not in an `Ingress` rule.
 Set `BREVIS_METRICS_ADDR=""` to serve nothing. An **empty** value means off,
 which is different from unset — unset gets the default.
 
+## The live volume on the console's screens
+
+The Streams and Endpoints screens (list and detail) draw what was sent to the
+streams and what the endpoints served, per minute, as it happens. The console has
+no time series store: it **scrapes the `/metrics` of the gateways and the SQL
+APIs you name** and keeps per-minute buckets in memory.
+
+| variable | |
+|---|---|
+| `BREVIS_GATEWAY_METRICS_URLS` | `events_gateway=http://gateway:9090/metrics` — the gateway's `name:`, then the address of **its metrics listener** (`metrics.addr`, `:9090` by default; on the compose demo, `${BREVIS_GATEWAY_METRICS_PORT:-9091}`), never the ingest port. Repeat a name for replicas |
+| `BREVIS_ENDPOINTS_METRICS_URLS` | `example-api=http://endpoints:9090/metrics` — the API's name as in `BREVIS_ENDPOINTS_URLS`, then its `metrics.addr`. Always its own variable: the metrics listener is never the API's port |
+| `BREVIS_METRICS_SCRAPE_INTERVAL` | `5s`; `1s` to `1m`. Each target is read at a random offset, +-10%, with a timeout of the interval (5 s at most), at most 8 MiB, no redirect and no proxy |
+
+Targets come **only** from these variables, never from a request, so nobody who
+can log in can aim the console at an address. An address with a credential in it
+is refused at start, and an address is never logged or returned: errors name the
+variable, the entry and the gateway or API.
+
+Which series feed which number:
+
+| screen | number | series |
+|---|---|---|
+| stream | received, rejected, dropped, dead letter per minute | `brevis_gateway_events_received_total`, `_rejected_total`, `_dropped_total`, `brevis_gateway_dead_letter_records_total` |
+| stream | delivered batches | `brevis_gateway_batches_total{outcome="delivered"}` — **batches**, not events: the gateway has no per-event delivery counter unless `BREVIS_INGESTION_METRICS` is on |
+| stream | buffered, queued now | `brevis_gateway_buffer_records`, `brevis_gateway_queue_batches` |
+| stream | delivery p50 / p95 | `brevis_gateway_delivery_seconds` buckets |
+| endpoint | requests by outcome | `brevis_sql_api_requests_total{status}`: 2xx/3xx ok, 429 rate limited, other 4xx client errors, 5xx server errors. A request that reached no endpoint (`endpoint="-"`) belongs to none |
+| endpoint | cache hit ratio | `brevis_sql_api_cache_requests_total{result}` — hits over hits and misses; an endpoint without a cache has no ratio, shown as "—" |
+| endpoint | hook failures | `brevis_sql_api_hook_total{outcome!="ok"}` |
+| endpoint | p50 / p95 | `brevis_sql_api_request_seconds` buckets |
+
+A stream is matched to its series by the `name` of its published configuration
+(the gateway labels by name, the console keys a stream by gateway and path). The
+percentiles are interpolated inside histogram buckets: an estimate, not a
+measurement.
+
+**The honest limits**
+
+- **History is the console's memory.** The last three hours are kept per minute;
+  a restart of the console starts again, and the screens say "counted since
+  <time>". For longer, query your Prometheus, which scrapes the same endpoints.
+  (Back-filling from `BREVIS_PROMETHEUS_URL` is not implemented.)
+- **Rates are counter deltas.** The first scrape of a target is only a baseline.
+  A counter that goes down, or a changed `process_start_time_seconds`, is a
+  restart: the new value is the increase. A series that appears is born at zero.
+  An interval longer than three scrapes (a target that was down) is **not**
+  bridged: those minutes show as not observed instead of one invented spike.
+- **An event is counted in the minute of the scrape that saw it**, up to one
+  interval after the minute it happened in. The current minute is partial and is
+  drawn lighter.
+- **Replicas are summed**, each with its own baseline, so one restarting does
+  not disturb the others. If some do not answer the numbers are a floor, and the
+  screen says how many answer.
+- **Bounded memory.** Per target: 20,000 series per scrape, 1,000 streams or
+  endpoints, 64 histogram bounds each, 256 bytes per label value; anything past
+  that is dropped and counted ("series left out" on screen), never silent.
+- **Real time** is the SSE topics `metrics:streams` and `metrics:endpoints`, which
+  change once per finished scrape and are carried only while a screen that draws
+  them is open.
+
 ## What is measured
 
 ### The queue and the scheduler

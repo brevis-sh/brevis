@@ -61,12 +61,16 @@ export async function loaded(page: Page) {
   await expect(page.locator("main .sk")).toHaveCount(0);
 }
 
+export const isMetricsRead = (path: string) => path.endsWith("/metrics") || path.startsWith("/api/ingest/metrics/");
+
 /** The /api reads a page makes (the event stream is a connection, not a read). */
 export function trackApi(page: Page) {
   let log: string[] = [];
   page.on("request", (r) => {
     const u = new URL(r.url());
-    if (u.pathname.startsWith("/api/") && u.pathname !== "/api/events") log.push(u.pathname + u.search);
+    // The live volume reads (…/metrics) are a feed with a budget of their own, one per scrape: metrics.spec.ts
+    // counts them. Here they would make "an idle screen asks nothing" depend on whether a source is configured.
+    if (u.pathname.startsWith("/api/") && u.pathname !== "/api/events" && !isMetricsRead(u.pathname)) log.push(u.pathname + u.search);
   });
   return {
     take() {
