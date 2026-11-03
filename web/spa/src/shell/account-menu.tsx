@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { postJSON } from "../api/client";
 import { clearSeen } from "../ui/seen";
 import { useConfig, useSession } from "../api/session";
 import { useT } from "../i18n";
@@ -38,6 +39,19 @@ function useMenuDismiss() {
       document.removeEventListener("keydown", key);
     };
   }, []);
+}
+
+// Sign out, then start over from the login screen with nothing of this operator's left in
+// the browser: the remembered shapes and (by a full load, not a route change) the query cache.
+// If the server did not confirm, the session is still alive and the page stays where it is.
+async function signOut() {
+  try {
+    await postJSON("/api/logout", {});
+  } catch {
+    return;
+  }
+  clearSeen();
+  location.assign("/app/login");
 }
 
 function ThemeChoice() {
@@ -190,16 +204,15 @@ export function AccountMenu() {
           <ThemeChoice />
           {operator && (
             // A POST, not a link: a GET that signs somebody out is a URL anybody can put in an <img>.
-            <form method="post" action="/logout">
-              <button type="submit" className={row} onClick={clearSeen}>
-                <svg className={glyph} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-                  <path d="M6.5 13.5H3.5v-11h3" />
-                  <path d="M9.5 11l2.5-3-2.5-3" />
-                  <path d="M12 8H6" />
-                </svg>
-                {t("shell.sign_out")}
-              </button>
-            </form>
+            // The body ({}) is what makes it application/json, the only type the server takes (CSRF).
+            <button type="button" className={row} onClick={() => void signOut()}>
+              <svg className={glyph} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
+                <path d="M6.5 13.5H3.5v-11h3" />
+                <path d="M9.5 11l2.5-3-2.5-3" />
+                <path d="M12 8H6" />
+              </svg>
+              {t("shell.sign_out")}
+            </button>
           )}
           <div className="my-1 border-t border-line-soft" />
           <a href={docs} target="_blank" rel="noreferrer" className={row}>
