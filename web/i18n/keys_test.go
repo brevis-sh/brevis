@@ -110,7 +110,8 @@ func TestEveryKeyUsedExistsAndEveryKeyIsUsed(t *testing.T) {
 	}
 
 	for key := range en {
-		if strings.Contains(all, `"`+key+`"`) || contains(ScriptKeys, key) {
+		// A family the SPA completes at run time (t(`a.${x}`)) uses every key under its prefix.
+		if strings.Contains(all, `"`+key+`"`) || contains(ScriptKeys, key) || hasPrefixIn(key, spaPrefixes) {
 			continue
 		}
 		if used := byFamily(key, all); !used {
