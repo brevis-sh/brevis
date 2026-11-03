@@ -34,10 +34,14 @@ function Marked({ text, q }: { text: string; q: string }) {
   return <>{out}</>;
 }
 
+// The lines' area never gets shorter than this, loading, empty or growing: a log that fills while the run
+// runs would otherwise start as a sliver and push whatever sits under it, and the skeleton would not match it.
+const LINES_MIN = "log-lines-min";
+
 /** The lines' shape while they load: a heading and a few numbered lines. */
 function LinesSkeleton() {
   return (
-    <div aria-busy="true" className="grid gap-2 px-3 py-3">
+    <div aria-busy="true" className={`${LINES_MIN} grid gap-2 px-3 py-3`} style={{ alignContent: "start" }}>
       {[60, 90, 75, 40, 85, 55].map((w, i) => (
         <Skeleton key={i} w={`${w}%`} h="0.8rem" />
       ))}
@@ -143,7 +147,7 @@ export function LogView({ log, live, downloadHref, gotoCause = 0 }: Props) {
       {!log ? (
         <LinesSkeleton />
       ) : blocks.length === 0 ? (
-        <p className="px-3.5 py-3 text-[12.5px] text-muted">{t("run.log.empty")}</p>
+        <p className={`${LINES_MIN} px-3.5 py-3 text-[12.5px] text-muted`}>{t("run.log.empty")}</p>
       ) : (
         <>
           {/* role=log is a polite live region: only the lines that are added are read. */}
@@ -155,7 +159,7 @@ export function LogView({ log, live, downloadHref, gotoCause = 0 }: Props) {
             aria-label={t("run.tab.logs")}
             tabIndex={0}
             onScroll={onScroll}
-            className="max-h-[70vh] overflow-auto pb-1 font-mono text-[12px] leading-[1.65]"
+            className={`${LINES_MIN} max-h-[70vh] overflow-auto pb-1 font-mono text-[12px] leading-[1.65]`}
           >
             {blocks.map((b, bi) => (
               <Fragment key={`${b.step}#${b.attempt}`}>

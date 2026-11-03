@@ -6,6 +6,7 @@ import { getJSON } from "../../api/client";
 import { useFallbackInterval, useLive } from "../../live/hooks";
 import { useFormat, useT } from "../../i18n";
 import { Skeleton } from "../skeleton";
+import { dagHeight, rememberDagHeight } from "./height";
 import { langLabel, NODE_TYPES, stageTone, tone, type NodeData } from "./nodes";
 import "./dag.css";
 
@@ -254,8 +255,12 @@ export default function Dag({ src, runId, onPick }: Props) {
   }, []);
 
   const shape = g?.nodes?.length ?? 0;
+  // Only a height measured at a real width is worth keeping (heightFor says 380 while the width is unknown).
+  useEffect(() => {
+    if (view && width > 0 && url) rememberDagHeight(url, view.height);
+  }, [view, width, url]);
   return (
-    <div ref={box} className="dag rounded-card border border-line bg-surface shadow-warm-sm" style={{ height: view?.height ?? 380 }} aria-busy={isPending}>
+    <div ref={box} className="dag rounded-card border border-line bg-surface shadow-warm-sm" style={{ height: view?.height ?? dagHeight(url) }} aria-busy={isPending}>
       {isPending && <Skeleton h="100%" />}
       {error && <div className="dag-err" role="alert">could not load the graph: {error.message}</div>}
       {view && (

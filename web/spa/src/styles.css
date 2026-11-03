@@ -42,7 +42,18 @@ body { margin: 0; background: var(--bg); color: var(--fg); }
 .sk-ghost .cg svg { visibility: hidden; }
 @keyframes sk { to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .sk, .sk-ghost * { animation: none !important; } }
+
+/* A skeleton made of the real markup: the same element and classes as the loaded state with a placeholder
+   inside, so its height and width come from the real line box and cannot drift from it. No overflow rule
+   here: overflow would move the inline-block's baseline and change the line's height. */
+.sk-inline { display: inline-block; max-width: 100%; vertical-align: top; border-radius: .3rem; color: transparent !important; user-select: none; background: linear-gradient(90deg, var(--sk) 25%, var(--sk-hi) 50%, var(--sk) 75%); background-size: 200% 100%; animation: sk 1.4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .sk-inline { animation: none; } }
 .muted { color: var(--muted); }
+.log-lines-min { min-height: 10rem; }
+/* A block drawn as the REAL markup with placeholder values, then hidden: its boxes still take their room (so
+   it wraps and measures like the loaded one at any width) and the wrapper shows the one skeleton look. */
+.sk-real { display: block; width: fit-content; max-width: 100%; border-radius: .3rem; background: linear-gradient(90deg, var(--sk) 25%, var(--sk-hi) 50%, var(--sk) 75%); background-size: 200% 100%; animation: sk 1.4s linear infinite; }
+.sk-real * { visibility: hidden; }
 
 /* Visually hidden text (.sr-only, absolutely positioned) inside a table that scrolls
    sideways in its own box must be positioned against the TABLE: with no positioned
