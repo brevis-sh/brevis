@@ -1,0 +1,13 @@
+.flow { padding: 1rem; }
+.flow ol { display: grid; gap: .75rem; margin: 0; padding: 0; list-style: none; }
+.flow li, .flow-dl { min-width: 0; padding: .5rem .75rem; border: 1px solid var(--line); border-radius: .5rem; background: var(--bg); }
+.flow li[data-kind="destination"] { border-color: var(--muted); }
+.flow-kicker { margin: 0; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.flow-main { margin: .25rem 0 0; overflow-wrap: anywhere; }
+.flow-detail { margin: .15rem 0 0; font-size: .75rem; }
+.flow-dl { margin-top: .75rem; border-style: dashed; border-color: var(--st-bad); }
+.flow-dl .flow-kicker, .flow-dl .flow-detail { color: var(--st-bad); }
+@media (min-width: 700px) {
+  .flow ol { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+  .flow-dl { width: calc((100% - 1.5rem) / 3); margin-left: auto; }
+}

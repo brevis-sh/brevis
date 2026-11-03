@@ -1,0 +1,4 @@
+/* A labelled run of sidebar links: a column from 768px up, inline on a phone. */
+.nav-group { display: flex; flex-direction: column; gap: .25rem; margin-top: .75rem; }
+.nav-group small { padding: 0 .6rem; font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; }
+@media (max-width: 767px) { .nav-group { flex-direction: row; align-items: center; margin-top: 0; } }

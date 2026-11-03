@@ -1,0 +1,10 @@
+.ld-wf { font-weight: 600; color: inherit; text-decoration: none; overflow-wrap: anywhere; }
+.ld-wf:hover { text-decoration: underline; }
+.ld-step { margin: .15rem 0 0; font-size: .8rem; }
+.ld-step a { color: inherit; }
+.ld-flow { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .5rem .75rem; min-width: 0; }
+.ld-flow > .place:first-child { max-width: 12rem; }
+.ld-fix { display: block; font-size: .75rem; color: var(--st-run); }
+.ld-honest { margin: .75rem 0 0; font-size: .75rem; }
+.ld-sk-rows { display: grid; gap: .6rem; margin-top: .25rem; }
+@media (min-width: 768px) { .ld-sk-rows { gap: 0; border: 1px solid var(--line); border-radius: .6rem; } }

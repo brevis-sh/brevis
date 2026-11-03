@@ -1,10 +1,14 @@
-import { StrictMode } from "react";
+import { StrictMode, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Shell } from "./shell";
 import HomeRoute from "./routes/home";
 import ProjectsRoute from "./routes/projects";
+const LoadsRoute = lazy(() => import("./routes/loads"));
+const LoadRoute = lazy(() => import("./routes/load"));
+const StreamsRoute = lazy(() => import("./routes/streams"));
+const StreamRoute = lazy(() => import("./routes/stream"));
 import "./styles.css";
 
 // Data stays fresh for 5s: moving between screens does not refetch what was
@@ -19,6 +23,10 @@ createRoot(document.getElementById("root")!).render(
           <Route element={<Shell />}>
             <Route index element={<HomeRoute />} />
             <Route path="projects" element={<ProjectsRoute />} />
+            <Route path="ingest/streams" element={<StreamsRoute />} />
+            <Route path="ingest/streams/:gateway/*" element={<StreamRoute />} />
+            <Route path="ingest/loads" element={<LoadsRoute />} />
+            <Route path="ingest/loads/:workflow/:step" element={<LoadRoute />} />
             <Route path="*" element={<p>Not found.</p>} />
           </Route>
         </Routes>

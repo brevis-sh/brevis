@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router";
 import { useConfig, useSession } from "./api/session";
 import { useT } from "./i18n";
 import { Skeleton } from "./ui/skeleton";
+import "./ui/nav-group.css";
 
 // The sidebar's identity block. It suspends on the session and the branding,
 // so the shell around it draws at once and this part shows a skeleton of the
@@ -50,6 +51,11 @@ function Nav() {
         {t("nav.overview")}
       </NavLink>
       <NavLink to="/projects">{t("nav.projects")}</NavLink>
+      <div role="group" aria-label={t("nav.group.ingest")} className="nav-group">
+        <small className="muted">{t("nav.group.ingest")}</small>
+        <NavLink to="/ingest/streams">{t("nav.streams")}</NavLink>
+        <NavLink to="/ingest/loads">{t("nav.loads")}</NavLink>
+      </div>
     </>
   );
 }
@@ -75,7 +81,9 @@ export function Shell() {
         </Suspense>
       </nav>
       <main className="main">
-        <Outlet />
+        <Suspense fallback={<Skeleton w="8rem" h="1.5rem" />}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );
