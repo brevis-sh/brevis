@@ -1,18 +1,16 @@
 import { useMutation } from "@tanstack/react-query";
-import { Suspense, useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { ApiError, postJSON } from "../api/client";
 import { useData } from "../api/live";
 import { useFormat, useT } from "../i18n";
-import { CodeBlock } from "../ui/code-block";
-import { Freshness, StatusMark } from "../ui/freshness";
-import { KindMark } from "../ui/kind-mark";
-import { Panel } from "../ui/cat-panel";
+import { CodeBlock } from "../ui/copy";
+import { Icon } from "../ui/icon";
+import { btn, Card, MethodPill, PageHead, StatCells, linkUnderline, Page } from "../ui/kit";
+import { Logo } from "../ui/logo";
 import { Skeleton } from "../ui/skeleton";
-import { Table, Td, Th } from "../ui/cat-table";
-import { EndpointFreshness, endpointHref, useParamsSaid } from "./endpoints";
-import "../ui/code-block.css";
-import "./endpoints.css";
+import { Freshness, FreshnessMark } from "../ui/status";
+import { EndpointFreshness, endpointHref, kindOf, splitTarget, useParamsSaid } from "./endpoints";
 
 type Lineage = {
   target: string;
@@ -67,250 +65,276 @@ function bytesText(n: number): string {
   return `${n} B`;
 }
 
-function Eyebrow({ d }: { d: Endpoint }) {
+const field = "h-8 w-full min-w-0 rounded-card border border-line bg-surface px-2.5 text-[0.82rem] text-ink focus:border-accent-strong focus:outline-none";
+const required = "rounded-card bg-state-queued/13 px-1.5 py-px text-[0.68rem] font-medium tracking-[0.04em] text-state-queued uppercase";
+
+/** The line above the path: back to every endpoint, then what it is. The method and the API are known from the address; the rest arrives. */
+function Eyebrow({ api, d }: { api: string; d: Endpoint | undefined }) {
   const { t } = useT();
   const f = useFormat();
   return (
-    <div className="ed-eyebrow">
-      <Link to="/data/endpoints">← {t("endpoint.back")}</Link>
-      <span className="cat-muted">·</span>
-      <span className="method">GET</span>
-      <span className="mono">{d.api}</span>
-      <span className="cat-muted">{t("endpoint.published", { when: f.since(d.publishedAt) })}</span>
-      {d.freshness && <EndpointFreshness value={d.freshness} />}
-    </div>
+    <>
+      <Link to="/data/endpoints" className="text-[0.75rem] text-muted hover:text-ink">
+        &larr; {t("endpoint.back")}
+      </Link>
+      <span className="text-faint">·</span>
+      <MethodPill method="GET" />
+      <span className="font-mono text-[0.75rem] text-ink-2">{api}</span>
+      {d ? (
+        <>
+          <span className="text-[0.72rem] text-muted">{t("endpoint.published", { when: f.since(d.publishedAt) })}</span>
+          {d.freshness && <EndpointFreshness value={d.freshness} />}
+        </>
+      ) : (
+        <Skeleton w="12rem" h=".8rem" />
+      )}
+    </>
   );
 }
 
+/** Why the table is behind, in its writer's words, that the endpoint answers with the last good data meanwhile, and the table in the Catalog. */
 function Stale({ s }: { s: NonNullable<Endpoint["stale"]> }) {
   const { t } = useT();
   return (
-    <section role="note" className="ed-stale">
-      <p className="head">
-        <StatusMark kind="stale" />
+    <section role="note" className="max-w-3xl rounded-card border border-state-queued/40 bg-state-queued/8 px-4 py-3 text-[13px]">
+      <p className="flex items-center gap-2 font-semibold text-state-queued">
+        <FreshnessMark status="stale" />
         {t("endpoint.stale.title")}
       </p>
-      {s.reason && <p>{s.reason}</p>}
-      <p className="cat-muted">{t("endpoint.stale.serves")}</p>
-      <p>
-        <Link to={`/data/target?u=${encodeURIComponent(s.target)}`}>{t("endpoint.stale.catalog")} →</Link>
-      </p>
+      {s.reason && <p className="mt-1.5 text-ink-2">{s.reason}</p>}
+      <p className="mt-1 text-muted">{t("endpoint.stale.serves")}</p>
+      <Link to={`/data/target?u=${encodeURIComponent(s.target)}`} className={`mt-2 inline-block text-[12.5px] ${linkUnderline}`}>
+        {t("endpoint.stale.catalog")} &rarr;
+      </Link>
     </section>
   );
 }
 
-function Step({ label, children }: { label: string; children: React.ReactNode }) {
+function Step({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="ed-step">
-      <small>{label}</small>
+    <div className="min-w-0">
+      <p className="mb-0.5 text-[10.5px] font-medium tracking-[0.08em] text-faint uppercase">{label}</p>
       {children}
     </div>
   );
 }
 const Arrow = () => (
-  <span className="ed-arrow" aria-hidden="true">
-    →
+  <span aria-hidden="true" className="hidden pt-4 text-center text-faint min-[1100px]:block">
+    &rarr;
   </span>
 );
 
+const lineageRow =
+  "grid grid-cols-1 gap-3 px-4 py-3 text-[12.5px] min-[1100px]:grid-cols-[minmax(0,1fr)_1rem_minmax(0,1fr)_1rem_minmax(0,1.3fr)_1rem_minmax(0,1fr)] min-[1100px]:gap-2";
+
 /** Where the data comes from: per table read, origin, writer, table and this endpoint; stacked on a narrow screen. */
-function LineagePanel({ d }: { d: Endpoint }) {
+function LineagePanel({ d }: { d: Endpoint | undefined }) {
   const { t } = useT();
   const f = useFormat();
   return (
-    <Panel title={t("endpoint.lineage")} note={String(d.lineage.length)} id="lineage">
-      <ul className="ed-lineage">
-        {d.lineage.map((l) => (
-          <li key={l.target}>
-            <Step label={t("endpoint.lineage.origin")}>
-              {l.origin ? (
-                <>
-                  <p>{l.origin.main}</p>
-                  {l.origin.sub && (
-                    <p className="mono cat-muted" title={l.origin.sub}>
-                      {l.origin.sub}
-                    </p>
-                  )}
-                </>
-              ) : (
-                <p className="cat-muted">—</p>
-              )}
-            </Step>
+    <Card title={t("endpoint.lineage")} count={d ? String(d.lineage.length) : undefined} id="lineage">
+      <ul className="divide-y divide-line-soft">
+        {!d && (
+          <li className={lineageRow} aria-hidden="true">
+            <Step label={t("endpoint.lineage.origin")}><Skeleton w="70%" h="1rem" /></Step>
             <Arrow />
-            <Step label={t("endpoint.lineage.writer")}>
-              {l.writer ? (
-                <p>
-                  <a className="mono" href={l.writer.href} title={l.writer.name}>
-                    {l.writer.name}
-                  </a>
-                </p>
-              ) : (
-                <p className="cat-muted">—</p>
-              )}
-            </Step>
+            <Step label={t("endpoint.lineage.writer")}><Skeleton w="70%" h="1rem" /></Step>
             <Arrow />
-            <Step label={t("endpoint.lineage.table")}>
-              <Link to={`/data/target?u=${encodeURIComponent(l.target)}`} className="ep-reads" title={l.target} style={{ display: "flex", gap: ".35rem", alignItems: "center", color: "inherit" }}>
-                <KindMark kind={l.kind} />
-                <span className="mono">
-                  <span className="cat-muted">{l.where}</span>
-                  {l.what}
-                </span>
-              </Link>
-              {l.known ? (
-                <p className="cat-muted" style={{ display: "flex", flexWrap: "wrap", gap: ".35rem", marginTop: ".15rem" }}>
-                  <Freshness status={l.status} />
-                  {l.lastAt && <span>· {t("endpoint.lineage.rebuilt", { when: f.since(l.lastAt) })}</span>}
-                </p>
-              ) : (
-                <p className="cat-muted">{t("endpoint.lineage.unknown")}</p>
-              )}
-              {l.sql && (
-                <p>
-                  <a className="cat-muted" href={`/sql?target=${encodeURIComponent(l.target)}`}>
-                    {t("endpoint.lineage.sql")}
-                  </a>
-                </p>
-              )}
-            </Step>
+            <Step label={t("endpoint.lineage.table")}><Skeleton w="80%" h="1rem" /></Step>
             <Arrow />
-            <Step label={t("endpoint.lineage.endpoint")}>
-              <p className="mono">GET {d.path}</p>
-              {l.cacheTtl && <p className="cat-muted">{t("endpoint.lineage.cache", { ttl: l.cacheTtl })}</p>}
-            </Step>
+            <Step label={t("endpoint.lineage.endpoint")}><Skeleton w="70%" h="1rem" /></Step>
           </li>
-        ))}
+        )}
+        {d?.lineage.map((l) => {
+          const [where, what] = splitTarget(l.target);
+          return (
+            <li key={l.target} className={lineageRow}>
+              <Step label={t("endpoint.lineage.origin")}>
+                {l.origin ? (
+                  <>
+                    <p className="truncate text-ink-2">{l.origin.main}</p>
+                    {l.origin.sub && (
+                      <p className="truncate font-mono text-[11.5px] text-muted" title={l.origin.sub}>
+                        {l.origin.sub}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-faint">—</p>
+                )}
+              </Step>
+              <Arrow />
+              <Step label={t("endpoint.lineage.writer")}>
+                {l.writer ? (
+                  <Link to={l.writer.href} className="block truncate font-mono text-ink hover:underline" title={l.writer.name}>
+                    {l.writer.name}
+                  </Link>
+                ) : (
+                  <p className="text-faint">—</p>
+                )}
+              </Step>
+              <Arrow />
+              <Step label={t("endpoint.lineage.table")}>
+                <Link to={`/data/target?u=${encodeURIComponent(l.target)}`} className="flex min-w-0 items-center gap-1.5 font-mono hover:underline" title={l.target}>
+                  <Logo k={kindOf(l.target)} />
+                  <span className="truncate text-faint">{where}</span>
+                  <span className="shrink-0 text-ink">{what}</span>
+                </Link>
+                {l.known ? (
+                  <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11.5px] text-muted">
+                    <Freshness status={l.status} />
+                    {l.lastAt && <span>· {t("endpoint.lineage.rebuilt", { when: f.since(l.lastAt) })}</span>}
+                  </p>
+                ) : (
+                  <p className="mt-0.5 text-[11.5px] text-faint">{t("endpoint.lineage.unknown")}</p>
+                )}
+                {l.sql && (
+                  <Link to={`/sql?target=${encodeURIComponent(l.target)}`} className="mt-0.5 inline-block text-[11.5px] text-muted underline decoration-line-strong underline-offset-2 hover:text-ink">
+                    {t("endpoint.lineage.sql")}
+                  </Link>
+                )}
+              </Step>
+              <Arrow />
+              <Step label={t("endpoint.lineage.endpoint")}>
+                <p className="truncate font-mono text-ink">GET {d.path}</p>
+                {l.cacheTtl && <p className="text-[11.5px] text-muted">{t("endpoint.lineage.cache", { ttl: l.cacheTtl })}</p>}
+              </Step>
+            </li>
+          );
+        })}
       </ul>
-    </Panel>
+    </Card>
   );
 }
 
 /** How long an answer is kept, what clears it, what holds it, and the command to clear it by hand. */
-function CachePanel({ c }: { c: Endpoint["cache"] }) {
+function CachePanel({ c }: { c: Endpoint["cache"] | undefined }) {
   const { t } = useT();
+  const cell = "bg-surface px-4 py-3";
   return (
-    <Panel title={t("endpoints.col.cache")} id="cache">
-      {c.state === "set" ? (
+    <Card title={t("endpoints.col.cache")} id="cache">
+      {!c ? (
+        <Skeleton h="4.5rem" />
+      ) : c.state === "set" ? (
         <>
-          <dl className="ed-cache">
-            <div>
-              <dt>{t("endpoint.cache.ttl")}</dt>
-              <dd className="big">{c.ttl}</dd>
-              <dd className="sub">{t("endpoint.cache.ttl.hint")}</dd>
+          <dl className="grid grid-cols-1 gap-px bg-line-soft min-[720px]:grid-cols-3">
+            <div className={cell}>
+              <dt className="text-[11.5px] text-muted">{t("endpoint.cache.ttl")}</dt>
+              <dd className="mt-0.5 text-[15px] font-semibold text-ink">{c.ttl}</dd>
+              <dd className="text-[11.5px] text-faint">{t("endpoint.cache.ttl.hint")}</dd>
             </div>
-            <div>
-              <dt>{t("endpoint.cache.cleared")}</dt>
-              <dd className="big">{t("endpoint.cache.cleared.value")}</dd>
-              <dd className="sub" title={c.reads.join("\n")}>
+            <div className={cell}>
+              <dt className="text-[11.5px] text-muted">{t("endpoint.cache.cleared")}</dt>
+              <dd className="mt-0.5 text-[15px] font-semibold text-ink">{t("endpoint.cache.cleared.value")}</dd>
+              <dd className="truncate font-mono text-[11.5px] text-faint" title={c.reads.join("\n")}>
                 {c.reads.join(" · ")}
               </dd>
             </div>
-            <div>
-              <dt>{t("endpoint.cache.type")}</dt>
-              <dd className="big">{c.type}</dd>
-              <dd className="sub">{c.addrFrom}</dd>
+            <div className={cell}>
+              <dt className="text-[11.5px] text-muted">{t("endpoint.cache.type")}</dt>
+              <dd className="mt-0.5 text-[15px] font-semibold text-ink">{c.type === "redis" ? "Redis" : c.type}</dd>
+              <dd className="font-mono text-[11.5px] text-faint">{c.addrFrom}</dd>
             </div>
           </dl>
-          <div className="ed-pad" style={{ borderTop: "1px solid var(--line)" }}>
-            <p className="cat-muted">{t("endpoint.cache.explain")}</p>
+          <div className="space-y-3 border-t border-line-soft px-4 py-3 text-[12.5px]">
+            <p className="text-muted">{t("endpoint.cache.explain")}</p>
             {c.bump && (
               <div>
-                <p style={{ fontWeight: 500, marginBottom: ".35rem" }}>{t("endpoint.cache.clear")}</p>
-                <CodeBlock text={c.bump} label="brevis-sql generation bump" />
-                <p className="cat-muted" style={{ marginTop: ".35rem" }}>
-                  {t("endpoint.cache.clear.when")}
-                </p>
+                <p className="mb-1.5 font-medium text-ink">{t("endpoint.cache.clear")}</p>
+                <CodeBlock text={c.bump} />
+                <p className="mt-1.5 text-muted">{t("endpoint.cache.clear.when")}</p>
               </div>
             )}
           </div>
         </>
       ) : (
-        <p className="ed-pad cat-muted">{t(c.state === "unknown" ? "endpoint.cache.unknown" : "endpoint.cache.none")}</p>
+        <p className="px-4 py-3 text-[12.5px] text-muted">{t(c.state === "unknown" ? "endpoint.cache.unknown" : "endpoint.cache.none")}</p>
       )}
-    </Panel>
+    </Card>
   );
 }
 
-function ParamsPanel({ d }: { d: Endpoint }) {
+const ph = "px-3 py-2 font-medium whitespace-nowrap";
+const pd = "px-3 py-2.5";
+
+function ParamsPanel({ d }: { d: Endpoint | undefined }) {
   const { t } = useT();
   const paramsSaid = useParamsSaid();
   return (
-    <Panel title={t("endpoints.col.params")} note={paramsSaid(d.paramCount, d.required)}>
-      {d.params.length === 0 ? (
-        <p className="ed-pad cat-muted">{t("endpoint.params.none")}</p>
+    <Card title={t("endpoints.col.params")} count={d ? paramsSaid(d.paramCount, d.required) : undefined}>
+      {!d ? (
+        <Skeleton h="5rem" />
+      ) : d.params.length === 0 ? (
+        <p className="px-4 py-3 text-sm text-muted">{t("endpoint.params.none")}</p>
       ) : (
-        <Table>
-          <thead>
-            <tr>
-              <Th>{t("endpoint.params.name")}</Th>
-              <Th>{t("endpoint.params.type")}</Th>
-              <Th>{t("endpoint.params.accepts")}</Th>
-              <Th>{t("endpoint.params.default")}</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {d.params.map((p) => (
-              <tr key={p.name}>
-                <Td>
-                  <span className="mono">{p.name}</span>
-                  {p.required && <span className="req">{t("endpoint.params.required")}</span>}
-                  {p.note && <p className="ed-pnote">{p.note}</p>}
-                </Td>
-                <Td label={t("endpoint.params.type")} className="mono cat-muted">
-                  {p.type}
-                </Td>
-                <Td label={t("endpoint.params.accepts")}>{p.accepts}</Td>
-                <Td label={t("endpoint.params.default")} className="mono">
-                  {p.default === "" ? <span className="cat-muted">—</span> : p.default}
-                </Td>
+        <div className="overflow-x-auto">
+          <table className="ct w-full text-[0.82rem]">
+            <thead>
+              <tr className="border-b border-line bg-canvas-subtle text-left text-[11.5px] text-faint">
+                <th className={`${ph} pl-4`}>{t("endpoint.params.name")}</th>
+                <th className={ph}>{t("endpoint.params.type")}</th>
+                <th className={ph}>{t("endpoint.params.accepts")}</th>
+                <th className={`${ph} pr-4`}>{t("endpoint.params.default")}</th>
               </tr>
-            ))}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody className="divide-y divide-line-soft">
+              {d.params.map((p) => (
+                <tr key={p.name} className="align-top">
+                  <td className={`${pd} pl-4`}>
+                    <span className="font-mono text-[0.8rem] text-ink">{p.name}</span>
+                    {p.required && <span className={`ml-1.5 ${required}`}>{t("endpoint.params.required")}</span>}
+                    {p.note && <p className="mt-1 max-w-md text-[0.75rem] whitespace-pre-line text-muted">{p.note}</p>}
+                  </td>
+                  <td className={`${pd} font-mono text-[0.75rem] text-muted`}>{p.type}</td>
+                  <td className={`${pd} text-[0.78rem] text-ink-2`}>{p.accepts}</td>
+                  <td className={`${pd} pr-4 font-mono text-[0.75rem] text-ink`}>{p.default === "" ? <span className="text-faint">—</span> : p.default}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-    </Panel>
+    </Card>
   );
 }
 
-function Limits({ l }: { l: Endpoint["limits"] }) {
+function Limits({ l }: { l: Endpoint["limits"] | undefined }) {
   const { t } = useT();
   const f = useFormat();
-  const stats: [string, string][] = [
-    [t("endpoint.limits.timeout"), l.timeout],
-    [t("endpoint.limits.rows"), f.number(l.maxRows)],
-    [t("endpoint.limits.bytes"), l.maxBytes > 0 ? bytesText(l.maxBytes) : t("endpoint.limits.no_ceiling")],
-  ];
+  const v = (x: string | undefined) => (x === undefined ? <Skeleton w="4rem" h="1.1rem" /> : x);
   return (
     <section>
-      <h2 className="ed-h2">{t("endpoint.limits")}</h2>
-      <div className="ed-stats">
-        {stats.map(([label, value]) => (
-          <div key={label} className="ed-stat">
-            <small>{label}</small>
-            <strong>{value}</strong>
-          </div>
-        ))}
-      </div>
+      <h2 className="mb-2 text-[0.875rem] font-semibold text-ink">{t("endpoint.limits")}</h2>
+      <StatCells
+        items={[
+          { label: t("endpoint.limits.timeout"), icon: "clock", value: v(l?.timeout) },
+          { label: t("endpoint.limits.rows"), icon: "rows-3", value: v(l && f.number(l.maxRows)) },
+          { label: t("endpoint.limits.bytes"), icon: "hard-drive", value: v(l && (l.maxBytes > 0 ? bytesText(l.maxBytes) : t("endpoint.limits.no_ceiling"))) },
+        ]}
+      />
     </section>
   );
 }
 
 /** The call from outside, with the key a placeholder; it follows Try it's form. */
-function Curl({ d, values }: { d: Endpoint; values: Record<string, string> }) {
+function Curl({ d, values }: { d: Endpoint | undefined; values: Record<string, string> }) {
   const { t } = useT();
-  const q = d.form
-    .filter((f) => values[f.name])
-    // The server's pages escape with a "+" for a space: the same curl in both.
-    .map((f) => `${encodeURIComponent(f.name)}=${encodeURIComponent(values[f.name] ?? "").replace(/%20/g, "+")}`);
-  const text = `${d.curlHead}'${d.curlBase}${q.length ? `?${q.join("&")}` : ""}'`;
+  let text = "";
+  if (d) {
+    const q = d.form
+      .filter((f) => values[f.name])
+      // The server's pages escape with a "+" for a space: the same curl in both.
+      .map((f) => `${encodeURIComponent(f.name)}=${encodeURIComponent(values[f.name] ?? "").replace(/%20/g, "+")}`);
+    text = `${d.curlHead}'${d.curlBase}${q.length ? `?${q.join("&")}` : ""}'`;
+  }
   return (
-    <Panel title={t("endpoint.call")}>
-      <div className="ed-pad">
-        <CodeBlock text={text} label="curl" />
-      </div>
-    </Panel>
+    <Card title={t("endpoint.call")}>
+      <div className="p-4">{d ? <CodeBlock text={text} /> : <Skeleton h="3rem" />}</div>
+    </Card>
   );
 }
+
+const answerBox = "rounded-card border border-line bg-canvas-subtle px-3 py-2.5 text-[0.82rem] text-ink";
 
 function AnswerView({ a }: { a: Answer }) {
   const { t, n } = useT();
@@ -318,41 +342,39 @@ function AnswerView({ a }: { a: Answer }) {
   const total = a.truncated ? `${a.received}+` : String(a.received);
   return (
     <>
-      <div className="ans-head">
-        <span className={`ans-status ${a.status < 300 ? "ok" : "bad"}`}>
+      <div className="mb-2 flex flex-wrap items-center gap-2 text-[0.75rem] text-muted">
+        <span className={`rounded-card px-1.5 py-px font-mono font-semibold ${a.status < 300 ? "bg-state-success/13 text-state-success" : "bg-state-failed/13 text-state-failed"}`}>
           {a.status} {a.statusText}
         </span>
-        {a.cache && <span className="chip">{a.cache.toUpperCase()}</span>}
-        <span>{a.millis} ms</span>
-        {a.status === 200 && <span>{t("endpoint.try.rows", { n: total })}</span>}
+        {a.cache && <span className="rounded-card border border-line px-1.5 py-px font-mono text-[0.7rem] font-semibold text-ink">{a.cache.toUpperCase()}</span>}
+        <span className="tabular-nums">{a.millis} ms</span>
+        {a.status === 200 && <span className="tabular-nums">{t("endpoint.try.rows", { n: total })}</span>}
       </div>
-      {cache && <p className="cat-muted" style={{ margin: "0 0 .5rem", fontSize: ".72rem" }}>{cache}</p>}
-      {a.received > a.rows.length && (
-        <p className="cat-muted" style={{ margin: "0 0 .5rem", fontSize: ".72rem" }}>
-          {t("endpoint.try.part", { shown: a.rows.length, n: a.received })}
-        </p>
-      )}
+      {cache && <p className="mb-2 text-[0.72rem] text-muted">{cache}</p>}
+      {a.received > a.rows.length && <p className="mb-2 text-[0.72rem] text-muted">{t("endpoint.try.part", { shown: a.rows.length, n: a.received })}</p>}
       {a.error ? (
-        <p className="ans-err">{a.error}</p>
+        <p className={answerBox}>{a.error}</p>
       ) : a.rows.length === 0 ? (
-        <p className="cat-muted">{t("endpoint.try.no_rows")}</p>
+        <p className="text-[0.82rem] text-muted">{t("endpoint.try.no_rows")}</p>
       ) : (
-        <div className="ans-grid" tabIndex={0} role="region" aria-label={n("endpoint.try.rows", a.rows.length)}>
-          <table>
-            <thead>
+        <div className="max-h-[28rem] overflow-auto rounded-card border border-line-soft" tabIndex={0} role="region" aria-label={n("endpoint.try.rows", a.rows.length)}>
+          <table className="ct w-full text-sm">
+            <thead className="border-b border-line-soft text-left text-xs text-muted">
               <tr>
                 {a.columns.map((c) => (
-                  <th key={c} scope="col">
+                  <th key={c} scope="col" className="px-3 py-2 font-medium whitespace-nowrap">
                     {c}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-line-soft">
               {a.rows.map((row, i) => (
                 <tr key={i}>
                   {row.map((cell, j) => (
-                    <td key={j}>{cell}</td>
+                    <td key={j} className="px-3 py-2 text-xs whitespace-nowrap">
+                      {cell}
+                    </td>
                   ))}
                 </tr>
               ))}
@@ -365,136 +387,132 @@ function AnswerView({ a }: { a: Answer }) {
 }
 
 /** Try it: a POST of the parameters; nothing is asked of the API until Run is pressed. */
-function TryIt({ d, values, setValues }: { d: Endpoint; values: Record<string, string>; setValues: (v: Record<string, string>) => void }) {
+function TryIt({ d, values, setValues }: { d: Endpoint | undefined; values: Record<string, string>; setValues: (v: Record<string, string>) => void }) {
   const { t } = useT();
   const run = useMutation({
-    mutationFn: () => postJSON<Answer>(`/api/endpoints/${encodeURIComponent(d.api)}/${encodeURIComponent(d.name)}/call`, { params: values }),
+    mutationFn: () => postJSON<Answer>(`/api/endpoints/${encodeURIComponent(d?.api ?? "")}/${encodeURIComponent(d?.name ?? "")}/call`, { params: values }),
   });
   const submit = (e: FormEvent) => {
     e.preventDefault();
     run.mutate();
   };
   return (
-    <Panel title={t("endpoint.try")}>
-      <form className="try" onSubmit={submit} onKeyDown={(e) => (e.metaKey || e.ctrlKey) && e.key === "Enter" && run.mutate()}>
-        <p className="cat-muted" style={{ margin: 0, fontSize: ".75rem" }}>
-          {t("endpoint.try.lead")}
-        </p>
-        <div className="try-fields">
-          {d.form.map((f) => (
-            <label key={f.name}>
-              <span>
-                {f.name}
-                {f.required && <span className="req">{t("endpoint.params.required")}</span>}
-              </span>
-              {f.kind === "select" ? (
-                <select value={values[f.name] ?? ""} onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}>
-                  <option value="">{t("endpoint.try.default")}</option>
-                  {f.options.map((o) => (
-                    <option key={o} value={o}>
-                      {o}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type={f.kind}
-                  value={values[f.name] ?? ""}
-                  maxLength={f.maxLen > 0 ? f.maxLen : undefined}
-                  onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}
-                />
-              )}
-            </label>
-          ))}
-        </div>
-        <button type="submit" className="btn btn-primary" disabled={run.isPending}>
-          ▶ {t("endpoint.try.run")} <span className="mono" style={{ opacity: 0.6 }}>⌘↵</span>
-        </button>
-        <div className="try-answer" aria-live="polite" aria-busy={run.isPending}>
+    <Card title={t("endpoint.try")}>
+      <div className="p-4">
+        <p className="mb-3 text-[0.75rem] text-muted">{t("endpoint.try.lead")}</p>
+        <form className="flex flex-col gap-3" onSubmit={submit} onKeyDown={(e) => (e.metaKey || e.ctrlKey) && e.key === "Enter" && run.mutate()}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 min-[1180px]:grid-cols-1">
+            {!d && <Skeleton h="3.25rem" />}
+            {d?.form.map((f) => (
+              <label key={f.name} className="flex min-w-0 flex-col gap-1">
+                <span className="flex items-center gap-1.5 font-mono text-[0.75rem] text-ink-2">
+                  {f.name}
+                  {f.required && <span className={`${required} font-sans`}>{t("endpoint.params.required")}</span>}
+                </span>
+                {f.kind === "select" ? (
+                  <select className={field} value={values[f.name] ?? ""} onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}>
+                    <option value="">{t("endpoint.try.default")}</option>
+                    {f.options.map((o) => (
+                      <option key={o} value={o}>
+                        {o}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    className={field}
+                    type={f.kind}
+                    value={values[f.name] ?? ""}
+                    maxLength={f.maxLen > 0 ? f.maxLen : undefined}
+                    onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}
+                  />
+                )}
+              </label>
+            ))}
+          </div>
+          <button type="submit" className={`${btn(true)} self-start`} disabled={run.isPending || !d}>
+            <Icon name="play" className="h-3.5 w-3.5" />
+            {t("endpoint.try.run")}
+            <span className="ml-1 font-mono text-[0.7rem] opacity-60">⌘↵</span>
+          </button>
+        </form>
+        <div aria-live="polite" aria-busy={run.isPending} className="mt-4 transition-opacity aria-busy:opacity-50">
           {run.isError ? (
-            <p className="ans-err">{(run.error as ApiError).message}</p>
+            <p className={answerBox}>{(run.error as ApiError).message}</p>
           ) : run.data ? (
             <AnswerView a={run.data} />
           ) : (
-            <p className="cat-muted" style={{ margin: 0, fontSize: ".78rem" }}>
-              {t("endpoint.try.empty")}
-            </p>
+            <p className="text-[0.78rem] text-faint">{t("endpoint.try.empty")}</p>
           )}
         </div>
-      </form>
-    </Panel>
+      </div>
+    </Card>
   );
 }
 
-function EndpointPage({ d }: { d: Endpoint }) {
+function EndpointPage({ api, d }: { api: string; d: Endpoint | undefined }) {
   const { t } = useT();
   // Try it starts from each parameter's default; the curl follows what is typed.
-  const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(d.form.map((f) => [f.name, f.value])));
+  const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries((d?.form ?? []).map((f) => [f.name, f.value])));
+  // While it loads the side column is assumed, as it is where this console can run an endpoint.
+  const side = d ? d.canRun : true;
   return (
-    <>
-      <Eyebrow d={d} />
-      <h1 className="ed-title">{d.path}</h1>
-      <div className={`ed-grid ${d.canRun ? "has-side" : ""}`}>
-        <div className="ed-col">
-          {d.about && <p className="ed-about">{d.about}</p>}
-          {d.stale && <Stale s={d.stale} />}
-          <div className="ed-note">
-            <span aria-hidden="true">{d.keyed ? "🔑" : "ⓘ"}</span>
-            <span>{t(d.keyed ? "endpoint.tenant.key" : "endpoint.tenant.none")}</span>
+    <Page>
+      <PageHead mono eyebrow={<Eyebrow api={api} d={d} />} title={d ? d.path : <Skeleton w="14rem" h="1.25rem" />} />
+      <div className={`grid grid-cols-1 gap-3 ${side ? "min-[1180px]:grid-cols-[minmax(0,1fr)_360px]" : ""}`}>
+        <div className="flex min-w-0 flex-col gap-3">
+          {d?.about && <p className="max-w-3xl text-[13.5px] whitespace-pre-line text-ink-2">{d.about}</p>}
+          {d?.stale && <Stale s={d.stale} />}
+          <div className="flex max-w-3xl items-start gap-2.5 rounded-card border border-line bg-surface px-3.5 py-3 text-[0.82rem] text-ink-2">
+            {!d ? (
+              <Skeleton w="100%" h="1.1rem" />
+            ) : d.keyed ? (
+              <>
+                <span className="mt-0.5 text-ink">
+                  <Icon name="key-round" className="h-4 w-4" />
+                </span>
+                <span>{t("endpoint.tenant.key")}</span>
+              </>
+            ) : (
+              <>
+                <span className="mt-0.5 text-state-running">
+                  <Icon name="info" className="h-4 w-4" />
+                </span>
+                <span>{t("endpoint.tenant.none")}</span>
+              </>
+            )}
           </div>
           <LineagePanel d={d} />
-          <CachePanel c={d.cache} />
+          <CachePanel c={d?.cache} />
           <ParamsPanel d={d} />
-          <Limits l={d.limits} />
-          {!d.canRun && <Curl d={d} values={values} />}
+          <Limits l={d?.limits} />
+          {!side && <Curl d={d} values={values} />}
         </div>
-        {d.canRun && (
-          <div className="ed-col ed-side">
+        {side && (
+          <div className="flex min-w-0 flex-col gap-3 min-[1180px]:sticky min-[1180px]:top-4 min-[1180px]:max-h-[calc(100vh-2rem)] min-[1180px]:self-start min-[1180px]:overflow-y-auto">
             <TryIt d={d} values={values} setValues={setValues} />
             <Curl d={d} values={values} />
           </div>
         )}
       </div>
-    </>
+    </Page>
   );
 }
 
-/** The page's shape while it loads: eyebrow, title, and the same one- or two-column grid. */
-export function EndpointSkeleton() {
-  return (
-    <div aria-busy="true" aria-label="Loading">
-      <Skeleton w="22rem" h=".9rem" className="ep-sk-line" />
-      <Skeleton w="14rem" h="1.5rem" className="ep-sk-line" />
-      <div className="ed-sk">
-        <Skeleton h="9rem" />
-        <Skeleton h="7rem" />
-        <Skeleton h="10rem" />
-      </div>
-    </div>
-  );
-}
-
-function Endpoint() {
+export default function EndpointRoute() {
   const { api = "", name = "" } = useParams();
   const q = useData<Endpoint>(["endpoint", api, name], `/api/endpoints/${encodeURIComponent(api)}/${encodeURIComponent(name)}`, { keep: false });
-  if (q.isPending) return <EndpointSkeleton />;
   if (q.isError)
     return (
-      <p role="alert" className="dc-missing">
+      <p role="alert" className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">
         {q.error instanceof ApiError && q.error.status === 404 ? (
-          <Link to="/data/endpoints">← All endpoints</Link>
+          <Link to="/data/endpoints" className={linkUnderline}>
+            &larr; {"All endpoints"}
+          </Link>
         ) : null}{" "}
         {q.error.message}
       </p>
     );
   // The key resets Try it when another endpoint opens; a poll keeps what was typed.
-  return <EndpointPage key={endpointHref(q.data)} d={q.data} />;
-}
-
-export default function EndpointRoute() {
-  return (
-    <Suspense fallback={<EndpointSkeleton />}>
-      <Endpoint />
-    </Suspense>
-  );
+  return <EndpointPage key={q.data ? endpointHref(q.data) : "loading"} api={api} d={q.data} />;
 }

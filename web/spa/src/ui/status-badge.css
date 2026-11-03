@@ -1,10 +1,10 @@
 /* The run states' palette, shared by every part that draws a state. */
-.st { --c: var(--st-pending); display: inline-flex; align-items: center; gap: .4rem; font-size: .8125rem; color: var(--c); white-space: nowrap; }
-.st::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: var(--c); flex: none; }
+.run-st { --c: var(--st-pending); display: inline-flex; align-items: center; gap: .4rem; font-size: .8125rem; color: var(--c); white-space: nowrap; }
+.run-st::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: var(--c); flex: none; }
 .st-success { --c: var(--st-success); } .st-failed { --c: var(--st-failed); } .st-running { --c: var(--st-running); }
 .st-retrying { --c: var(--st-retrying); } .st-queued, .st-created { --c: var(--st-queued); } .st-canceled { --c: var(--st-canceled); }
 .st-skipped { --c: var(--st-skipped); }
-.st-running::before { animation: st-pulse 1.4s ease-in-out infinite; }
-@keyframes st-pulse { 50% { opacity: .35; } }
-@media (prefers-reduced-motion: reduce) { .st-running::before { animation: none; } }
+.run-st.st-running::before { animation: run-st-pulse 1.4s ease-in-out infinite; }
+@keyframes run-st-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .run-st.st-running::before { animation: none; } }
 .st-retry { margin-left: .35rem; padding: 0 .3rem; border-radius: .25rem; font: 600 .6875rem ui-monospace, monospace; color: var(--st-retrying); background: color-mix(in srgb, var(--st-retrying) 14%, transparent); }

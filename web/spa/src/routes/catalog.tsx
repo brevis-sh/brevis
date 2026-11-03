@@ -1,16 +1,17 @@
 import { lazy, Suspense } from "react";
-import { Link, useLocation, useSearchParams } from "react-router";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import { ApiError } from "../api/client";
 import { useData } from "../api/live";
 import { useFormat, useT } from "../i18n";
-import { Freshness, StatusMark, stateKind } from "../ui/freshness";
-import { KindMark } from "../ui/kind-mark";
-import { SearchBox, Segmented } from "../ui/segmented";
+import { Icon } from "../ui/icon";
+import { Empty, FilterRow, Lead, PageHead, linkUnderline, Page } from "../ui/kit";
+import { Logo, useLogoTitle } from "../ui/logo";
+import { Band, SearchBox, Segmented, Switch } from "../ui/segmented";
 import { Skeleton } from "../ui/skeleton";
-import { Table, Td, Th } from "../ui/cat-table";
+import { Freshness, StatusMark, freshnessKind } from "../ui/status";
+import { Row, Table, Td, Th } from "../ui/table";
 import { useFilter, useSearchBox } from "../ui/use-filter";
 import type { TargetDetail } from "./target-drawer";
-import "./catalog.css";
 
 export type CatalogRow = {
   target: string;
@@ -40,8 +41,7 @@ type Catalog = {
 
 const FIELDS = ["status", "kind", "legacy", "q"] as const;
 const STATUSES = ["stale", "late", "on_time", "continuous", "paused", "unscheduled", "unidentified"];
-// A status as the band's tooltip key says it.
-const TIP_KEY = (s: string) => `catalog.tip.${s}`;
+type Filter = ReturnType<typeof useFilter>;
 
 // The drawer is a separate chunk: most visits to the catalog never open one.
 const TargetDrawer = lazy(() => import("./target-drawer"));
@@ -51,162 +51,147 @@ function Recent({ counts }: { counts: (number | null)[] }) {
   if (counts.length === 0) return null;
   const peak = Math.max(0, ...counts.map((c) => c ?? 0));
   return (
-    <span className="dc-recent" aria-hidden="true">
+    <span className="inline-flex h-5 items-end gap-px" aria-hidden="true">
       {counts.map((c, i) =>
         c === null ? (
-          <span key={i} className="dc-bar dc-bar-none" />
+          <span key={i} className="h-full w-1 rounded-[1px] border border-line-strong" />
         ) : (
-          <span key={i} className="dc-bar" style={{ height: `${peak > 0 ? Math.max(12, Math.floor((c * 100) / peak)) : 12}%` }} />
+          <span key={i} className="w-1 rounded-[1px] bg-bar" style={{ height: `${peak > 0 ? Math.max(12, Math.floor((c * 100) / peak)) : 12}%` }} />
         ),
       )}
     </span>
   );
 }
 
-function CatalogTable({ rows, filter }: { rows: CatalogRow[]; filter: ReturnType<typeof useFilter> }) {
+const legacyChip = "ml-1.5 rounded border border-line px-1.5 font-mono text-[10.5px] text-muted";
+
+function Head() {
+  const { t } = useT();
+  return (
+    <>
+      <Th edge="first" cls="whitespace-nowrap">{t("catalog.col.target")}</Th>
+      <Th cls="whitespace-nowrap">{t("catalog.col.status")}</Th>
+      <Th cls="whitespace-nowrap max-[860px]:hidden">{t("catalog.col.writer")}</Th>
+      <Th cls="whitespace-nowrap max-[640px]:hidden">{t("catalog.col.last")}</Th>
+      <Th cls="whitespace-nowrap text-right max-[1100px]:hidden">{t("catalog.col.rows")}</Th>
+      <Th cls="whitespace-nowrap max-[1100px]:hidden">{t("catalog.col.recent")}</Th>
+      <Th edge="last" cls="w-8" />
+    </>
+  );
+}
+
+function CatalogRows({ rows, filter }: { rows: CatalogRow[]; filter: Filter }) {
   const { t } = useT();
   const f = useFormat();
+  const navigate = useNavigate();
   return (
-    <Table>
-      <thead>
-        <tr>
-          <Th>{t("catalog.col.target")}</Th>
-          <Th>{t("catalog.col.status")}</Th>
-          <Th>{t("catalog.col.writer")}</Th>
-          <Th>{t("catalog.col.last")}</Th>
-          <Th hide="lg" className="cat-num">
-            {t("catalog.col.rows")}
-          </Th>
-          <Th hide="lg">{t("catalog.col.recent")}</Th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r.target || r.streamHref}>
+    <>
+      {rows.map((r) => {
+        const href = r.streamHref || filter.hrefWith({}, "/data/target", { u: r.target });
+        return (
+          <Row key={r.target || r.streamHref} onOpen={() => navigate(href)}>
+            <Td edge="first">
+              <Link to={href} className="inline-flex min-w-0 flex-wrap items-center gap-1.5 font-mono text-[12.5px]">
+                {r.target === "" ? (
+                  <>
+                    <Logo k="gateway" />
+                    <span className="text-ink-2">{r.writer}</span>
+                  </>
+                ) : (
+                  <>
+                    <Logo k={r.kind} />
+                    <span className="text-faint">{r.where}</span>
+                    <span className="font-medium text-ink">{r.what}</span>
+                  </>
+                )}
+              </Link>
+              {r.legacy && <span className={legacyChip}>{t("catalog.chip.legacy")}</span>}
+              {r.autoTable && <span className={legacyChip}>auto_table</span>}
+            </Td>
             <Td>
-              {/* Whole destination is the link; one without a URI is known by the stream that writes it. */}
-              {r.streamHref ? (
-                <a href={r.streamHref} className="dc-target">
-                  <KindMark kind="gateway" />
-                  <span>{r.writer}</span>
-                </a>
-              ) : (
-                <Link to={filter.hrefWith({}, "/data/target", { u: r.target })} className="dc-target">
-                  <KindMark kind={r.kind} />
-                  <span className="dc-where">{r.where}</span>
-                  <strong>{r.what}</strong>
-                </Link>
-              )}
-              {r.legacy && <span className="chip">{t("catalog.chip.legacy")}</span>}
-              {r.autoTable && <span className="chip">auto_table</span>}
-            </Td>
-            <Td label={t("catalog.col.status")}>
               <Freshness status={r.status} />
-              {r.queued && <small className="dc-queued">{t("catalog.queued")}</small>}
+              {r.queued && <p className="mt-0.5 text-[11.5px] text-muted">{t("catalog.queued")}</p>}
             </Td>
-            <Td label={t("catalog.col.writer")} className="mono dc-writer">
+            <Td cls="font-mono text-[12px] text-ink-2 max-[860px]:hidden">
               {r.writer}
-              {r.more > 0 && <span className="cat-muted"> +{r.more}</span>}
+              {r.more > 0 && <span className="ml-1 font-sans text-faint">+{r.more}</span>}
             </Td>
-            <Td label={t("catalog.col.last")} className="cat-muted dc-nowrap">
-              {r.lastAt ? f.since(r.lastAt) : "—"}
+            <Td cls="text-xs whitespace-nowrap text-muted max-[640px]:hidden">{r.lastAt ? f.since(r.lastAt) : "—"}</Td>
+            <Td cls="text-right text-xs tabular-nums text-ink-2 max-[1100px]:hidden">
+              {r.lastRows !== null ? f.number(r.lastRows) : <span title={t("catalog.no_rows")} className="text-faint">—</span>}
             </Td>
-            <Td label={t("catalog.col.rows")} hide="lg" className="cat-num">
-              {r.lastRows !== null ? f.number(r.lastRows) : <span className="cat-muted" title={t("catalog.no_rows")}>—</span>}
-            </Td>
-            <Td label={t("catalog.col.recent")} hide="lg">
+            <Td cls="max-[1100px]:hidden">
               <Recent counts={r.recent} />
             </Td>
-          </tr>
-        ))}
-      </tbody>
-    </Table>
+            <Td edge="last" cls="text-right text-faint">
+              <Icon name="chevron-right" className="ml-auto h-4 w-4" />
+            </Td>
+          </Row>
+        );
+      })}
+    </>
   );
 }
 
-/** The table's shape while the first answer is on its way: same columns, same row height. */
-export function CatalogSkeleton() {
+/** Rows' shape while the first answer is on its way: the same cells at the same height. */
+function SkeletonRows() {
   return (
-    <div aria-busy="true" aria-label="Loading">
-      <div className="dc-band">
-        {Array.from({ length: 5 }, (_, i) => (
-          <Skeleton key={i} w="6.5rem" h="2rem" className="dc-pill" />
-        ))}
-      </div>
-      <Table>
-        <thead>
-          <tr>
-            {Array.from({ length: 4 }, (_, i) => (
-              <Th key={i}>
-                <Skeleton w="4rem" h=".7rem" />
-              </Th>
-            ))}
-            <Th hide="lg">
-              <Skeleton w="3rem" h=".7rem" />
-            </Th>
-            <Th hide="lg">
-              <Skeleton w="3rem" h=".7rem" />
-            </Th>
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from({ length: 6 }, (_, i) => (
-            <tr key={i}>
-              <Td>
-                <Skeleton w="70%" h="1rem" />
-              </Td>
-              <Td>
-                <Skeleton w="5rem" h="1rem" />
-              </Td>
-              <Td>
-                <Skeleton w="8rem" h="1rem" />
-              </Td>
-              <Td>
-                <Skeleton w="4rem" h="1rem" />
-              </Td>
-              <Td hide="lg">
-                <Skeleton w="3rem" h="1rem" />
-              </Td>
-              <Td hide="lg">
-                <Skeleton w="4rem" h="1.25rem" />
-              </Td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-    </div>
+    <>
+      {Array.from({ length: 5 }, (_, i) => (
+        <tr key={i} aria-hidden="true">
+          <Td edge="first"><Skeleton w="70%" h="18px" /></Td>
+          <Td><Skeleton w="5rem" h="18px" /></Td>
+          <Td cls="max-[860px]:hidden"><Skeleton w="8rem" h="18px" /></Td>
+          <Td cls="max-[640px]:hidden"><Skeleton w="4rem" h="18px" /></Td>
+          <Td cls="max-[1100px]:hidden"><Skeleton w="3rem" h="18px" /></Td>
+          <Td cls="max-[1100px]:hidden"><Skeleton w="4rem" h="20px" /></Td>
+          <Td edge="last" />
+        </tr>
+      ))}
+    </>
   );
 }
 
-function CatalogList({ data, filter }: { data: Catalog; filter: ReturnType<typeof useFilter> }) {
+function Search({ filter }: { filter: Filter }) {
   const { t } = useT();
+  const [text, setText] = useSearchBox(filter.get("q"), (q) => filter.hrefWith({ q }, "/data"));
+  return <SearchBox value={text} onChange={setText} label={t("catalog.search")} />;
+}
+
+function Catalog({ filter }: { filter: Filter }) {
+  const { t } = useT();
+  const logoTitle = useLogoTitle();
+  const qs = new URLSearchParams();
+  for (const f of FIELDS) if (filter.get(f)) qs.set(f, filter.get(f));
+  const q = useData<Catalog>(["catalog", qs.toString()], `/api/catalog${qs.size ? `?${qs}` : ""}`);
+  const data = q.data;
   const status = filter.get("status");
   const kind = filter.get("kind");
   const legacy = filter.get("legacy") === "1";
   const band = [
-    { key: "all", status: "", label: t("catalog.status.all"), tip: "" },
-    { key: "attention", status: "attention", label: t("catalog.status.attention"), tip: t(TIP_KEY("attention")), mark: "stale" },
-    ...STATUSES.map((s) => ({ key: s, status: s, label: t(`state.${stateKind(s)}`), tip: t(TIP_KEY(s)), mark: s })),
+    { key: "all", status: "", label: t("catalog.status.all"), tip: "", mark: "" },
+    { key: "attention", status: "attention", label: t("catalog.status.attention"), tip: t("catalog.tip.attention"), mark: "stale" },
+    ...STATUSES.map((s) => ({ key: s, status: s, label: t(`state.${freshnessKind(s)}`), tip: t(`catalog.tip.${s}`), mark: s })),
   ];
+  const empty = data !== undefined && data.rows.length === 0;
   return (
-    <>
-      <nav aria-label={t("catalog.band")} className="dc-band">
-        {band.map((b) => (
-          <Link
-            key={b.key}
-            to={filter.hrefWith({ status: b.status })}
-            title={b.tip}
-            aria-current={status === b.status ? "true" : undefined}
-            className="dc-pill"
-          >
-            {"mark" in b && b.mark ? <StatusMark kind={b.mark} /> : null}
-            <span>{b.label}</span>
-            <strong>{data.counts[b.key] ?? 0}</strong>
-          </Link>
-        ))}
-      </nav>
-      <div className="dc-tools">
-        {data.kinds.length > 1 && (
+    <div aria-busy={q.isFetching}>
+      <FilterRow>
+        <Search filter={filter} />
+        <nav aria-label={t("catalog.band")}>
+          {band.map((b) => (
+            <Band
+              key={b.key}
+              to={filter.hrefWith({ status: b.status })}
+              current={status === b.status}
+              tip={b.tip}
+              mark={b.mark ? <StatusMark kind={freshnessKind(b.mark)} /> : null}
+              label={b.label}
+              count={data ? (data.counts[b.key] ?? 0) : undefined}
+            />
+          ))}
+        </nav>
+        {data && data.kinds.length > 1 && (
           <Segmented
             label={t("catalog.kind")}
             choices={[
@@ -215,8 +200,8 @@ function CatalogList({ data, filter }: { data: Catalog; filter: ReturnType<typeo
                 key: k,
                 label: (
                   <>
-                    <KindMark kind={k} />
-                    {k}
+                    <Logo k={k} />
+                    {logoTitle(k)}
                   </>
                 ),
                 to: filter.hrefWith({ kind: k }),
@@ -225,64 +210,38 @@ function CatalogList({ data, filter }: { data: Catalog; filter: ReturnType<typeo
             ]}
           />
         )}
-        {data.hasLegacy && (
-          <Link to={filter.hrefWith({ legacy: legacy ? "" : "1" })} role="switch" aria-checked={legacy} className="dc-switch">
-            <span className="dc-switch-track" aria-hidden="true">
-              <span className="dc-switch-knob" />
-            </span>
+        {data?.hasLegacy && (
+          <Switch on={legacy} to={filter.hrefWith({ legacy: legacy ? "" : "1" })}>
             {t("catalog.legacy")}
-          </Link>
+          </Switch>
         )}
-      </div>
-      {data.rows.length === 0 ? (
-        <div className="dc-empty">
-          {filter.any ? (
-            <>
-              <p>{t("catalog.empty.filtered")}</p>
-              <Link to="/data">{t("workflows.clear")}</Link>
-            </>
-          ) : (
-            <p>{t("catalog.empty")}</p>
+      </FilterRow>
+      {q.isError ? (
+        <p role="alert" className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">
+          {(q.error as Error).message}
+        </p>
+      ) : empty ? (
+        <Empty msg={filter.any ? t("catalog.empty.filtered") : t("catalog.empty")}>
+          {filter.any && (
+            <Link to="/data" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
+              {t("workflows.clear")}
+            </Link>
           )}
-        </div>
+        </Empty>
       ) : (
-        <>
-          <CatalogTable rows={data.rows} filter={filter} />
-          <p className="cat-muted dc-order">{t("catalog.order")}</p>
-        </>
+        <Table catalog head={<Head />} foot={t("catalog.order")}>
+          {data ? <CatalogRows rows={data.rows} filter={filter} /> : <SkeletonRows />}
+        </Table>
       )}
-    </>
+    </div>
   );
 }
 
-function Lead() {
-  const { t } = useT();
-  return (
-    <>
-      <h1 className="page-title">{t("catalog.title")}</h1>
-      <p className="cat-muted lead">
-        {t("catalog.lead.before")} <strong>{t("catalog.lead.strong")}</strong>
-        {t("catalog.lead.after")}
-      </p>
-      <p className="cat-muted dc-honest">{t("catalog.honest")}</p>
-    </>
-  );
-}
-
-function Search({ filter }: { filter: ReturnType<typeof useFilter> }) {
-  const { t } = useT();
-  const [text, setText] = useSearchBox(filter.get("q"), (q) => filter.hrefWith({ q }, "/data"));
-  return <SearchBox value={text} onChange={setText} label={t("catalog.search")} />;
-}
-
-function Catalog() {
+export default function CatalogRoute() {
   const { t } = useT();
   const { pathname } = useLocation();
   const [params] = useSearchParams();
   const filter = useFilter(FIELDS, "/data");
-  const qs = new URLSearchParams();
-  for (const f of FIELDS) if (filter.get(f)) qs.set(f, filter.get(f));
-  const catalog = useData<Catalog>(["catalog", qs.toString()], `/api/catalog${qs.size ? `?${qs}` : ""}`);
 
   // /data/target?u= is the catalog with one destination's drawer open over it.
   const u = pathname.endsWith("/data/target") ? (params.get("u") ?? "") : null;
@@ -290,38 +249,19 @@ function Catalog() {
   const missing = u !== null && target.error instanceof ApiError && target.error.status === 404;
 
   return (
-    <>
-      <Search filter={filter} />
-      {missing && <p className="dc-missing">{t("catalog.missing", { target: u ?? "" })}</p>}
-      <div className="dc-list" aria-busy={catalog.isFetching}>
-        {catalog.isPending ? (
-          <CatalogSkeleton />
-        ) : catalog.isError ? (
-          <p role="alert" className="dc-missing">
-            {(catalog.error as Error).message}
-          </p>
-        ) : (
-          <CatalogList data={catalog.data} filter={filter} />
-        )}
-      </div>
+    <Page>
+      <PageHead title={t("catalog.title")} />
+      <Lead before={t("catalog.lead.before")} strong={t("catalog.lead.strong")} after={t("catalog.lead.after")} cls="" />
+      <p className="mt-2 mb-4 max-w-3xl text-[12px] text-faint">{t("catalog.honest")}</p>
+      {missing && (
+        <p className="mb-3 rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">{t("catalog.missing", { target: u ?? "" })}</p>
+      )}
+      <Catalog filter={filter} />
       {u !== null && !missing && (
         <Suspense fallback={null}>
           <TargetDrawer u={u} query={target} closeTo={filter.hrefWith({}, "/data")} />
         </Suspense>
       )}
-    </>
-  );
-}
-
-export default function CatalogRoute() {
-  return (
-    <>
-      <Suspense fallback={<Skeleton w="12rem" h="1.5rem" />}>
-        <Lead />
-      </Suspense>
-      <Suspense fallback={<CatalogSkeleton />}>
-        <Catalog />
-      </Suspense>
-    </>
+    </Page>
   );
 }

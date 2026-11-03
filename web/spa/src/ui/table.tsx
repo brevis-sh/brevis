@@ -1,36 +1,51 @@
 import type { ReactNode } from "react";
-import "./table.css";
 
-// Explicit roles: the card layout on a phone is display:block, which some
-// browsers answer by dropping the table semantics.
+// The console's table, drawn as the server draws it: a bordered card, the
+// `ct` rows (34px, hairlines between), columns that give way by width and
+// never turn into cards. Rows are whole links to their page through `Row`.
 
-/** The table; see table.css. `label` names it for assistive tech. */
-export function Rt({ label, head, children }: { label: string; head: ReactNode; children: ReactNode }) {
+/** The card around a table; `foot` is the honest line under it. */
+export function Table({ id, head, children, foot, catalog }: { id?: string; head: ReactNode; children: ReactNode; foot?: ReactNode; catalog?: boolean }) {
   return (
-    <table className="rt" role="table" aria-label={label}>
-      <thead role="rowgroup">
-        <tr role="row">{head}</tr>
-      </thead>
-      <tbody role="rowgroup">{children}</tbody>
-    </table>
+    <div className={`overflow-hidden rounded-card border border-line bg-surface ${catalog ? "shadow-warm-sm" : ""}`}>
+      <div className="overflow-x-auto">
+        <table id={id} className={`ct w-full ${catalog ? "text-sm" : "text-[13px]"}`}>
+          <thead>
+            <tr className={`border-b border-line text-left text-[11.5px] font-medium ${catalog ? "bg-parchment-soft/60 text-faint" : "text-muted"}`}>{head}</tr>
+          </thead>
+          <tbody className="divide-y divide-line-soft">{children}</tbody>
+        </table>
+      </div>
+      {foot ? <p className="border-t border-line-soft px-4 py-2.5 text-[12px] text-faint">{foot}</p> : null}
+    </div>
   );
 }
 
-/** A column header. `col` (2..4) is the order columns give way as the screen narrows; num right-aligns. */
-export function Th({ children, col, num }: { children?: ReactNode; col?: 2 | 3 | 4; num?: boolean }) {
-  return (
-    <th role="columnheader" scope="col" className={[col && `rt-c${col}`, num && "rt-num"].filter(Boolean).join(" ") || undefined}>
-      {children}
-    </th>
-  );
+/** A column header. `edge` pads the first or last column to the card's edge; `cls` carries the width it gives way at. */
+export function Th({ children, edge, cls = "" }: { children?: ReactNode; edge?: "first" | "last"; cls?: string }) {
+  const pad = edge === "first" ? "pl-4" : edge === "last" ? "pr-4" : "";
+  return <th className={`px-2.5 py-2 font-medium ${pad} ${cls}`.replace(/\s+/g, " ").trim()}>{children}</th>;
 }
 
-/** A cell. `label` is the column's name on a card; `head` makes it the card's title. */
-export function Td({ children, label, head, col, num }: { children?: ReactNode; label?: string; head?: boolean; col?: 2 | 3 | 4; num?: boolean }) {
-  const cls = [head && "rt-head", col && `rt-c${col}`, num && "rt-num"].filter(Boolean).join(" ") || undefined;
+export function Td({ children, edge, cls = "", title }: { children?: ReactNode; edge?: "first" | "last"; cls?: string; title?: string }) {
+  const pad = edge === "first" ? "pl-4" : edge === "last" ? "pr-4" : "";
   return (
-    <td role="cell" data-label={head ? undefined : label} className={cls}>
+    <td title={title} className={`px-2.5 py-3 ${pad} ${cls}`.replace(/\s+/g, " ").trim()}>
       {children}
     </td>
+  );
+}
+
+/** A row that opens its page when clicked anywhere; its own links stay real links. */
+export function Row({ onOpen, children }: { onOpen: () => void; children: ReactNode }) {
+  return (
+    <tr
+      className="cursor-pointer align-top transition-colors hover:bg-hover"
+      onClick={(e) => {
+        if (!(e.target as HTMLElement).closest("a,button")) onOpen();
+      }}
+    >
+      {children}
+    </tr>
   );
 }
