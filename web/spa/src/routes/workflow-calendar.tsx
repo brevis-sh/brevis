@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useFormat, useT } from "../i18n";
 import { Panel, linkClass } from "../ui/card";
-import { Skeleton } from "../ui/skeleton";
+import { SK_REAL, Skeleton } from "../ui/skeleton";
 import type { WorkflowDetail } from "../api/workflows";
 
 // web/components Heatmap: a year of days, one square each, colored by the day's
@@ -107,6 +107,9 @@ function Summary({ d }: { d: WorkflowDetail }) {
   );
 }
 
+// A typical year's summary, drawn hidden while the real one loads, so it wraps like the loaded line at any width.
+const SUMMARY_PLACEHOLDER = { calendar: { ranDays: 12, failedDays: 3, streak: 2, lastFailure: "", since: "2026-01-01" } } as unknown as WorkflowDetail;
+
 /** The year's panel: its words and legend are the page's; the summary and the squares are data. */
 export function YearOfRuns({ d }: { d?: WorkflowDetail }) {
   const { t } = useT();
@@ -123,7 +126,7 @@ export function YearOfRuns({ d }: { d?: WorkflowDetail }) {
     <Panel title={t("calendar.title")}>
       <div className="px-3.5 py-3">
         <p className="mb-2 text-[12.5px] text-muted">{t("calendar.lead")}</p>
-        {d ? <Summary d={d} /> : <p className="mb-3" style={{ height: 19 }}><Skeleton w="22rem" h="14px" /></p>}
+        {d ? <Summary d={d} /> : <div aria-hidden="true" className={SK_REAL} style={{ marginBottom: 0 }}><Summary d={SUMMARY_PLACEHOLDER} /></div>}
         <div ref={box} className="max-w-full overflow-x-auto">{d ? <Plot d={d} /> : <Skeleton w={WIDTH} h={HEIGHT} />}</div>
         <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted">
           {([["var(--color-state-success)", "calendar.ok"], ["var(--color-state-failed)", "calendar.some_failed"], ["var(--color-state-queued)", "calendar.open"], ["var(--color-surface-2)", "calendar.no_run"]] as const).map(([c, k]) => (

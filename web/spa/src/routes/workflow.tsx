@@ -15,7 +15,8 @@ import { PageFrame } from "../ui/page-frame";
 import { Panel } from "../ui/panel";
 import { useRunDrawer } from "./run-now";
 import { LoadError } from "../ui/query-boundary";
-import { Skeleton } from "../ui/skeleton";
+import { Ghost, SK_REAL, Skeleton } from "../ui/skeleton";
+import { dagHeight } from "../ui/dag/height";
 import { Stats, type StatProps } from "../ui/stat";
 import { Status, runKind } from "../ui/status";
 import { TabBar } from "../ui/tab-bar";
@@ -42,14 +43,26 @@ const Rows = ({ cols, rows = 4 }: { cols: string[]; rows?: number }) => (
   </>
 );
 
+// The classes the app uses are the server sheet's: one it does not hold does nothing, so a one-off size is a style.
+const META_MIN = { minHeight: 23 };
+
+// What the line holds for a typical workflow, drawn hidden while the real one loads: it wraps the way the loaded
+// line does at this width. Only the fields Meta reads are filled in.
+const META_PLACEHOLDER = {
+  hasSchedule: true, active: true, project: "project", cron: "0 0 * * *", schedule: "every day at 00:00", timezone: "UTC",
+  steps: [0, 1], edges: 1, langs: [{ key: "go", name: "Go" }], tags: ["example", "tag"],
+} as unknown as WorkflowDetail;
+
 // ---- the line under the title: whether the schedule runs, project, cron, size, tags ----
 
 function Meta({ d }: { d?: WorkflowDetail }) {
   const { t, n } = useT();
-  if (!d) return <p className="mb-3 flex h-[18px] items-center"><Line w="28rem" h="13px" /></p>;
+  // The line is as tall as one that carries a tag chip or a language logo (the usual case), with or without them:
+  // a workflow with neither would otherwise sit 4px higher than the skeleton and shift everything below.
+  if (!d) return <div aria-hidden="true" className={`mb-3 ${SK_REAL}`}><Meta d={META_PLACEHOLDER} /></div>;
   const zone = d.timezone && d.timezone !== "UTC" && d.timezone !== "Etc/UTC" ? ` (${d.timezone})` : "";
   return (
-    <p data-workflow-meta className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted">
+    <p data-workflow-meta style={META_MIN} className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted">
       {d.hasSchedule && (
         <>
           {d.active ? (
@@ -106,7 +119,22 @@ function WorkflowStats({ d }: { d?: WorkflowDetail }) {
     open: { label: t("workflow.kpi.open") },
     next: { label: t("workflow.kpi.next") },
   };
-  if (!d) return <Stats items={Object.values(labels).map((l) => ({ ...l, loading: true }))} />;
+  // The loading strip is the loaded one with ghosts for the numbers: same cells, same lines, the clean-days bar's row included.
+  // The "last 30 days" notes are static words and stay as words.
+  if (!d) {
+    const ghost = (note?: string) => ({ value: <Ghost>000</Ghost>, note: note ?? <Ghost>00000000000</Ghost> });
+    return (
+      <Stats
+        items={[
+          { ...labels.clean, ...ghost(), bar: 0 },
+          { ...labels.failed, ...ghost(last30) },
+          { ...labels.mean, ...ghost(last30) },
+          { ...labels.open, ...ghost() },
+          { ...labels.next, ...ghost() },
+        ]}
+      />
+    );
+  }
   const { ranDays, failedDays, meanMs, running, queued } = d.stats;
   const clean: StatProps = { ...labels.clean, value: "—", note: last30 };
   if (ranDays > 0) {
@@ -199,7 +227,7 @@ function StepsCard({ d, slug }: { d?: WorkflowDetail; slug: string }) {
         <h2 className="text-[13px] font-semibold text-ink">
           {t("graph.title")}{" "}
           <span className="ml-1 font-normal text-faint tabular-nums">
-            {d ? <>{n("workflows.steps", d.steps.length)} · {n("graph.stages", d.stages)}</> : <Skeleton w="8rem" h="12px" className="inline-block" />}
+            {d ? <>{n("workflows.steps", d.steps.length)} · {n("graph.stages", d.stages)}</> : <Ghost>00 steps · 00 stages</Ghost>}
           </span>
         </h2>
         <p className="text-[12.5px] text-muted max-[860px]:hidden">{t("graph.hint")}</p>
@@ -212,7 +240,7 @@ function StepsCard({ d, slug }: { d?: WorkflowDetail; slug: string }) {
       </header>
       {shown === "graph" ? (
         <div className="p-3">
-          <Suspense fallback={<Skeleton h="22rem" />}>
+          <Suspense fallback={<Skeleton h={dagHeight(`/api/workflows/${encodeURIComponent(slug)}/graph`)} />}>
             <Dag src={`/api/workflows/${encodeURIComponent(slug)}/graph`} onPick={setPicked} />
           </Suspense>
         </div>
@@ -267,7 +295,7 @@ function RunsTab({ d }: { d?: WorkflowDetail }) {
             </thead>
             <tbody className="divide-y divide-line-soft">
               {!d ? (
-                <Rows cols={["4.5rem", "4rem", "5rem", "5rem", "3rem", "4rem"]} />
+                <Rows cols={["4.5rem", "4rem", "5rem", "5rem", "3rem", "4rem"]} rows={10} />
               ) : (
                 d.runs.map((r) => (
                   <tr key={r.id} className="transition-colors hover:bg-hover">
@@ -368,7 +396,7 @@ function Tabs({ d }: { d?: WorkflowDetail }) {
   const { hash } = useLocation();
   const navigate = useNavigate();
   const current = ["params", "definition"].includes(hash.slice(1)) ? hash.slice(1) : "runs";
-  const count = (n?: number) => (d ? n : <Skeleton w="1.2ch" h="10px" className="inline-block" />);
+  const count = (n?: number) => (d ? n : <Ghost>00</Ghost>);
   return (
     <div className="mt-3">
       <div className="mb-3">
