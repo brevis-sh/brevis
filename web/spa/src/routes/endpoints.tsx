@@ -1,17 +1,17 @@
 import { Link, useNavigate } from "react-router";
 import { useData } from "../api/live";
-import { useT, type Vars } from "../i18n";
+import { useFormat, useT, type Vars } from "../i18n";
 import { useSince } from "../ui/format";
 import { useDrawer } from "../ui/drawer";
 import { HowDrawer, HowSteps } from "../ui/how";
-import { btn, Empty, FilterRow, Lead, MethodPill, PageHead, linkUnderline, Page } from "../ui/kit";
+import { btn, Empty, Lead, MethodPill, PageHead, linkUnderline, Page } from "../ui/kit";
 import { Icon } from "../ui/icon";
 import { Logo } from "../ui/logo";
-import { SearchBox, Segmented } from "../ui/segmented";
+import { FilterBar, ResultCount, SearchField, Segmented, useUrlSearch, type Chip, type FilterDef } from "../ui/filters";
 import { useSeen } from "../ui/seen";
 import { FreshnessMark } from "../ui/status";
 import { Row, Table, Td, Th } from "../ui/table";
-import { useFilter, useSearchBox } from "../ui/use-filter";
+import { useFilter } from "../ui/use-filter";
 
 export type EndpointRow = {
   api: string;
@@ -243,10 +243,50 @@ function Summary({ d, ghost }: { d: Endpoints; ghost: boolean }) {
   );
 }
 
-function Search({ filter }: { filter: Filter }) {
+// The bar (see ui/filters): drawn at once from the last shape seen; only the counts wait. The three states of
+// freshness are the primary choice; the API (a list that grows with the manifests) is the dropdown.
+function EndpointsBar({ filter, d, ghost }: { filter: Filter; d: Endpoints; ghost: boolean }) {
   const { t } = useT();
-  const [text, setText] = useSearchBox(filter.get("q"), (q) => filter.hrefWith({ q }));
-  return <SearchBox value={text} onChange={setText} label={t("endpoints.search")} />;
+  const { number } = useFormat();
+  const navigate = useNavigate();
+  const [text, setText] = useUrlSearch("q");
+  const go = (patch: Record<string, string>) => void navigate(filter.hrefWith(patch));
+  const api = filter.get("api");
+  const state = filter.get("state");
+  const q = filter.get("q");
+  // The mark's own label would be read before the word that already names it.
+  const dot = (s: string) => <span aria-hidden="true" className="inline-flex"><FreshnessMark status={s} /></span>;
+  const filters: FilterDef[] = d.apiNames.length > 1
+    ? [{
+        id: "api", label: t("endpoints.col.api"), allLabel: t("endpoints.filter.api.all"), mono: true, pending: ghost, searchLabel: t("endpoints.col.api"),
+        options: d.apiNames.map((a) => ({ key: a, label: a, mono: true })),
+        value: api ? [api] : [], onChange: (v) => go({ api: v[0] ?? "" }),
+      }]
+    : [];
+  const chips: Chip[] = api ? [{ id: "api", group: t("endpoints.col.api"), value: api, mono: true, onRemove: () => go({ api: "" }) }] : [];
+  return (
+    <FilterBar
+      search={<SearchField value={text} onChange={setText} label={t("endpoints.search")} />}
+      primary={
+        <Segmented
+          label={t("endpoints.col.status")}
+          pending={ghost}
+          value={state}
+          onChange={(s) => go({ state: s })}
+          items={[
+            { key: "", label: t("endpoints.filter.state.all"), count: d.total },
+            { key: "fresh", label: t("endpoints.filter.state.fresh"), icon: dot("on_time"), count: d.fresh },
+            { key: "stale", label: t("endpoints.filter.state.stale"), icon: dot("stale"), count: d.stale },
+          ]}
+        />
+      }
+      filters={filters}
+      chips={chips}
+      clearable={filter.any}
+      onClearAll={() => go({ api: "", state: "", q: "" })}
+      count={<ResultCount pending={ghost} shown={d.rows.length} tail={<>/ {number(d.total)}{q && <> {t("workflows.count.search", { q })}</>}</>} />}
+    />
+  );
 }
 
 function Endpoints({ filter }: { filter: Filter }) {
@@ -258,54 +298,12 @@ function Endpoints({ filter }: { filter: Filter }) {
   // Only the unfiltered answer is remembered: a filter's counts are not the list's shape.
   const seen = useSeen("endpoints", qs.size === 0 && q.data ? shapeOf(q.data) : undefined, FIRST);
   const d = q.data ?? ghostOf(seen);
-  const api = filter.get("api");
-  const state = filter.get("state");
   const none = d.rows.length === 0;
   return (
     <>
       <Summary d={d} ghost={ghost} />
       {d.total > 0 && (
-        <FilterRow>
-          <Search filter={filter} />
-          {d.apiNames.length > 1 && (
-          <Segmented
-            className={ghost ? "sk-ghost" : ""}
-            label={t("endpoints.col.api")}
-            choices={[
-              { key: "", label: t("endpoints.filter.api.all"), to: filter.hrefWith({ api: "" }), current: api === "" },
-              ...d.apiNames.map((a) => ({ key: a, label: <span className="font-mono text-[12px]">{a}</span>, to: filter.hrefWith({ api: a }), current: api === a })),
-            ]}
-          />
-        )}
-        <Segmented
-          label={t("endpoints.col.status")}
-          choices={[
-            { key: "", label: t("endpoints.filter.state.all"), to: filter.hrefWith({ state: "" }), current: state === "" },
-            {
-              key: "fresh",
-              label: (
-                <>
-                  <FreshnessMark status="on_time" />
-                  {t("endpoints.filter.state.fresh")}
-                </>
-              ),
-              to: filter.hrefWith({ state: "fresh" }),
-              current: state === "fresh",
-            },
-            {
-              key: "stale",
-              label: (
-                <>
-                  <FreshnessMark status="stale" />
-                  {t("endpoints.filter.state.stale")}
-                </>
-              ),
-              to: filter.hrefWith({ state: "stale" }),
-              current: state === "stale",
-            },
-          ]}
-        />
-        </FilterRow>
+        <EndpointsBar filter={filter} d={d} ghost={ghost} />
       )}
       <div aria-busy={ghost}>
         {q.isError ? (

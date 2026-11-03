@@ -5,13 +5,14 @@ import { useData } from "../api/live";
 import { useFormat, useT } from "../i18n";
 import { useSince } from "../ui/format";
 import { Icon } from "../ui/icon";
-import { Empty, FilterRow, Lead, PageHead, linkUnderline, Page } from "../ui/kit";
+import { Empty, Lead, PageHead, linkUnderline, Page } from "../ui/kit";
 import { Logo, useLogoTitle } from "../ui/logo";
-import { Band, SearchBox, Segmented, Switch } from "../ui/segmented";
+import { FilterBar, ResultCount, SearchField, ToggleFilter, useUrlSearch, type Chip, type FilterDef } from "../ui/filters";
 import { useSeen } from "../ui/seen";
+import { useStatusFilter } from "../ui/status-filter";
 import { Freshness, StatusMark, freshnessKind } from "../ui/status";
 import { Row, Table, Td, Th } from "../ui/table";
-import { useFilter, useSearchBox } from "../ui/use-filter";
+import { useFilter } from "../ui/use-filter";
 import type { TargetDetail } from "./target-drawer";
 
 export type CatalogRow = {
@@ -159,15 +160,54 @@ const GHOST_ROW: CatalogRow = {
 };
 const ghostOf = (s: Shape): Catalog => ({ ...s, kinds: Array.from({ length: s.kinds }, (_, i) => ["postgres", "file", "pubsub"][i % 3] ?? "file"), now: "2000-01-02T00:00:00Z", rows: Array.from({ length: s.n }, (_, i) => ({ ...GHOST_ROW, target: `${GHOST_ROW.target}_${i}` })) });
 
-function Search({ filter }: { filter: Filter }) {
+// The bar (see ui/filters). Static: the controls are drawn at once from the last shape seen; only the counts wait.
+function CatalogBar({ filter, data, ghost }: { filter: Filter; data: Catalog; ghost: boolean }) {
   const { t } = useT();
-  const [text, setText] = useSearchBox(filter.get("q"), (q) => filter.hrefWith({ q }, "/data"));
-  return <SearchBox value={text} onChange={setText} label={t("catalog.search")} />;
+  const { number } = useFormat();
+  const logoTitle = useLogoTitle();
+  const navigate = useNavigate();
+  const [text, setText] = useUrlSearch("q");
+  const go = (patch: Record<string, string>) => void navigate(filter.hrefWith(patch));
+  const kind = filter.get("kind");
+  const legacy = filter.get("legacy") === "1";
+  const q = filter.get("q");
+  const st = useStatusFilter({
+    statuses: STATUSES,
+    count: (k) => data.counts[k === "" ? "all" : k] ?? 0,
+    pending: ghost,
+    mark: (s) => <StatusMark kind={freshnessKind(s)} />,
+    status: filter.get("status"),
+    onChange: (status) => go({ status }),
+  });
+  const filters: FilterDef[] = [
+    st.def,
+    ...(data.kinds.length > 1
+      ? [{
+          id: "kind", label: t("catalog.kind"), allLabel: t("catalog.kind.all"), pending: ghost,
+          options: data.kinds.map((k) => ({ key: k, label: logoTitle(k), icon: <Logo k={k} /> })),
+          value: kind ? [kind] : [], onChange: (v: string[]) => go({ kind: v[0] ?? "" }),
+        } satisfies FilterDef]
+      : []),
+  ];
+  const chips: Chip[] = [
+    ...st.chip,
+    ...(kind ? [{ id: "kind", group: t("catalog.kind"), value: logoTitle(kind), onRemove: () => go({ kind: "" }) }] : []),
+  ];
+  return (
+    <FilterBar
+      search={<SearchField value={text} onChange={setText} label={t("catalog.search")} />}
+      primary={<>{st.primary}{data.hasLegacy && <ToggleFilter label={t("catalog.legacy")} on={legacy} onChange={(on) => go({ legacy: on ? "1" : "" })} />}</>}
+      filters={filters}
+      chips={chips}
+      clearable={filter.any}
+      onClearAll={() => go({ status: "", kind: "", legacy: "", q: "" })}
+      count={<ResultCount pending={ghost} shown={data.shown} tail={<>/ {number(data.total)}{q && <> {t("workflows.count.search", { q })}</>}</>} />}
+    />
+  );
 }
 
 function Catalog({ filter }: { filter: Filter }) {
   const { t } = useT();
-  const logoTitle = useLogoTitle();
   const qs = new URLSearchParams();
   for (const f of FIELDS) if (filter.get(f)) qs.set(f, filter.get(f));
   const q = useData<Catalog>(["catalog", qs.toString()], `/api/catalog${qs.size ? `?${qs}` : ""}`, { topic: "catalog" });
@@ -175,58 +215,10 @@ function Catalog({ filter }: { filter: Filter }) {
   // Only the unfiltered answer is remembered: a filter's counts are not the list's shape.
   const seen = useSeen("catalog", qs.size === 0 && q.data ? shapeOf(q.data) : undefined, FIRST);
   const data = q.data ?? ghostOf(seen);
-  const status = filter.get("status");
-  const kind = filter.get("kind");
-  const legacy = filter.get("legacy") === "1";
-  const band = [
-    { key: "all", status: "", label: t("catalog.status.all"), tip: "", mark: "" },
-    { key: "attention", status: "attention", label: t("catalog.status.attention"), tip: t("catalog.tip.attention"), mark: "stale" },
-    ...STATUSES.map((s) => ({ key: s, status: s, label: t(`state.${freshnessKind(s)}`), tip: t(`catalog.tip.${s}`), mark: s })),
-  ];
   const empty = data.rows.length === 0;
   return (
     <div aria-busy={ghost}>
-      <FilterRow>
-        <Search filter={filter} />
-        <nav aria-label={t("catalog.band")} className={ghost ? "sk-ghost" : undefined}>
-          {band.map((b) => (
-            <Band
-              key={b.key}
-              to={filter.hrefWith({ status: b.status })}
-              current={status === b.status}
-              tip={b.tip}
-              mark={b.mark ? <StatusMark kind={freshnessKind(b.mark)} /> : null}
-              label={b.label}
-              count={data.counts[b.key] ?? 0}
-            />
-          ))}
-        </nav>
-        {data.kinds.length > 1 && (
-          <Segmented
-            className={ghost ? "sk-ghost" : ""}
-            label={t("catalog.kind")}
-            choices={[
-              { key: "", label: t("catalog.kind.all"), to: filter.hrefWith({ kind: "" }), current: kind === "" },
-              ...data.kinds.map((k) => ({
-                key: k,
-                label: (
-                  <>
-                    <Logo k={k} />
-                    {logoTitle(k)}
-                  </>
-                ),
-                to: filter.hrefWith({ kind: k }),
-                current: kind === k,
-              })),
-            ]}
-          />
-        )}
-        {data.hasLegacy && (
-          <Switch className={ghost ? "sk-ghost" : ""} on={legacy} to={filter.hrefWith({ legacy: legacy ? "" : "1" })}>
-            {t("catalog.legacy")}
-          </Switch>
-        )}
-      </FilterRow>
+      <CatalogBar filter={filter} data={data} ghost={ghost} />
       {q.isError ? (
         <p role="alert" className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">
           {(q.error as Error).message}

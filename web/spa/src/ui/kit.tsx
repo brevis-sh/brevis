@@ -2,7 +2,6 @@ import { Fragment, type ReactNode } from "react";
 import { Link } from "react-router";
 import { stamp, useBrief } from "./format";
 import { Icon } from "./icon";
-import "./filter-row.css";
 
 // The server's small parts (web/components), as one set: buttons, a titled
 // card, the empty state, the method pill, the lead line. Classes are the
@@ -137,11 +136,6 @@ export function ShortStamp({ at }: { at: string | null }) {
       {brief(at)}
     </span>
   );
-}
-
-/** The filters of a list, on one row (see filter-row.css); static controls, never skeletons. */
-export function FilterRow({ children }: { children: ReactNode }) {
-  return <div className="filter-row">{children}</div>;
 }
 
 /**

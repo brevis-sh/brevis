@@ -1,18 +1,18 @@
 import { Link, useNavigate } from "react-router";
 import { useData } from "../api/live";
 import type { Choice, Streams, StreamRow } from "../api/ingest";
-import { useT } from "../i18n";
+import { useFormat, useT } from "../i18n";
 import { useDrawer } from "../ui/drawer";
 import { HowDrawer, HowSteps } from "../ui/how";
 import { Icon } from "../ui/icon";
-import { btn, Empty, FilterRow, Lead, MethodPill, PageHead, linkUnderline, Page } from "../ui/kit";
+import { btn, Empty, Lead, MethodPill, PageHead, linkUnderline, Page } from "../ui/kit";
 import { Logo } from "../ui/logo";
 import { Place } from "../ui/place";
-import { SearchBox, Segmented } from "../ui/segmented";
+import { FilterBar, ResultCount, SearchField, useUrlSearch, type Chip, type FilterDef } from "../ui/filters";
 import { useSeen } from "../ui/seen";
 import { Status } from "../ui/status";
 import { Row, Table, Td, Th } from "../ui/table";
-import { useFilter, useSearchBox } from "../ui/use-filter";
+import { useFilter } from "../ui/use-filter";
 
 const FIELDS = ["kind", "q"] as const;
 type Filter = ReturnType<typeof useFilter>;
@@ -120,10 +120,33 @@ const ghostOf = (s: Shape): Streams => ({
   filter: { kind: "", q: "" },
 });
 
-function Search({ filter }: { filter: Filter }) {
+// The bar (see ui/filters): a search and the destination kinds, drawn at once from the last shape seen.
+function StreamsBar({ filter, v, ghost }: { filter: Filter; v: Streams; ghost: boolean }) {
   const { t } = useT();
-  const [text, setText] = useSearchBox(filter.get("q"), (q) => filter.hrefWith({ q }));
-  return <SearchBox value={text} onChange={setText} label={t("streams.search")} />;
+  const { number } = useFormat();
+  const navigate = useNavigate();
+  const [text, setText] = useUrlSearch("q");
+  const go = (patch: Record<string, string>) => void navigate(filter.hrefWith(patch));
+  const kind = filter.get("kind");
+  const q = filter.get("q");
+  const filters: FilterDef[] = v.kinds.length > 1
+    ? [{
+        id: "kind", label: t("streams.kind"), allLabel: t("streams.kind.all"), pending: ghost,
+        options: v.kinds.map((k) => ({ key: k.key, label: k.label, icon: <Logo k={k.key} /> })),
+        value: kind ? [kind] : [], onChange: (x) => go({ kind: x[0] ?? "" }),
+      }]
+    : [];
+  const chips: Chip[] = kind ? [{ id: "kind", group: t("streams.kind"), value: v.kinds.find((k) => k.key === kind)?.label ?? kind, onRemove: () => go({ kind: "" }) }] : [];
+  return (
+    <FilterBar
+      search={<SearchField value={text} onChange={setText} label={t("streams.search")} />}
+      filters={filters}
+      chips={chips}
+      clearable={filter.any}
+      onClearAll={() => go({ kind: "", q: "" })}
+      count={<ResultCount pending={ghost} shown={v.rows.length} tail={<>/ {number(v.total)}{q && <> {t("workflows.count.search", { q })}</>}</>} />}
+    />
+  );
 }
 
 function StreamsData({ filter }: { filter: Filter }) {
@@ -135,7 +158,6 @@ function StreamsData({ filter }: { filter: Filter }) {
   // Only the unfiltered answer is remembered: a filter's counts are not the list's shape.
   const seen = useSeen("streams", qs.size === 0 && q.data ? shapeOf(q.data) : undefined, FIRST);
   const v = q.data ?? ghostOf(seen);
-  const kind = filter.get("kind");
   return (
     <>
       {v.total > 0 && (
@@ -147,29 +169,7 @@ function StreamsData({ filter }: { filter: Filter }) {
         </div>
       )}
       {v.total > 0 && (
-        <FilterRow>
-          <Search filter={filter} />
-          {v.kinds.length > 1 && (
-            <Segmented
-              className={ghost ? "sk-ghost" : ""}
-              label={t("streams.kind")}
-              choices={[
-                { key: "", label: t("streams.kind.all"), to: filter.hrefWith({ kind: "" }), current: kind === "" },
-                ...v.kinds.map((k) => ({
-                  key: k.key,
-                  label: (
-                    <>
-                      <Logo k={k.key} />
-                      {k.label}
-                    </>
-                  ),
-                  to: filter.hrefWith({ kind: k.key }),
-                  current: kind === k.key,
-                })),
-              ]}
-            />
-          )}
-        </FilterRow>
+        <StreamsBar filter={filter} v={v} ghost={ghost} />
       )}
       <div aria-busy={ghost}>
         {q.isError ? (

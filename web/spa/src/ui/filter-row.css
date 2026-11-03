@@ -1,7 +1,0 @@
-/* A list's filters are ONE row: the search grows, the rest keep their width,
-   and a narrow screen scrolls the row sideways instead of wrapping it. */
-.filter-row { display: flex; flex-wrap: nowrap; align-items: center; gap: .5rem; margin-bottom: .75rem; overflow-x: auto; scrollbar-width: none; }
-.filter-row::-webkit-scrollbar { display: none; }
-.filter-row > * { flex: none; }
-.filter-row > [role="search"] { flex: 1 1 14rem; min-width: 12rem; margin: 0; }
-.filter-row > nav { display: flex; flex-wrap: nowrap; gap: .5rem; }

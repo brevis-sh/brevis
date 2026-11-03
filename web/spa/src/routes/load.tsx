@@ -7,7 +7,7 @@ import { useSince } from "../ui/format";
 import LoadsRoute from "./loads";
 import { useCrumb } from "../shell/nav";
 import { Icon } from "../ui/icon";
-import { btn, ButtonLink, Card, FilterRow, PageHead, ShortStamp, linkUnderline, Page } from "../ui/kit";
+import { btn, ButtonLink, Card, PageHead, ShortStamp, linkUnderline, Page } from "../ui/kit";
 import { Logo, useLogoTitle } from "../ui/logo";
 import { LoadBars } from "../ui/sparkline";
 import { Freshness } from "../ui/status";
@@ -331,7 +331,7 @@ export default function LoadRoute() {
         </p>
       )}
       {v.choices.length > 0 && (
-        <FilterRow>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
           <span aria-hidden={ghost || undefined} className={`text-[12.5px] text-muted ${gh(ghost)}`}>{n("loads.drawer.choices", v.choices.length)}</span>
           {v.choices.map((c) => (
             <Link
@@ -346,7 +346,7 @@ export default function LoadRoute() {
               {c.uri}
             </Link>
           ))}
-        </FilterRow>
+        </div>
       )}
       {!q.isError && v.detail && <Body workflow={workflow} step={step} d={v.detail} ghost={ghost} />}
     </Page>
