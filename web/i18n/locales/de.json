@@ -1,5 +1,5 @@
 {
-  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count, metrics.*, streams.health.*, state.{healthy,quiet,degraded,failing}",
+  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count, metrics.*, streams.health.*, state.{healthy,quiet,degraded,failing}, overview.stream.*",
   "app.not_found": "Nicht gefunden.",
   "auto.adjusted_at": "die Uhr, die anstelle von now() gelesen wird",
   "auto.date": "der UTC-Tag von adjusted_at — die Partition",
@@ -628,6 +628,9 @@
   "overview.next.none": "Kein aktiver Zeitplan.",
   "overview.next.title": "Nächste Trigger",
   "overview.open_catalog": "Im Katalog öffnen",
+  "overview.stream.failing": "{stream} schlägt fehl",
+  "overview.stream.open": "Stream öffnen",
+  "overview.stream.more": {"one": "und {count} weiterer fehlschlagender Stream", "other": "und {count} weitere fehlschlagende Streams"},
   "overview.recent": "Letzte Runs",
   "overview.rerun": "Neu starten",
   "overview.rerun_created": "Neustart von {workflow} erstellt",

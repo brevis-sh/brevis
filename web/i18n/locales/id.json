@@ -1,5 +1,5 @@
 {
-  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count, state.unknown, streams.health.*, metrics.*, streams.health.*, state.{healthy,quiet,degraded,failing}",
+  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count, state.unknown, streams.health.*, metrics.*, streams.health.*, state.{healthy,quiet,degraded,failing}, overview.stream.*",
   "app.not_found": "Tidak ditemukan.",
   "auto.adjusted_at": "jam yang dibaca sebagai pengganti now()",
   "auto.date": "hari UTC dari adjusted_at — partisinya",
@@ -628,6 +628,9 @@
   "overview.next.none": "Tidak ada jadwal aktif.",
   "overview.next.title": "Pemicu berikutnya",
   "overview.open_catalog": "Buka di katalog",
+  "overview.stream.failing": "{stream} gagal",
+  "overview.stream.open": "Buka stream",
+  "overview.stream.more": {"one": "dan {count} stream lain yang gagal", "other": "dan {count} stream lain yang gagal"},
   "overview.recent": "Run terbaru",
   "overview.rerun": "Jalankan ulang",
   "overview.rerun_created": "Run ulang {workflow} dibuat",

@@ -1,5 +1,5 @@
 {
-  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count, metrics.*, streams.health.*, state.{healthy,quiet,degraded,failing}",
+  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count, metrics.*, streams.health.*, state.{healthy,quiet,degraded,failing}, overview.stream.*",
   "app.not_found": "Introuvable.",
   "auto.adjusted_at": "l'horloge à lire à la place de now()",
   "auto.date": "le jour UTC de adjusted_at — la partition",
@@ -628,6 +628,9 @@
   "overview.next.none": "Aucune planification active.",
   "overview.next.title": "Prochains déclenchements",
   "overview.open_catalog": "Ouvrir dans le catalogue",
+  "overview.stream.failing": "{stream} est en échec",
+  "overview.stream.open": "Ouvrir le stream",
+  "overview.stream.more": {"one": "et {count} autre stream en échec", "other": "et {count} autres streams en échec"},
   "overview.recent": "Runs récents",
   "overview.rerun": "Relancer",
   "overview.rerun_created": "Relance de {workflow} créée",

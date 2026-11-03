@@ -6,6 +6,7 @@ import (
 
 	"brevis.sh/brevis/internal/domain/run"
 	"brevis.sh/brevis/internal/infrastructure/postgres"
+	"brevis.sh/brevis/internal/metrics"
 	"brevis.sh/brevis/web/i18n"
 	"brevis.sh/brevis/web/pages"
 )
@@ -188,7 +189,21 @@ type attentionView struct {
 	More        int                   `json:"more"`
 	Targets     []attentionTargetView `json:"targets"`
 	TargetsMore int                   `json:"targetsMore"`
+	// Streams are the ones whose measured health is failing, worst-first by
+	// time; the page follows them on the `metrics:streams` topic.
+	Streams     []attentionStreamView `json:"streams"`
+	StreamsMore int                   `json:"streamsMore"`
 }
+
+type attentionStreamView struct {
+	Gateway string     `json:"gateway"`
+	Path    string     `json:"path"`
+	Href    string     `json:"href"`
+	Since   *time.Time `json:"since"`
+}
+
+// attentionStreamsShown is how many failing streams the section lists.
+const attentionStreamsShown = 5
 
 // overviewAttentionAPI is "Needs your attention", the section the page
 // follows every ten seconds.
@@ -196,8 +211,10 @@ func (u *UI) overviewAttentionAPI(w http.ResponseWriter, r *http.Request) {
 	a := u.attention(r.Context())
 	out := attentionView{
 		Total: a.Total(), More: a.More, TargetsMore: a.TargetsMore,
-		Items: []attentionItemView{}, Targets: []attentionTargetView{},
+		Items: []attentionItemView{}, Targets: []attentionTargetView{}, Streams: []attentionStreamView{},
 	}
+	out.Streams, out.StreamsMore = u.failingStreams(r)
+	out.Total += len(out.Streams) + out.StreamsMore
 	for _, it := range a.Items {
 		v := attentionItemView{
 			Workflow: it.Workflow, RunID: it.RunID.String(), FailedAt: it.FailedAt, Streak: it.Streak,
@@ -227,4 +244,31 @@ func orEmpty(s []string) []string {
 		return []string{}
 	}
 	return s
+}
+
+// failingStreams are the streams whose measured health is failing: the same
+// rule as the Streams list, read from the same snapshot. A console with no
+// metrics source has none, which is not the same as "all is well" -- the
+// Streams screen says why; here there is nothing to act on.
+func (u *UI) failingStreams(r *http.Request) ([]attentionStreamView, int) {
+	entries, err := u.streamEntries(r)
+	if err != nil {
+		u.log.Warn("the failing streams are unavailable", "error", err)
+		return []attentionStreamView{}, 0
+	}
+	v := pages.BuildStreamsWith(entries, pages.StreamFilter{}, u.streamHealth(u.scrape.Snapshot(metrics.Gateway, metrics.Retention, nil)))
+	out := []attentionStreamView{}
+	more := 0
+	for _, s := range v.Rows {
+		h := v.Healths[s.Key()]
+		if h.State != metrics.HealthFailing {
+			continue
+		}
+		if len(out) == attentionStreamsShown {
+			more++
+			continue
+		}
+		out = append(out, attentionStreamView{Gateway: s.Gateway, Path: s.Path, Href: "/ingest/streams/" + s.Gateway + s.Path, Since: h.Since})
+	}
+	return out, more
 }

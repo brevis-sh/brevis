@@ -32,6 +32,10 @@ The engine's tag is `vX.Y.Z`, with no prefix; the SDK's carries `sdk/`.
   `metrics:streams` topic, and the list puts failing and degraded streams first.
 - The collector also keeps retried and buried batches, refused-because-full
   requests and requests that never decoded.
+- A stream whose health is `failing` is listed under "Needs your attention" on
+  the Overview, with a link to its page, and counts in the section's total.
+  `/api/overview/attention` gains `streams` and `streamsMore` (up to five are
+  listed); the Overview follows the `metrics:streams` topic while it is open.
 
 ## [0.42.0] — 2026-11-02
 

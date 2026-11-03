@@ -1,5 +1,5 @@
 {
-  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count; hi: stage, step, run, load, stream, endpoints stay in Latin script like the older keys, state.unknown, streams.health.*, metrics.*, streams.health.*, state.{healthy,quiet,degraded,failing}",
+  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count; hi: stage, step, run, load, stream, endpoints stay in Latin script like the older keys, state.unknown, streams.health.*, metrics.*, streams.health.*, state.{healthy,quiet,degraded,failing}, overview.stream.*",
   "app.not_found": "नहीं मिला।",
   "auto.adjusted_at": "now() की जगह पढ़ी जाने वाली घड़ी",
   "auto.date": "adjusted_at का UTC दिन — पार्टिशन",
@@ -628,6 +628,9 @@
   "overview.next.none": "कोई सक्रिय शेड्यूल नहीं।",
   "overview.next.title": "अगले trigger",
   "overview.open_catalog": "कैटलॉग में खोलें",
+  "overview.stream.failing": "{stream} विफल हो रहा है",
+  "overview.stream.open": "स्ट्रीम खोलें",
+  "overview.stream.more": {"one": "और {count} स्ट्रीम विफल", "other": "और {count} स्ट्रीम विफल"},
   "overview.recent": "हाल के run",
   "overview.rerun": "फिर चलाएँ",
   "overview.rerun_created": "{workflow} का rerun बनाया गया",

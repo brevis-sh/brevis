@@ -1,5 +1,5 @@
 {
-  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count, state.unknown, streams.health.*, metrics.*, streams.health.*, state.{healthy,quiet,degraded,failing}",
+  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count, state.unknown, streams.health.*, metrics.*, streams.health.*, state.{healthy,quiet,degraded,failing}, overview.stream.*",
   "app.not_found": "見つかりません。",
   "auto.adjusted_at": "now() の代わりに読む時計",
   "auto.date": "adjusted_at の UTC の日付。パーティション",
@@ -628,6 +628,9 @@
   "overview.next.none": "有効なスケジュールはありません。",
   "overview.next.title": "次のトリガー",
   "overview.open_catalog": "カタログで開く",
+  "overview.stream.failing": "{stream} が失敗しています",
+  "overview.stream.open": "ストリームを開く",
+  "overview.stream.more": {"one": "ほか {count} 件のストリームが失敗", "other": "ほか {count} 件のストリームが失敗"},
   "overview.recent": "直近の実行",
   "overview.rerun": "再実行",
   "overview.rerun_created": "{workflow} の再実行を作成しました",

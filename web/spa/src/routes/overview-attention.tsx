@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useFallbackInterval } from "../live/hooks";
+import { useFallbackInterval, useLive } from "../live/hooks";
 import { Link } from "react-router";
 import { getJSON } from "../api/client";
 import { useT } from "../i18n";
@@ -8,6 +8,7 @@ import { buttonClass } from "../ui/button";
 import { Icon } from "../ui/icon";
 import { LoadError } from "../ui/query-boundary";
 import { StatusMark, runKind, useStatusWord } from "../ui/status";
+import { TOPIC_STREAMS } from "../ui/metrics/hooks";
 import { useQuickRun } from "./run-now";
 
 type Cause = { step: string; mapIndex: number | null; exitCode: number | null; line: string };
@@ -22,7 +23,8 @@ type Item = {
   rerunning: string;
 };
 type Target = { target: string; status: string; workflow: string; missed: string };
-export type Attention = { total: number; items: Item[]; more: number; targets: Target[]; targetsMore: number };
+type StreamItem = { gateway: string; path: string; href: string; since: string | null };
+export type Attention = { total: number; items: Item[]; more: number; targets: Target[]; targetsMore: number; streams: StreamItem[]; streamsMore: number };
 
 /** "Needs your attention"; the overview screen refetches it on the `overview` topic, and the fallback polls only while the stream is down. */
 export const attentionQuery = {
@@ -130,11 +132,31 @@ function TargetRow({ tg }: { tg: Target }) {
   );
 }
 
+function StreamRow({ st }: { st: StreamItem }) {
+  const { t } = useT();
+  const ago = useAgo();
+  return (
+    <li data-attention-stream={`${st.gateway}${st.path}`} className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-state-failed/15 px-4 py-3 last:border-b-0">
+      <StatusMark kind="failed" />
+      <div className="min-w-0 flex-1 max-[640px]:basis-[calc(100%-2rem)]">
+        <p className="text-[13px]">
+          <span className="font-mono break-all text-ink">{t("overview.stream.failing", { stream: st.path })}</span>
+          {st.since && <span className="ml-1 text-[12.5px] text-muted">{ago(st.since)}</span>}
+        </p>
+        <p className="mt-0.5 font-mono text-[12px] text-muted">{st.gateway}</p>
+      </div>
+      <Link to={st.href} className={buttonClass("secondary", "small")}>{t("overview.stream.open")}</Link>
+    </li>
+  );
+}
+
 const more = "block border-t border-state-failed/20 px-4 py-2 text-[12.5px] text-ink hover:underline";
 
 export function AttentionSection() {
   const { t, n } = useT();
   const q = useAttention();
+  // A stream's health follows the gateway's metrics, which move faster than the `overview` topic.
+  useLive([TOPIC_STREAMS], [attentionQuery.queryKey]);
   const a = q.data;
   if (q.isError && !a) return <section className="mb-3"><LoadError onRetry={() => void q.refetch()} /></section>;
   if (!a) return <AttentionSkeleton />;
@@ -162,6 +184,14 @@ export function AttentionSection() {
             ))}
           </ul>
         )}
+        {a.streams.length > 0 && (
+          <ul className="border-t border-state-failed/20">
+            {a.streams.map((st) => (
+              <StreamRow key={`${st.gateway}${st.path}`} st={st} />
+            ))}
+          </ul>
+        )}
+        {a.streamsMore > 0 && <Link className={more} to="/ingest/streams">{n("overview.stream.more", a.streamsMore)} →</Link>}
         {a.targetsMore > 0 && <Link className={more} to="/data?status=attention">{n("overview.target.more", a.targetsMore)} →</Link>}
       </div>
     </section>

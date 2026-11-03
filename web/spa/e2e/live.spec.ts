@@ -59,12 +59,13 @@ test("the page opens one event stream and keeps it while moving between screens 
   page.on("request", (r) => /\/api\/events/.test(r.url()) && streams.push(r.url()));
   await page.goto("/app/workflows");
   await loaded(page);
-  for (const to of ["/app/", "/app/data", "/app/ingest/loads", "/app/workflows"]) {
+  for (const to of ["/app/data", "/app/ingest/loads", "/app/workflows"]) {
     await page.locator(`nav a[href="${to}"], nav a[href="${to.replace(/\/$/, "")}"]`).first().click();
     await loaded(page);
   }
   await page.waitForTimeout(800);
   // The shared topics are always on the stream, so these screens never reopen it (connection.ts SHARED).
-  // A run's page adds a named topic (run:<id>) and does reopen it, by design: not walked here.
+  // A run's page adds a named topic (run:<id>), and the Overview and Streams screens add metrics:streams while
+  // they are open: both reopen it, by design, and are not walked here.
   expect(streams).toHaveLength(1);
 });

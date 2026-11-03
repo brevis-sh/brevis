@@ -132,4 +132,8 @@ func TestTheAttentionJSONIsEmptyWhenAllIsWell(t *testing.T) {
 	if items, ok := body["items"].([]any); !ok || len(items) != 0 {
 		t.Errorf("items = %v; want []", body["items"])
 	}
+	// No metrics source: no stream can be said to be failing, and the array is never null.
+	if streams, ok := body["streams"].([]any); !ok || len(streams) != 0 || body["streamsMore"] != 0.0 {
+		t.Errorf("streams = %v, more %v; want [] and 0", body["streams"], body["streamsMore"])
+	}
 }

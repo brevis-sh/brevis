@@ -1,5 +1,5 @@
 {
-  "_review": "needs a native speaker; first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count; es: the older keys were already waiting for review, metrics.*, streams.health.*, state.{healthy,quiet,degraded,failing}",
+  "_review": "needs a native speaker; first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count; es: the older keys were already waiting for review, metrics.*, streams.health.*, state.{healthy,quiet,degraded,failing}, overview.stream.*",
   "app.not_found": "No encontrado.",
   "auto.adjusted_at": "el reloj a usar en lugar de now()",
   "auto.date": "día UTC de adjusted_at — la partición",
@@ -535,6 +535,9 @@
   "overview.next.none": "Ninguna agenda activa.",
   "overview.next.title": "Próximos disparos",
   "overview.open_catalog": "Abrir en el catálogo",
+  "overview.stream.failing": "{stream} está fallando",
+  "overview.stream.open": "Abrir stream",
+  "overview.stream.more": {"one": "y {count} stream más fallando", "other": "y {count} streams más fallando"},
   "overview.recent": "Ejecuciones recientes",
   "overview.rerun": "Reejecutar",
   "overview.rerun_created": "Reejecución de {workflow} creada",

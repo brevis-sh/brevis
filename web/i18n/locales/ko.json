@@ -1,5 +1,5 @@
 {
-  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count, state.unknown, streams.health.*, metrics.*, streams.health.*, state.{healthy,quiet,degraded,failing}",
+  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count, state.unknown, streams.health.*, metrics.*, streams.health.*, state.{healthy,quiet,degraded,failing}, overview.stream.*",
   "app.not_found": "찾을 수 없습니다.",
   "auto.adjusted_at": "now() 대신 읽을 시계",
   "auto.date": "adjusted_at의 UTC 날짜 — 파티션",
@@ -628,6 +628,9 @@
   "overview.next.none": "활성 스케줄 없음.",
   "overview.next.title": "다음 트리거",
   "overview.open_catalog": "카탈로그에서 열기",
+  "overview.stream.failing": "{stream} 실패 중",
+  "overview.stream.open": "Stream 열기",
+  "overview.stream.more": {"one": "외 {count}개 Stream 실패", "other": "외 {count}개 Stream 실패"},
   "overview.recent": "최근 실행",
   "overview.rerun": "재실행",
   "overview.rerun_created": "{workflow} 재실행이 생성되었습니다",
