@@ -20,6 +20,8 @@ export default defineConfig({
   ],
   build: { outDir: "dist", emptyOutDir: true, sourcemap: false },
   server: {
+    // The logo marks live with the server's components (web/components/logos).
+    fs: { allow: [".."] },
     // `make up` serves the API on 8080; the dev server proxies to it, so the
     // browser sees one origin and the session cookie works without CORS.
     proxy: {

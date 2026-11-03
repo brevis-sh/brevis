@@ -44,3 +44,15 @@ export function useAgo() {
     return f.date(iso);
   };
 }
+
+/** A slot as the server's brief layout writes it, in UTC: "Mar 2 04:00", "2 out 04:00". */
+export function useBrief() {
+  const { lang } = useSession();
+  const month = new Intl.DateTimeFormat(lang, { month: "short", timeZone: "UTC" });
+  const clock = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "UTC" });
+  return (iso: string) => {
+    const d = new Date(iso);
+    const m = month.format(d).replace(".", "");
+    return lang.startsWith("en") ? `${m} ${d.getUTCDate()} ${clock.format(d)}` : `${d.getUTCDate()} ${m} ${clock.format(d)}`;
+  };
+}

@@ -1,9 +1,12 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { getJSON } from "../api/client";
 import { useT } from "../i18n";
 import { useAgo } from "../ui/format";
-import { StatusMark, useStateWord } from "../ui/ov-status";
+import { buttonClass } from "../ui/button";
+import { Icon } from "../ui/icon";
+import { LoadError } from "../ui/query-boundary";
+import { StatusMark, runKind, useStatusWord } from "../ui/status";
 import { Skeleton } from "../ui/skeleton";
 
 type Cause = { step: string; mapIndex: number | null; exitCode: number | null; line: string };
@@ -27,15 +30,14 @@ export const attentionQuery = {
   refetchInterval: 10_000,
 };
 
+/** The card that stands where the section will be: the same box as "all is well", its text on its way. */
 export function AttentionSkeleton() {
   return (
-    <section className="att att-empty" aria-busy="true" aria-label="Loading">
-      <Skeleton w="1rem" h="1rem" />
-      <div style={{ flex: 1 }}>
-        <Skeleton w="14rem" h="1rem" />
-        <div style={{ marginTop: ".4rem" }}>
-          <Skeleton w="60%" h=".8rem" />
-        </div>
+    <section aria-busy="true" aria-label="Loading" className="mb-3 flex items-start gap-3 rounded-card border border-line bg-surface px-4 py-3">
+      <Skeleton w="16px" h="16px" />
+      <div className="grid gap-1.5">
+        <Skeleton w="14rem" h="16px" />
+        <Skeleton w="22rem" h="14px" />
       </div>
     </section>
   );
@@ -57,35 +59,35 @@ function ItemRow({ it }: { it: Item }) {
   const why = useWhy();
   const streak = it.streak < 2 ? "" : it.streak === 2 ? t("overview.second_time") : n("run.why.streak", it.streak);
   return (
-    <li className="att-row" data-attention-item={it.workflow}>
-      <StatusMark status="failed" />
-      <div className="att-main">
-        <p>
-          <span className="mono att-name">{it.workflow}</span>{" "}
-          <span className="muted">
+    <li data-attention-item={it.workflow} className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-state-failed/15 px-4 py-3 last:border-b-0">
+      <StatusMark kind="failed" />
+      <div className="min-w-0 flex-1 max-[640px]:basis-[calc(100%-2rem)]">
+        <p className="text-[13px]">
+          <span className="font-mono text-ink">{it.workflow}</span>
+          <span className="ml-1 text-[12.5px] text-muted">
             {t("overview.failed")} {ago(it.failedAt)}
             {streak && ` · ${streak}`}
           </span>
         </p>
         {it.cause && (
-          <p className="att-why">
+          <p className="mt-0.5 truncate text-[12.5px] text-ink-2">
             {why(it.cause)}
             {it.cause.line && (
               <>
                 {" — "}
-                <code>{it.cause.line}</code>
+                <code className="font-mono text-[12px] text-state-failed">{it.cause.line}</code>
               </>
             )}
           </p>
         )}
       </div>
-      <div className="att-acts">
-        {/* The run's page is still the server's. */}
-        <a className="btn" href={`/runs/${it.runId}#logs`}>{t("overview.view_log")}</a>
+      <div className="flex shrink-0 items-center gap-2">
+        <Link to={`/runs/${it.runId}#logs`} className={buttonClass("secondary", "small")}>{t("overview.view_log")}</Link>
         {it.rerunning ? (
-          <a className="att-going" href={`/runs/${it.rerunning}`}>
-            <StatusMark status="running" /> {t("overview.rerunning")}
-          </a>
+          <Link to={`/runs/${it.rerunning}`} className="inline-flex items-center gap-1.5 text-[12.5px] text-state-running hover:underline">
+            <StatusMark kind="running" />
+            {t("overview.rerunning")}
+          </Link>
         ) : (
           it.rerunnable && (
             // The server's trigger, as the old page posts it; it comes back to the app.
@@ -94,7 +96,10 @@ function ItemRow({ it }: { it: Item }) {
               {Object.entries(it.params).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => (
                 <input key={k} type="hidden" name={`param.${k}`} value={v} />
               ))}
-              <button type="submit" className="btn">{t("overview.rerun")}</button>
+              <button type="submit" className={buttonClass("secondary", "small")}>
+                <Icon name="refresh-cw" className="h-3 w-3" />
+                {t("overview.rerun")}
+              </button>
             </form>
           )
         )}
@@ -106,61 +111,68 @@ function ItemRow({ it }: { it: Item }) {
 function TargetRow({ tg }: { tg: Target }) {
   const { t } = useT();
   const ago = useAgo();
-  const word = useStateWord();
+  const word = useStatusWord();
   return (
-    <li className="att-row" data-attention-target={tg.target}>
-      <StatusMark status={tg.status} />
-      <div className="att-main">
-        <p>
-          <span className="mono att-name" style={{ overflowWrap: "anywhere" }}>{tg.target}</span> <span className="muted">{word(tg.status)}</span>
+    <li data-attention-target={tg.target} className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-state-failed/15 px-4 py-3 last:border-b-0">
+      <StatusMark kind={runKind(tg.status)} />
+      <div className="min-w-0 flex-1 max-[640px]:basis-[calc(100%-2rem)]">
+        <p className="text-[13px]">
+          <span className="font-mono break-all text-ink">{tg.target}</span>
+          <span className="ml-1 text-[12.5px] text-muted">{word(runKind(tg.status))}</span>
         </p>
-        <p className="att-why">{t("overview.target.missed", { workflow: tg.workflow, when: ago(tg.missed) })}</p>
+        <p className="mt-0.5 text-[12.5px] text-ink-2">{t("overview.target.missed", { workflow: tg.workflow, when: ago(tg.missed) })}</p>
       </div>
-      <a className="btn" href={`/data/target?u=${encodeURIComponent(tg.target)}`}>{t("overview.open_catalog")}</a>
+      <Link to={`/data/target?u=${encodeURIComponent(tg.target)}`} className={buttonClass("secondary", "small")}>{t("overview.open_catalog")}</Link>
     </li>
   );
 }
 
+const more = "block border-t border-state-failed/20 px-4 py-2 text-[12.5px] text-ink hover:underline";
+
 export function AttentionSection() {
   const { t, n } = useT();
-  const { data: a } = useSuspenseQuery(attentionQuery);
+  const q = useQuery(attentionQuery);
+  const a = q.data;
+  if (q.isError && !a) return <section className="mb-3"><LoadError onRetry={() => void q.refetch()} /></section>;
+  if (!a) return <AttentionSkeleton />;
 
   if (a.total === 0) {
     return (
-      <section className="att att-empty" data-attention-empty aria-labelledby="att-none">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--st-success)" strokeWidth="2" aria-hidden="true">
-          <path d="M3 8.5l3.2 3.2L13 4.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <div>
-          <p id="att-none" style={{ margin: 0, fontWeight: 500 }}>{t("overview.attention.none")}</p>
-          <p className="muted" style={{ margin: ".15rem 0 0", fontSize: ".8rem" }}>{t("overview.attention.none_hint")}</p>
+      <section data-attention className="mb-3">
+        <div data-attention-empty className="flex items-start gap-3 rounded-card border border-state-success/30 bg-state-success/5 px-4 py-3">
+          <Icon name="check" className="mt-0.5 h-4 w-4 text-state-success" />
+          <div>
+            <p className="text-[13.5px] font-medium text-ink">{t("overview.attention.none")}</p>
+            <p className="mt-0.5 text-[12.5px] text-muted">{t("overview.attention.none_hint")}</p>
+          </div>
         </div>
       </section>
     );
   }
   return (
-    <section className="att att-bad" aria-labelledby="att-title">
-      <header>
-        <h2 id="att-title">{t("overview.attention")}</h2>
-        <span className="mono muted">{a.total}</span>
-        <span className="muted att-hint">{t("overview.attention.hint")}</span>
-      </header>
-      <ul>
-        {a.items.map((it) => (
-          <ItemRow key={it.workflow} it={it} />
-        ))}
-      </ul>
-      {a.more > 0 && (
-        <Link className="att-more" to="/runs?state=failed">{n("overview.attention.more", a.more)} →</Link>
-      )}
-      {a.targets.length > 0 && (
-        <ul className="att-targets">
-          {a.targets.map((tg) => (
-            <TargetRow key={tg.target} tg={tg} />
+    <section data-attention className="mb-3">
+      <div className="overflow-hidden rounded-card border border-state-failed/40 bg-state-failed/5">
+        <header className="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-b border-state-failed/20 px-4 py-2.5">
+          <Icon name="triangle-alert" className="h-4 w-4 self-center text-state-failed" />
+          <h2 className="text-[14px] font-medium text-ink">{t("overview.attention")}</h2>
+          <span className="font-mono text-[12px] text-muted tabular-nums">{a.total}</span>
+          <span className="text-[12.5px] text-muted">{t("overview.attention.hint")}</span>
+        </header>
+        <ul>
+          {a.items.map((it) => (
+            <ItemRow key={it.workflow} it={it} />
           ))}
         </ul>
-      )}
-      {a.targetsMore > 0 && <a className="att-more" href="/data?status=attention">{n("overview.target.more", a.targetsMore)} →</a>}
+        {a.more > 0 && <Link className={more} to="/runs?state=failed">{n("overview.attention.more", a.more)} →</Link>}
+        {a.targets.length > 0 && (
+          <ul className="border-t border-state-failed/20">
+            {a.targets.map((tg) => (
+              <TargetRow key={tg.target} tg={tg} />
+            ))}
+          </ul>
+        )}
+        {a.targetsMore > 0 && <Link className={more} to="/data?status=attention">{n("overview.target.more", a.targetsMore)} →</Link>}
+      </div>
     </section>
   );
 }
