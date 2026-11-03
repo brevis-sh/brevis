@@ -385,7 +385,7 @@ func (u *UI) Registrar(mux *http.ServeMux) {
 	// screen at a time. Behind the same login as everything else.
 	mux.Handle("GET "+spa.Prefix, spa.Handler())
 	mux.HandleFunc("GET /api/session", u.session)
-	mux.HandleFunc("GET /api/branding", u.branding)
+	mux.HandleFunc("GET /api/config", u.config)
 }
 
 // loads is Ingest → Batch loads (screen-loads): one row per step and

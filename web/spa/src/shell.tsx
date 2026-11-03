@@ -1,13 +1,13 @@
 import { Suspense, useEffect } from "react";
 import { NavLink, Outlet } from "react-router";
-import { useBranding, useSession } from "./api/session";
+import { useConfig, useSession } from "./api/session";
 import { Skeleton } from "./ui/skeleton";
 
 // The sidebar's identity block. It suspends on the session and the branding,
 // so the shell around it draws at once and this part shows a skeleton of the
 // same size.
 function Identity() {
-  const brand = useBranding();
+  const { brand } = useConfig();
   const session = useSession();
 
   // The server's theme, as it writes it for the pages (branding.CSS): one

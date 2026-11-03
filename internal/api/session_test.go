@@ -37,8 +37,8 @@ func getJSON(t *testing.T, ui *api.UI, target string, req func(*http.Request)) (
 }
 
 // THE APP ASKS WHO IS LOOKING before it draws a thing: the operator the Gate
-// put in the context, the language the cookie chose, the version it runs.
-func TestTheSessionNamesTheOperatorLanguageAndVersion(t *testing.T) {
+// put in the context and the language the cookie chose.
+func TestTheSessionNamesTheOperatorAndTheLanguage(t *testing.T) {
 	rec, body := getJSON(t, sessionUI(branding.Default()), "/api/session", func(r *http.Request) {
 		*r = *r.WithContext(auth.IntoContext(context.Background(), "ana"))
 		r.AddCookie(&http.Cookie{Name: i18n.Cookie, Value: "pt-BR"})
@@ -46,7 +46,7 @@ func TestTheSessionNamesTheOperatorLanguageAndVersion(t *testing.T) {
 	if rec.Code != http.StatusOK || rec.Header().Get("Cache-Control") != "no-store" {
 		t.Fatalf("%d, cache %q; a session is never cached", rec.Code, rec.Header().Get("Cache-Control"))
 	}
-	if body["operator"] != "ana" || body["version"] != "1.2.3" || body["lang"] != "pt-BR" {
+	if body["operator"] != "ana" || body["lang"] != "pt-BR" {
 		t.Errorf("session = %v", body)
 	}
 }
@@ -60,20 +60,25 @@ func TestAnOpenConsoleHasAnEmptyOperator(t *testing.T) {
 	}
 }
 
-// THE BRAND IS ONE SOURCE: the logo falls back to the embedded mark, and the
-// theme is the very CSS the pages inject.
-func TestTheBrandingCarriesTheLogoAndTheServersTheme(t *testing.T) {
+// THE CONFIG IS THE INSTALLATION'S, the same for everyone: the brand (its logo
+// falling back to the embedded mark, its theme the very CSS the pages inject),
+// the version and whether there is SQL.
+func TestTheConfigCarriesTheBrandTheVersionAndTheServices(t *testing.T) {
 	brand := branding.Default()
 	brand.Title = "Acme Ops"
 	brand.Theme.Accent = "#ff6600"
-	rec, body := getJSON(t, sessionUI(brand), "/api/branding", nil)
+	rec, body := getJSON(t, sessionUI(brand), "/api/config", nil)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status %d", rec.Code)
 	}
-	if body["title"] != "Acme Ops" || body["logo"] != branding.DefaultLogo || body["attribution"] != branding.Attribution {
-		t.Errorf("branding = %v", body)
+	b, _ := body["brand"].(map[string]any)
+	if b["title"] != "Acme Ops" || b["logo"] != branding.DefaultLogo || b["attribution"] != branding.Attribution {
+		t.Errorf("brand = %v", b)
 	}
-	if body["css"] != brand.CSS() || body["css"] == "" {
-		t.Errorf("css = %q; want the pages' theme %q", body["css"], brand.CSS())
+	if b["css"] != brand.CSS() || b["css"] == "" {
+		t.Errorf("css = %q; want the pages' theme %q", b["css"], brand.CSS())
+	}
+	if body["version"] != "1.2.3" || body["sql"] != false {
+		t.Errorf("config = %v", body)
 	}
 }
