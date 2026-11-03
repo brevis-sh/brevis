@@ -3,6 +3,7 @@ package api_test
 import (
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"brevis.sh/brevis/internal/updates"
@@ -28,15 +29,18 @@ func TestNavRunsJSONReportsAnUnreadableCount(t *testing.T) {
 	}
 }
 
-// THE RELEASE, for the version modal; 404 where none is known.
+// THE RELEASE, for the version modal; 204 where none is known.
 func TestReleaseIsServedWhenKnownAndAbsentWhenNot(t *testing.T) {
 	src := releaseFake{r: updates.Release{Tag: "v0.41.0", URL: "https://example.test/r", Notes: "<p>x</p>"}, newer: true}
 	rec, body := getJSON(t, versionUI(src), "/api/release", nil)
 	if rec.Code != http.StatusOK || body["tag"] != "v0.41.0" || body["newer"] != true || body["notes"] != "<p>x</p>" {
 		t.Errorf("%d %v", rec.Code, body)
 	}
-	rec, body = getJSON(t, versionUI(nil), "/api/release", nil)
-	if rec.Code != http.StatusNotFound || body["error"] == nil {
-		t.Errorf("%d %v; want 404 with an error", rec.Code, body)
+	mux := http.NewServeMux()
+	versionUI(nil).Registrar(mux)
+	none := httptest.NewRecorder()
+	mux.ServeHTTP(none, httptest.NewRequest(http.MethodGet, "/api/release", nil))
+	if none.Code != http.StatusNoContent || none.Body.Len() != 0 {
+		t.Errorf("%d %q; want an empty 204", none.Code, none.Body.String())
 	}
 }

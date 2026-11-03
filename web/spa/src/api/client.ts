@@ -11,8 +11,14 @@ export class ApiError extends Error {
   }
 }
 
-export async function getJSON<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(path, { headers: { Accept: "application/json" }, signal });
+// A read is never aborted. React Query hands every query an AbortSignal and cancels
+// the request when the screen goes away mid-flight (navigating, StrictMode's double
+// mount); the browser's network panel then lists a red "(canceled)" for something
+// that was fine. These reads are small and land in the cache, so the signal is
+// accepted (the call sites pass it) and deliberately not used. Where a request
+// really is the reader's to cancel -- the SQL run -- postJSON still honors it.
+export async function getJSON<T>(path: string, _signal?: AbortSignal): Promise<T> {
+  const res = await fetch(path, { headers: { Accept: "application/json" } });
   // The Gate answers a GET without a session with a 303 to /login, and fetch
   // follows it into a 200 HTML page. That is a 401: send the browser to the
   // login and bring it back to this screen (the `next` the login screen reads).
@@ -26,6 +32,8 @@ export async function getJSON<T>(path: string, signal?: AbortSignal): Promise<T>
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
     throw new ApiError(res.status, body?.error ?? `${path}: HTTP ${res.status}`);
   }
+  // A 204 is "nothing there" (no release known): no body to read.
+  if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
 

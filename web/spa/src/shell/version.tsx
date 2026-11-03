@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ApiError, getJSON } from "../api/client";
+import { getJSON } from "../api/client";
 import { useConfig } from "../api/session";
 import { useFormat, useT } from "../i18n";
 import { Icon } from "../ui/icon";
@@ -22,12 +22,7 @@ export function useRelease(): Release | undefined {
     retry: false,
     staleTime: 5 * 60_000,
     queryFn: async ({ signal }) => {
-      try {
-        return await getJSON<Release>("/api/release", signal);
-      } catch (e) {
-        if (e instanceof ApiError && e.status === 404) return null;
-        throw e;
-      }
+      return (await getJSON<Release | undefined>("/api/release", signal)) ?? null;
     },
   }).data ?? undefined;
 }

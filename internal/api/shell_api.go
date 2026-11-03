@@ -49,9 +49,10 @@ type releaseView struct {
 	Newer     bool      `json:"newer"`
 }
 
-// release answers 404 {"error"} where no release is known (a development
-// build, or a host that cannot reach GitHub): the app then shows the version
-// as plain text.
+// release answers 204 where no release is known (a development build, or a host
+// that cannot reach GitHub): the app then shows the version as plain text. Not a
+// 404: that is an error in the browser's console on every page, for something
+// that is not one.
 func (u *UI) release(w http.ResponseWriter, _ *http.Request) {
 	if u.updates != nil && u.version != "" {
 		if r, newer, ok := u.updates.Latest(); ok {
@@ -60,5 +61,5 @@ func (u *UI) release(w http.ResponseWriter, _ *http.Request) {
 			return
 		}
 	}
-	writeJSON(w, http.StatusNotFound, map[string]string{"error": "no release is known"})
+	w.WriteHeader(http.StatusNoContent)
 }
