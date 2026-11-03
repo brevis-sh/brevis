@@ -8,7 +8,8 @@ import (
 )
 
 // Bundle is every message the console has in lang, as the React app reads it:
-// a string, or {"one","other"} for a plural. English fills what lang lacks, so
+// a string, or {"one","other"} (plus "few" and "many" where the language has
+// them) for a plural. English fills what lang lacks, so
 // the app does no fallback of its own and a half-translated language reads the
 // same there as on the server pages (lookup does the same).
 func Bundle(lang string) map[string]any {
@@ -17,7 +18,14 @@ func Bundle(lang string) map[string]any {
 	for _, l := range []string{"en", lang} {
 		for key, m := range catalogs[l] {
 			if m.plural() {
-				out[key] = map[string]string{"one": m.one, "other": m.other}
+				forms := map[string]string{"one": m.one, "other": m.other}
+				if m.few != "" {
+					forms["few"] = m.few
+				}
+				if m.many != "" {
+					forms["many"] = m.many
+				}
+				out[key] = forms
 			} else {
 				out[key] = m.text
 			}

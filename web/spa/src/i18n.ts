@@ -1,8 +1,9 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getJSON } from "./api/client";
 import { useSession } from "./api/session";
+import { category } from "./plural";
 
-type Message = string | { one: string; other: string };
+type Message = string | { one: string; other: string; few?: string; many?: string };
 type Bundle = { lang: string; messages: Record<string, Message> };
 export type Vars = Record<string, string | number>;
 
@@ -28,7 +29,10 @@ export function useT() {
     const m = messages[key];
     if (m === undefined) return `[${key}]`; // the server's mark for a missing key
     if (typeof m === "string") return m;
-    return count === 1 ? m.one : m.other;
+    // few and many exist only where the language has them (plural.ts); a missing form reads as other
+    if (count === undefined) return m.other;
+    const c = category(lang, count);
+    return c === "one" ? m.one : c === "few" ? (m.few ?? m.other) : c === "many" ? (m.many ?? m.other) : m.other;
   };
 
   return {

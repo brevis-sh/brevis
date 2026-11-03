@@ -100,8 +100,15 @@ func TestTheCatalogsAreCompleteAndConsistent(t *testing.T) {
 				if form == "" {
 					t.Errorf("%s: %s is empty", lang, key)
 				}
-				if set(form) != set(want.forms()[i]) {
-					t.Errorf("%s: %s has placeholders %s, English has %s", lang, key, set(form), set(want.forms()[i]))
+				// A form English has no counterpart for (few, many) is held to its "other". So is
+				// Russian's "one": it also serves 21, 31..., so it carries {count} even where
+				// English writes "1 worker".
+				ref := want.forms()[min(i, 1)]
+				if lang == "ru" && want.plural() {
+					ref = want.forms()[1]
+				}
+				if set(form) != set(ref) {
+					t.Errorf("%s: %s has placeholders %s, English has %s", lang, key, set(form), set(ref))
 				}
 			}
 		}
