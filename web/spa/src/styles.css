@@ -30,6 +30,18 @@
 body { margin: 0; background: var(--bg); color: var(--fg); }
 .sk { display: block; border-radius: .3rem; background: linear-gradient(90deg, var(--sk) 25%, var(--sk-hi) 50%, var(--sk) 75%); background-size: 200% 100%; animation: sk 1.4s linear infinite; }
 .sk-text { display: grid; gap: .5rem; }
+/* A GHOST is the real markup drawn with placeholder values: every leaf (text, mark, bar) turns into
+   the skeleton look while the box it takes stays the real one, so a screen's loading shape and its
+   loaded shape have the same height by construction. Cells (td, th) keep their own box, never a slab. */
+.sk-ghost { pointer-events: none; user-select: none; }
+.sk-ghost * { color: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+.sk-ghost :is(a, span, p, div, dd, dt, li, h2, h3, strong, svg, kbd, input):not(:has(*)), .sk-ghost svg { background: linear-gradient(90deg, var(--sk) 25%, var(--sk-hi) 50%, var(--sk) 75%) 0 0 / 200% 100%; border-radius: .3rem; animation: sk 1.4s linear infinite; }
+.sk-ghost :is(p, div, dd, dt, li):not(:has(*)) { width: fit-content; max-width: 100%; }
+.sk-ghost svg > * { visibility: hidden; }
+/* A table whose columns are pinned to last time's widths: placeholder text must not widen them. */
+.sk-pinned { table-layout: fixed; }
+.sk-ghost [class*="cg-"] { background: var(--sk); animation: none; }
+@media (prefers-reduced-motion: reduce) { .sk-ghost * { animation: none !important; } }
 @keyframes sk { to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
 .muted { color: var(--muted); }

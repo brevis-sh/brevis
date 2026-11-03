@@ -56,9 +56,9 @@ export function SearchBox({ value, onChange, label }: { value: string; onChange:
 }
 
 /** A switch that is a link: its state is a URL. */
-export function Switch({ on, to, children }: { on: boolean; to: string; children: ReactNode }) {
+export function Switch({ on, to, children, className = "" }: { on: boolean; to: string; children: ReactNode; className?: string }) {
   return (
-    <Link to={to} role="switch" aria-checked={on} className="inline-flex items-center gap-2 text-[12.5px] text-ink-2">
+    <Link to={to} role="switch" aria-checked={on} className={`inline-flex items-center gap-2 text-[12.5px] text-ink-2 ${className}`}>
       <span className="switch" aria-checked={on}>
         <span className="switch-knob" aria-hidden="true" />
       </span>

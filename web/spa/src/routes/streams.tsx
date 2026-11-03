@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router";
 import { useData } from "../api/live";
-import type { Streams, StreamRow } from "../api/ingest";
+import type { Choice, Streams, StreamRow } from "../api/ingest";
 import { useT } from "../i18n";
 import { useDrawer } from "../ui/drawer";
 import { HowDrawer, HowSteps } from "../ui/how";
@@ -9,7 +9,7 @@ import { btn, Empty, FilterRow, Lead, MethodPill, PageHead, linkUnderline, Page 
 import { Logo } from "../ui/logo";
 import { Place } from "../ui/place";
 import { SearchBox, Segmented } from "../ui/segmented";
-import { Skeleton } from "../ui/skeleton";
+import { useSeen } from "../ui/seen";
 import { Status } from "../ui/status";
 import { Row, Table, Td, Th } from "../ui/table";
 import { useFilter, useSearchBox } from "../ui/use-filter";
@@ -90,7 +90,7 @@ function Rows({ rows }: { rows: StreamRow[] }) {
               <Place p={s.sink} />
             </div>
           </Td>
-          <Td cls="text-[12.5px] text-ink-2 max-[1180px]:hidden">{s.batch || <span className="text-faint">—</span>}</Td>
+          <Td cls="text-[12.5px] text-ink-2 max-[1180px]:hidden">{s.batch ? <span>{s.batch}</span> : <span className="text-faint">—</span>}</Td>
           <Td>
             <Status kind="continuous" />
           </Td>
@@ -104,22 +104,21 @@ function Rows({ rows }: { rows: StreamRow[] }) {
   );
 }
 
-function SkeletonRows() {
-  return (
-    <>
-      {Array.from({ length: 3 }, (_, i) => (
-        <tr key={i} aria-hidden="true">
-          <Td edge="first"><Skeleton w="10rem" h="20px" /></Td>
-          <Td cls="max-[960px]:hidden"><Skeleton w="22rem" h="34px" /></Td>
-          <Td cls="max-[1180px]:hidden"><Skeleton w="7rem" h="18px" /></Td>
-          <Td><Skeleton w="5rem" h="18px" /></Td>
-          <Td cls="max-[1280px]:hidden"><Skeleton w="10rem" h="34px" /></Td>
-          <Td edge="last" />
-        </tr>
-      ))}
-    </>
-  );
-}
+// What the screen shows before its first answer: the last shape it saw, or this one on a first visit,
+// drawn from the real row markup with placeholder values so it takes the height the loaded rows take.
+type Shape = { n: number; total: number; gateways: number; withDeadLetter: number; kinds: Choice[] };
+const FIRST: Shape = { n: 3, total: 3, gateways: 1, withDeadLetter: 1, kinds: [{ key: "pubsub", label: "Pub/Sub" }, { key: "postgres", label: "PostgreSQL" }] };
+const shapeOf = (v: Streams): Shape => ({ n: v.rows.length, total: v.total, gateways: v.gateways, withDeadLetter: v.withDeadLetter, kinds: v.kinds });
+const PLACE = { uri: "", kind: "postgres", kindTitle: "", where: "postgres://warehouse/", what: "table_name", note: "" };
+const GHOST_ROW: StreamRow = { gateway: "events_gateway", path: "/v1/stream_path", href: "", note: "", sink: PLACE, batch: "1 second or 500", deadLetter: PLACE };
+const ghostOf = (s: Shape): Streams => ({
+  rows: Array.from({ length: s.n }, (_, i) => ({ ...GHOST_ROW, href: `#${i}` })),
+  total: s.total,
+  gateways: s.gateways,
+  withDeadLetter: s.withDeadLetter,
+  kinds: s.kinds,
+  filter: { kind: "", q: "" },
+});
 
 function Search({ filter }: { filter: Filter }) {
   const { t } = useT();
@@ -132,27 +131,27 @@ function StreamsData({ filter }: { filter: Filter }) {
   const qs = new URLSearchParams();
   for (const f of FIELDS) if (filter.get(f)) qs.set(f, filter.get(f));
   const q = useData<Streams>(["ingest", "streams", qs.toString()], `/api/ingest/streams${qs.size ? `?${qs}` : ""}`, { topic: "ingest" });
-  const v = q.data;
+  const ghost = !q.data;
+  // Only the unfiltered answer is remembered: a filter's counts are not the list's shape.
+  const seen = useSeen("streams", qs.size === 0 && q.data ? shapeOf(q.data) : undefined, FIRST);
+  const v = q.data ?? ghostOf(seen);
   const kind = filter.get("kind");
   return (
     <>
-      {!v ? (
-        <Skeleton w="26rem" h="18px" className="mb-4 max-w-full" />
-      ) : (
-        v.total > 0 && (
-          <div className="mb-4 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[13px] text-muted">
-            <span>{n("streams.summary.streams", v.total)}</span>
-            <span>{n("streams.summary.gateways", v.gateways)}</span>
-            <Status kind="continuous" />
-            {v.withDeadLetter > 0 && <span>{n("streams.summary.dead_letter", v.withDeadLetter)}</span>}
-          </div>
-        )
+      {v.total > 0 && (
+        <div aria-hidden={ghost || undefined} className={`mb-4 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[13px] text-muted ${ghost ? "sk-ghost" : ""}`}>
+          <span>{n("streams.summary.streams", v.total)}</span>
+          <span>{n("streams.summary.gateways", v.gateways)}</span>
+          <Status kind="continuous" />
+          {v.withDeadLetter > 0 && <span>{n("streams.summary.dead_letter", v.withDeadLetter)}</span>}
+        </div>
       )}
-      {(!v || v.total > 0) && (
+      {v.total > 0 && (
         <FilterRow>
           <Search filter={filter} />
-          {v && v.kinds.length > 1 && (
+          {v.kinds.length > 1 && (
             <Segmented
+              className={ghost ? "sk-ghost" : ""}
               label={t("streams.kind")}
               choices={[
                 { key: "", label: t("streams.kind.all"), to: filter.hrefWith({ kind: "" }), current: kind === "" },
@@ -172,12 +171,13 @@ function StreamsData({ filter }: { filter: Filter }) {
           )}
         </FilterRow>
       )}
-      <div aria-busy={q.isFetching}>
+      <div aria-busy={ghost}>
         {q.isError ? (
           <p role="alert" className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">
             {(q.error as Error).message}
           </p>
-        ) : v && v.rows.length === 0 ? (
+        ) : v.rows.length === 0 ? (
+          <div aria-hidden={ghost || undefined} className={ghost ? "sk-ghost" : undefined}>
           <Empty msg={v.total > 0 ? t("streams.empty.filtered") : t("streams.empty")} hint={v.total > 0 ? undefined : "brevis gateway publish gateway.yaml"}>
             {v.total > 0 && (
               <Link to="/ingest/streams" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
@@ -185,9 +185,10 @@ function StreamsData({ filter }: { filter: Filter }) {
               </Link>
             )}
           </Empty>
+          </div>
         ) : (
-          <Table id="stream-rows" head={<Head />}>
-            {v ? <Rows rows={v.rows} /> : <SkeletonRows />}
+          <Table id="stream-rows" head={<Head />} ghost={ghost} memo="streams">
+            <Rows rows={v.rows} />
           </Table>
         )}
       </div>
