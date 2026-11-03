@@ -72,7 +72,7 @@ function Body({ d, u }: { d: TargetDetail | undefined; u: string }) {
               <li key={e.api + e.name}>
                 <Link to={`/data/endpoints/${encodeURIComponent(e.api)}/${encodeURIComponent(e.name)}`} className="font-mono text-ink hover:underline">
                   GET {e.path}
-                </Link>
+                </Link>{" "}
                 <span className="ml-1.5 text-muted">
                   {e.api} · {t("catalog.drawer.cache")}
                 </span>

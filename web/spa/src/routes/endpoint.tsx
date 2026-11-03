@@ -283,7 +283,7 @@ function ParamsPanel({ d }: { d: Endpoint | undefined }) {
               {d.params.map((p) => (
                 <tr key={p.name} className="align-top">
                   <td className={`${pd} pl-4`}>
-                    <span className="font-mono text-[0.8rem] text-ink">{p.name}</span>
+                    <span className="font-mono text-[0.8rem] text-ink">{p.name}</span>{" "}
                     {p.required && <span className={`ml-1.5 ${required}`}>{t("endpoint.params.required")}</span>}
                     {p.note && <p className="mt-1 max-w-md text-[0.75rem] whitespace-pre-line text-muted">{p.note}</p>}
                   </td>

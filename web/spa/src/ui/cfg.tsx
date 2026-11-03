@@ -35,7 +35,7 @@ export function CfgRows({ rows, wide }: { rows: CfgRow[]; wide?: boolean }) {
           >
             <div className={`font-mono break-all text-muted ${wide ? "text-xs" : "text-[12px]"}`}>{r.label}</div>
             <div className={wide ? "text-xs" : "text-[12px]"}>
-              {r.value === "" ? <span className="text-muted">{t("config.empty")}</span> : <span className="font-mono break-all text-ink">{r.value}</span>}
+              {r.value === "" ? <span className="text-muted">{t("config.empty")}</span> : <span className="font-mono break-all text-ink">{r.value}</span>}{" "}
               {r.default && (
                 <span className="ml-2 rounded-card border border-line px-1 py-px text-[0.65rem] text-muted" title={t("config.default.tip")}>
                   {t("config.default")}

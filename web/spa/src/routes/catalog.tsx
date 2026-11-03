@@ -106,8 +106,8 @@ function CatalogRows({ rows, filter, now }: { rows: CatalogRow[]; filter: Filter
                     <span className="font-medium text-ink">{r.what}</span>
                   </>
                 )}
-              </Link>
-              {r.legacy && <span className={legacyChip}>{t("catalog.chip.legacy")}</span>}
+              </Link>{" "}
+              {r.legacy && <span className={legacyChip}>{t("catalog.chip.legacy")}</span>}{" "}
               {r.autoTable && <span className={legacyChip}>auto_table</span>}
             </Td>
             <Td>

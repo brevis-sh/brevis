@@ -108,7 +108,7 @@ function Overview({ path, v }: { path: string; v: Stream | undefined }) {
                     <li key={e.href}>
                       <Link to={e.href} className="font-mono text-ink hover:underline">
                         GET {e.path}
-                      </Link>
+                      </Link>{" "}
                       <span className="ml-1.5 text-muted">{e.api}</span>
                     </li>
                   ))}
@@ -164,7 +164,7 @@ function Config({ v }: { v: Stream | undefined }) {
                           <span className="mt-0.5 block font-mono text-[11px] text-faint">{r.path}</span>
                         </dt>
                         <dd className="min-w-0">
-                          <span className="font-mono break-all text-ink">{r.value}</span>
+                          <span className="font-mono break-all text-ink">{r.value}</span>{" "}
                           {r.default && (
                             <span className="ml-2 rounded-card border border-line px-1 py-px text-[0.65rem] text-muted uppercase" title={t("config.default.tip")}>
                               {t("config.default")}

@@ -27,18 +27,18 @@ function Changes({ changes }: { changes: Change[] }) {
           <li key={c.at + c.runId} className="px-3.5 py-2 text-[12px]">
             <span className="font-mono text-muted tabular-nums">
               <ShortStamp at={c.at} />
-            </span>
+            </span>{" "}
             {c.runId !== "" && (
               <Link to={`/runs/${c.runId}`} className={`ml-2 font-mono ${linkUnderline}`}>
                 {short(c.runId)}
               </Link>
-            )}
-            {c.first ? <span className="ml-2 text-muted">{t("config.first_recorded")}</span> : c.earlier ? <span className="ml-2 text-muted">{t("config.earlier")}</span> : null}
+            )}{" "}
+            {c.first ? <span className="ml-2 text-muted">{t("config.first_recorded")}</span> : c.earlier ? <span className="ml-2 text-muted">{t("config.earlier")}</span> : null}{" "}
             {c.lines.length > 0 && (
               <ul className="mt-1 space-y-0.5">
                 {c.lines.map((l) => (
                   <li key={l.path}>
-                    <span className="font-mono text-muted">{l.path}</span>
+                    <span className="font-mono text-muted">{l.path}</span>{" "}
                     <span className="ml-2 font-mono break-all text-ink">{l.text}</span>
                   </li>
                 ))}
@@ -217,7 +217,7 @@ function Body({ workflow, step, d }: { workflow: string; step: string; d: LoadDe
               <li key={e.href}>
                 <Link to={e.href} className="font-mono text-ink hover:underline">
                   GET {e.path}
-                </Link>
+                </Link>{" "}
                 <span className="ml-1.5 text-muted">{e.api}</span>
               </li>
             ))}

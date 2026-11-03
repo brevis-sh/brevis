@@ -91,24 +91,24 @@ function One({ c }: { c: WriterConfig }) {
               <ol className="mt-2 space-y-2">
                 {c.changes.map((ch) => (
                   <li key={ch.at} className="text-xs">
-                    <span className="text-muted tabular-nums">{stamp(ch.at)}</span>
+                    <span className="text-muted tabular-nums">{stamp(ch.at)}</span>{" "}
                     {ch.runId && (
                       <Link to={`/runs/${ch.runId}`} className={`ml-2 font-mono ${linkUnderline}`}>
                         {t("config.run", { run: ch.runId.slice(0, 8) })}
                       </Link>
-                    )}
+                    )}{" "}
                     {ch.first && c.gateway ? (
                       <span className="ml-2 text-muted">{t("config.first_published")}</span>
                     ) : ch.first ? (
                       <span className="ml-2 text-muted">{t("config.first_recorded")}</span>
                     ) : ch.lines.length === 0 ? (
                       <span className="ml-2 text-muted">{t("config.earlier")}</span>
-                    ) : null}
+                    ) : null}{" "}
                     {ch.lines.length > 0 && (
                       <ul className="mt-1 space-y-0.5 pl-4">
                         {ch.lines.map((l) => (
                           <li key={l.path}>
-                            <span className="font-mono text-muted">{l.path}</span>
+                            <span className="font-mono text-muted">{l.path}</span>{" "}
                             <span className="ml-2 font-mono break-all text-ink">{l.text}</span>
                           </li>
                         ))}
