@@ -1,211 +1,242 @@
-import { Suspense, useDeferredValue } from "react";
-import { Link, useSearchParams } from "react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { getJSON } from "../api/client";
-import type { StreamRow, Streams } from "../api/ingest";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { useData } from "../api/live";
+import type { Streams, StreamRow } from "../api/ingest";
 import { useT } from "../i18n";
-import { QueryBoundary } from "../ui/boundary";
-import { LIVE } from "../ui/live";
+import { HowDrawer, HowSteps } from "../ui/how";
+import { Icon } from "../ui/icon";
+import { btn, Empty, FilterRow, Lead, MethodPill, PageHead, linkUnderline, Page } from "../ui/kit";
+import { Logo } from "../ui/logo";
 import { Place } from "../ui/place";
+import { SearchBox, Segmented } from "../ui/segmented";
 import { Skeleton } from "../ui/skeleton";
-import { StatusBadge } from "../ui/status";
-import { Rt, Td, Th } from "../ui/table";
-import "../ui/list.css";
-import "./streams.css";
+import { Status } from "../ui/status";
+import { Row, Table, Td, Th } from "../ui/table";
+import { useFilter, useSearchBox } from "../ui/use-filter";
 
-function withParam(params: URLSearchParams, key: string, value: string): string {
-  const next = new URLSearchParams(params);
-  if (value === "") next.delete(key);
-  else next.set(key, value);
-  const s = next.toString();
-  return s === "" ? "" : `?${s}`;
-}
+const FIELDS = ["kind", "q"] as const;
+type Filter = ReturnType<typeof useFilter>;
 
-function Row({ s }: { s: StreamRow }) {
+// The example the new-stream drawer shows: a stream as the gateway's file declares one, and how it reaches the console.
+const NEW_YAML = `streams:
+  #: What this stream is for, shown under its path.
+  - name: orders
+    path: /v1/orders
+    format: json
+    identity:
+      provider: acme
+      entity: order
+      source_key: order_id
+      record_ts: created_at
+    buffer:
+      flush:
+        every: 1m
+        records: 2000
+    sink:
+      type: bigquery
+      project: acme-prod
+      dataset: bronze
+      table: orders
+    dead_letter:
+      type: files
+      path: gs://acme-dead-letter/orders/`;
+const NEW_COMMANDS = `gateway describe -out gateway.json gateway.yaml
+brevis gateway publish gateway.json`;
+
+function Head() {
   const { t } = useT();
   return (
-    <tr role="row">
-      <Td head>
-        <Link to={s.href} className="row-link mono st-path">
-          <span className="st-method">POST</span>
-          <strong>{s.path}</strong>
-        </Link>
-        {s.note !== "" && (
-          <p className="muted st-note" title={s.note}>
-            {s.note}
-          </p>
-        )}
-      </Td>
-      <Td label={t("streams.col.flow")} col={2}>
-        <div className="st-flow">
-          <div className="place">
-            <span className="place-kind">
-              <span className="logo" aria-hidden="true">
-                →
+    <>
+      <Th edge="first">{t("streams.col.stream")}</Th>
+      <Th cls="max-[960px]:hidden">{t("streams.col.flow")}</Th>
+      <Th cls="max-[1180px]:hidden">{t("streams.col.batch")}</Th>
+      <Th>{t("streams.col.status")}</Th>
+      <Th cls="max-[1280px]:hidden">{t("streams.col.dead_letter")}</Th>
+      <Th edge="last" cls="w-8" />
+    </>
+  );
+}
+
+function Rows({ rows }: { rows: StreamRow[] }) {
+  const { t } = useT();
+  const navigate = useNavigate();
+  return (
+    <>
+      {rows.map((s) => (
+        <Row key={s.href} onOpen={() => navigate(s.href)}>
+          <Td edge="first">
+            <Link to={s.href} className="inline-flex items-center gap-2 font-mono text-[13px]">
+              <MethodPill method="POST" />
+              <span className="font-medium text-ink">{s.path}</span>
+            </Link>
+            {s.note && (
+              <p className="mt-1 max-w-[16rem] truncate text-[12px] text-muted" title={s.note}>
+                {s.note}
+              </p>
+            )}
+          </Td>
+          <Td cls="max-[960px]:hidden">
+            <div className="flex items-start gap-3">
+              <div className="min-w-0">
+                <span className="flex items-center gap-1.5 text-[12px] text-ink-2">
+                  <Logo k="gateway" />
+                  {t("streams.gateway")}
+                </span>
+                <p className="mt-0.5 font-mono text-[12px] text-ink">{s.gateway}</p>
+              </div>
+              <span className="mt-2 text-faint" aria-hidden="true">
+                &rarr;
               </span>
-              {t("streams.gateway")}
-            </span>
-            <p className="mono st-gw">{s.gateway}</p>
+              <Place p={s.sink} />
+            </div>
+          </Td>
+          <Td cls="text-[12.5px] text-ink-2 max-[1180px]:hidden">{s.batch || <span className="text-faint">—</span>}</Td>
+          <Td>
+            <Status kind="continuous" />
+          </Td>
+          <Td cls="max-[1280px]:hidden">{s.deadLetter ? <Place p={s.deadLetter} max="max-w-[12rem]" /> : <span className="text-faint">—</span>}</Td>
+          <Td edge="last" cls="text-right text-faint">
+            <Icon name="chevron-right" className="ml-auto h-4 w-4" />
+          </Td>
+        </Row>
+      ))}
+    </>
+  );
+}
+
+function SkeletonRows() {
+  return (
+    <>
+      {Array.from({ length: 3 }, (_, i) => (
+        <tr key={i} aria-hidden="true">
+          <Td edge="first"><Skeleton w="10rem" h="20px" /></Td>
+          <Td cls="max-[960px]:hidden"><Skeleton w="22rem" h="34px" /></Td>
+          <Td cls="max-[1180px]:hidden"><Skeleton w="7rem" h="18px" /></Td>
+          <Td><Skeleton w="5rem" h="18px" /></Td>
+          <Td cls="max-[1280px]:hidden"><Skeleton w="10rem" h="34px" /></Td>
+          <Td edge="last" />
+        </tr>
+      ))}
+    </>
+  );
+}
+
+function Search({ filter }: { filter: Filter }) {
+  const { t } = useT();
+  const [text, setText] = useSearchBox(filter.get("q"), (q) => filter.hrefWith({ q }));
+  return <SearchBox value={text} onChange={setText} label={t("streams.search")} />;
+}
+
+function StreamsData({ filter }: { filter: Filter }) {
+  const { t, n } = useT();
+  const qs = new URLSearchParams();
+  for (const f of FIELDS) if (filter.get(f)) qs.set(f, filter.get(f));
+  const q = useData<Streams>(["ingest", "streams", qs.toString()], `/api/ingest/streams${qs.size ? `?${qs}` : ""}`);
+  const v = q.data;
+  const kind = filter.get("kind");
+  return (
+    <>
+      {!v ? (
+        <Skeleton w="26rem" h="18px" className="mb-4 max-w-full" />
+      ) : (
+        v.total > 0 && (
+          <div className="mb-4 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[13px] text-muted">
+            <span>{n("streams.summary.streams", v.total)}</span>
+            <span>{n("streams.summary.gateways", v.gateways)}</span>
+            <Status kind="continuous" />
+            {v.withDeadLetter > 0 && <span>{n("streams.summary.dead_letter", v.withDeadLetter)}</span>}
           </div>
-          <span className="muted" aria-hidden="true">
-            →
-          </span>
-          <Place p={s.sink} />
-        </div>
-      </Td>
-      <Td label={t("streams.col.batch")} col={3}>
-        {s.batch !== "" ? s.batch : <span className="muted">—</span>}
-      </Td>
-      <Td label={t("streams.col.status")}>
-        <StatusBadge status="continuous" />
-      </Td>
-      <Td label={t("streams.col.dead_letter")} col={4}>
-        {s.deadLetter ? <Place p={s.deadLetter} /> : <span className="muted">—</span>}
-      </Td>
-    </tr>
+        )
+      )}
+      {(!v || v.total > 0) && (
+        <FilterRow>
+          <Search filter={filter} />
+          {v && v.kinds.length > 1 && (
+            <Segmented
+              label={t("streams.kind")}
+              choices={[
+                { key: "", label: t("streams.kind.all"), to: filter.hrefWith({ kind: "" }), current: kind === "" },
+                ...v.kinds.map((k) => ({
+                  key: k.key,
+                  label: (
+                    <>
+                      <Logo k={k.key} />
+                      {k.label}
+                    </>
+                  ),
+                  to: filter.hrefWith({ kind: k.key }),
+                  current: kind === k.key,
+                })),
+              ]}
+            />
+          )}
+        </FilterRow>
+      )}
+      <div aria-busy={q.isFetching}>
+        {q.isError ? (
+          <p role="alert" className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">
+            {(q.error as Error).message}
+          </p>
+        ) : v && v.rows.length === 0 ? (
+          <Empty msg={v.total > 0 ? t("streams.empty.filtered") : t("streams.empty")} hint={v.total > 0 ? undefined : "brevis gateway publish gateway.yaml"}>
+            {v.total > 0 && (
+              <Link to="/ingest/streams" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
+                {t("workflows.clear")}
+              </Link>
+            )}
+          </Empty>
+        ) : (
+          <Table id="stream-rows" head={<Head />}>
+            {v ? <Rows rows={v.rows} /> : <SkeletonRows />}
+          </Table>
+        )}
+      </div>
+    </>
   );
 }
 
 function HowItWorks() {
   const { t } = useT();
   return (
-    <ol className="st-how">
-      {(["post", "batch", "write"] as const).map((k, i) => (
-        <li key={k}>
-          <p className="muted st-how-step">{t(`streams.how.${i + 1}`)}</p>
-          <p>
-            <strong>{t(`streams.how.${k}`)}</strong>
-          </p>
-          <p className="muted">{t(`streams.how.${k}.text`)}</p>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function StreamsData({ query }: { query: string }) {
-  const { t, n } = useT();
-  const [params, setParams] = useSearchParams();
-  const { data: v } = useSuspenseQuery({
-    queryKey: ["ingest", "streams", query],
-    queryFn: ({ signal }) => getJSON<Streams>(`/api/ingest/streams${query}`, signal),
-    ...LIVE,
-  });
-  return (
-    <>
-      {v.total > 0 && (
-        <>
-          <p className="summary">
-            <span className="muted">{n("streams.summary.streams", v.total)}</span>
-            <span className="muted">{n("streams.summary.gateways", v.gateways)}</span>
-            <StatusBadge status="continuous" />
-            {v.withDeadLetter > 0 && <span className="muted">{n("streams.summary.dead_letter", v.withDeadLetter)}</span>}
-          </p>
-          <div className="toolbar">
-            <input
-              type="search"
-              className="search"
-              aria-label={t("streams.search")}
-              placeholder={t("streams.search")}
-              value={params.get("q") ?? ""}
-              onChange={(e) => setParams((p) => new URLSearchParams(withParam(p, "q", e.target.value).slice(1)), { replace: true })}
-            />
-          </div>
-        </>
-      )}
-      {v.kinds.length > 1 && (
-        <div className="chips" role="group" aria-label={t("streams.kind")}>
-          <Link className="chip" to={{ search: withParam(params, "kind", "") }} aria-current={v.filter.kind === ""}>
-            {t("streams.kind.all")}
-          </Link>
-          {v.kinds.map((k) => (
-            <Link key={k.key} className="chip" to={{ search: withParam(params, "kind", k.key) }} aria-current={v.filter.kind === k.key}>
-              {k.label}
-            </Link>
-          ))}
-        </div>
-      )}
-      {v.rows.length === 0 ? (
-        <div className="empty">
-          {v.total > 0 ? (
-            <>
-              <p>{t("streams.empty.filtered")}</p>
-              <Link to={{ search: "" }}>{t("workflows.clear")}</Link>
-            </>
-          ) : (
-            <>
-              <p>{t("streams.empty")}</p>
-              <p className="mono">brevis gateway publish gateway.yaml</p>
-            </>
-          )}
-        </div>
-      ) : (
-        <Rt
-          label={t("streams.title")}
-          head={
-            <>
-              <Th>{t("streams.col.stream")}</Th>
-              <Th col={2}>{t("streams.col.flow")}</Th>
-              <Th col={3}>{t("streams.col.batch")}</Th>
-              <Th>{t("streams.col.status")}</Th>
-              <Th col={4}>{t("streams.col.dead_letter")}</Th>
-            </>
-          }
-        >
-          {v.rows.map((s) => (
-            <Row key={s.href} s={s} />
-          ))}
-        </Rt>
-      )}
-      <HowItWorks />
-    </>
-  );
-}
-
-function Head() {
-  const { t } = useT();
-  return (
-    <>
-      <h1 className="page-title">{t("streams.title")}</h1>
-      <p className="lede">
-        {t("streams.lead.before")} <strong>{t("streams.lead.strong")}</strong>
-        {t("streams.lead.after")}
-      </p>
-    </>
-  );
-}
-
-export function StreamsSkeleton() {
-  return (
-    <div aria-busy="true" aria-label="Loading">
-      <Skeleton w="30%" h="1.5rem" />
-      <div style={{ height: ".9rem" }} />
-      <Skeleton w="60%" h=".9rem" />
-      <div className="summary">
-        <Skeleton w="18rem" h="1rem" />
-      </div>
-      <Skeleton w="min(24rem, 100%)" h="2.25rem" />
-      <div className="st-sk-rows">
-        {Array.from({ length: 5 }, (_, i) => (
-          <Skeleton key={i} h="3.6rem" />
-        ))}
-      </div>
-    </div>
+    <HowSteps
+      steps={(["post", "batch", "write"] as const).map((k, i) => ({
+        kicker: t(`streams.how.${i + 1}`),
+        title: t(`streams.how.${k}`),
+        text: t(`streams.how.${k}.text`),
+      }))}
+    />
   );
 }
 
 export default function StreamsRoute() {
-  const [params] = useSearchParams();
-  const search = params.toString();
-  const deferred = useDeferredValue(search);
+  const { t } = useT();
+  const filter = useFilter(FIELDS, "/ingest/streams");
+  const [drawer, setDrawer] = useState(false);
   return (
-    <QueryBoundary>
-      <Suspense fallback={<StreamsSkeleton />}>
-        <Head />
-        <div aria-busy={search !== deferred}>
-          <StreamsData query={deferred === "" ? "" : `?${deferred}`} />
-        </div>
-      </Suspense>
-    </QueryBoundary>
+    <Page>
+      <PageHead
+        title={t("streams.title")}
+        actions={
+          <button type="button" className={btn(true)} aria-haspopup="dialog" onClick={() => setDrawer(true)}>
+            <Icon name="plus" className="h-3.5 w-3.5" />
+            {t("streams.new")}
+          </button>
+        }
+      />
+      <Lead before={t("streams.lead.before")} strong={t("streams.lead.strong")} after={t("streams.lead.after")} />
+      <StreamsData filter={filter} />
+      <HowItWorks />
+      <HowDrawer
+        open={drawer}
+        onClose={() => setDrawer(false)}
+        title={t("streams.new")}
+        lead={t("streams.new.lead")}
+        blocks={[
+          { title: t("streams.new.declare"), text: NEW_YAML },
+          { title: t("streams.new.publish"), text: NEW_COMMANDS },
+        ]}
+        note={t("streams.new.note")}
+      />
+    </Page>
   );
 }

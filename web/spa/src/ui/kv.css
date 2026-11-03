@@ -1,5 +1,0 @@
-.kv { margin: 0; display: grid; gap: .65rem; }
-.kv > div { display: grid; gap: .1rem; min-width: 0; }
-.kv dt { color: var(--muted); font-size: .8rem; }
-.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
-@media (min-width: 480px) { .kv > div { grid-template-columns: 9rem minmax(0, 1fr); gap: 1rem; } }

@@ -1,8 +1,0 @@
-.code { position: relative; }
-.code pre { margin: 0; padding: .65rem 4.5rem .65rem .75rem; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid var(--line); border-radius: .5rem; background: var(--card); font: .75rem/1.5 ui-monospace, monospace; }
-.code .btn { position: absolute; top: .35rem; right: .35rem; }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2rem; padding: 0 .75rem; border: 1px solid var(--line); border-radius: .45rem; background: var(--bg); color: var(--fg); font: inherit; font-size: .8rem; text-decoration: none; cursor: pointer; }
-.btn:hover { border-color: var(--muted); }
-.btn:focus-visible { outline: 2px solid var(--st-info); outline-offset: 1px; }
-.btn-primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-.btn-quiet { min-height: 1.75rem; padding: 0 .55rem; font-size: .72rem; }

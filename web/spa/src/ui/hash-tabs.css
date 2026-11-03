@@ -1,4 +1,0 @@
-.hash-tabs [role="tablist"] { display: flex; gap: .25rem; overflow-x: auto; border-bottom: 1px solid var(--line); margin-bottom: .75rem; }
-.hash-tabs [role="tab"] { appearance: none; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer; font: inherit; padding: .5rem .75rem; white-space: nowrap; }
-.hash-tabs [role="tab"][aria-selected="true"] { color: var(--fg); border-bottom-color: var(--fg); }
-.hash-tabs [role="tab"]:focus-visible { outline: 2px solid var(--fg); outline-offset: -2px; }

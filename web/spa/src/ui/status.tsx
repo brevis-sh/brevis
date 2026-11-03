@@ -79,3 +79,12 @@ export function StatusBadge({ status }: { status: string }) {
 // things as RetryMark and useStatusWord, kept as aliases so there is one of each.
 export const Retry = RetryMark;
 export const useStateWord = useStatusWord;
+
+/** A destination's or writer's status against its schedule (the catalog's names, "unscheduled" included). */
+export function Freshness({ status }: { status: string }) {
+  return <Status kind={freshnessKind(status)} />;
+}
+
+export function FreshnessMark({ status }: { status: string }) {
+  return <StatusMark kind={freshnessKind(status)} />;
+}

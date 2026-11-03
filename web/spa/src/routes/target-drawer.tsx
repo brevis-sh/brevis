@@ -1,12 +1,16 @@
 import type { UseQueryResult } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
 import { useT } from "../i18n";
-import { Freshness, StatusMark } from "../ui/freshness";
+import { CopyButton } from "../ui/copy";
+import { Icon } from "../ui/icon";
+import { ButtonLink } from "../ui/kit";
+import { Logo, useLogoTitle } from "../ui/logo";
 import { Skeleton } from "../ui/skeleton";
+import { LoadBars } from "../ui/sparkline";
+import { Freshness, FreshnessMark } from "../ui/status";
 import type { CatalogRow } from "./catalog";
 import { Configurations, type WriterConfig } from "./target-config";
-import "../ui/code-block.css";
 
 type Writer = {
   name: string;
@@ -29,88 +33,47 @@ export type TargetDetail = {
   sql: boolean;
 };
 
-/**
- * A destination's loads, oldest first, each bar a link to its run, then the
- * slots that went by without a load as dashed bars. A load that did not say
- * its rows is hollow at full height, never a zero; one that wrote zero is a
- * red sliver.
- */
-function LoadBars({ bars, missed }: { bars: TargetDetail["bars"]; missed: number }) {
-  const { t } = useT();
-  const n = bars.length + missed;
-  if (n === 0) return <p className="cat-muted">{t("bars.none")}</p>;
-  const H = 96, gap = 3;
-  const width = Math.max(200, n * 14 + (n - 1) * gap);
-  const bw = (width - gap * (n - 1)) / n;
-  const top = Math.max(0, ...bars.map((b) => b.rows ?? 0));
-  return (
-    <svg className="dc-loads" viewBox={`0 0 ${width} ${H}`} preserveAspectRatio="none" role="img" aria-label={t("bars.label")} style={{ maxWidth: `${(width * 25) / 17}px` }}>
-      {bars.map((b, i) => {
-        const x = i * (bw + gap);
-        let shape;
-        if (b.rows === null) {
-          shape = <rect x={x} y={1} width={bw} height={H - 2} fill="none" stroke="var(--muted)" strokeWidth={1} />;
-        } else {
-          const h = top > 0 ? Math.max(2, (b.rows / top) * (H - 2)) : 2;
-          shape = <rect x={x} y={H - h} width={bw} height={h} fill={b.rows === 0 ? "var(--st-bad)" : "var(--accent-bar)"} />;
-        }
-        return (
-          <a key={i} href={b.href}>
-            <title>{b.title}</title>
-            {shape}
-          </a>
-        );
-      })}
-      {Array.from({ length: missed }, (_, i) => (
-        <rect key={`m${i}`} x={(bars.length + i) * (bw + gap)} y={1} width={bw} height={H - 2} fill="none" stroke="var(--st-bad)" strokeWidth={1} strokeDasharray="3 2" />
-      ))}
-    </svg>
-  );
-}
+const h3 = "mb-2 text-[12.5px] font-semibold text-ink";
 
-function DrawerSkeleton() {
-  return (
-    <div className="dc-drawer-body" aria-busy="true">
-      <Skeleton h="5rem" />
-      <Skeleton h="5rem" />
-      <Skeleton h="3rem" />
-      <Skeleton h="8rem" />
-    </div>
-  );
-}
-
-function Body({ d }: { d: TargetDetail }) {
+/** The writers, the loads, what reads it, how each writer is configured: what comes from the data, under headings that do not. */
+function Body({ d, u }: { d: TargetDetail | undefined; u: string }) {
   const { t } = useT();
   return (
-    <div className="dc-drawer-body">
-      {d.writers.map((w) => (
-        <section key={w.name} className="dc-writer-card">
-          <div className="dc-writer-head">
-            <StatusMark kind={w.status} />
-            <a href={w.href}>{w.name}</a>
-            {w.cron && <span className="cat-muted">{w.cron}</span>}
-            {w.runInFlight && (
-              <a className="dc-run" href={`/runs/${w.runInFlight}`}>
-                {t("catalog.drawer.queued")} →
-              </a>
-            )}
-          </div>
-          {w.reason && <p className="dc-why">{w.reason}</p>}
-        </section>
-      ))}
+    <div className="dialog-body space-y-4">
+      {d
+        ? d.writers.map((w) => (
+            <section key={w.name} className="rounded-card border border-line bg-surface">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-line-soft px-3.5 py-2.5">
+                <FreshnessMark status={w.status} />
+                <Link to={w.href} className="font-mono text-[12.5px] font-medium text-ink hover:underline">
+                  {w.name}
+                </Link>
+                {w.cron && <span className="text-[12px] text-muted">{w.cron}</span>}
+                {w.runInFlight && (
+                  <Link to={`/runs/${w.runInFlight}`} className="ml-auto rounded-card border border-line px-2 py-0.5 text-[12px] text-ink hover:bg-hover">
+                    {t("catalog.drawer.queued")} &rarr;
+                  </Link>
+                )}
+              </div>
+              {w.reason && <p className="px-3.5 py-2.5 text-[12.5px] text-ink-2">{w.reason}</p>}
+            </section>
+          ))
+        : [0, 1].map((i) => <Skeleton key={i} h="4.5rem" className="rounded-card" />)}
       <section>
-        <h3 className="dc-h3">{t("catalog.drawer.loads")}</h3>
-        <LoadBars bars={d.bars} missed={d.missed} />
-        <p className="cat-muted dc-legend">{t("catalog.drawer.legend")}</p>
+        <h3 className={h3}>{t("catalog.drawer.loads")}</h3>
+        {d ? <LoadBars bars={d.bars} missed={d.missed} /> : <Skeleton w="14rem" h="2.75rem" />}
+        <p className="mt-1.5 text-[11.5px] text-faint">{t("catalog.drawer.legend")}</p>
       </section>
-      {d.readBy.length > 0 && (
+      {d && d.readBy.length > 0 && (
         <section>
-          <h3 className="dc-h3">{t("catalog.drawer.read_by")}</h3>
-          <ul className="dc-readby">
+          <h3 className={h3}>{t("catalog.drawer.read_by")}</h3>
+          <ul className="space-y-1 text-[12.5px]">
             {d.readBy.map((e) => (
               <li key={e.api + e.name}>
-                <Link to={`/data/endpoints/${encodeURIComponent(e.api)}/${encodeURIComponent(e.name)}`}>GET {e.path}</Link>{" "}
-                <span className="cat-muted">
+                <Link to={`/data/endpoints/${encodeURIComponent(e.api)}/${encodeURIComponent(e.name)}`} className="font-mono text-ink hover:underline">
+                  GET {e.path}
+                </Link>
+                <span className="ml-1.5 text-muted">
                   {e.api} · {t("catalog.drawer.cache")}
                 </span>
               </li>
@@ -118,8 +81,10 @@ function Body({ d }: { d: TargetDetail }) {
           </ul>
         </section>
       )}
-      <Configurations configs={d.configs} />
-      <p className="cat-muted dc-fine">{t("catalog.drawer.credentials")}</p>
+      {d ? <Configurations configs={d.configs} /> : <Skeleton h="9rem" className="rounded-card" />}
+      <p className="text-[11.5px] text-faint" data-u={u}>
+        {t("catalog.drawer.credentials")}
+      </p>
     </div>
   );
 }
@@ -130,9 +95,9 @@ function Body({ d }: { d: TargetDetail }) {
  */
 export default function TargetDrawer({ u, query, closeTo }: { u: string; query: UseQueryResult<TargetDetail>; closeTo: string }) {
   const { t } = useT();
+  const logoTitle = useLogoTitle();
   const navigate = useNavigate();
   const ref = useRef<HTMLDialogElement>(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
@@ -141,19 +106,10 @@ export default function TargetDrawer({ u, query, closeTo }: { u: string; query: 
   }, []);
 
   const d = query.data;
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(u);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* no clipboard: the destination above is selectable */
-    }
-  };
   return (
     <dialog
       ref={ref}
-      className="dc-drawer"
+      className="drawer"
       aria-labelledby="target-title"
       onCancel={(e) => {
         e.preventDefault();
@@ -163,46 +119,53 @@ export default function TargetDrawer({ u, query, closeTo }: { u: string; query: 
         if (e.target === ref.current) navigate(closeTo);
       }}
     >
-      <div className="dc-drawer-in">
-        <header className="dc-drawer-head">
-          <div style={{ minWidth: 0 }}>
-            <p className="dc-kicker">{d ? t("catalog.drawer.kicker", { kind: d.row.kind || "file" }) : <Skeleton w="8rem" h=".7rem" />}</p>
-            <h2 id="target-title" className="dc-uri">
+      <header className="dialog-head">
+        <div className="flex min-w-0 items-start gap-3">
+          {d ? <Logo k={d.row.kind || "file"} size={40} /> : <Skeleton w="40px" h="40px" className="shrink-0 rounded-card" />}
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium tracking-[0.08em] text-muted uppercase">
+              {d ? t("catalog.drawer.kicker", { kind: logoTitle(d.row.kind || "file") }) : <Skeleton w="8rem" h=".7rem" />}
+            </p>
+            <h2 id="target-title" className="font-mono text-[14px] font-semibold break-all text-ink">
               {u}
             </h2>
-            {d ? (
-              <p className="cat-muted" style={{ margin: 0, fontSize: ".75rem", display: "flex", flexWrap: "wrap", gap: ".5rem" }}>
-                <Freshness status={d.row.status} />
-                <span>{t("catalog.drawer.best")}</span>
-              </p>
-            ) : (
-              <Skeleton w="6rem" h="1rem" />
-            )}
+            <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-[12px] text-muted">
+              {d ? (
+                <>
+                  <Freshness status={d.row.status} />
+                  <span>{t("catalog.drawer.best")}</span>
+                </>
+              ) : (
+                <Skeleton w="6rem" h="1rem" />
+              )}
+            </p>
           </div>
-          <Link to={closeTo} className="dc-close" aria-label={t("dialog.close")}>
-            ×
-          </Link>
-        </header>
-        {query.isError ? (
-          <div className="dc-drawer-body">
-            <p role="alert">{(query.error as Error).message}</p>
-          </div>
-        ) : d ? (
-          <Body d={d} />
-        ) : (
-          <DrawerSkeleton />
+        </div>
+        <Link
+          to={closeTo}
+          aria-label={t("dialog.close")}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-card text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+        >
+          <Icon name="x" className="h-4 w-4" />
+        </Link>
+      </header>
+      {query.isError ? (
+        <div className="dialog-body">
+          <p role="alert" className="text-sm text-muted">
+            {(query.error as Error).message}
+          </p>
+        </div>
+      ) : (
+        <Body d={d} u={u} />
+      )}
+      <footer className="dialog-foot">
+        {d?.sql && (
+          <ButtonLink to={`/sql?target=${encodeURIComponent(u)}`} icon="terminal">
+            {t("catalog.drawer.query")}
+          </ButtonLink>
         )}
-        <footer className="dc-drawer-foot">
-          {d?.sql && (
-            <a className="btn" href={`/sql?target=${encodeURIComponent(u)}`}>
-              {t("catalog.drawer.query")}
-            </a>
-          )}
-          <button type="button" className="btn btn-primary" onClick={copy} aria-live="polite">
-            {copied ? "✓" : t("catalog.drawer.copy")}
-          </button>
-        </footer>
-      </div>
+        <CopyButton text={u} label={t("catalog.drawer.copy")} primary />
+      </footer>
     </dialog>
   );
 }

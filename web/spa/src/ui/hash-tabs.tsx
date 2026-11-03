@@ -1,7 +1,6 @@
 import { useState, type KeyboardEvent, type ReactNode } from "react";
-import "./hash-tabs.css";
 
-export type HashTab = { key: string; label: ReactNode; panel: ReactNode };
+export type HashTab = { key: string; label: ReactNode; count?: number; panel: ReactNode };
 
 function fromHash(tabs: HashTab[]): string {
   const h = location.hash.slice(1);
@@ -27,8 +26,9 @@ export function HashTabs({ label, tabs, id }: { label: string; tabs: HashTab[]; 
   };
 
   return (
-    <div className="hash-tabs">
-      <div role="tablist" aria-label={label} onKeyDown={onKey}>
+    <div>
+      <div className="px-2 pt-1">
+      <div role="tablist" aria-label={label} onKeyDown={onKey} className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-line-soft">
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -39,10 +39,13 @@ export function HashTabs({ label, tabs, id }: { label: string; tabs: HashTab[]; 
             aria-controls={`${id}-panel-${t.key}`}
             tabIndex={t.key === current ? 0 : -1}
             onClick={() => pick(t.key)}
+            className="-mb-px shrink-0 border-b-2 border-transparent px-3 py-2 text-[0.82rem] whitespace-nowrap text-muted transition-colors duration-150 hover:text-ink aria-selected:border-ink aria-selected:text-ink"
           >
             {t.label}
+            {t.count ? <span className="ml-1.5 font-mono text-[11px] text-faint tabular-nums">{t.count}</span> : null}
           </button>
         ))}
+      </div>
       </div>
       {tabs.map((t) => (
         <div

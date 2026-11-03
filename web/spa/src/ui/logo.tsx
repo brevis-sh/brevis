@@ -33,13 +33,19 @@ function useMarks() {
   return marks;
 }
 
-export function Logo({ k, size = 18 }: { k: string; size?: 18 | 28 | 40 }) {
+/** A key's name for a reader and a screen reader: a brand is its own name in every language; "file" and "gateway" are words, translated. */
+export function useLogoTitle() {
   const { t } = useT();
+  return (k: string) => (k === "file" || k === "gateway" ? t(`logo.${k}`) : (MARKS[k]?.[0] ?? MONOGRAMS[k]?.[0] ?? k));
+}
+
+export function Logo({ k, size = 18, title: given }: { k: string; size?: 18 | 28 | 40; title?: string }) {
+  const name = useLogoTitle()(k);
   const marks = useMarks();
   const mark = MARKS[k];
   const mono = MONOGRAMS[k];
   const letters = [...k].filter((c) => /\p{L}/u.test(c)).slice(0, 2).join("").toUpperCase();
-  const title = k === "file" || k === "gateway" ? t(`logo.${k}`) : (mark?.[0] ?? mono?.[0] ?? k);
+  const title = given ?? name;
   if (mark) {
     return (
       <span className={`cg cg-${size} ${mark[1]}`} role="img" aria-label={title} title={title} dangerouslySetInnerHTML={{ __html: marks?.[k] ?? "" }} />

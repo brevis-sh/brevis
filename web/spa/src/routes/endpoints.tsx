@@ -1,14 +1,16 @@
-import { Suspense } from "react";
-import { Link } from "react-router";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { useData } from "../api/live";
 import { useFormat, useT, type Vars } from "../i18n";
-import { StatusMark } from "../ui/freshness";
-import { KindMark } from "../ui/kind-mark";
+import { HowDrawer, HowSteps } from "../ui/how";
+import { btn, Empty, FilterRow, Lead, MethodPill, PageHead, linkUnderline, Page } from "../ui/kit";
+import { Icon } from "../ui/icon";
+import { Logo } from "../ui/logo";
 import { SearchBox, Segmented } from "../ui/segmented";
 import { Skeleton } from "../ui/skeleton";
-import { Table, Td, Th } from "../ui/cat-table";
+import { FreshnessMark } from "../ui/status";
+import { Row, Table, Td, Th } from "../ui/table";
 import { useFilter, useSearchBox } from "../ui/use-filter";
-import "./endpoints.css";
 
 export type EndpointRow = {
   api: string;
@@ -37,6 +39,28 @@ type Endpoints = {
 };
 
 const FIELDS = ["api", "state", "q"] as const;
+type Filter = ReturnType<typeof useFilter>;
+
+// The example the publish drawer shows: an API's file with one endpoint, and how it reaches the console.
+const PUBLISH_YAML = `name: metrics-api
+connection: warehouse
+
+cache:
+  type: redis
+  addr_from: BREVIS_CACHE_ADDR
+  ttl: 6h
+
+endpoints:
+  #: Clicks per day, for the customer's dashboard.
+  - name: clicks
+    path: /v1/clicks
+    tenant: key
+    params:
+      start_date: {type: date, required: true}
+      end_date: {type: date, required: true}
+    sql_file: endpoints/clicks.sql`;
+const PUBLISH_COMMANDS = `brevis-sql-api describe --config api.yaml --out manifest.json
+brevis endpoints publish manifest.json`;
 
 export const endpointHref = (r: { api: string; name: string }) => `/data/endpoints/${encodeURIComponent(r.api)}/${encodeURIComponent(r.name)}`;
 
@@ -45,20 +69,20 @@ export function EndpointFreshness({ value }: { value: string }) {
   const { t } = useT();
   if (value === "stale")
     return (
-      <span className="cat-st ep-stale">
-        <StatusMark kind="stale" />
+      <span className="inline-flex items-center gap-1.5 text-[12.5px] text-state-queued">
+        <FreshnessMark status="stale" />
         {t("endpoints.state.stale")}
       </span>
     );
   if (value === "fresh")
     return (
-      <span className="cat-st ep-fresh">
-        <StatusMark kind="on_time" />
+      <span className="inline-flex items-center gap-1.5 text-[12.5px] text-state-success">
+        <FreshnessMark status="on_time" />
         {t("endpoints.state.fresh")}
       </span>
     );
   return (
-    <span className="cat-muted" title={t("endpoints.state.unknown.tip")}>
+    <span className="text-[12.5px] text-faint" title={t("endpoints.state.unknown.tip")}>
       {t("endpoints.state.unknown")}
     </span>
   );
@@ -75,6 +99,9 @@ export const splitTarget = (t: string): [string, string] => {
   return [t.slice(0, i + 1), t.slice(i + 1)];
 };
 
+/** The scheme of a destination URI, which is the kind whose mark draws it. */
+export const kindOf = (uri: string) => (uri.includes("://") ? uri.slice(0, uri.indexOf("://")) : "");
+
 /** "8 · 2 required", or how many when none is required. */
 export function useParamsSaid() {
   const { t } = useT();
@@ -82,173 +109,134 @@ export function useParamsSaid() {
     params === 0 ? t("endpoints.params.none") : required > 0 ? t("endpoints.params.required", { n: params, required } satisfies Vars) : String(params);
 }
 
-function EndpointsTable({ rows }: { rows: EndpointRow[] }) {
+function Head() {
+  const { t } = useT();
+  return (
+    <>
+      <Th edge="first">{t("endpoints.col.endpoint")}</Th>
+      <Th cls="max-[1280px]:hidden">{t("endpoints.col.api")}</Th>
+      <Th cls="max-[960px]:hidden">{t("endpoints.col.reads")}</Th>
+      <Th cls="max-[1180px]:hidden">{t("endpoints.col.cache")}</Th>
+      <Th cls="max-[1180px]:hidden">{t("endpoints.col.params")}</Th>
+      <Th>{t("endpoints.col.status")}</Th>
+      <Th cls="max-[1280px]:hidden">{t("endpoints.col.published")}</Th>
+      <Th edge="last" cls="w-8" />
+    </>
+  );
+}
+
+function Rows({ rows }: { rows: EndpointRow[] }) {
   const { t } = useT();
   const f = useFormat();
+  const navigate = useNavigate();
   const paramsSaid = useParamsSaid();
   return (
-    <Table id="endpoint-rows">
-      <thead>
-        <tr>
-          <Th>{t("endpoints.col.endpoint")}</Th>
-          <Th hide="xl">{t("endpoints.col.api")}</Th>
-          <Th hide="md">{t("endpoints.col.reads")}</Th>
-          <Th hide="lg">{t("endpoints.col.cache")}</Th>
-          <Th hide="lg">{t("endpoints.col.params")}</Th>
-          <Th>{t("endpoints.col.status")}</Th>
-          <Th hide="xl">{t("endpoints.col.published")}</Th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => {
-          const first = r.reads[0] ?? "";
-          const [where, what] = splitTarget(first);
-          const kind = first.includes("://") ? first.slice(0, first.indexOf("://")) : "";
-          return (
-            <tr key={r.api + "/" + r.name}>
-              <Td>
-                <Link to={endpointHref(r)} className="ep-path">
-                  <span className="method">GET</span>
-                  <strong>{r.path}</strong>
-                </Link>
-                {r.about && (
-                  <p className="ep-about cat-muted" title={r.about}>
-                    {r.about}
-                  </p>
-                )}
-              </Td>
-              <Td label={t("endpoints.col.api")} hide="xl">
-                <span className="chip ep-api">{r.api}</span>
-              </Td>
-              <Td label={t("endpoints.col.reads")} hide="md">
-                {r.reads.length > 0 && (
-                  <div className="ep-reads">
-                    <p title={first}>
-                      <KindMark kind={kind} />
-                      <span className="ep-where">{where}</span>
-                      <span>{what}</span>
-                      {r.reads.length > 1 && (
-                        <span className="cat-muted" title={r.reads.slice(1).join("\n")}>
-                          +{r.reads.length - 1}
-                        </span>
-                      )}
-                    </p>
-                    {r.rebuilt && (
-                      <small className="cat-muted">{t("endpoints.rebuilt", { when: f.since(r.rebuilt.at), by: r.rebuilt.by })}</small>
+    <>
+      {rows.map((r) => {
+        const first = r.reads[0] ?? "";
+        const [where, what] = splitTarget(first);
+        const href = endpointHref(r);
+        return (
+          <Row key={r.api + "/" + r.name} onOpen={() => navigate(href)}>
+            <Td edge="first">
+              <Link to={href} className="inline-flex items-center gap-2 font-mono text-[13px]">
+                <MethodPill method="GET" />
+                <span className="font-medium text-ink">{r.path}</span>
+              </Link>
+              {r.about && (
+                <p className="mt-1 max-w-[22rem] truncate text-[12px] text-muted" title={r.about}>
+                  {r.about}
+                </p>
+              )}
+            </Td>
+            <Td cls="max-[1280px]:hidden">
+              <span className="rounded-card border border-line px-1.5 py-px font-mono text-[11.5px] text-ink-2">{r.api}</span>
+            </Td>
+            <Td cls="max-[960px]:hidden">
+              {r.reads.length > 0 && (
+                <div className="max-w-[18rem] min-w-0">
+                  <p className="flex min-w-0 items-center gap-1.5 font-mono text-[12px]" title={first}>
+                    <Logo k={kindOf(first)} />
+                    <span className="truncate text-faint">{where}</span>
+                    <span className="shrink-0 text-ink">{what}</span>
+                    {r.reads.length > 1 && (
+                      <span className="shrink-0 font-sans text-[11.5px] text-muted" title={r.reads.slice(1).join("\n")}>
+                        +{r.reads.length - 1}
+                      </span>
                     )}
-                  </div>
-                )}
-              </Td>
-              <Td label={t("endpoints.col.cache")} hide="lg" className="ep-nowrap">
-                {r.ttl ? t("endpoints.ttl", { ttl: r.ttl }) : <span className="cat-muted">—</span>}
-              </Td>
-              <Td label={t("endpoints.col.params")} hide="lg" className="ep-nowrap">
-                {paramsSaid(r.params, r.required)}
-              </Td>
-              <Td label={t("endpoints.col.status")} className="ep-nowrap">
-                <EndpointFreshness value={r.freshness} />
-              </Td>
-              <Td label={t("endpoints.col.published")} hide="xl" className="cat-muted ep-nowrap">
-                {f.since(r.publishedAt)}
-              </Td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </Table>
+                  </p>
+                  {r.rebuilt && <p className="mt-0.5 truncate text-[11.5px] text-muted">{t("endpoints.rebuilt", { when: f.since(r.rebuilt.at), by: r.rebuilt.by })}</p>}
+                </div>
+              )}
+            </Td>
+            <Td cls="text-[12.5px] whitespace-nowrap text-ink-2 max-[1180px]:hidden">
+              {r.ttl ? t("endpoints.ttl", { ttl: r.ttl }) : <span className="text-faint">—</span>}
+            </Td>
+            <Td cls="text-[12.5px] whitespace-nowrap text-ink-2 max-[1180px]:hidden">{paramsSaid(r.params, r.required)}</Td>
+            <Td cls="whitespace-nowrap">
+              <EndpointFreshness value={r.freshness} />
+            </Td>
+            <Td cls="text-xs whitespace-nowrap text-muted max-[1280px]:hidden">{f.since(r.publishedAt)}</Td>
+            <Td edge="last" cls="text-right text-faint">
+              <Icon name="chevron-right" className="ml-auto h-4 w-4" />
+            </Td>
+          </Row>
+        );
+      })}
+    </>
   );
 }
 
-/** The same columns and row height as the list, while the first answer arrives. */
-export function EndpointsSkeleton() {
+/** The rows' shape while the first answer is on its way: the same cells at the same height. */
+function SkeletonRows() {
   return (
-    <div aria-busy="true" aria-label="Loading">
-      <Skeleton w="60%" h=".9rem" className="ep-sk-line" />
-      <Skeleton w="24rem" h="2.25rem" className="ep-sk-line" />
-      <Table>
-        <thead>
-          <tr>
-            <Th>
-              <Skeleton w="5rem" h=".7rem" />
-            </Th>
-            <Th hide="xl">
-              <Skeleton w="3rem" h=".7rem" />
-            </Th>
-            <Th hide="md">
-              <Skeleton w="3rem" h=".7rem" />
-            </Th>
-            <Th hide="lg">
-              <Skeleton w="3rem" h=".7rem" />
-            </Th>
-            <Th hide="lg">
-              <Skeleton w="3rem" h=".7rem" />
-            </Th>
-            <Th>
-              <Skeleton w="3rem" h=".7rem" />
-            </Th>
-            <Th hide="xl">
-              <Skeleton w="3rem" h=".7rem" />
-            </Th>
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from({ length: 5 }, (_, i) => (
-            <tr key={i}>
-              <Td>
-                <Skeleton w="12rem" h="1rem" />
-                <Skeleton w="16rem" h=".7rem" className="ep-sk-sub" />
-              </Td>
-              <Td hide="xl">
-                <Skeleton w="5rem" h="1rem" />
-              </Td>
-              <Td hide="md">
-                <Skeleton w="12rem" h="1rem" />
-              </Td>
-              <Td hide="lg">
-                <Skeleton w="4rem" h="1rem" />
-              </Td>
-              <Td hide="lg">
-                <Skeleton w="3rem" h="1rem" />
-              </Td>
-              <Td>
-                <Skeleton w="5rem" h="1rem" />
-              </Td>
-              <Td hide="xl">
-                <Skeleton w="4rem" h="1rem" />
-              </Td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-    </div>
+    <>
+      {Array.from({ length: 4 }, (_, i) => (
+        <tr key={i} aria-hidden="true">
+          <Td edge="first">
+            <Skeleton w="12rem" h="20px" />
+            <Skeleton w="16rem" h="14px" className="mt-1" />
+          </Td>
+          <Td cls="max-[1280px]:hidden"><Skeleton w="5rem" h="20px" /></Td>
+          <Td cls="max-[960px]:hidden"><Skeleton w="12rem" h="18px" /></Td>
+          <Td cls="max-[1180px]:hidden"><Skeleton w="4rem" h="18px" /></Td>
+          <Td cls="max-[1180px]:hidden"><Skeleton w="3rem" h="18px" /></Td>
+          <Td><Skeleton w="5rem" h="18px" /></Td>
+          <Td cls="max-[1280px]:hidden"><Skeleton w="4rem" h="18px" /></Td>
+          <Td edge="last" />
+        </tr>
+      ))}
+    </>
   );
 }
 
-function Summary({ d }: { d: Endpoints }) {
+function Summary({ d }: { d: Endpoints | undefined }) {
   const { n, t } = useT();
+  if (!d) return <Skeleton w="28rem" h="18px" className="mb-4 max-w-full" />;
+  if (d.total === 0) return null;
   return (
-    <div className="ep-summary">
+    <div className="mb-4 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[13px] text-muted">
       <span>{n("endpoints.summary.endpoints", d.total)}</span>
       <span>{n("endpoints.summary.apis", d.apis)}</span>
       {d.fresh > 0 && (
-        <span className="cat-st">
-          <StatusMark kind="on_time" />
+        <span className="inline-flex items-baseline gap-1.5">
+          <FreshnessMark status="on_time" />
           {n("endpoints.summary.fresh", d.fresh)}
         </span>
       )}
       {d.stale > 0 && (
-        <span className="cat-st">
-          <StatusMark kind="stale" />
+        <span className="inline-flex items-baseline gap-1.5">
+          <FreshnessMark status="stale" />
           {n("endpoints.summary.stale", d.stale)}
         </span>
       )}
       {d.caches.map((c) => (
-        <span key={c} className="cat-muted">
+        <span key={c} className="text-faint">
           {t("endpoints.summary.cache", { type: c })}
         </span>
       ))}
       {d.connections.map((c) => (
-        <span key={c} className="cat-muted">
+        <span key={c} className="text-faint">
           {t("endpoints.summary.connection", { name: c })}
         </span>
       ))}
@@ -256,154 +244,139 @@ function Summary({ d }: { d: Endpoints }) {
   );
 }
 
-function Search({ filter }: { filter: ReturnType<typeof useFilter> }) {
+function Search({ filter }: { filter: Filter }) {
   const { t } = useT();
   const [text, setText] = useSearchBox(filter.get("q"), (q) => filter.hrefWith({ q }));
   return <SearchBox value={text} onChange={setText} label={t("endpoints.search")} />;
 }
 
-function HowItWorks() {
+function Endpoints({ filter }: { filter: Filter }) {
   const { t } = useT();
-  return (
-    <ol className="ep-how">
-      <li>
-        <small>{t("endpoints.how.1")}</small>
-        <strong>{t("endpoints.how.declare")}</strong>
-        <p className="cat-muted">{t("endpoints.how.declare.text")}</p>
-      </li>
-      <li>
-        <small>{t("endpoints.how.2")}</small>
-        <strong>{t("endpoints.how.publish")}</strong>
-        <p className="cat-muted">
-          <code>brevis endpoints publish</code> {t("endpoints.how.publish.text")}
-        </p>
-      </li>
-      <li>
-        <small>{t("endpoints.how.3")}</small>
-        <strong>{t("endpoints.how.serve")}</strong>
-        <p className="cat-muted">{t("endpoints.how.serve.text")}</p>
-      </li>
-    </ol>
-  );
-}
-
-function Endpoints() {
-  const { t } = useT();
-  const filter = useFilter(FIELDS, "/data/endpoints");
   const qs = new URLSearchParams();
   for (const f of FIELDS) if (filter.get(f)) qs.set(f, filter.get(f));
   const q = useData<Endpoints>(["endpoints", qs.toString()], `/api/endpoints${qs.size ? `?${qs}` : ""}`);
+  const d = q.data;
   const api = filter.get("api");
   const state = filter.get("state");
-
-  if (q.isPending) return <EndpointsSkeleton />;
-  if (q.isError)
-    return (
-      <p role="alert" className="dc-missing">
-        {(q.error as Error).message}
-      </p>
-    );
-  const d = q.data;
+  const none = d !== undefined && d.rows.length === 0;
   return (
     <>
-      {d.total > 0 && (
-        <>
-          <Summary d={d} />
+      <Summary d={d} />
+      {(!d || d.total > 0) && (
+        <FilterRow>
           <Search filter={filter} />
-          <div className="ep-tools">
-            {d.apiNames.length > 1 && (
-              <Segmented
-                label={t("endpoints.col.api")}
-                choices={[
-                  { key: "", label: t("endpoints.filter.api.all"), to: filter.hrefWith({ api: "" }), current: api === "" },
-                  ...d.apiNames.map((a) => ({ key: a, label: <span className="mono">{a}</span>, to: filter.hrefWith({ api: a }), current: api === a })),
-                ]}
-              />
-            )}
-            <Segmented
-              label={t("endpoints.col.status")}
-              choices={[
-                { key: "", label: t("endpoints.filter.state.all"), to: filter.hrefWith({ state: "" }), current: state === "" },
-                {
-                  key: "fresh",
-                  label: (
-                    <>
-                      <StatusMark kind="on_time" />
-                      {t("endpoints.filter.state.fresh")}
-                    </>
-                  ),
-                  to: filter.hrefWith({ state: "fresh" }),
-                  current: state === "fresh",
-                },
-                {
-                  key: "stale",
-                  label: (
-                    <>
-                      <StatusMark kind="stale" />
-                      {t("endpoints.filter.state.stale")}
-                    </>
-                  ),
-                  to: filter.hrefWith({ state: "stale" }),
-                  current: state === "stale",
-                },
-              ]}
-            />
-          </div>
-        </>
+          {d && d.apiNames.length > 1 && (
+          <Segmented
+            label={t("endpoints.col.api")}
+            choices={[
+              { key: "", label: t("endpoints.filter.api.all"), to: filter.hrefWith({ api: "" }), current: api === "" },
+              ...d.apiNames.map((a) => ({ key: a, label: <span className="font-mono text-[12px]">{a}</span>, to: filter.hrefWith({ api: a }), current: api === a })),
+            ]}
+          />
+        )}
+        <Segmented
+          label={t("endpoints.col.status")}
+          choices={[
+            { key: "", label: t("endpoints.filter.state.all"), to: filter.hrefWith({ state: "" }), current: state === "" },
+            {
+              key: "fresh",
+              label: (
+                <>
+                  <FreshnessMark status="on_time" />
+                  {t("endpoints.filter.state.fresh")}
+                </>
+              ),
+              to: filter.hrefWith({ state: "fresh" }),
+              current: state === "fresh",
+            },
+            {
+              key: "stale",
+              label: (
+                <>
+                  <FreshnessMark status="stale" />
+                  {t("endpoints.filter.state.stale")}
+                </>
+              ),
+              to: filter.hrefWith({ state: "stale" }),
+              current: state === "stale",
+            },
+          ]}
+        />
+        </FilterRow>
       )}
-      <div className="dc-list" aria-busy={q.isFetching}>
-        {d.rows.length === 0 ? (
-          <div className="dc-empty">
-            {d.total > 0 ? (
-              <>
-                <p>{t("endpoints.empty.filtered")}</p>
-                <Link to="/data/endpoints">{t("workflows.clear")}</Link>
-              </>
-            ) : (
-              <>
-                <p>{t("endpoints.empty")}</p>
-                <p className="mono">brevis endpoints publish manifest.json</p>
-              </>
+      <div aria-busy={q.isFetching}>
+        {q.isError ? (
+          <p role="alert" className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">
+            {(q.error as Error).message}
+          </p>
+        ) : none ? (
+          <Empty msg={d.total > 0 ? t("endpoints.empty.filtered") : t("endpoints.empty")} hint={d.total > 0 ? undefined : "brevis endpoints publish manifest.json"}>
+            {d.total > 0 && (
+              <Link to="/data/endpoints" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
+                {t("workflows.clear")}
+              </Link>
             )}
-          </div>
+          </Empty>
         ) : (
-          <EndpointsTable rows={d.rows} />
+          <Table id="endpoint-rows" head={<Head />}>
+            {d ? <Rows rows={d.rows} /> : <SkeletonRows />}
+          </Table>
         )}
       </div>
-      <HowItWorks />
     </>
   );
 }
 
-function Head() {
+function HowItWorks() {
   const { t } = useT();
   return (
-    <>
-      <div className="ep-title">
-        <h1 className="page-title">{t("endpoints.title")}</h1>
-        {/* The publish drawer is the old page's: it only says how, with copyable blocks. */}
-        <a className="btn btn-primary" href="/data/endpoints#publicar">
-          + {t("endpoints.publish")}
-        </a>
-      </div>
-      <p className="cat-muted lead">
-        {t("endpoints.lead.before")} <strong>{t("endpoints.lead.strong")}</strong>
-        {t("endpoints.lead.after")}
-      </p>
-    </>
+    <HowSteps
+      steps={[
+        { kicker: t("endpoints.how.1"), title: t("endpoints.how.declare"), text: t("endpoints.how.declare.text") },
+        {
+          kicker: t("endpoints.how.2"),
+          title: t("endpoints.how.publish"),
+          text: (
+            <>
+              <code className="font-mono">brevis endpoints publish</code> {t("endpoints.how.publish.text")}
+            </>
+          ),
+        },
+        { kicker: t("endpoints.how.3"), title: t("endpoints.how.serve"), text: t("endpoints.how.serve.text") },
+      ]}
+    />
   );
 }
 
 export default function EndpointsRoute() {
+  const { t } = useT();
+  const filter = useFilter(FIELDS, "/data/endpoints");
+  const [drawer, setDrawer] = useState(false);
   return (
-    <>
-      <Suspense fallback={<Skeleton w="12rem" h="1.5rem" />}>
-        <Head />
-      </Suspense>
-      <Suspense fallback={<EndpointsSkeleton />}>
-        <Endpoints />
-      </Suspense>
-    </>
+    <Page>
+      <PageHead
+        title={t("endpoints.title")}
+        actions={
+          <button type="button" className={btn(true)} aria-haspopup="dialog" onClick={() => setDrawer(true)}>
+            <Icon name="plus" className="h-3.5 w-3.5" />
+            {t("endpoints.publish")}
+          </button>
+        }
+      />
+      <Lead before={t("endpoints.lead.before")} strong={t("endpoints.lead.strong")} after={t("endpoints.lead.after")} />
+      <Endpoints filter={filter} />
+      <HowItWorks />
+      <HowDrawer
+        open={drawer}
+        onClose={() => setDrawer(false)}
+        title={t("endpoints.publish")}
+        lead={t("endpoints.publish.lead")}
+        blocks={[
+          { title: t("endpoints.publish.declare"), text: PUBLISH_YAML },
+          { title: t("endpoints.publish.commands"), text: PUBLISH_COMMANDS },
+        ]}
+        note={t("endpoints.publish.note")}
+      />
+    </Page>
   );
 }
-
