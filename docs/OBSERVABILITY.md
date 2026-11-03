@@ -84,7 +84,7 @@ JSON. Honest or nothing: a state is claimed only from numbers that were measured
 | `quiet` | the source is healthy and the last 5 minutes had no events, deliveries or refusals; `since` is the last minute that had some | `no_traffic`, `no_traffic_seen` (none in the ring) |
 | `healthy` | traffic and nothing below | `delivering` |
 | `degraded` | any dead-lettered record or buried batch; at least 1% of offered events rejected; any refused-because-full request; at least a quarter of delivery attempts retried; delivery p95 over 30 s; some replicas silent | `dead_lettered`, `rejected_some`, `saturated`, `retrying`, `slow_delivery`, `replicas_partial` |
-| `failing` | half or more of the window's events rejected (20+ offered) or dead-lettered (20+ received), or of its batches buried (2+), each seen in at least 2 distinct minutes; or the buffer refused requests in 4 of the 5 minutes | `rejected_most`, `dead_letter_most`, `delivery_failing`, `saturating` |
+| `failing` | half or more of the window's events rejected (20+ offered) or dead-lettered (20+ received), or of its batches buried (2+), in at least 2 minutes that are each a majority on their own; or the buffer refused requests in 4 of the 5 minutes | `rejected_most`, `dead_letter_most`, `delivery_failing`, `saturating` |
 
 A stream judged `failing` or `degraded` by a window is never shown healthier
 until the last 4 raw minutes (the window less one) were all better: the state
