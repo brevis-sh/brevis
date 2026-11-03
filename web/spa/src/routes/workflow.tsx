@@ -493,7 +493,7 @@ export default function WorkflowRoute() {
     );
   }
   return (
-    <PageFrame title={slug} mono actions={<Actions slug={slug} d={d} toggler={toggler} />} aside={d?.description ? <About slug={slug} text={d.description} /> : undefined}>
+    <PageFrame title={slug} mono actions={q.isError && !d ? undefined : <Actions slug={slug} d={d} toggler={toggler} />} aside={d?.description ? <About slug={slug} text={d.description} /> : undefined}>
       {body}
     </PageFrame>
   );
