@@ -3,7 +3,7 @@ import { Link, Navigate, Outlet, useLocation, useParams, useSearchParams } from 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getJSON } from "../api/client";
 import { useFormat, useT } from "../i18n";
-import { filterRow, noBar, segGroup, segOff, segOn } from "../ui/button";
+import { segGroup, segOff, segOn } from "../ui/button";
 import { Empty } from "../ui/card";
 import { useAgo, useNumbers } from "../ui/format";
 import { Icon } from "../ui/icon";
@@ -308,11 +308,13 @@ export default function RunsRoute() {
                 {data ? f.number(data.total) : <Skeleton w="1.5ch" h="12px" className="inline-block" />}
               </span>
             </h1>
-          </div>
-          <div className={`${filterRow} px-4 pb-2`} style={noBar}>
-            <Search />
-            <Filters params={params} data={data} />
             <LiveSwitch on={live} onChange={setLive} />
+          </div>
+          <div className="px-4 pb-2">
+            <Search />
+          </div>
+          <div className="flex flex-wrap items-center gap-2 px-4 pb-2">
+            <Filters params={params} data={data} />
           </div>
           <div id="runs-list" aria-busy={q.isPlaceholderData || !data} className={`min-h-0 flex-1 overflow-y-auto ${q.isPlaceholderData ? "opacity-60 transition-opacity" : ""}`}>
             {q.isError && !data ? (

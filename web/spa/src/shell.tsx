@@ -1,7 +1,6 @@
 import { Suspense, useEffect } from "react";
 import { Outlet, useLocation } from "react-router";
 import { useConfig } from "./api/session";
-import { Skeleton } from "./ui/skeleton";
 import { Palette } from "./shell/palette";
 import { setDrawer } from "./shell/prefs";
 import { installHints } from "./shell/hint";
@@ -45,11 +44,13 @@ export function Shell() {
         <div className="flex h-full min-w-0 flex-1 flex-col">
           <Topbar />
           <main className="flex-1 overflow-y-auto">
-            <div className="px-3 pt-3 pb-10 min-[860px]:px-6">
-              <Suspense fallback={<Skeleton w="8rem" h="1.5rem" />}>
-                <Outlet />
-              </Suspense>
-            </div>
+            {/* The page draws its own header and its own body gutters, as base.templ
+                does (header px-3 pt-3, body px-3 pb-10): padding here would double
+                them. No skeleton as a fallback either: every screen draws its static
+                frame at once and skeletons only its data. */}
+            <Suspense fallback={null}>
+              <Outlet />
+            </Suspense>
           </main>
         </div>
       </div>

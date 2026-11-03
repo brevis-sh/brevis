@@ -77,7 +77,7 @@ export function Lead({ before, strong, after, cls = "mb-3" }: { before: string; 
  */
 export function PageHead({ title, mono, eyebrow, actions }: { title: ReactNode; mono?: boolean; eyebrow?: ReactNode; actions?: ReactNode }) {
   return (
-    <header className="relative pt-3 pb-3">
+    <header className="relative pt-3 pb-1">
       <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
           {eyebrow ? <div className="absolute top-0.5 left-0 flex flex-wrap items-center gap-2 leading-none">{eyebrow}</div> : null}
@@ -146,7 +146,11 @@ export function FilterRow({ children }: { children: ReactNode }) {
   return <div className="filter-row">{children}</div>;
 }
 
-/** The page's frame: it never asks the shell's grid for more than the column, so a wide table or filter row scrolls inside itself. */
+/**
+ * The page's frame, with the gutters base.templ gives a page (px-3, px-6 from 860px,
+ * and pb-10 under the content); the shell adds none. It never asks for more than the
+ * column, so a wide table or filter row scrolls inside itself.
+ */
 export function Page({ children }: { children: ReactNode }) {
-  return <div className="w-0 min-w-full">{children}</div>;
+  return <div className="w-0 min-w-full px-3 pb-10 min-[860px]:px-6">{children}</div>;
 }

@@ -1,1 +1,0 @@
-import{l as e,u as t}from"./i18n-Ci0rIIKi.js";function n(n,r){return e(n,t,r)}export{n as t};

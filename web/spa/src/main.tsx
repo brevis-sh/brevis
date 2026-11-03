@@ -1,31 +1,31 @@
-import { StrictMode, Suspense, lazy } from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Shell } from "./shell";
-import ProjectsRoute from "./routes/projects";
-import { Skeleton } from "./ui/skeleton";
+import { boot } from "./boot";
+import OverviewRoute from "./routes/overview";
+import RunsRoute, { RunsIndex } from "./routes/runs";
+import RunRoute from "./routes/run";
 import WorkflowsRoute from "./routes/workflows";
 import WorkflowRoute from "./routes/workflow";
-import RunRoute from "./routes/run";
-import { boot } from "./boot";
+import ProjectsRoute from "./routes/projects";
+import StreamsRoute from "./routes/streams";
+import StreamRoute from "./routes/stream";
+import LoadsRoute from "./routes/loads";
+import LoadRoute from "./routes/load";
+import CatalogRoute from "./routes/catalog";
+import EndpointsRoute from "./routes/endpoints";
+import EndpointRoute from "./routes/endpoint";
+import SqlRoute from "./routes/sql";
 import "./styles.css";
-import { lazyRoute } from "./ui/lazy-route";
 
-const LoadsRoute = lazy(() => import("./routes/loads"));
-const LoadRoute = lazy(() => import("./routes/load"));
-const StreamsRoute = lazy(() => import("./routes/streams"));
-const StreamRoute = lazy(() => import("./routes/stream"));
-
-const SqlRoute = lazy(() => import("./routes/sql"));
-// Screens load on their own, so the first paint pays for the shell alone.
-const OverviewRoute = lazy(() => import("./routes/overview"));
-const RunsRoute = lazy(() => import("./routes/runs"));
-const RunsIndex = lazy(() => import("./routes/runs").then((m) => ({ default: m.RunsIndex })));
-
-const CatalogRoute = lazyRoute(() => import("./routes/catalog"));
-const EndpointsRoute = lazyRoute(() => import("./routes/endpoints"));
-const EndpointRoute = lazyRoute(() => import("./routes/endpoint"));
+// EVERY SCREEN IS IN THE FIRST DOWNLOAD, on purpose. A screen's title, its
+// description, its filters and its column headers are static, and static things
+// never wait: a route that loaded its code on demand could only fill the gap with
+// a skeleton of the whole page, and that is exactly what the screens must not do.
+// What stays out of the download is what is heavy AND only part of a screen: the
+// run's graph (React Flow) and the brand marks, which load inside their screens.
 
 // Data stays fresh for 5s: moving between screens does not refetch what was
 // just read, and a screen that comes back shows the old data while it renews.
@@ -39,13 +39,13 @@ createRoot(document.getElementById("root")!).render(
       <BrowserRouter basename="/app">
         <Routes>
           <Route element={<Shell />}>
-            <Route index element={<Suspense><OverviewRoute /></Suspense>} />
-            <Route path="runs" element={<Suspense><RunsRoute /></Suspense>}>
-              <Route index element={<Suspense><RunsIndex /></Suspense>} />
+            <Route index element={<OverviewRoute />} />
+            <Route path="runs" element={<RunsRoute />}>
+              <Route index element={<RunsIndex />} />
               <Route path=":id" element={<RunRoute />} />
             </Route>
             <Route path="projects" element={<ProjectsRoute />} />
-            <Route path="sql" element={<Suspense fallback={<Skeleton h="60vh" />}><SqlRoute /></Suspense>} />
+            <Route path="sql" element={<SqlRoute />} />
             <Route path="workflows" element={<WorkflowsRoute />} />
             <Route path="workflows/:slug" element={<WorkflowRoute />} />
             <Route path="ingest/streams" element={<StreamsRoute />} />

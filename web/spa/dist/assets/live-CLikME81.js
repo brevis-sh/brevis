@@ -1,1 +1,0 @@
-import{s as e,x as t}from"./i18n-Ci0rIIKi.js";import{t as n}from"./useQuery-DicAiqVh.js";function r(r,i,{every:a=3e4,enabled:o=!0,keep:s=!0}={}){return n({queryKey:r,queryFn:({signal:t})=>e(i,t),placeholderData:s?t:void 0,refetchInterval:a,enabled:o})}export{r as t};

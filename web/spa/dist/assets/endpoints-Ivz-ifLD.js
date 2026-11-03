@@ -1,1 +1,0 @@
-export{t as EndpointFreshness,n as default,r as endpointHref,i as kindOf,a as splitTarget,o as useParamsSaid}from"./endpoints-D_NxOIjz.js";
