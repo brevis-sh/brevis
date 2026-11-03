@@ -39,6 +39,7 @@ import (
 	"brevis.sh/brevis/web/i18n"
 	"brevis.sh/brevis/web/layouts"
 	"brevis.sh/brevis/web/pages"
+	"brevis.sh/brevis/web/spa"
 )
 
 // workflowWindow is the horizon of ONE workflow's numbers, and it is thirty
@@ -379,6 +380,10 @@ func (u *UI) Registrar(mux *http.ServeMux) {
 	// Served from the embed, not from disk: the container is distroless and has
 	// no web/assets, and the binary has to work from any directory.
 	mux.Handle("GET /assets/", http.StripPrefix("/assets/", assets.Handler()))
+
+	// The React app, being built beside the pages above and replacing them one
+	// screen at a time. Behind the same login as everything else.
+	mux.Handle("GET "+spa.Prefix, spa.Handler())
 }
 
 // loads is Ingest → Batch loads (screen-loads): one row per step and

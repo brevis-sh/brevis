@@ -37,8 +37,12 @@ fi
 "$(go env GOPATH)/bin/templ" generate
 ./bin/tailwindcss -i web/assets/app.src.css -o web/assets/app.css --minify
 
+# The React app: `npm ci` installs exactly the lockfile, so the build is the
+# same on every machine and the diff below means something.
+(cd web/spa && npm ci --silent && npm run build --silent)
+
 if ! git diff --exit-code -- web/; then
   echo "::error::the generated artifacts are out of date: run 'make generate' and commit web/"
   exit 1
 fi
-echo "✅ generated artifacts are up to date (templ and CSS)"
+echo "✅ generated artifacts are up to date (templ, CSS and the React app)"

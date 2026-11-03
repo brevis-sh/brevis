@@ -72,3 +72,6 @@ __pycache__/
 # the sql and gateway ones: the no-binaries gate reads what is TRACKED, so
 # this is one `git add -A` away from the mistake that shipped in v0.4.1.
 /examples/full-pipeline/pipeline/pipeline
+
+# The React app's dependencies; its build (web/spa/dist) IS committed, like app.css.
+web/spa/node_modules/

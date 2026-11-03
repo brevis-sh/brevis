@@ -134,6 +134,15 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      # The React app (web/spa) is built by generated-check.sh; the image has
+      # no Node, the check does. 24 is the LTS the lockfile was resolved with.
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/spa/package-lock.json
+
       - name: gofmt
         run: |
           arquivos=$(gofmt -l . | grep -v '^sdk/' || true)

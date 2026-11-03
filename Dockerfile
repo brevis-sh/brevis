@@ -20,6 +20,8 @@ COPY . .
 # //go:embed fails here, in the build, and not in production with an unstyled
 # page.
 RUN test -f web/assets/app.css || { echo "web/assets/app.css is missing — run 'make generate'"; exit 1; }
+# The React app is embedded the same way (web/spa/dist, built by `make spa`).
+RUN test -f web/spa/dist/index.html || { echo "web/spa/dist is missing — run 'make generate'"; exit 1; }
 # The fonts and the UMD bundles are served from the binary. Without them the UI
 # loads, but with the system's typography and a blank DAG screen — silent
 # failures that only show up in the browser. Failing here, with a message, is
