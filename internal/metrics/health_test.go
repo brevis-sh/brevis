@@ -345,3 +345,20 @@ func rawFlips(ms []Minute) int {
 	}
 	return flips
 }
+
+// A body that never decoded is counted with the rejected events (a floor); a
+// wrong key and a saturated request are not, because they have their own say.
+func TestRefusedRequestsCountAsRejected(t *testing.T) {
+	c, ck := newTest("gw")
+	tg := c.targets[0]
+	ref := func(reason string, v float64) Sample {
+		return Sample{Name: "brevis_gateway_requests_refused_total", Labels: map[string]string{"stream": "s", "reason": reason}, Value: v}
+	}
+	feed(c, ck, tg, []Sample{recv("s", 0), ref("malformed", 0), ref("unauthorized", 0), ref("saturated", 0)})
+	ck.t = t0.Add(5 * time.Second)
+	feed(c, ck, tg, []Sample{recv("s", 90), ref("malformed", 10), ref("unauthorized", 50), ref("saturated", 7)})
+	h := c.Snapshot(Gateway, Retention, nil).Health("gw", "s")
+	if h.Window.Rejected != 10 || h.Window.Saturated != 0 || h.State != HealthDegraded || h.Reason != ReasonRejectedSome {
+		t.Errorf("%+v %+v", h, h.Window)
+	}
+}

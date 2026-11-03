@@ -390,7 +390,9 @@ func (e Entity) minutes() []Minute {
 	}
 	for i := range out {
 		out[i] = Minute{Observed: e.Covered[i] > 0, WindowCounts: WindowCounts{
-			Received: at("received", i), Rejected: at("rejected", i), Dropped: at("dropped", i),
+			// A refused request is at least one event that never got in: counted
+			// with the rejected ones, as a floor (one body may have held many).
+			Received: at("received", i), Rejected: at("rejected", i) + at("refused", i), Dropped: at("dropped", i),
 			DeadLetter: at("deadLetter", i), Delivered: at("delivered", i), Retried: at("retried", i),
 			Buried: at("buried", i), Saturated: at("saturated", i)}}
 		if i < len(e.lat) {
