@@ -132,7 +132,7 @@ func TestFingerprintsAreCheapAt100kRuns(t *testing.T) {
 		{"workflow", postgres.WorkflowFingerprintSQL, []any{"wf7"}},
 		{"data", postgres.DataFingerprintSQL, nil},
 	} {
-		var best time.Duration = time.Hour
+		best := time.Hour
 		var plan string
 		for i := 0; i < 5; i++ { // best of 5: the first call warms the cache
 			rows, err := pool.Query(ctx, "EXPLAIN (ANALYZE, FORMAT TEXT) "+c.sql, c.args...)
@@ -148,7 +148,7 @@ func TestFingerprintsAreCheapAt100kRuns(t *testing.T) {
 			rows.Close()
 			plan = strings.Join(lines, "\n")
 			var ms float64
-			fmt.Sscanf(lines[len(lines)-1], "Execution Time: %f ms", &ms)
+			_, _ = fmt.Sscanf(lines[len(lines)-1], "Execution Time: %f ms", &ms)
 			if d := time.Duration(ms * float64(time.Millisecond)); d < best {
 				best = d
 			}

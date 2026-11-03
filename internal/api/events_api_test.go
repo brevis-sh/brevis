@@ -49,7 +49,7 @@ func open(t *testing.T, url string) (*http.Response, *bufio.Reader, context.Canc
 		cancel()
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { cancel(); resp.Body.Close() })
+	t.Cleanup(func() { cancel(); _ = resp.Body.Close() })
 	return resp, bufio.NewReader(resp.Body), cancel
 }
 
@@ -116,7 +116,7 @@ func TestEventsRefusals(t *testing.T) {
 			t.Fatal(err)
 		}
 		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if resp.StatusCode != 400 || !strings.HasPrefix(string(body), `{"error":"`) ||
 			resp.Header.Get("Content-Type") != "application/json" {
 			t.Errorf("%q: %d %s %q", q, resp.StatusCode, resp.Header.Get("Content-Type"), body)
@@ -130,7 +130,7 @@ func TestEventsRefusals(t *testing.T) {
 		t.Fatal(err)
 	}
 	body, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != 503 || strings.TrimSpace(string(body)) != `{"error":"too many live connections"}` {
 		t.Errorf("over the cap: %d %q", resp.StatusCode, body)
 	}

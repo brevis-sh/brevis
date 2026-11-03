@@ -35,7 +35,13 @@ var (
 type Options struct {
 	Interval time.Duration // detector period; default 1s
 	MaxSubs  int           // concurrent subscriptions; default 500
-	Log      *slog.Logger
+	// MaxDetectors bounds the topics watched at once; default 128. Each is a
+	// goroutine and a database query per tick, and the dynamic topics
+	// (run:<id>, workflow:<slug>) are named by the client: without this, 500
+	// connections of 20 distinct names each would be ten thousand queries a
+	// second, and the cap on subscriptions would not have been what stopped it.
+	MaxDetectors int
+	Log          *slog.Logger
 	// After is the clock: a channel that fires after d, and a stop func.
 	// Injected so tests drive the detectors without sleeping.
 	After func(d time.Duration) (<-chan time.Time, func())
@@ -80,6 +86,9 @@ func NewHub(ctx context.Context, f Factory, opt Options) *Hub {
 	if opt.MaxSubs <= 0 {
 		opt.MaxSubs = 500
 	}
+	if opt.MaxDetectors <= 0 {
+		opt.MaxDetectors = 128
+	}
 	if opt.Log == nil {
 		opt.Log = slog.Default()
 	}
@@ -122,6 +131,19 @@ func (h *Hub) Subscribe(ctx context.Context, topics []string) (*Sub, error) {
 		return nil, ErrClosed
 	}
 	if len(h.subs) >= h.opt.MaxSubs {
+		h.mu.Unlock()
+		return nil, ErrFull
+	}
+	// Count the detectors this subscription would START (topics nobody watches
+	// yet) and refuse it whole if they do not fit: counted before anything is
+	// registered, under the lock, so a refusal leaves no trace.
+	fresh := 0
+	for _, name := range topics {
+		if h.topics[name] == nil {
+			fresh++
+		}
+	}
+	if len(h.topics)+fresh > h.opt.MaxDetectors {
 		h.mu.Unlock()
 		return nil, ErrFull
 	}

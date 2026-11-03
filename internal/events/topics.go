@@ -20,6 +20,11 @@ import (
 // (a database query per tick), and a client has no reason to want more.
 const MaxTopics = 20
 
+// MaxDynamicTopics bounds the topics a client NAMES (run:<id>, workflow:<slug>)
+// per connection. A screen watches one run or one workflow, a few at most; the
+// fixed topics are shared by everyone, a named one is a detector of its own.
+const MaxDynamicTopics = 4
+
 // Fixed topics. The parameterized ones are `run:<uuid>` and `workflow:<slug>`.
 const (
 	Runs      = "runs"
@@ -61,6 +66,15 @@ func ParseTopics(raw string) ([]string, error) {
 	}
 	if len(out) > MaxTopics {
 		return nil, fmt.Errorf("%w: at most %d topics", ErrTopics, MaxTopics)
+	}
+	dynamic := 0
+	for _, t := range out {
+		if !fixed[t] {
+			dynamic++
+		}
+	}
+	if dynamic > MaxDynamicTopics {
+		return nil, fmt.Errorf("%w: at most %d run or workflow topics", ErrTopics, MaxDynamicTopics)
 	}
 	return out, nil
 }
