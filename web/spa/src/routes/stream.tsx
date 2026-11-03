@@ -249,16 +249,70 @@ function DeadLetter({ v }: { v: Stream | undefined }) {
   );
 }
 
+type Verdict = { kind: "valid" | "warning" | "problem"; text: string };
+
+// The server's rules for a test event (ui.js testEvent), in the server's words: the body is one object for json, a list of
+// them for array, one per line for ndjson; for an auto_table the table each event names must be there and start with an
+// accepted prefix; then it says where the event would land.
+function checkEvent(
+  body: string,
+  te: Stream["testEvent"],
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): Verdict {
+  const isObject = (v: unknown) => v !== null && typeof v === "object" && !Array.isArray(v);
+  const problem = (text: string): Verdict => ({ kind: "problem", text });
+  const text = body.replace(/\s+$/, "");
+  let events: Record<string, unknown>[] = [];
+  try {
+    if (te.format === "array") {
+      const list: unknown = JSON.parse(text);
+      if (!Array.isArray(list)) return problem(t("testevent.array"));
+      if (!list.every(isObject)) return problem(t("testevent.items"));
+      events = list;
+    } else if (te.format === "ndjson") {
+      const lines = text.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i]!.trim() === "") continue;
+        try {
+          const one: unknown = JSON.parse(lines[i]!);
+          if (!isObject(one)) return problem(t("testevent.line", { n: i + 1, e: t("testevent.object") }));
+          events.push(one as Record<string, unknown>);
+        } catch (e) {
+          return problem(t("testevent.line", { n: i + 1, e: (e as Error).message }));
+        }
+      }
+    } else {
+      const one: unknown = JSON.parse(text);
+      if (!isObject(one)) return problem(t("testevent.object"));
+      events = [one as Record<string, unknown>];
+    }
+  } catch (e) {
+    return problem(t("testevent.invalid", { e: (e as Error).message }));
+  }
+  const lands: string[] = [];
+  if (te.table !== "") {
+    for (const ev of events) {
+      const name = ev[te.table];
+      if (typeof name !== "string" || name === "") return problem(t("testevent.no_table", { field: te.table }));
+      if (te.allow.length > 0 && !te.allow.some((p) => name.startsWith(p)))
+        return { kind: "warning", text: t("testevent.refused", { name, allow: te.allow.join(", ") }) };
+      const to = te.dataset ? `${te.dataset}.${name}` : name;
+      if (!lands.includes(to)) lands.push(to);
+    }
+  } else lands.push(te.lands);
+  return { kind: "valid", text: `${t("testevent.valid", { format: te.format })} ${t("testevent.lands", { to: lands.join(", ") })}` };
+}
+
 // The example event in the stream's format and the curl that would send it.
 // It sends nothing: the console holds no token for the gateway. The body is
-// editable and the curl follows it. (The old drawer also validated the body
-// against the format; that check is not carried over.)
+// editable, the curl follows it and the body is checked against the format as the server's page did.
 function TestEvent({ path, v }: { path: string; v: Stream | undefined }) {
   const { t } = useT();
   const dialog = useRef<HTMLDialogElement>(null);
   const [edited, setEdited] = useState<string | null>(null);
   const body = edited ?? v?.testEvent.body ?? "";
-  const curl = v ? `${v.testEvent.curlHead}\n${body}\nEOF` : "";
+  const curl = v ? `${v.testEvent.curlHead}\n${body.replace(/\s+$/, "")}\nEOF` : "";
+  const verdict = v ? checkEvent(body, v.testEvent, t) : null;
   return (
     <>
       <button type="button" className={btn(true)} aria-haspopup="dialog" disabled={!v} onClick={() => dialog.current?.showModal()}>
@@ -282,7 +336,7 @@ function TestEvent({ path, v }: { path: string; v: Stream | undefined }) {
               </p>
               <p className="mt-1 text-[12.5px] text-muted">{t("testevent.lead")}</p>
             </div>
-            <button type="button" aria-label={t("dialog.close")} onClick={() => dialog.current?.close()} className="flex h-8 w-8 items-center justify-center rounded-card text-muted transition-colors hover:bg-surface-2 hover:text-ink">
+            <button type="button" aria-label={t("dialog.close")} onClick={() => dialog.current?.close()} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-card text-muted transition-colors hover:bg-surface-2 hover:text-ink">
               <Icon name="x" className="h-4 w-4" />
             </button>
           </div>
@@ -297,6 +351,9 @@ function TestEvent({ path, v }: { path: string; v: Stream | undefined }) {
                 className="w-full rounded-card border border-line bg-canvas px-3 py-2 font-mono text-[0.78rem] text-ink focus:border-accent-strong focus:outline-none"
               />
             </label>
+            <p aria-live="polite" className={`text-[12px] ${verdict?.kind === "problem" ? "text-state-failed" : verdict?.kind === "warning" ? "text-state-queued" : verdict ? "text-state-success" : "text-muted"}`}>
+              {verdict?.text}
+            </p>
             <div>
               <div className="mb-1.5 flex items-center justify-between">
                 <span className="text-[12.5px] text-muted">{t("testevent.send_with")}</span>

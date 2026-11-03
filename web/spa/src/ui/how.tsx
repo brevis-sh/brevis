@@ -71,7 +71,7 @@ export function HowDrawer({
             <p id="how-title" className="text-[15px] font-semibold text-ink">{title}</p>
             <p className="mt-1 text-[12.5px] text-muted">{lead}</p>
           </div>
-          <button type="button" onClick={onClose} aria-label={t("dialog.close")} className="flex h-8 w-8 items-center justify-center rounded-card text-muted transition-colors hover:bg-surface-2 hover:text-ink">
+          <button type="button" onClick={onClose} aria-label={t("dialog.close")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-card text-muted transition-colors hover:bg-surface-2 hover:text-ink">
             <Icon name="x" className="h-4 w-4" />
           </button>
         </div>

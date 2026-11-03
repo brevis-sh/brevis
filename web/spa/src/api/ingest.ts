@@ -156,5 +156,5 @@ export type Stream = {
   changes: { at: string; text: string }[];
   deadLetterPanel: { where: string; commands: string; readable: boolean; write: string } | null;
   buriedMetric: string;
-  testEvent: { format: string; body: string; curlHead: string; lands: string; table: string };
+  testEvent: { format: string; body: string; curlHead: string; lands: string; table: string; allow: string[]; dataset: string };
 };
