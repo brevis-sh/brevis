@@ -18,6 +18,7 @@ import CatalogRoute from "./routes/catalog";
 import EndpointsRoute from "./routes/endpoints";
 import EndpointRoute from "./routes/endpoint";
 import SqlRoute from "./routes/sql";
+import LoginRoute from "./routes/login";
 import "./styles.css";
 
 // EVERY SCREEN IS IN THE FIRST DOWNLOAD, on purpose. A screen's title, its
@@ -38,6 +39,8 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={client}>
       <BrowserRouter basename="/app">
         <Routes>
+          {/* Outside the Shell: its own minimal layout, and the one screen an anonymous visitor may open. */}
+          <Route path="login" element={<LoginRoute />} />
           <Route element={<Shell />}>
             <Route index element={<OverviewRoute />} />
             <Route path="runs" element={<RunsRoute />}>

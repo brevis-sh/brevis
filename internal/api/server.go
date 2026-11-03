@@ -60,6 +60,7 @@ func NewServerAutenticado(log *slog.Logger, checkers map[string]Checker, ui *UI,
 		}
 		if ui != nil {
 			ui.RegistrarLogin(s.mux, s.gate)
+			ui.RegistrarLoginAPI(s.mux, s.gate)
 		}
 	}
 	return s

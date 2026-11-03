@@ -1,7 +1,12 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getJSON } from "./client";
 
-export type Session = { operator: string; lang: string };
+export type Session = {
+  operator: string;
+  lang: string;
+  /** Set by boot (never by the server) when there was no session: the visitor is on the login screen. */
+  anonymous?: true;
+};
 export type Brand = {
   title: string;
   subtitle: string;
