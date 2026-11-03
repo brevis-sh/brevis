@@ -1,7 +1,9 @@
 // A list's skeleton draws as many rows as the screen showed last time, so the
 // loaded list lands at the height the placeholder already had. localStorage can
 // throw (private window, blocked storage): then the fallback is the server's page size.
-const key = (k: string) => `brevis.rows.${k}`;
+// Under brevis.seen.* with the other remembered shapes (ui/seen.ts): one prefix, so signing out or
+// switching operator clears them all together. Only a number is ever stored here.
+const key = (k: string) => `brevis.seen.rows.${k}`;
 
 export function recalled(k: string, fallback: number, max = 100): number {
   try {

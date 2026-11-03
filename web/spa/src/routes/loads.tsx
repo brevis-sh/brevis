@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router";
 import { useData } from "../api/live";
-import type { LoadRow, Loads, Source } from "../api/ingest";
+import type { Choice, LoadRow, Loads, Source } from "../api/ingest";
 import { useFormat, useT } from "../i18n";
 import { localStamp, useSince } from "../ui/format";
 import { Icon } from "../ui/icon";
@@ -8,7 +8,7 @@ import { ButtonLink, Empty, FilterRow, Lead, PageHead, linkUnderline, Page } fro
 import { Logo } from "../ui/logo";
 import { Place, PlaceBlock } from "../ui/place";
 import { Band, SearchBox, Segmented, Switch } from "../ui/segmented";
-import { Skeleton } from "../ui/skeleton";
+import { useSeen } from "../ui/seen";
 import { Sparkline } from "../ui/sparkline";
 import { Freshness, FreshnessMark, freshnessKind } from "../ui/status";
 import { Row, Table, Td, Th } from "../ui/table";
@@ -97,7 +97,7 @@ function Rows({ rows }: { rows: LoadRow[] }) {
             )}
           </Td>
           <Td cls="text-xs whitespace-nowrap text-muted max-[640px]:hidden" title={r.lastLoaded ? localStamp(r.lastLoaded) : undefined}>
-            {r.lastLoaded ? since(r.lastLoaded) : "—"}
+            <span>{r.lastLoaded ? since(r.lastLoaded) : "—"}</span>
           </Td>
           <Td cls="text-right text-xs tabular-nums text-ink-2 max-[1100px]:hidden">
             {r.rows === null ? (
@@ -117,32 +117,45 @@ function Rows({ rows }: { rows: LoadRow[] }) {
   );
 }
 
-function SkeletonRows() {
-  return (
-    <>
-      {Array.from({ length: 4 }, (_, i) => (
-        <tr key={i} aria-hidden="true">
-          <Td edge="first">
-            <Skeleton w="9rem" h="18px" />
-            <Skeleton w="12rem" h="14px" className="mt-1" />
-          </Td>
-          <Td cls="max-[860px]:hidden"><Skeleton w="20rem" h="34px" /></Td>
-          <Td><Skeleton w="5rem" h="18px" /></Td>
-          <Td cls="max-[640px]:hidden"><Skeleton w="4rem" h="18px" /></Td>
-          <Td cls="max-[1100px]:hidden"><Skeleton w="3rem" h="18px" className="ml-auto" /></Td>
-          <Td edge="last" cls="max-[1100px]:hidden"><Skeleton w="120px" h="24px" /></Td>
-        </tr>
-      ))}
-    </>
-  );
-}
+// What the screen shows before its first answer: the last shape it saw (rows, counts, filters), or
+// this one on a first visit. The rows are the real ones drawn from placeholder values, so they take
+// the height the loaded ones take.
+type Shape = { n: number; total: number; workflows: number; summary: Record<string, number>; counts: Record<string, number>; sources: number; hasLegacy: boolean };
+// A first visit draws the empty state (a fresh install has no loads); the box is the one the real empty state fills.
+const FIRST: Shape = { n: 0, total: 0, workflows: 0, summary: {}, counts: {}, sources: 0, hasLegacy: false };
+// Only numbers are remembered, and only under the fixed status words: nothing the API says about the data.
+const numbers = (r: Record<string, number>) => Object.fromEntries(Object.entries(r).filter(([k, n]) => (k === "" || STATUSES.includes(k as never) || k === "attention") && typeof n === "number"));
+const shapeOf = (v: Loads): Shape => ({ n: v.rows.length, total: v.total, workflows: v.workflows, summary: numbers(v.summary), counts: numbers(v.counts), sources: v.sources.length, hasLegacy: v.hasLegacy });
+const GHOST_ROW: LoadRow = {
+  workflow: "workflow_name",
+  step: "load_step_name",
+  href: "",
+  target: { uri: "", kind: "postgres", kindTitle: "", where: "postgres://warehouse/", what: "table_name", note: "" },
+  legacy: false,
+  status: "on_time",
+  lastLoaded: "2000-01-01T00:00:00Z",
+  rows: 1000,
+  schedule: "every hour",
+  source: { kind: "http", driver: "", label: "Source label", where: "api.example.com" },
+  recent: [1, 3, 2, 4],
+  fixing: null,
+};
+const ghostOf = (s: Shape): Loads => ({
+  rows: Array.from({ length: s.n }, (_, i) => ({ ...GHOST_ROW, href: `#${i}` })),
+  total: s.total,
+  workflows: s.workflows,
+  summary: s.summary,
+  counts: s.counts,
+  sources: Array.from({ length: s.sources }, (_, i): Choice => ({ key: `source${i}`, label: "Source" })),
+  hasLegacy: s.hasLegacy,
+  filter: { status: "", source: "", q: "", legacy: false },
+});
 
-function Summary({ v }: { v: Loads | undefined }) {
+function Summary({ v, ghost }: { v: Loads; ghost: boolean }) {
   const { t, n } = useT();
-  if (!v) return <Skeleton w="30rem" h="18px" className="mb-4 max-w-full" />;
   if (v.total === 0) return null;
   return (
-    <div className="mb-4 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[13px]">
+    <div aria-hidden={ghost || undefined} className={`mb-4 flex ${ghost ? "sk-ghost" : ""} flex-wrap items-baseline gap-x-5 gap-y-1 text-[13px]`}>
       <span className="text-muted">{n("loads.summary.destinations", v.total)}</span>
       <span className="text-muted">{n("loads.summary.workflows", v.workflows)}</span>
       {STATUSES.filter((s) => (v.summary[s] ?? 0) > 0).map((s) => (
@@ -169,24 +182,27 @@ function LoadsData({ filter }: { filter: Filter }) {
   const qs = new URLSearchParams();
   for (const f of FIELDS) if (filter.get(f)) qs.set(f, filter.get(f));
   const q = useData<Loads>(["ingest", "loads", qs.toString()], `/api/ingest/loads${qs.size ? `?${qs}` : ""}`, { topic: "ingest" });
-  const v = q.data;
+  const ghost = !q.data;
+  // Only the unfiltered answer is remembered: a filter's counts are not the list's shape.
+  const seen = useSeen("loads", qs.size === 0 && q.data ? shapeOf(q.data) : undefined, FIRST);
+  const v = q.data ?? ghostOf(seen);
   const status = filter.get("status");
   const source = filter.get("source");
   const legacy = filter.get("legacy") === "1";
-  const shown = !v || v.total > 0 || v.hasLegacy;
+  const shown = v.total > 0 || v.hasLegacy;
   const band = [
     { key: "", status: "", label: t("catalog.status.all"), tip: "", mark: "" },
     { key: "attention", status: "attention", label: t("catalog.status.attention"), tip: t("catalog.tip.attention"), mark: "stale" },
     ...STATUSES.map((s) => ({ key: s, status: s, label: t(`state.${freshnessKind(s)}`), tip: t(`catalog.tip.${s}`), mark: s })),
   ];
-  const none = v !== undefined && v.rows.length === 0;
+  const none = v.rows.length === 0;
   return (
     <>
-      <Summary v={v} />
+      <Summary v={v} ghost={ghost} />
       {shown && (
         <FilterRow>
           <Search filter={filter} />
-          <nav aria-label={t("catalog.band")}>
+          <nav aria-label={t("catalog.band")} className={ghost ? "sk-ghost" : undefined} aria-busy={ghost || undefined}>
             {band.map((b) => (
               <Band
                 key={b.key}
@@ -195,12 +211,13 @@ function LoadsData({ filter }: { filter: Filter }) {
                 tip={b.tip}
                 mark={b.mark ? <FreshnessMark status={b.mark} /> : null}
                 label={b.label}
-                count={v ? (v.counts[b.key] ?? 0) : undefined}
+                count={v.counts[b.key] ?? 0}
               />
             ))}
           </nav>
-          {v && v.sources.length > 1 && (
+          {v.sources.length > 1 && (
             <Segmented
+              className={ghost ? "sk-ghost" : ""}
               label={t("loads.source")}
               choices={[
                 { key: "", label: t("loads.source.all"), to: filter.hrefWith({ source: "" }), current: source === "" },
@@ -218,20 +235,21 @@ function LoadsData({ filter }: { filter: Filter }) {
               ]}
             />
           )}
-          {v?.hasLegacy && (
-            <Switch on={legacy} to={filter.hrefWith({ legacy: legacy ? "" : "1" })}>
+          {v.hasLegacy && (
+            <Switch className={ghost ? "sk-ghost" : ""} on={legacy} to={filter.hrefWith({ legacy: legacy ? "" : "1" })}>
               {t("catalog.legacy")}
             </Switch>
           )}
         </FilterRow>
       )}
-      <div aria-busy={q.isFetching}>
+      <div aria-busy={ghost}>
         {q.isError ? (
           <p role="alert" className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">
             {(q.error as Error).message}
           </p>
         ) : none ? (
-          filter.any && shown ? (
+          <div aria-hidden={ghost || undefined} className={ghost ? "sk-ghost" : undefined}>
+          {filter.any && shown ? (
             <Empty msg={t("loads.empty.filtered")}>
               <Link to="/ingest/loads" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
                 {t("workflows.clear")}
@@ -242,10 +260,11 @@ function LoadsData({ filter }: { filter: Filter }) {
               <p className="text-sm text-muted">{t("loads.empty")}</p>
               <p className="mt-1 text-xs text-faint">{t("loads.empty.how")}</p>
             </div>
-          )
+          )}
+          </div>
         ) : (
-          <Table id="load-rows" head={<Head />} foot={t("loads.honest")}>
-            {v ? <Rows rows={v.rows} /> : <SkeletonRows />}
+          <Table id="load-rows" head={<Head />} foot={t("loads.honest")} ghost={ghost} memo="loads">
+            <Rows rows={v.rows} />
           </Table>
         )}
       </div>

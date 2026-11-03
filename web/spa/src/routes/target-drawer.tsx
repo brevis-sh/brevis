@@ -124,7 +124,7 @@ export default function TargetDrawer({ u, query, closeTo }: { u: string; query: 
           {d ? <Logo k={d.row.kind || "file"} size={40} /> : <Skeleton w="40px" h="40px" className="shrink-0 rounded-card" />}
           <div className="min-w-0">
             <p className="text-[11px] font-medium tracking-[0.08em] text-muted uppercase">
-              {d ? t("catalog.drawer.kicker", { kind: logoTitle(d.row.kind || "file") }) : <Skeleton w="8rem" h=".7rem" />}
+              {d ? t("catalog.drawer.kicker", { kind: logoTitle(d.row.kind || "file") }) : <Skeleton w="8rem" h="16.5px" />}
             </p>
             <h2 id="target-title" className="font-mono text-[14px] font-semibold break-all text-ink">
               {u}
@@ -136,7 +136,7 @@ export default function TargetDrawer({ u, query, closeTo }: { u: string; query: 
                   <span>{t("catalog.drawer.best")}</span>
                 </>
               ) : (
-                <Skeleton w="6rem" h="1rem" />
+                <Skeleton w="6rem" h="18px" />
               )}
             </p>
           </div>

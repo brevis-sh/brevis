@@ -30,16 +30,21 @@
 body { margin: 0; background: var(--bg); color: var(--fg); }
 .sk { display: block; border-radius: .3rem; background: linear-gradient(90deg, var(--sk) 25%, var(--sk-hi) 50%, var(--sk) 75%); background-size: 200% 100%; animation: sk 1.4s linear infinite; }
 .sk-text { display: grid; gap: .5rem; }
-/* A ghost is the REAL markup drawn with placeholder values: the text turns into
-   skeleton blocks but keeps its font, line height and wrapping, so the ghost is
-   exactly as tall as the loaded thing by construction (hand-sized grey boxes
-   never were). Only leaf elements paint the block, so a wrapper does not. */
+/* A GHOST is the real markup drawn with placeholder values: every leaf (text, mark, bar) turns into
+   the skeleton look while the box it takes stays the real one, so a screen's loading shape and its
+   loaded shape have the same height by construction. Cells (td, th) keep their own box, never a slab. */
 .sk-ghost { pointer-events: none; user-select: none; }
-.sk-ghost, .sk-ghost * { color: transparent !important; box-shadow: none !important; }
-.sk-ghost :is(span, time, a, code, dd, td, p, b, strong, i, button, svg):not(:has(*)), .sk-ghost .cg, .sk-ghost svg {
-  border-radius: .3rem; background: linear-gradient(90deg, var(--sk) 25%, var(--sk-hi) 50%, var(--sk) 75%) 0 0 / 200% 100% !important; animation: sk 1.4s linear infinite;
-}
-.sk-ghost .cg svg { visibility: hidden; }
+.sk-ghost *, .sk-ghost:not(:has(*)) { color: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+.sk-ghost :is(a, span, p, div, dd, dt, li, h2, h3, strong, svg, kbd, input, time, code, b, i, button, td):not(:has(*)), .sk-ghost:not(:has(*)), .sk-ghost svg { background: linear-gradient(90deg, var(--sk) 25%, var(--sk-hi) 50%, var(--sk) 75%) 0 0 / 200% 100%; border-radius: .3rem; animation: sk 1.4s linear infinite; }
+.sk-ghost :is(p, div, dd, dt, li):not(:has(*)), :is(p, div, dd, dt, li).sk-ghost:not(:has(*)) { width: fit-content; max-width: 100%; }
+.sk-ghost svg > * { visibility: hidden; }
+/* A table whose columns are pinned to last time's widths: placeholder text must not widen them. */
+.sk-pinned { table-layout: fixed; }
+/* ...and must not wrap: the row heights are pinned to the loaded rows, and a placeholder wider than its column would only make the row taller. */
+.sk-pinned td { white-space: nowrap; overflow: hidden; }
+.sk-pinned td * { flex-wrap: nowrap; }
+.sk-ghost [class*="cg-"] { background: var(--sk); animation: none; }
+@media (prefers-reduced-motion: reduce) { .sk-ghost * { animation: none !important; } }
 @keyframes sk { to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .sk, .sk-ghost * { animation: none !important; } }
 

@@ -13,8 +13,6 @@
 .dc-switch[aria-checked="true"] .dc-switch-track { background: var(--st-info); border-color: var(--st-info); }
 .dc-switch[aria-checked="true"] .dc-switch-knob { background: #fff; transform: translateX(.8rem); }
 @media (prefers-reduced-motion: reduce) { .dc-switch-knob { transition: none; } }
-.dc-list { margin-top: .75rem; transition: opacity .15s; }
-.dc-list[aria-busy="true"] { opacity: .7; }
 .dc-target { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .4rem; color: inherit; font: .78rem ui-monospace, monospace; text-decoration: none; overflow-wrap: anywhere; }
 .dc-target:hover strong { text-decoration: underline; }
 .dc-where { color: var(--muted); }

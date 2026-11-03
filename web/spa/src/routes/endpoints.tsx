@@ -8,7 +8,7 @@ import { btn, Empty, FilterRow, Lead, MethodPill, PageHead, linkUnderline, Page 
 import { Icon } from "../ui/icon";
 import { Logo } from "../ui/logo";
 import { SearchBox, Segmented } from "../ui/segmented";
-import { Skeleton } from "../ui/skeleton";
+import { useSeen } from "../ui/seen";
 import { FreshnessMark } from "../ui/status";
 import { Row, Table, Td, Th } from "../ui/table";
 import { useFilter, useSearchBox } from "../ui/use-filter";
@@ -171,13 +171,13 @@ function Rows({ rows, now }: { rows: EndpointRow[]; now: string }) {
               )}
             </Td>
             <Td cls="text-[12.5px] whitespace-nowrap text-ink-2 max-[1180px]:hidden">
-              {r.ttl ? t("endpoints.ttl", { ttl: r.ttl }) : <span className="text-faint">—</span>}
+              {r.ttl ? <span>{t("endpoints.ttl", { ttl: r.ttl })}</span> : <span className="text-faint">—</span>}
             </Td>
-            <Td cls="text-[12.5px] whitespace-nowrap text-ink-2 max-[1180px]:hidden">{paramsSaid(r.params, r.required)}</Td>
+            <Td cls="text-[12.5px] whitespace-nowrap text-ink-2 max-[1180px]:hidden"><span>{paramsSaid(r.params, r.required)}</span></Td>
             <Td cls="whitespace-nowrap">
               <EndpointFreshness value={r.freshness} />
             </Td>
-            <Td cls="text-xs whitespace-nowrap text-muted max-[1280px]:hidden">{since(r.publishedAt, now)}</Td>
+            <Td cls="text-xs whitespace-nowrap text-muted max-[1280px]:hidden"><span>{since(r.publishedAt, now)}</span></Td>
             <Td edge="last" cls="text-right text-faint">
               <Icon name="chevron-right" className="ml-auto h-4 w-4" />
             </Td>
@@ -188,35 +188,33 @@ function Rows({ rows, now }: { rows: EndpointRow[]; now: string }) {
   );
 }
 
-/** The rows' shape while the first answer is on its way: the same cells at the same height. */
-function SkeletonRows() {
-  return (
-    <>
-      {Array.from({ length: 4 }, (_, i) => (
-        <tr key={i} aria-hidden="true">
-          <Td edge="first">
-            <Skeleton w="12rem" h="20px" />
-            <Skeleton w="16rem" h="14px" className="mt-1" />
-          </Td>
-          <Td cls="max-[1280px]:hidden"><Skeleton w="5rem" h="20px" /></Td>
-          <Td cls="max-[960px]:hidden"><Skeleton w="12rem" h="18px" /></Td>
-          <Td cls="max-[1180px]:hidden"><Skeleton w="4rem" h="18px" /></Td>
-          <Td cls="max-[1180px]:hidden"><Skeleton w="3rem" h="18px" /></Td>
-          <Td><Skeleton w="5rem" h="18px" /></Td>
-          <Td cls="max-[1280px]:hidden"><Skeleton w="4rem" h="18px" /></Td>
-          <Td edge="last" />
-        </tr>
-      ))}
-    </>
-  );
-}
+// What the screen shows before its first answer: the last shape it saw, or this one on a first visit,
+// drawn from the real row markup with placeholder values so it takes the height the loaded rows take.
+type Shape = { n: number; total: number; apis: number; fresh: number; stale: number; caches: number; connections: number; apiNames: number };
+// A first visit draws the empty state (a fresh install has no endpoints); the box is the one the real empty state fills.
+const FIRST: Shape = { n: 0, total: 0, apis: 0, fresh: 0, stale: 0, caches: 0, connections: 0, apiNames: 0 };
+const shapeOf = (d: Endpoints): Shape => ({ n: d.rows.length, total: d.total, apis: d.apis, fresh: d.fresh, stale: d.stale, caches: d.caches.length, connections: d.connections.length, apiNames: d.apiNames.length });
+const GHOST_ROW: EndpointRow = {
+  api: "api-name",
+  name: "endpoint",
+  path: "/v1/endpoint_path",
+  keyed: false,
+  about: "",
+  freshness: "fresh",
+  reads: ["postgres://warehouse/schema/table_name"],
+  rebuilt: null,
+  ttl: "6h",
+  params: 2,
+  required: 1,
+  publishedAt: "2000-01-01T00:00:00Z",
+};
+const ghostOf = (s: Shape): Endpoints => ({ ...s, caches: Array.from({ length: s.caches }, () => "redis"), connections: Array.from({ length: s.connections }, () => "connection"), apiNames: Array.from({ length: s.apiNames }, (_, i) => `api${i}`), now: "2000-01-02T00:00:00Z", rows: Array.from({ length: s.n }, (_, i) => ({ ...GHOST_ROW, name: `endpoint_${i}` })) });
 
-function Summary({ d }: { d: Endpoints | undefined }) {
+function Summary({ d, ghost }: { d: Endpoints; ghost: boolean }) {
   const { n, t } = useT();
-  if (!d) return <Skeleton w="28rem" h="18px" className="mb-4 max-w-full" />;
   if (d.total === 0) return null;
   return (
-    <div className="mb-4 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[13px] text-muted">
+    <div aria-hidden={ghost || undefined} className={`mb-4 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[13px] text-muted ${ghost ? "sk-ghost" : ""}`}>
       <span>{n("endpoints.summary.endpoints", d.total)}</span>
       <span>{n("endpoints.summary.apis", d.apis)}</span>
       {d.fresh > 0 && (
@@ -256,18 +254,22 @@ function Endpoints({ filter }: { filter: Filter }) {
   const qs = new URLSearchParams();
   for (const f of FIELDS) if (filter.get(f)) qs.set(f, filter.get(f));
   const q = useData<Endpoints>(["endpoints", qs.toString()], `/api/endpoints${qs.size ? `?${qs}` : ""}`);
-  const d = q.data;
+  const ghost = !q.data;
+  // Only the unfiltered answer is remembered: a filter's counts are not the list's shape.
+  const seen = useSeen("endpoints", qs.size === 0 && q.data ? shapeOf(q.data) : undefined, FIRST);
+  const d = q.data ?? ghostOf(seen);
   const api = filter.get("api");
   const state = filter.get("state");
-  const none = d !== undefined && d.rows.length === 0;
+  const none = d.rows.length === 0;
   return (
     <>
-      <Summary d={d} />
-      {(!d || d.total > 0) && (
+      <Summary d={d} ghost={ghost} />
+      {d.total > 0 && (
         <FilterRow>
           <Search filter={filter} />
-          {d && d.apiNames.length > 1 && (
+          {d.apiNames.length > 1 && (
           <Segmented
+            className={ghost ? "sk-ghost" : ""}
             label={t("endpoints.col.api")}
             choices={[
               { key: "", label: t("endpoints.filter.api.all"), to: filter.hrefWith({ api: "" }), current: api === "" },
@@ -305,22 +307,24 @@ function Endpoints({ filter }: { filter: Filter }) {
         />
         </FilterRow>
       )}
-      <div aria-busy={q.isFetching}>
+      <div aria-busy={ghost}>
         {q.isError ? (
           <p role="alert" className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">
             {(q.error as Error).message}
           </p>
         ) : none ? (
-          <Empty msg={d.total > 0 ? t("endpoints.empty.filtered") : t("endpoints.empty")} hint={d.total > 0 ? undefined : "brevis endpoints publish manifest.json"}>
-            {d.total > 0 && (
-              <Link to="/data/endpoints" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
-                {t("workflows.clear")}
-              </Link>
-            )}
-          </Empty>
+          <div aria-hidden={ghost || undefined} className={ghost ? "sk-ghost" : undefined}>
+            <Empty msg={d.total > 0 ? t("endpoints.empty.filtered") : t("endpoints.empty")} hint={d.total > 0 ? undefined : "brevis endpoints publish manifest.json"}>
+              {d.total > 0 && (
+                <Link to="/data/endpoints" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
+                  {t("workflows.clear")}
+                </Link>
+              )}
+            </Empty>
+          </div>
         ) : (
-          <Table id="endpoint-rows" head={<Head />}>
-            {d ? <Rows rows={d.rows} now={d.now} /> : <SkeletonRows />}
+          <Table id="endpoint-rows" head={<Head />} ghost={ghost} memo="endpoints">
+            <Rows rows={d.rows} now={d.now} />
           </Table>
         )}
       </div>

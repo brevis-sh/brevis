@@ -8,7 +8,7 @@ import { Icon } from "../ui/icon";
 import { Empty, FilterRow, Lead, PageHead, linkUnderline, Page } from "../ui/kit";
 import { Logo, useLogoTitle } from "../ui/logo";
 import { Band, SearchBox, Segmented, Switch } from "../ui/segmented";
-import { Skeleton } from "../ui/skeleton";
+import { useSeen } from "../ui/seen";
 import { Freshness, StatusMark, freshnessKind } from "../ui/status";
 import { Row, Table, Td, Th } from "../ui/table";
 import { useFilter, useSearchBox } from "../ui/use-filter";
@@ -118,7 +118,7 @@ function CatalogRows({ rows, filter, now }: { rows: CatalogRow[]; filter: Filter
               {r.writer}
               {r.more > 0 && <span className="ml-1 font-sans text-faint">+{r.more}</span>}
             </Td>
-            <Td cls="text-xs whitespace-nowrap text-muted max-[640px]:hidden">{r.lastAt ? since(r.lastAt, now) : "—"}</Td>
+            <Td cls="text-xs whitespace-nowrap text-muted max-[640px]:hidden"><span>{r.lastAt ? since(r.lastAt, now) : "—"}</span></Td>
             <Td cls="text-right text-xs tabular-nums text-ink-2 max-[1100px]:hidden">
               {r.lastRows !== null ? f.number(r.lastRows) : <span title={t("catalog.no_rows")} className="text-faint">—</span>}
             </Td>
@@ -135,24 +135,29 @@ function CatalogRows({ rows, filter, now }: { rows: CatalogRow[]; filter: Filter
   );
 }
 
-/** Rows' shape while the first answer is on its way: the same cells at the same height. */
-function SkeletonRows() {
-  return (
-    <>
-      {Array.from({ length: 5 }, (_, i) => (
-        <tr key={i} aria-hidden="true">
-          <Td edge="first"><Skeleton w="70%" h="18px" /></Td>
-          <Td><Skeleton w="5rem" h="18px" /></Td>
-          <Td cls="max-[860px]:hidden"><Skeleton w="8rem" h="18px" /></Td>
-          <Td cls="max-[640px]:hidden"><Skeleton w="4rem" h="18px" /></Td>
-          <Td cls="max-[1100px]:hidden"><Skeleton w="3rem" h="18px" className="ml-auto" /></Td>
-          <Td cls="max-[1100px]:hidden"><Skeleton w="4rem" h="20px" /></Td>
-          <Td edge="last" />
-        </tr>
-      ))}
-    </>
-  );
-}
+// What the screen shows before its first answer: the last shape it saw (rows, counts, filters), or
+// this one on a first visit, drawn from the real row markup with placeholder values so it takes the
+// height the loaded rows take.
+type Shape = Omit<Catalog, "rows" | "now" | "kinds"> & { n: number; kinds: number };
+const FIRST: Shape = { n: 4, kinds: 2, hasLegacy: false, total: 4, shown: 4, counts: { all: 4, attention: 0, continuous: 4 } };
+const shapeOf = (d: Catalog): Shape => ({ n: d.rows.length, kinds: d.kinds.length, hasLegacy: d.hasLegacy, total: d.total, shown: d.shown, counts: Object.fromEntries(Object.entries(d.counts).filter(([k, n]) => (k === "all" || k === "attention" || STATUSES.includes(k)) && typeof n === "number")) });
+const GHOST_ROW: CatalogRow = {
+  target: "postgres://warehouse/schema/table_name",
+  kind: "postgres",
+  legacy: false,
+  status: "on_time",
+  where: "postgres://warehouse/schema/",
+  what: "table_name",
+  autoTable: false,
+  writer: "workflow_name",
+  more: 0,
+  queued: false,
+  lastAt: "2000-01-01T00:00:00Z",
+  lastRows: 1000,
+  recent: [1, 3, 2, 4],
+  streamHref: "",
+};
+const ghostOf = (s: Shape): Catalog => ({ ...s, kinds: Array.from({ length: s.kinds }, (_, i) => ["postgres", "file", "pubsub"][i % 3] ?? "file"), now: "2000-01-02T00:00:00Z", rows: Array.from({ length: s.n }, (_, i) => ({ ...GHOST_ROW, target: `${GHOST_ROW.target}_${i}` })) });
 
 function Search({ filter }: { filter: Filter }) {
   const { t } = useT();
@@ -166,7 +171,10 @@ function Catalog({ filter }: { filter: Filter }) {
   const qs = new URLSearchParams();
   for (const f of FIELDS) if (filter.get(f)) qs.set(f, filter.get(f));
   const q = useData<Catalog>(["catalog", qs.toString()], `/api/catalog${qs.size ? `?${qs}` : ""}`, { topic: "catalog" });
-  const data = q.data;
+  const ghost = !q.data;
+  // Only the unfiltered answer is remembered: a filter's counts are not the list's shape.
+  const seen = useSeen("catalog", qs.size === 0 && q.data ? shapeOf(q.data) : undefined, FIRST);
+  const data = q.data ?? ghostOf(seen);
   const status = filter.get("status");
   const kind = filter.get("kind");
   const legacy = filter.get("legacy") === "1";
@@ -175,12 +183,12 @@ function Catalog({ filter }: { filter: Filter }) {
     { key: "attention", status: "attention", label: t("catalog.status.attention"), tip: t("catalog.tip.attention"), mark: "stale" },
     ...STATUSES.map((s) => ({ key: s, status: s, label: t(`state.${freshnessKind(s)}`), tip: t(`catalog.tip.${s}`), mark: s })),
   ];
-  const empty = data !== undefined && data.rows.length === 0;
+  const empty = data.rows.length === 0;
   return (
-    <div aria-busy={q.isFetching}>
+    <div aria-busy={ghost}>
       <FilterRow>
         <Search filter={filter} />
-        <nav aria-label={t("catalog.band")}>
+        <nav aria-label={t("catalog.band")} className={ghost ? "sk-ghost" : undefined}>
           {band.map((b) => (
             <Band
               key={b.key}
@@ -189,12 +197,13 @@ function Catalog({ filter }: { filter: Filter }) {
               tip={b.tip}
               mark={b.mark ? <StatusMark kind={freshnessKind(b.mark)} /> : null}
               label={b.label}
-              count={data ? (data.counts[b.key] ?? 0) : undefined}
+              count={data.counts[b.key] ?? 0}
             />
           ))}
         </nav>
-        {data && data.kinds.length > 1 && (
+        {data.kinds.length > 1 && (
           <Segmented
+            className={ghost ? "sk-ghost" : ""}
             label={t("catalog.kind")}
             choices={[
               { key: "", label: t("catalog.kind.all"), to: filter.hrefWith({ kind: "" }), current: kind === "" },
@@ -212,8 +221,8 @@ function Catalog({ filter }: { filter: Filter }) {
             ]}
           />
         )}
-        {data?.hasLegacy && (
-          <Switch on={legacy} to={filter.hrefWith({ legacy: legacy ? "" : "1" })}>
+        {data.hasLegacy && (
+          <Switch className={ghost ? "sk-ghost" : ""} on={legacy} to={filter.hrefWith({ legacy: legacy ? "" : "1" })}>
             {t("catalog.legacy")}
           </Switch>
         )}
@@ -223,6 +232,7 @@ function Catalog({ filter }: { filter: Filter }) {
           {(q.error as Error).message}
         </p>
       ) : empty ? (
+        <div aria-hidden={ghost || undefined} className={ghost ? "sk-ghost" : undefined}>
         <Empty msg={filter.any ? t("catalog.empty.filtered") : t("catalog.empty")}>
           {filter.any && (
             <Link to="/data" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
@@ -230,9 +240,10 @@ function Catalog({ filter }: { filter: Filter }) {
             </Link>
           )}
         </Empty>
+        </div>
       ) : (
-        <Table catalog head={<Head />} foot={t("catalog.order")}>
-          {data ? <CatalogRows rows={data.rows} filter={filter} now={data.now} /> : <SkeletonRows />}
+        <Table catalog head={<Head />} foot={t("catalog.order")} ghost={ghost} memo="catalog">
+          <CatalogRows rows={data.rows} filter={filter} now={data.now} />
         </Table>
       )}
     </div>
