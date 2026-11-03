@@ -1055,32 +1055,14 @@ func (u *UI) disparar(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	back := localPath(r.PostForm.Get("back"))
 	next := "/runs/" + id.String()
-	switch {
-	case id == uuid.Nil:
+	if id == uuid.Nil {
 		// The idempotency key collided: two clicks in the same second become
 		// one run. Going back is the right behaviour -- there is no new run to
 		// go to.
 		u.log.Info("trigger ignored by idempotency", "workflow", slug)
-		next = back
-		if next == "" {
-			next = backTo(r)
-		}
-	case back != "":
-		// A run made from a list -- the Overview's "Needs your attention", the
-		// Workflows list -- goes back to it, saying the run was made and where
-		// to follow it: the list is what the reader is watching.
-		u.log.Info("manual run created", "workflow", slug, "run", id)
-		ctx := i18n.WithLang(r.Context(), i18n.Negotiate(r))
-		message, follow := i18n.T(ctx, "overview.rerun_created", "workflow", slug), i18n.T(ctx, "overview.follow")
-		// A run from a workflow or a load is a new one, not a rerun.
-		if strings.HasPrefix(back, "/workflows") || strings.HasPrefix(back, "/ingest/loads") {
-			message, follow = i18n.T(ctx, "workflows.run_created", "workflow", slug), i18n.T(ctx, "workflows.see_logs")
-		}
-		layouts.SetFlashLink(w, "run", message, follow, next)
-		next = back
-	default:
+		next = backTo(r)
+	} else {
 		u.log.Info("manual run created", "workflow", slug, "run", id)
 	}
 	// The Run dialog posts with its script, to stay open on a refusal: it is
@@ -1138,19 +1120,6 @@ func (u *UI) slotFromForm(ctx context.Context, slug, v string) (*time.Time, erro
 		}
 	}
 	return nil, fmt.Errorf("slot %q is not a time: use 2026-10-27T04:00:00Z, or 2026-10-27T04:00 in the schedule's zone", v)
-}
-
-// localPath is p when it is a path on this site, "" otherwise. A redirect
-// to wherever the form said is a phishing link with this console's name on
-// it: no scheme, no host, no "//" or "\" a browser reads as one.
-func localPath(p string) string {
-	if !strings.HasPrefix(p, "/") || strings.HasPrefix(p, "//") || strings.ContainsRune(p, '\\') {
-		return ""
-	}
-	if u, err := url.Parse(p); err != nil || u.Scheme != "" || u.Host != "" {
-		return ""
-	}
-	return p
 }
 
 // backTo is the page the request came from, on this site, or the Workflows

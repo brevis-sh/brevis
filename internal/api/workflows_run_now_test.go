@@ -74,7 +74,7 @@ func ptr(t time.Time) *time.Time { return &t }
 
 // THE DIALOG STAYS OPEN ON A REFUSAL: with the script, a refused slot is the
 // scheduler's sentence for the dialog to show; a run made is where to go
-// next, with the toast that says so waiting in the flash.
+// next.
 func TestTheRunDialogHearsTheOutcome(t *testing.T) {
 	spy := &triggerSpy{err: errors.New(`2026-10-26 10:00 UTC is not a slot of "0 9 * * *"`)}
 	rec := postRun(t, runNowUI(spy), url.Values{"when": {"slot"}, "slot": {"2026-10-26T10:00:00Z"}}, true)
@@ -82,12 +82,9 @@ func TestTheRunDialogHearsTheOutcome(t *testing.T) {
 		t.Errorf("a refusal answered %d: %s", rec.Code, rec.Body)
 	}
 
-	rec = postRun(t, runNowUI(&triggerSpy{}), url.Values{"when": {"now"}, "back": {"/workflows?q=d"}}, true)
+	rec = postRun(t, runNowUI(&triggerSpy{}), url.Values{"when": {"now"}}, true)
 	var got struct{ Location string }
-	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil || got.Location != "/workflows?q=d" {
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil || !strings.HasPrefix(got.Location, "/runs/") {
 		t.Errorf("a run made answered %q (%v)", rec.Body, err)
-	}
-	if !strings.Contains(rec.Header().Get("Set-Cookie"), "brevis_flash") {
-		t.Error("the list is not told the run was made")
 	}
 }

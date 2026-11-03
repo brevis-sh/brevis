@@ -134,3 +134,22 @@ test("opening the drawer shifts nothing on the page behind it", async ({ page })
   expect(await page.locator("#load-rows").evaluate((e) => e.getBoundingClientRect().top)).toBe(top);
   expect((await page.evaluate(() => (window as unknown as { __cls: number }).__cls)) - before).toBeLessThan(0.01);
 });
+
+test("Run now in the drawer starts the workflow with the JSON trigger and goes to the new run, with a toast", async ({ page }) => {
+  await mock(page);
+  // The detail says the workflow can run with one click (it has no parameters).
+  await page.route("**/api/ingest/loads/orders/load_orders", (r) =>
+    r.fulfill({ json: { workflow: "orders", step: "load_orders", choices: [], choosing: false, detail: { ...detail("postgres://warehouse/public/orders"), run: "now" } } }),
+  );
+  const posts: string[] = [];
+  await page.route("**/api/workflows/orders/trigger", (r) => {
+    posts.push(r.request().postData() ?? "");
+    return r.fulfill({ json: { runId: "11111111-1111-1111-1111-111111111111", href: "/runs/11111111-1111-1111-1111-111111111111" } });
+  });
+  await page.goto("/ingest/loads/orders/load_orders");
+  await drawer(page).getByRole("button", { name: "Run now", exact: true }).click();
+  await expect(page).toHaveURL(/\/runs\/11111111-1111-1111-1111-111111111111$/);
+  await expect(page.getByText("Run of orders created")).toBeVisible();
+  expect(posts).toHaveLength(1);
+  expect(JSON.parse(posts[0]!)).toEqual({ params: {} });
+});

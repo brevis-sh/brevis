@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { Link, useLocation } from "react-router";
+import { useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router";
 import { useData } from "../api/live";
 import type { Change, Load, LoadDetail, Place } from "../api/ingest";
 import { useFormat, useT } from "../i18n";
@@ -11,6 +11,9 @@ import { Logo, useLogoTitle } from "../ui/logo";
 import { LoadBars } from "../ui/sparkline";
 import { Freshness } from "../ui/status";
 import { StepConfigPanel } from "./load-config";
+import { useRefreshRuns } from "./run-now";
+import { fieldErrors, triggerRun } from "../api/trigger";
+import { toast } from "../shell/toast";
 
 const short = (id: string) => id.slice(0, 8);
 const th = "px-2.5 py-2 text-[11.5px] font-medium whitespace-nowrap text-faint";
@@ -253,9 +256,25 @@ function Body({ workflow, step, d, ghost }: { workflow: string; step: string; d:
 /** The page's verbs: a query of the destination, the workflow, and running it. */
 function Actions({ workflow, d, ghost }: { workflow: string; d: LoadDetail | null; ghost: boolean }) {
   const { t } = useT();
-  const here = useLocation();
-  // Where the run comes back to: this address, as the server knows it.
-  const back = here.pathname + here.search;
+  const navigate = useNavigate();
+  const refresh = useRefreshRuns();
+  const [pending, setPending] = useState(false);
+  // One click, no questions (the workflow has no parameters). The drawer is modal, so a toast beside it could be
+  // neither seen nor clicked: the reader goes to the new run, and the toast says it was made.
+  const runNow = async () => {
+    setPending(true);
+    try {
+      const r = await triggerRun(workflow, { params: {} });
+      void refresh(workflow);
+      toast(t("workflows.run_created", { workflow }), { kind: "run" });
+      navigate(r.href);
+    } catch (e) {
+      const [first] = Object.entries(fieldErrors(e));
+      toast(first ? `${first[0]}: ${first[1]}` : (e as Error).message, { kind: "fail" });
+    } finally {
+      setPending(false);
+    }
+  };
   return (
     <>
       {d && d.query !== "" && (
@@ -267,14 +286,10 @@ function Actions({ workflow, d, ghost }: { workflow: string; d: LoadDetail | nul
       )}
       <ButtonLink to={`/workflows/${encodeURIComponent(workflow)}`}>{t("loads.drawer.workflow")}</ButtonLink>
       {d?.run === "now" && (
-        // A plain form post: the server runs it and comes back with a flash.
-        <form aria-hidden={ghost || undefined} className={gh(ghost)} method="post" action={`/workflows/${encodeURIComponent(workflow)}/trigger`}>
-          <input type="hidden" name="back" value={back} />
-          <button type="submit" className={btn(true)}>
-            <Icon name="play" className="h-3.5 w-3.5" />
-            {t("loads.drawer.run")}
-          </button>
-        </form>
+        <button type="button" aria-hidden={ghost || undefined} disabled={pending} className={`${btn(true)} ${gh(ghost)}`} onClick={() => void runNow()}>
+          <Icon name="play" className="h-3.5 w-3.5" />
+          {t("loads.drawer.run")}
+        </button>
       )}
       {d?.run === "params" && (
         <ButtonLink to={`/workflows/${encodeURIComponent(workflow)}#run`} icon="play" primary>

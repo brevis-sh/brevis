@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -94,34 +93,4 @@ func postTrigger(t *testing.T, ui *api.UI, slug string, form url.Values) *httpte
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, r)
 	return rec
-}
-
-// RERUN FROM THE OVERVIEW COMES BACK TO IT, saying the run was made and
-// where to follow it -- the page the reader is watching is the list.
-func TestARerunFromTheOverviewComesBack(t *testing.T) {
-	spy := &triggerSpy{}
-	ui := api.NewUI(nil, nil, nil, spy, nil, nil, branding.Default(), slog.New(slog.DiscardHandler))
-	rec := postTrigger(t, ui, "daily", url.Values{"back": {"/"}, "param.region": {"br"}})
-	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/" {
-		t.Fatalf("answered %d to %q; wanted 303 to /", rec.Code, rec.Header().Get("Location"))
-	}
-	cookie, _ := url.QueryUnescape(rec.Header().Get("Set-Cookie"))
-	if !strings.Contains(cookie, "Rerun of daily created") || !regexp.MustCompile(`/runs/[0-9a-f-]{36}`).MatchString(cookie) {
-		t.Errorf("the flash does not say it, with the run: %s", cookie)
-	}
-	if spy.got["region"] != "br" {
-		t.Errorf("the rerun lost its values: %v", spy.got)
-	}
-}
-
-// Only a path on this site: back is the reader's to send, and a redirect
-// anywhere is a phishing link with this console's name on it.
-func TestABackOffThisSiteIsIgnored(t *testing.T) {
-	for _, back := range []string{"//evil.example", "https://evil.example/", `/\evil.example`, "javascript:alert(1)", "runs"} {
-		ui := api.NewUI(nil, nil, nil, &triggerSpy{}, nil, nil, branding.Default(), slog.New(slog.DiscardHandler))
-		rec := postTrigger(t, ui, "daily", url.Values{"back": {back}})
-		if loc := rec.Header().Get("Location"); !strings.HasPrefix(loc, "/runs/") {
-			t.Errorf("back %q sent the reader to %q", back, loc)
-		}
-	}
 }
