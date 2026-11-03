@@ -351,7 +351,7 @@ function Tabs({ d }: { d: WorkflowDetail }) {
           { key: "definition", label: t("workflow.tab.definition") },
         ]}
       />
-      <section id={`panel-${current}`} role="tabpanel" aria-labelledby={`tab-${current}`} className="wd-card" id-hash={current}>
+      <section id={`panel-${current}`} role="tabpanel" aria-labelledby={`tab-${current}`} className="wd-card">
         {current === "runs" ? <RunsTab d={d} /> : current === "params" ? <ParamsTab d={d} /> : <DefinitionTab d={d} />}
       </section>
     </div>
