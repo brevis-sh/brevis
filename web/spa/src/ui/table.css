@@ -1,0 +1,33 @@
+/*
+ * A table that is a list of cards on a phone and a table from 768px up.
+ * Mobile first: every cell carries data-label (shown beside its value on a
+ * card); the first cell of a row (.rt-head) is the card's title. A whole row
+ * opens through a stretched link (a.row-link); any other link in it sits above.
+ */
+.rt { width: 100%; display: block; }
+.rt thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.rt tbody { display: grid; gap: .6rem; }
+.rt tr { position: relative; display: grid; gap: .35rem; padding: .8rem 1rem; border: 1px solid var(--line); border-radius: .6rem; background: var(--bg); }
+.rt tr:hover { border-color: var(--muted); }
+.rt td { display: flex; align-items: baseline; gap: .6rem; min-width: 0; }
+.rt td[data-label]::before { content: attr(data-label); flex: none; width: 6.5rem; color: var(--muted); font-size: .75rem; }
+.rt td.rt-head::before { content: none; }
+.rt td.rt-num { font-variant-numeric: tabular-nums; }
+.rt a.row-link::after { content: ""; position: absolute; inset: 0; }
+.rt a:not(.row-link) { position: relative; z-index: 1; }
+@media (min-width: 768px) {
+  .rt { display: table; border-collapse: collapse; border: 1px solid var(--line); border-radius: .6rem; background: var(--bg); }
+  .rt thead { position: static; width: auto; height: auto; overflow: visible; clip-path: none; display: table-header-group; }
+  .rt tbody { display: table-row-group; }
+  .rt tr { display: table-row; padding: 0; border: 0; border-radius: 0; }
+  .rt tbody tr { border-top: 1px solid var(--line); }
+  .rt tbody tr:hover { background: var(--card); }
+  .rt th { text-align: left; font-weight: 500; font-size: .75rem; color: var(--muted); padding: .55rem .7rem; }
+  .rt td { display: table-cell; padding: .75rem .7rem; vertical-align: top; }
+  .rt td[data-label]::before { content: none; }
+  .rt td.rt-num, .rt th.rt-num { text-align: right; }
+}
+/* Columns give way, least needed first, as the old pages hid them. */
+@media (min-width: 768px) and (max-width: 1099px) { .rt .rt-c3 { display: none; } }
+@media (min-width: 768px) and (max-width: 859px) { .rt .rt-c2 { display: none; } }
+@media (min-width: 768px) and (max-width: 1279px) { .rt .rt-c4 { display: none; } }

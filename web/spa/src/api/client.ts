@@ -21,7 +21,11 @@ export async function getJSON<T>(path: string, signal?: AbortSignal): Promise<T>
     location.assign(`/login?next=${encodeURIComponent(here)}`);
     throw new ApiError(401, `${path}: no session`);
   }
-  if (!res.ok) throw new ApiError(res.status, `${path}: HTTP ${res.status}`);
+  if (!res.ok) {
+    // The API answers a failure as {"error": "..."}; say that when it did.
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new ApiError(res.status, body?.error ?? `${path}: HTTP ${res.status}`);
+  }
   return (await res.json()) as T;
 }
 

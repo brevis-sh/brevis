@@ -9,6 +9,10 @@ import { Skeleton } from "./ui/skeleton";
 import WorkflowsRoute from "./routes/workflows";
 import WorkflowRoute from "./routes/workflow";
 import RunRoute from "./routes/run";
+const LoadsRoute = lazy(() => import("./routes/loads"));
+const LoadRoute = lazy(() => import("./routes/load"));
+const StreamsRoute = lazy(() => import("./routes/streams"));
+const StreamRoute = lazy(() => import("./routes/stream"));
 import "./styles.css";
 
 const SqlRoute = lazy(() => import("./routes/sql"));
@@ -29,6 +33,10 @@ createRoot(document.getElementById("root")!).render(
             <Route path="workflows" element={<WorkflowsRoute />} />
             <Route path="workflows/:slug" element={<WorkflowRoute />} />
             <Route path="runs/:id" element={<RunRoute />} />
+            <Route path="ingest/streams" element={<StreamsRoute />} />
+            <Route path="ingest/streams/:gateway/*" element={<StreamRoute />} />
+            <Route path="ingest/loads" element={<LoadsRoute />} />
+            <Route path="ingest/loads/:workflow/:step" element={<LoadRoute />} />
             <Route path="*" element={<p>Not found.</p>} />
           </Route>
         </Routes>

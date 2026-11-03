@@ -391,6 +391,7 @@ func (u *UI) Registrar(mux *http.ServeMux) {
 	u.registerSQLJSON(mux)
 	u.registerWorkflowsAPI(mux)
 	u.registerRunAPI(mux)
+	u.registerIngestAPI(mux)
 }
 
 // loads is Ingest → Batch loads (screen-loads): one row per step and
