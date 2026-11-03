@@ -16,7 +16,7 @@ test("an idle screen makes no REST requests", async ({ browser }) => {
   await quiet(first.request);
   const results: Record<string, string[]> = {};
   await Promise.all(
-    ["/app/", "/app/runs", "/app/workflows", "/app/ingest/streams"].map(async (path) => {
+    ["/", "/runs", "/workflows", "/ingest/streams"].map(async (path) => {
       const page = await ctx.newPage();
       const api = trackApi(page);
       await page.goto(path);
@@ -28,13 +28,13 @@ test("an idle screen makes no REST requests", async ({ browser }) => {
     }),
   );
   await ctx.close();
-  expect(results).toEqual({ "/app/": [], "/app/runs": [], "/app/workflows": [], "/app/ingest/streams": [] });
+  expect(results).toEqual({ "/": [], "/runs": [], "/workflows": [], "/ingest/streams": [] });
 });
 
 test("a run started on the server refreshes the open Runs list once", async ({ page, seed }) => {
   await quiet(page.request);
   await page.addInitScript(() => localStorage.setItem("brevis.runs.live", "on"));
-  await page.goto("/app/runs");
+  await page.goto("/runs");
   await loaded(page);
   await expect(page.locator("main button[aria-pressed=true]")).toHaveCount(1); // Live is on
   await page.waitForTimeout(1000);
@@ -57,9 +57,9 @@ test("a run started on the server refreshes the open Runs list once", async ({ p
 test("the page opens one event stream and keeps it while moving between screens that share topics", async ({ page }) => {
   const streams: string[] = [];
   page.on("request", (r) => /\/api\/events/.test(r.url()) && streams.push(r.url()));
-  await page.goto("/app/workflows");
+  await page.goto("/workflows");
   await loaded(page);
-  for (const to of ["/app/data", "/app/ingest/loads", "/app/workflows"]) {
+  for (const to of ["/data", "/ingest/loads", "/workflows"]) {
     await page.locator(`nav a[href="${to}"], nav a[href="${to.replace(/\/$/, "")}"]`).first().click();
     await loaded(page);
   }

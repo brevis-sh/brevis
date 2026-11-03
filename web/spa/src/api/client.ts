@@ -22,8 +22,8 @@ async function signInAgain(res: Response, path: string): Promise<void> {
   if (res.status !== 401) return;
   const body = (await res.clone().json().catch(() => null)) as { error?: string } | null;
   if (body?.error !== "sign in") return;
-  if (location.pathname !== "/app/login") {
-    location.replace(`/app/login?next=${encodeURIComponent(location.pathname + location.search)}`);
+  if (location.pathname !== "/login") {
+    location.replace(`/login?next=${encodeURIComponent(location.pathname + location.search)}`);
   }
   throw new ApiError(401, `${path}: no session`);
 }

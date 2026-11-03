@@ -12,7 +12,7 @@ const answer = { rows: [row(0, true), row(1, false), row(2, true)], total: 3, ga
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/ingest/streams*", (r) => r.fulfill({ json: answer }));
-  await page.goto("/app/ingest/streams");
+  await page.goto("/ingest/streams");
   await expect(page.locator("#stream-rows tbody tr").first().locator("a.stl-link")).toBeVisible();
 });
 

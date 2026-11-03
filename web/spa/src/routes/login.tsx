@@ -73,17 +73,12 @@ export default function LoginRoute() {
     return () => clearInterval(id);
   }, [lockedUntil]);
 
-  // To where the visitor was going. An /app/ path is a route of this app; any
-  // other same-origin path (the server's own pages) needs a real navigation.
-  const go = (to: string) => {
-    const dest = safeNext(to);
-    if (dest === "/app" || dest.startsWith("/app/")) void navigate(dest.slice("/app".length) || "/", { replace: true });
-    else location.assign(dest);
-  };
+  // To where the visitor was going: a route of this app.
+  const go = (to: string) => void navigate(safeNext(to), { replace: true });
 
   // Already signed in, or an open console (no credential, so no login): there
   // is nothing to ask. `anonymous` is what boot sets when /api/session said 401.
-  if (!session.anonymous) return <Navigate to={next === "/app/" ? "/" : next.startsWith("/app/") ? next.slice(4) : "/"} replace />;
+  if (!session.anonymous) return <Navigate to={next} replace />;
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

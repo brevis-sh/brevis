@@ -25,8 +25,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 const screens = [
-  { name: "loads", path: "/app/ingest/loads", rows: "#load-rows tbody tr", link: "a.ldl-link", opens: /\/ingest\/loads\/orders\/load_0$/, third: 3 },
-  { name: "catalog", path: "/app/data", rows: "table.ctl tbody tr", link: "a.ctl-link", opens: /\/data\/target\?u=postgres/, third: 2 },
+  { name: "loads", path: "/ingest/loads", rows: "#load-rows tbody tr", link: "a.ldl-link", opens: /\/ingest\/loads\/orders\/load_0$/, third: 3 },
+  { name: "catalog", path: "/data", rows: "table.ctl tbody tr", link: "a.ctl-link", opens: /\/data\/target\?u=postgres/, third: 2 },
 ];
 
 for (const s of screens) {
@@ -64,20 +64,20 @@ for (const s of screens) {
 }
 
 test("a load's row has one destination line with its source under it, and keeps its facts", async ({ page }) => {
-  await page.goto("/app/ingest/loads");
+  await page.goto("/ingest/loads");
   const first = page.locator("#load-rows tbody tr").first();
   await expect(first.locator(".ldl-to")).toContainText("postgres://warehouse/public.orders_0");
   await expect(first.locator(".ldl-from")).toContainText("HTTP API");
   await expect(first.locator(".ldl-from")).toContainText("api.example.com");
   await expect(first.locator("td").nth(1).locator("div[title]")).toHaveAttribute("title", /HTTP API \(api\.example\.com\) → postgres:\/\/warehouse\/public\.orders_0/);
   await expect(first.locator(".ldl-rows span")).toHaveAttribute("title", "1200 rows");
-  await expect(page.locator("#load-rows tbody tr").nth(2).locator("a.ldl-fixing")).toHaveAttribute("href", "/app/runs/run1");
+  await expect(page.locator("#load-rows tbody tr").nth(2).locator("a.ldl-fixing")).toHaveAttribute("href", "/runs/run1");
   // Every row is as tall as the others.
   expect(await page.locator("#load-rows tbody tr").evaluateAll((rs) => new Set(rs.map((r) => Math.round(r.getBoundingClientRect().height))).size)).toBe(1);
 });
 
 test("the catalog names the writer once, muted under the destination, and the notes sit under the table", async ({ page }) => {
-  await page.goto("/app/data");
+  await page.goto("/data");
   const rows = page.locator("table.ctl tbody tr");
   await expect(rows.first().locator(".ctl-sub")).toContainText("orders · load_orders");
   await expect(rows.nth(1).locator(".ctl-sub")).toContainText("+2");

@@ -24,7 +24,7 @@ const detail = (health: { state: string; reason: string }) => ({
 
 test("the list says no data, never continuous, and counts it in the summary", async ({ page }) => {
   await page.route("**/api/ingest/streams*", (r) => r.fulfill({ json: list }));
-  await page.goto("/app/ingest/streams");
+  await page.goto("/ingest/streams");
   const rows = page.locator("#stream-rows tbody tr");
   await expect(rows.first().locator("a.stl-link")).toBeVisible();
   for (let i = 0; i < 3; i++) await expect(rows.nth(i).locator(".stl-state .st")).toHaveText("no data");
@@ -38,7 +38,7 @@ test("the list says no data, never continuous, and counts it in the summary", as
 for (const [reason, sentence] of [["not_reported", /has no name in its published configuration/], ["destination_unnamed", /could not name where this stream lands/]] as const) {
   test(`the stream page says no data and why (${reason})`, async ({ page }) => {
     await page.route("**/api/ingest/streams/**", (r) => r.fulfill({ json: detail({ state: "unknown", reason }) }));
-    await page.goto("/app/ingest/streams/events_gateway/v1/stream_0");
+    await page.goto("/ingest/streams/events_gateway/v1/stream_0");
     await expect(page.getByTestId("health-reason")).toHaveText(sentence);
     await expect(page.locator(".st", { hasText: "no data" })).toBeVisible();
     await expect(page.locator("main")).not.toContainText("continuous");

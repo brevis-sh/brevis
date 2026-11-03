@@ -51,8 +51,8 @@ export const test = base.extend<{ seed: Seed; _gate: void }, { _seed: Seed | str
 export { expect };
 
 export const routes = (s: Seed) => [
-  "/app/", "/app/runs", `/app/runs/${s.runId}`, "/app/workflows", `/app/workflows/${s.slug}`, "/app/projects",
-  "/app/data", "/app/data/endpoints", "/app/ingest/loads", "/app/ingest/streams",
+  "/", "/runs", `/runs/${s.runId}`, "/workflows", `/workflows/${s.slug}`, "/projects",
+  "/data", "/data/endpoints", "/ingest/loads", "/ingest/streams",
 ];
 
 /** A screen is loaded when its title is there and nothing in <main> is still a placeholder. */

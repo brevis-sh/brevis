@@ -55,12 +55,12 @@ test("the SQL screen renders (or says there is no SQL service)", async ({ page, 
   test.skip(!seed.sql, "precondition absent: no SQL service configured (BREVIS_SQL_SERVE_URL)");
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(String(e)));
-  await page.goto("/app/sql");
+  await page.goto("/sql");
   await expect(page.locator("main h1").first()).toBeVisible();
   expect(errors).toEqual([]);
 });
 
 test("an unknown address says not found instead of a blank page", async ({ page }) => {
-  await page.goto("/app/nope");
+  await page.goto("/nope");
   await expect(page.getByText("Not found")).toBeVisible();
 });

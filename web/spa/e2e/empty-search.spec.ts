@@ -3,7 +3,7 @@ import { expect, loaded, test } from "./support";
 // A search with no result once threw React error #300 (a hook after an early return) and
 // blanked the whole Workflows page. The unit test pins the component; this one pins the
 // real screens, because the same shape can hide in any list.
-const screens = ["/app/workflows", "/app/runs", "/app/data", "/app/ingest/streams"];
+const screens = ["/workflows", "/runs", "/data", "/ingest/streams"];
 
 for (const path of screens) {
   test(`${path}: an empty search keeps the page, and clearing it brings the list back`, async ({ page }) => {

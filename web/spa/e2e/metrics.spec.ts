@@ -105,10 +105,10 @@ async function mockEndpointsList(page: Page) {
   );
 }
 
-const STREAMS = "/app/ingest/streams";
-const STREAM = "/app/ingest/streams/events_gateway/v1/clicks";
-const ENDPOINTS = "/app/data/endpoints";
-const ENDPOINT = "/app/data/endpoints/example-api/orders";
+const STREAMS = "/ingest/streams";
+const STREAM = "/ingest/streams/events_gateway/v1/clicks";
+const ENDPOINTS = "/data/endpoints";
+const ENDPOINT = "/data/endpoints/example-api/orders";
 
 test.describe("streams", () => {
   test("the list shows the band and a rate on each row it has a source for", async ({ page }) => {

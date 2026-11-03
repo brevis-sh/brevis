@@ -1,7 +1,7 @@
 import { expect, loaded, test } from "./support";
 
 test("workflows: the search narrows the list and says so when nothing matches", async ({ page, seed }) => {
-  await page.goto("/app/workflows");
+  await page.goto("/workflows");
   await loaded(page);
   const rows = page.locator("main tbody tr");
   const all = await rows.count();
@@ -15,19 +15,19 @@ test("workflows: the search narrows the list and says so when nothing matches", 
 });
 
 test("runs: '/' focuses the search, and opening a run shows it beside the list", async ({ page }) => {
-  await page.goto("/app/runs");
+  await page.goto("/runs");
   await loaded(page);
   await page.locator("body").click({ position: { x: 700, y: 700 } });
   await page.keyboard.press("/");
   await expect(page.locator("input:focus")).toHaveCount(1);
   await page.keyboard.press("Escape");
   await page.locator("#runs-list a[href*='/runs/']").first().click();
-  await expect(page).toHaveURL(/\/app\/runs\/[0-9a-f-]{36}/);
+  await expect(page).toHaveURL(/\/runs\/[0-9a-f-]{36}/);
   await expect(page.locator("#run-pane")).not.toBeEmpty();
 });
 
 test("the command palette opens with Ctrl+K, finds a workflow by name and goes there", async ({ page, seed }) => {
-  await page.goto("/app/");
+  await page.goto("/");
   await loaded(page);
   await page.keyboard.press("Control+k");
   const dialog = page.locator("dialog[open], [role=dialog]").first();
@@ -35,11 +35,11 @@ test("the command palette opens with Ctrl+K, finds a workflow by name and goes t
   await page.keyboard.type(seed.slug);
   await expect(dialog).toContainText(seed.slug);
   await page.keyboard.press("Enter");
-  await expect(page).not.toHaveURL(/\/app\/?$/);
+  await expect(new URL(page.url()).pathname).not.toBe("/");
 });
 
 test("workflows: pausing and resuming a schedule toggles the switch (and leaves it as it was)", async ({ page }) => {
-  await page.goto("/app/workflows");
+  await page.goto("/workflows");
   await loaded(page);
   const sw = page.locator('main [role="switch"]').first();
   test.skip((await sw.count()) === 0, "precondition absent: no scheduled workflow, so no switch");
@@ -54,7 +54,7 @@ test("workflows: pausing and resuming a schedule toggles the switch (and leaves 
 });
 
 test("the other list screens write their search to the address (where there is something to search)", async ({ page }) => {
-  for (const path of ["/app/data", "/app/ingest/streams", "/app/data/endpoints", "/app/ingest/loads"]) {
+  for (const path of ["/data", "/ingest/streams", "/data/endpoints", "/ingest/loads"]) {
     await page.goto(path);
     await loaded(page);
     const box = page.locator('main input:not([type="hidden"]):not([type="checkbox"])').first();
@@ -66,7 +66,7 @@ test("the other list screens write their search to the address (where there is s
 
 test("the run-now drawer validates a parameter before posting", async ({ page, seed }) => {
   test.skip(!seed.withParams, "precondition absent: no workflow with parameters (publish examples/list-params.yaml)");
-  await page.goto(`/app/workflows/${seed.withParams}`);
+  await page.goto(`/workflows/${seed.withParams}`);
   await loaded(page);
   await page.getByRole("button", { name: /run/i }).first().click();
   const dialog = page.locator("dialog[open]");

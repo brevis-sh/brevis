@@ -107,7 +107,7 @@ const arm = (page: Page) => page.evaluate(() => ((window as any).__armed = true,
 test("the list says each state in its own shape and word, and counts them in the summary", async ({ page }) => {
   const hs = [H.healthy, H.unknown, H.failing, H.quiet, H.degraded];
   await page.route("**/api/ingest/streams*", (r) => r.fulfill({ json: list(hs) }));
-  await page.goto("/app/ingest/streams");
+  await page.goto("/ingest/streams");
   const rows = page.locator("#stream-rows tbody tr");
   await expect(rows.first().locator("a.stl-link")).toBeVisible();
   // Failing first, then degraded, then the rest in the order they came.
@@ -130,7 +130,7 @@ test("the list says each state in its own shape and word, and counts them in the
 for (const [i, [h, sentence]] of SENTENCES.entries()) {
   test(`the stream page says ${h.state} and why (${h.reason}, ${i})`, async ({ page }) => {
     await page.route("**/api/ingest/streams/**", (r) => r.fulfill({ json: detail(h) }));
-    await page.goto("/app/ingest/streams/events_gateway/v1/stream_0");
+    await page.goto("/ingest/streams/events_gateway/v1/stream_0");
     await expect(page.getByTestId("health-reason")).toHaveText(sentence);
     const word = WORD[h.state as keyof typeof WORD];
     await expect(page.locator(".st", { hasText: word }).first()).toHaveClass(new RegExp(SHAPE[h.state as keyof typeof SHAPE]));
@@ -144,7 +144,7 @@ test("a scrape finishing changes the state on the list: one refetch of each quer
   const hits = { list: 0, metrics: 0 };
   await page.route("**/api/ingest/streams*", (r) => (hits.list++, r.fulfill({ json: list(current) })));
   await page.route("**/api/ingest/metrics/streams*", (r) => (hits.metrics++, r.fulfill({ json: { configured: false, since: SINCE, intervalSec: 5, window: { start: 0, minutes: 30 }, owners: [], total: { values: {}, covered: [], ratePerMin: {}, lastHour: {}, observedSec: 0, owner: "", name: "", present: false }, entities: [] } })));
-  await page.goto("/app/ingest/streams");
+  await page.goto("/ingest/streams");
   const marks = page.locator("#stream-rows tbody tr .stl-state .st");
   await expect(marks).toHaveCount(3);
   await expect(page.locator(".stl-sum")).toContainText("2 healthy");
@@ -172,7 +172,7 @@ test("a state change that moves no row shifts nothing: the words differ in width
   let current = [H.healthy, H.quiet, H.unknown];
   await page.route("**/api/ingest/streams*", (r) => r.fulfill({ json: list(current) }));
   await page.route("**/api/ingest/metrics/streams*", (r) => r.fulfill({ json: { configured: false, since: SINCE, intervalSec: 5, window: { start: 0, minutes: 30 }, owners: [], total: { values: {}, covered: [], ratePerMin: {}, lastHour: {}, observedSec: 0, owner: "", name: "", present: false }, entities: [] } }));
-  await page.goto("/app/ingest/streams");
+  await page.goto("/ingest/streams");
   await expect(page.locator("#stream-rows tbody tr .stl-state .st")).toHaveCount(3);
   await page.waitForTimeout(600);
   await arm(page);
@@ -189,7 +189,7 @@ test("rows keep their places while the pointer is over the table, and settle whe
   let current = [H.healthy, H.healthy, H.healthy];
   await page.route("**/api/ingest/streams*", (r) => r.fulfill({ json: list(current) }));
   await page.route("**/api/ingest/metrics/streams*", (r) => r.fulfill({ json: { configured: false, since: SINCE, intervalSec: 5, window: { start: 0, minutes: 30 }, owners: [], total: { values: {}, covered: [], ratePerMin: {}, lastHour: {}, observedSec: 0, owner: "", name: "", present: false }, entities: [] } }));
-  await page.goto("/app/ingest/streams");
+  await page.goto("/ingest/streams");
   const paths = () => page.locator("#stream-rows tbody tr .stl-path").allInnerTexts();
   await expect.poll(paths).toEqual(["/v1/stream_0", "/v1/stream_1", "/v1/stream_2"]);
   await page.locator("#stream-rows tbody tr").nth(0).hover();
@@ -211,7 +211,7 @@ for (const vp of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
       let reads = 0;
       await page.route("**/api/ingest/streams/**", (r) => (reads++, r.fulfill({ json: detail(current) })));
       await page.route("**/api/ingest/metrics/streams/**", (r) => r.fulfill({ json: { configured: false, since: SINCE, intervalSec: 5, window: { start: 0, minutes: 60 }, owners: [], total: { values: {}, covered: [], ratePerMin: {}, lastHour: {}, observedSec: 0, owner: "", name: "", present: false }, entities: [{ values: {}, covered: [], ratePerMin: {}, lastHour: {}, observedSec: 0, owner: "", name: "", present: false, gateway: "events_gateway", path: "/v1/stream_0" }] } }));
-      await page.goto("/app/ingest/streams/events_gateway/v1/stream_0");
+      await page.goto("/ingest/streams/events_gateway/v1/stream_0");
       await expect(page.getByTestId("health-reason")).toHaveText(/none was refused/);
       await page.waitForTimeout(600);
       await arm(page);
@@ -239,10 +239,10 @@ test("no horizontal scroll at 390px with every state on the list and the page", 
   const page = await ctx.newPage();
   await page.route("**/api/ingest/streams*", (r) => r.fulfill({ json: list([H.healthy, H.unknown, H.failing, H.quiet, H.degraded]) }));
   await page.route("**/api/ingest/streams/**", (r) => r.fulfill({ json: detail(H.failing) }));
-  await page.goto("/app/ingest/streams");
+  await page.goto("/ingest/streams");
   await expect(page.locator("#stream-rows tbody tr a.stl-link").first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
-  await page.goto("/app/ingest/streams/events_gateway/v1/stream_0");
+  await page.goto("/ingest/streams/events_gateway/v1/stream_0");
   await expect(page.getByTestId("health-reason")).toContainText("buried");
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   await ctx.close();

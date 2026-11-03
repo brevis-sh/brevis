@@ -227,37 +227,31 @@ type Gate struct {
 	once sync.Once
 }
 
-// livre lists what answers without a session.
+// free lists what answers without a session.
 func free(path string) bool {
 	switch path {
-	case "/health", "/ready", "/login", "/logout":
+	case "/health", "/ready":
 		return true
-	// THE SPA'S LOGIN SCREEN, AND NOTHING ELSE OF IT. Each entry is the least
-	// the screen needs, and every one carries no operator data:
-	//   /app/login    the shell, so the browser can draw the form (the shell is
-	//                 one static HTML file; every other /app/ page stays gated
-	//                 and redirects here).
+	// THE LOGIN SCREEN, AND NOTHING ELSE OF THE CONSOLE. Each entry is the
+	// least the screen needs, and every one carries no operator data:
+	//   /login        the shell, so the browser can draw the form (the shell is
+	//                 one static HTML file; every other page stays gated and
+	//                 redirects here).
 	//   /api/login    the credential check itself, behind the Limiter.
 	//   /api/logout   so an expired or stale cookie can still be cleared.
-	//   /api/config   brand and version: the old login page already showed the
-	//                 brand, and the screen is branded the same way.
+	//   /api/config   brand and version: the screen is branded.
 	//   /api/messages the catalog: the screen needs words. It is the same text
 	//                 every visitor of the public repository can read.
 	// /api/session is NOT here: it answers who you are, and an anonymous
 	// visitor gets the 401 that sends the app to this screen.
-	case "/app/login", "/api/login", "/api/logout", "/api/config", "/api/messages":
+	case "/login", "/api/login", "/api/logout", "/api/config", "/api/messages":
 		return true
 	}
-	// /app/assets/ is the build's hashed JS and CSS: a bundle holds no secret
-	// (it is published with the source), and the shell above cannot run
-	// without it. Only assets/ -- not the whole of /app/ -- is opened.
-	if strings.HasPrefix(path, "/app/assets/") {
-		return true
-	}
-	// The assets are public by nature: the CSS, fonts and JS of the login screen
-	// itself. Protecting them would break the page that asks for the
-	// password.
-	return strings.HasPrefix(path, "/assets/")
+	// /static/ is the build's hashed JS and CSS: a bundle holds no secret (it
+	// is published with the source), and the shell above cannot run without
+	// it. /assets/ is the engine's own CSS, fonts and logo. Neither holds
+	// data, and protecting them would break the page that asks for the password.
+	return strings.HasPrefix(path, "/static/") || strings.HasPrefix(path, "/assets/")
 }
 
 func (p *Gate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -309,11 +303,6 @@ func (p *Gate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// meant an operator who followed a deep link while logged out signed in and
 	// landed on `/`, with nothing anywhere saying why.
 	target := "/login"
-	// A page of the React app goes to the React login (/app/login is public,
-	// above); every other page keeps the server-rendered one until the cutover.
-	if r.URL.Path == "/app" || strings.HasPrefix(r.URL.Path, "/app/") {
-		target = "/app/login"
-	}
 	if uri := r.URL.RequestURI(); uri != "/" {
 		target += "?" + NextParam + "=" + url.QueryEscape(escapeTarget(uri))
 	}

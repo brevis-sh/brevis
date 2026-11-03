@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -32,7 +31,6 @@ func newLoginRig(t *testing.T, insecure bool) loginRig {
 	}
 	mux := http.NewServeMux()
 	ui := dataUI(catalogFake{})
-	ui.RegistrarLogin(mux, gate)
 	ui.RegistrarLoginAPI(mux, gate)
 	return loginRig{mux, gate, &calls}
 }
@@ -67,12 +65,12 @@ func decode(t *testing.T, rec *httptest.ResponseRecorder) map[string]any {
 	return m
 }
 
-func TestAPILoginSucceedsWithTheSameCookieAsTheForm(t *testing.T) {
+func TestAPILoginSetsTheSessionCookie(t *testing.T) {
 	for _, insecure := range []bool{false, true} {
 		g := newLoginRig(t, insecure)
 		rec := g.post("/api/login", login("ana", "right", ""), nil)
-		if rec.Code != 200 || decode(t, rec)["next"] != "/app/" {
-			t.Fatalf("status %d body %s; expected 200 {next:/app/}", rec.Code, rec.Body)
+		if rec.Code != 200 || decode(t, rec)["next"] != "/" {
+			t.Fatalf("status %d body %s; expected 200 {next:/}", rec.Code, rec.Body)
 		}
 		cs := rec.Result().Cookies()
 		if len(cs) != 1 {
@@ -84,16 +82,6 @@ func TestAPILoginSucceedsWithTheSameCookieAsTheForm(t *testing.T) {
 		}
 		if d := time.Until(c.Expires); d < auth.SessionLifetime-time.Minute || d > auth.SessionLifetime {
 			t.Errorf("expiry in %v", d)
-		}
-
-		// And the form login sets the identical shape.
-		form := httptest.NewRequest("POST", "/login", strings.NewReader(url.Values{"username": {"ana"}, "password": {"right"}}.Encode()))
-		form.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		frec := httptest.NewRecorder()
-		g.mux.ServeHTTP(frec, form)
-		f := frec.Result().Cookies()[0]
-		if f.Name != c.Name || f.HttpOnly != c.HttpOnly || f.SameSite != c.SameSite || f.Secure != c.Secure || f.Path != c.Path {
-			t.Errorf("api cookie %+v differs from the form's %+v", c, f)
 		}
 	}
 }
@@ -153,15 +141,6 @@ func TestAPILoginLocksTheSourceAndSkipsTheHashWhileLocked(t *testing.T) {
 	}
 	if len(rec.Result().Cookies()) != 0 {
 		t.Error("the correct password signed in while locked")
-	}
-	// The form login shares the counter: the API is no way around its lockout.
-	form := httptest.NewRequest("POST", "/login", strings.NewReader(url.Values{"username": {"ana"}, "password": {"right"}}.Encode()))
-	form.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	form.RemoteAddr = "10.9.9.9:99"
-	frec := httptest.NewRecorder()
-	g.mux.ServeHTTP(frec, form)
-	if frec.Code != 429 {
-		t.Errorf("form login while the API locked the source = %d", frec.Code)
 	}
 }
 
@@ -231,7 +210,7 @@ func TestAPISessionEndpointsRejectCrossSiteAndNonJSON(t *testing.T) {
 	}
 }
 
-func TestAPILogoutClearsTheCookieAsTheFormDoes(t *testing.T) {
+func TestAPILogoutClearsTheCookieDoes(t *testing.T) {
 	g := newLoginRig(t, false)
 	rec := g.post("/api/logout", "", nil)
 	if rec.Code != 204 || rec.Body.Len() != 0 {

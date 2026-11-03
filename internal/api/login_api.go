@@ -10,7 +10,6 @@ import (
 	"strconv"
 
 	"brevis.sh/brevis/internal/auth"
-	"brevis.sh/brevis/web/spa"
 )
 
 // maxLoginBody bounds what /api/login reads. A user, a password and a path fit
@@ -82,8 +81,7 @@ type loginRequest struct {
 	Next     string `json:"next"`
 }
 
-// RegistrarLoginAPI wires the SPA's session endpoints. Like RegistrarLogin it
-// exists only when there is a credential: an open console has no login to
+// RegistrarLoginAPI wires the SPA's session endpoints. They exist only when there is a credential: an open console has no login to
 // answer, and these routes would then be a second door nobody configured.
 func (u *UI) RegistrarLoginAPI(mux *http.ServeMux, gate *auth.Gate) {
 	mux.HandleFunc("POST /api/login", func(w http.ResponseWriter, r *http.Request) {
@@ -104,15 +102,14 @@ func (u *UI) RegistrarLoginAPI(mux *http.ServeMux, gate *auth.Gate) {
 			return
 		}
 
-		// The SAME guard as the form login. No `next` means the app, not "/".
-		next := spa.Prefix
+		// The guard against an open redirect: no `next` means the front page.
+		next := "/"
 		if req.Next != "" {
 			next = auth.Target(req.Next)
 		}
 
-		// Same source keying as the form (the connection's address, or the
-		// header the deployment's proxy sets), so the two logins share one
-		// counter: the API cannot be used to dodge the lockout of /login.
+		// Keyed by the connection's address, or the header the deployment's
+		// proxy sets.
 		origin := auth.ClientKey(r, gate.Cred.ClientIPHeader)
 
 		out, retry := gate.Attempt(r.Context(), w, origin, req.User, req.Password)
