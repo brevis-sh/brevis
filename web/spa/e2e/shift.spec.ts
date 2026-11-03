@@ -1,4 +1,4 @@
-import { expect, loaded, quiet, routes, test, trackApi, trigger } from "./support";
+import { expect, loaded, mockStreamsList, quiet, routes, test, trackApi, trigger } from "./support";
 
 // Layout stability: the answer lands in the room the placeholder already held. Measured with
 // the API held for 1 s so the skeleton is on screen long enough to be measured.
@@ -17,6 +17,7 @@ test("loading a screen shifts nothing (CLS), and a returning visit's skeleton is
   await Promise.all(routes(seed).map(async (route) => {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await ctx.newPage();
+    await mockStreamsList(page); // CI has no streams; the screen must be measured with some
     await page.addInitScript(() => {
       const w = window as unknown as { __cls: number; __who: string[] };
       w.__cls = 0;
@@ -38,7 +39,7 @@ test("loading a screen shifts nothing (CLS), and a returning visit's skeleton is
     // Second visit, API held: the skeleton is drawn from what was remembered, so it must be the answer's height.
     await page.route("**/api/**", async (r) => {
       if (!KEEP.test(r.request().url())) await new Promise((x) => setTimeout(x, 1000));
-      await r.continue().catch(() => {});
+      await r.fallback().catch(() => {});
     });
     await page.goto(route, { waitUntil: "commit" });
     await expect(page.locator("main h1").first()).toBeVisible();

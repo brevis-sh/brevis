@@ -1,4 +1,4 @@
-import { expect, isMetricsRead, test } from "./support";
+import { expect, isMetricsRead, mockStreamsList, test } from "./support";
 import type { Page, Route } from "@playwright/test";
 
 // The live volume of streams and endpoints, in every state the screens can be in. The sources are mocked: the
@@ -54,6 +54,7 @@ function snapshot(kind: "stream" | "endpoint", n: number, state: State) {
 }
 
 async function mockMetrics(page: Page, state: State, hits: string[] = []) {
+  await mockStreamsList(page);
   const fix = (kind: "stream" | "endpoint") => (r: Route) => {
     const u = new URL(r.request().url());
     hits.push(u.pathname);
