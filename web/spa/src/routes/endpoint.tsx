@@ -8,7 +8,7 @@ import { useSince } from "../ui/format";
 import { useCrumb } from "../shell/nav";
 import { CodeBlock } from "../ui/copy";
 import { Icon } from "../ui/icon";
-import { btn, Card, MethodPill, PageHead, StatCells, linkUnderline, Page } from "../ui/kit";
+import { btn, Card, Empty, MethodPill, PageHead, StatCells, linkUnderline, Page } from "../ui/kit";
 import { Logo } from "../ui/logo";
 import { Skeleton } from "../ui/skeleton";
 import { Freshness, FreshnessMark } from "../ui/status";
@@ -502,19 +502,21 @@ function EndpointPage({ api, d }: { api: string; d: Endpoint | undefined }) {
 }
 
 export default function EndpointRoute() {
+  const { t } = useT();
   const { api = "", name = "" } = useParams();
   const q = useData<Endpoint>(["endpoint", api, name], `/api/endpoints/${encodeURIComponent(api)}/${encodeURIComponent(name)}`, { keep: false });
   useCrumb(q.data?.path ?? "", { mono: true });
   if (q.isError)
     return (
-      <p role="alert" className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">
-        {q.error instanceof ApiError && q.error.status === 404 ? (
-          <Link to="/data/endpoints" className={linkUnderline}>
-            &larr; {"All endpoints"}
-          </Link>
-        ) : null}{" "}
-        {q.error.message}
-      </p>
+      <Page>
+        <div className="pt-3">
+          <Empty msg={q.error.message}>
+            <Link to="/data/endpoints" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
+              &larr; {t("endpoint.back")}
+            </Link>
+          </Empty>
+        </div>
+      </Page>
     );
   // The key resets Try it when another endpoint opens; a poll keeps what was typed.
   return <EndpointPage key={q.data ? endpointHref(q.data) : "loading"} api={api} d={q.data} />;

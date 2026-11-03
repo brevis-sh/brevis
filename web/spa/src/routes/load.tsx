@@ -4,9 +4,10 @@ import { useData } from "../api/live";
 import type { Change, Load, LoadDetail } from "../api/ingest";
 import { useFormat, useT } from "../i18n";
 import { useSince } from "../ui/format";
+import LoadsRoute from "./loads";
 import { useCrumb } from "../shell/nav";
 import { Icon } from "../ui/icon";
-import { btn, ButtonLink, Card, Empty, FilterRow, PageHead, ShortStamp, linkUnderline, Page } from "../ui/kit";
+import { btn, ButtonLink, Card, FilterRow, PageHead, ShortStamp, linkUnderline, Page } from "../ui/kit";
 import { Logo, useLogoTitle } from "../ui/logo";
 import { Skeleton } from "../ui/skeleton";
 import { LoadBars } from "../ui/sparkline";
@@ -183,9 +184,10 @@ function Body({ workflow, step, d }: { workflow: string; step: string; d: LoadDe
               {!d
                 ? [0, 1, 2].map((i) => (
                     <tr key={i} aria-hidden="true">
-                      {[0, 1, 2, 3].map((j) => (
-                        <td key={j} className="px-2.5 pl-3.5"><Skeleton w="5rem" h="1rem" /></td>
-                      ))}
+                      <td className="px-2.5 pl-3.5"><Skeleton w="5rem" h="1rem" /></td>
+                      <td className="px-2.5"><Skeleton w="3rem" h="1rem" className="ml-auto" /></td>
+                      <td className="px-2.5"><Skeleton w="3rem" h="1rem" className="ml-auto" /></td>
+                      <td className="px-2.5 pr-3.5"><Skeleton w="4rem" h="1rem" /></td>
                     </tr>
                   ))
                 : d.loads.map((l) => (
@@ -275,13 +277,7 @@ export default function LoadRoute() {
   const back = `/ingest/loads${list.toString() === "" ? "" : `?${list}`}`;
 
   if (q.error instanceof ApiError && q.error.status === 404)
-    return (
-      <Empty msg={t("loads.missing", { step: `${workflow} · ${step}` })}>
-        <Link to="/ingest/loads" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
-          {t("nav.loads")}
-        </Link>
-      </Empty>
-    );
+    return <LoadsRoute missing={`${workflow} · ${step}`} />;
   return (
     <Page>
       <PageHead
@@ -294,7 +290,7 @@ export default function LoadRoute() {
             </Link>
             <span className="text-faint">·</span>
             <span className="text-[0.7rem] font-medium tracking-[0.08em] text-muted uppercase">{t("loads.drawer.kicker", { workflow })}</span>
-            {v?.detail ? <Freshness status={v.detail.status} /> : !v ? <Skeleton w="5rem" h=".8rem" /> : null}
+            {v?.detail ? <Freshness status={v.detail.status} /> : !v && !q.isError ? <Skeleton w="5rem" h=".8rem" /> : null}
           </>
         }
         actions={<Actions workflow={workflow} d={v?.detail ?? undefined} />}

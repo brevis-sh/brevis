@@ -145,7 +145,7 @@ function SkeletonRows() {
           <Td><Skeleton w="5rem" h="18px" /></Td>
           <Td cls="max-[860px]:hidden"><Skeleton w="8rem" h="18px" /></Td>
           <Td cls="max-[640px]:hidden"><Skeleton w="4rem" h="18px" /></Td>
-          <Td cls="max-[1100px]:hidden"><Skeleton w="3rem" h="18px" /></Td>
+          <Td cls="max-[1100px]:hidden"><Skeleton w="3rem" h="18px" className="ml-auto" /></Td>
           <Td cls="max-[1100px]:hidden"><Skeleton w="4rem" h="20px" /></Td>
           <Td edge="last" />
         </tr>

@@ -327,11 +327,15 @@ export default function StreamRoute() {
   const v = q.data;
   if (q.error instanceof ApiError && q.error.status === 404)
     return (
-      <Empty msg={t("streams.empty.filtered")}>
-        <Link to="/ingest/streams" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
-          {t("nav.streams")}
-        </Link>
-      </Empty>
+      <Page>
+        <div className="pt-3">
+          <Empty msg={t("streams.empty.filtered")}>
+            <Link to="/ingest/streams" className={`mt-2 inline-block text-xs ${linkUnderline}`}>
+              {t("nav.streams")}
+            </Link>
+          </Empty>
+        </div>
+      </Page>
     );
   return (
     <Page>
@@ -360,7 +364,7 @@ export default function StreamRoute() {
           {(q.error as Error).message}
         </p>
       )}
-      <div className="mb-4 max-w-3xl text-[13.5px] text-muted">{v ? v.lede : <Skeleton w="36rem" h="1.1rem" className="max-w-full" />}</div>
+      <div className="mb-4 max-w-3xl text-[13.5px] text-muted">{v ? v.lede : <Skeleton w="36rem" h="2.5rem" className="max-w-full" />}</div>
       <Strip gateway={gateway} v={v} />
       <HashTabs
         id="stream-tabs"
