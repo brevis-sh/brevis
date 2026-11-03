@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Shell } from "./shell";
 import HomeRoute from "./routes/home";
 import ProjectsRoute from "./routes/projects";
+import WorkflowsRoute from "./routes/workflows";
 import "./styles.css";
 
 // Data stays fresh for 5s: moving between screens does not refetch what was
@@ -19,6 +20,7 @@ createRoot(document.getElementById("root")!).render(
           <Route element={<Shell />}>
             <Route index element={<HomeRoute />} />
             <Route path="projects" element={<ProjectsRoute />} />
+            <Route path="workflows" element={<WorkflowsRoute />} />
             <Route path="*" element={<p>Not found.</p>} />
           </Route>
         </Routes>

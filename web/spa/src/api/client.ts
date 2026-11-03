@@ -22,3 +22,22 @@ export async function getJSON<T>(path: string, signal?: AbortSignal): Promise<T>
   if (!res.ok) throw new ApiError(res.status, `${path}: HTTP ${res.status}`);
   return (await res.json()) as T;
 }
+
+// postJSON is for effects (pause, resume). The server answers a failure as
+// {"error": "..."}; that message becomes the ApiError's.
+export async function postJSON<T>(path: string, body?: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { Accept: "application/json", ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (res.redirected && new URL(res.url).pathname === "/login") {
+    location.assign(`/login?next=${encodeURIComponent(location.pathname + location.search)}`);
+    throw new ApiError(401, `${path}: no session`);
+  }
+  if (!res.ok) {
+    const msg = await res.json().then((j: { error?: string }) => j.error, () => undefined);
+    throw new ApiError(res.status, msg ?? `${path}: HTTP ${res.status}`);
+  }
+  return (await res.json()) as T;
+}
