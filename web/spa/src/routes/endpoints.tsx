@@ -190,10 +190,10 @@ function Rows({ rows, now }: { rows: EndpointRow[]; now: string }) {
 
 // What the screen shows before its first answer: the last shape it saw, or this one on a first visit,
 // drawn from the real row markup with placeholder values so it takes the height the loaded rows take.
-type Shape = Omit<Endpoints, "rows" | "now"> & { n: number };
+type Shape = { n: number; total: number; apis: number; fresh: number; stale: number; caches: number; connections: number; apiNames: number };
 // A first visit draws the empty state (a fresh install has no endpoints); the box is the one the real empty state fills.
-const FIRST: Shape = { n: 0, total: 0, apis: 0, fresh: 0, stale: 0, caches: [], connections: [], apiNames: [] };
-const shapeOf = (d: Endpoints): Shape => ({ n: d.rows.length, total: d.total, apis: d.apis, fresh: d.fresh, stale: d.stale, caches: d.caches, connections: d.connections, apiNames: d.apiNames });
+const FIRST: Shape = { n: 0, total: 0, apis: 0, fresh: 0, stale: 0, caches: 0, connections: 0, apiNames: 0 };
+const shapeOf = (d: Endpoints): Shape => ({ n: d.rows.length, total: d.total, apis: d.apis, fresh: d.fresh, stale: d.stale, caches: d.caches.length, connections: d.connections.length, apiNames: d.apiNames.length });
 const GHOST_ROW: EndpointRow = {
   api: "api-name",
   name: "endpoint",
@@ -208,7 +208,7 @@ const GHOST_ROW: EndpointRow = {
   required: 1,
   publishedAt: "2000-01-01T00:00:00Z",
 };
-const ghostOf = (s: Shape): Endpoints => ({ ...s, now: "2000-01-02T00:00:00Z", rows: Array.from({ length: s.n }, (_, i) => ({ ...GHOST_ROW, name: `endpoint_${i}` })) });
+const ghostOf = (s: Shape): Endpoints => ({ ...s, caches: Array.from({ length: s.caches }, () => "redis"), connections: Array.from({ length: s.connections }, () => "connection"), apiNames: Array.from({ length: s.apiNames }, (_, i) => `api${i}`), now: "2000-01-02T00:00:00Z", rows: Array.from({ length: s.n }, (_, i) => ({ ...GHOST_ROW, name: `endpoint_${i}` })) });
 
 function Summary({ d, ghost }: { d: Endpoints; ghost: boolean }) {
   const { n, t } = useT();

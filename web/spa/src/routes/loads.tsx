@@ -120,10 +120,12 @@ function Rows({ rows }: { rows: LoadRow[] }) {
 // What the screen shows before its first answer: the last shape it saw (rows, counts, filters), or
 // this one on a first visit. The rows are the real ones drawn from placeholder values, so they take
 // the height the loaded ones take.
-type Shape = { n: number; total: number; workflows: number; summary: Record<string, number>; counts: Record<string, number>; sources: Choice[]; hasLegacy: boolean };
+type Shape = { n: number; total: number; workflows: number; summary: Record<string, number>; counts: Record<string, number>; sources: number; hasLegacy: boolean };
 // A first visit draws the empty state (a fresh install has no loads); the box is the one the real empty state fills.
-const FIRST: Shape = { n: 0, total: 0, workflows: 0, summary: {}, counts: {}, sources: [], hasLegacy: false };
-const shapeOf = (v: Loads): Shape => ({ n: v.rows.length, total: v.total, workflows: v.workflows, summary: v.summary, counts: v.counts, sources: v.sources, hasLegacy: v.hasLegacy });
+const FIRST: Shape = { n: 0, total: 0, workflows: 0, summary: {}, counts: {}, sources: 0, hasLegacy: false };
+// Only numbers are remembered, and only under the fixed status words: nothing the API says about the data.
+const numbers = (r: Record<string, number>) => Object.fromEntries(Object.entries(r).filter(([k, n]) => (k === "" || STATUSES.includes(k as never) || k === "attention") && typeof n === "number"));
+const shapeOf = (v: Loads): Shape => ({ n: v.rows.length, total: v.total, workflows: v.workflows, summary: numbers(v.summary), counts: numbers(v.counts), sources: v.sources.length, hasLegacy: v.hasLegacy });
 const GHOST_ROW: LoadRow = {
   workflow: "workflow_name",
   step: "load_step_name",
@@ -144,7 +146,7 @@ const ghostOf = (s: Shape): Loads => ({
   workflows: s.workflows,
   summary: s.summary,
   counts: s.counts,
-  sources: s.sources,
+  sources: Array.from({ length: s.sources }, (_, i): Choice => ({ key: `source${i}`, label: "Source" })),
   hasLegacy: s.hasLegacy,
   filter: { status: "", source: "", q: "", legacy: false },
 });

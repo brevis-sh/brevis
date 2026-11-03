@@ -1,7 +1,7 @@
 import { Link, useLocation, useParams } from "react-router";
 import { ApiError } from "../api/client";
 import { useData } from "../api/live";
-import type { Change, Load, LoadDetail } from "../api/ingest";
+import type { Change, Load, LoadDetail, Place } from "../api/ingest";
 import { useFormat, useT } from "../i18n";
 import { useSince } from "../ui/format";
 import LoadsRoute from "./loads";
@@ -9,7 +9,6 @@ import { useCrumb } from "../shell/nav";
 import { Icon } from "../ui/icon";
 import { btn, ButtonLink, Card, FilterRow, PageHead, ShortStamp, linkUnderline, Page } from "../ui/kit";
 import { Logo, useLogoTitle } from "../ui/logo";
-import { Skeleton } from "../ui/skeleton";
 import { LoadBars } from "../ui/sparkline";
 import { Freshness } from "../ui/status";
 import { StepConfigPanel } from "./load-config";
@@ -18,11 +17,50 @@ const short = (id: string) => id.slice(0, 8);
 const th = "px-2.5 py-2 text-[11.5px] font-medium whitespace-nowrap text-faint";
 const dt = "text-muted";
 
-function Changes({ changes }: { changes: Change[] }) {
+// Before the first answer the page draws the last load it showed (or this typical one) through the same
+// markup, as a ghost (.sk-ghost): the labels are the page's own, the values are bars, and the heights are the
+// loaded heights. Only the data-bound parts are ghosted; titles, labels, tabs and buttons are never.
+const GHOST_PLACE: Place = { uri: "postgres://warehouse/schema/table_name", kind: "postgres", kindTitle: "PostgreSQL", where: "postgres://warehouse/schema/", what: "table_name", note: "" };
+const GHOST: Load = {
+  workflow: "",
+  step: "",
+  choices: [],
+  choosing: false,
+  detail: {
+    status: "on_time",
+    reason: "",
+    source: { kind: "http", driver: "", label: "Source label", where: "https://api.example.com/path" },
+    target: GHOST_PLACE,
+    hasSchedule: true,
+    when: "every hour",
+    cron: "0 * * * *",
+    timezone: "UTC",
+    manual: false,
+    legacy: false,
+    lastLoaded: "2000-01-01T00:00:00Z",
+    lastRows: 1000,
+    read: null,
+    readNothing: false,
+    fixing: null,
+    bars: Array.from({ length: 12 }, (_, i) => ({ runId: `${i}`, rows: 1, title: "" })),
+    missed: 0,
+    loads: Array.from({ length: 5 }, (_, i) => ({ loadedAt: "2000-01-01T00:00:00Z", rows: 1000, bytes: 1000, runId: `run${i}` })),
+    loadsCount: "5",
+    described: false,
+    config: null,
+    changes: [],
+    readBy: [],
+    query: "",
+    run: "",
+  },
+};
+const gh = (ghost: boolean) => (ghost ? "sk-ghost" : "");
+
+function Changes({ changes, ghost }: { changes: Change[]; ghost: boolean }) {
   const { t } = useT();
   return (
-    <Card title={t("config.changes.title")} count={String(changes.length)}>
-      <ol className="divide-y divide-line-soft">
+    <Card title={t("config.changes.title")} count={ghost ? undefined : String(changes.length)}>
+      <ol aria-hidden={ghost || undefined} className={`divide-y divide-line-soft ${gh(ghost)}`}>
         {changes.map((c) => (
           <li key={c.at + c.runId} className="px-3.5 py-2 text-[12px]">
             <span className="font-mono text-muted tabular-nums">
@@ -51,12 +89,8 @@ function Changes({ changes }: { changes: Change[] }) {
   );
 }
 
-function Skel({ w = "8rem" }: { w?: string }) {
-  return <Skeleton w={w} h="1rem" />;
-}
-
 /** The facts of the load: from where to where, when it runs, its last load. The labels are static; the values arrive. */
-function Facts({ step, d }: { step: string; d: LoadDetail | undefined }) {
+function Facts({ step, d, ghost }: { step: string; d: LoadDetail; ghost: boolean }) {
   const { t, n } = useT();
   const { number } = useFormat();
   const since = useSince();
@@ -64,10 +98,8 @@ function Facts({ step, d }: { step: string; d: LoadDetail | undefined }) {
   return (
     <dl className="grid grid-cols-[8rem_minmax(0,1fr)] gap-x-4 gap-y-3 rounded-card border border-line bg-surface px-4 py-3.5 text-[12.5px]">
       <dt className={dt}>{t("loads.drawer.from")}</dt>
-      <dd className="min-w-0">
-        {!d ? (
-          <Skel />
-        ) : d.source.kind === "" ? (
+      <dd aria-hidden={ghost || undefined} className={`min-w-0 ${gh(ghost)}`}>
+        {d.source.kind === "" ? (
           <span className="text-faint" title={t("loads.source.none.tip")}>
             {t("loads.source.none")}
           </span>
@@ -82,10 +114,8 @@ function Facts({ step, d }: { step: string; d: LoadDetail | undefined }) {
         )}
       </dd>
       <dt className={dt}>{t("loads.drawer.to")}</dt>
-      <dd className="min-w-0">
-        {!d ? (
-          <Skel w="16rem" />
-        ) : (
+      <dd aria-hidden={ghost || undefined} className={`min-w-0 ${gh(ghost)}`}>
+        {
           <>
             {d.target.kind !== "" && (
               <span className="flex items-center gap-1.5 text-ink-2">
@@ -100,15 +130,13 @@ function Facts({ step, d }: { step: string; d: LoadDetail | undefined }) {
               </Link>
             )}
           </>
-        )}
+        }
       </dd>
       <dt className={dt}>{t("loads.drawer.step")}</dt>
       <dd className="font-mono text-ink">{step}</dd>
       <dt className={dt}>{t("loads.drawer.when")}</dt>
-      <dd className="text-ink">
-        {!d ? (
-          <Skel w="10rem" />
-        ) : d.hasSchedule ? (
+      <dd aria-hidden={ghost || undefined} className={`text-ink ${gh(ghost)}`}>
+        {d.hasSchedule ? (
           <>
             {d.when} <span className="ml-1 font-mono text-[11.5px] text-muted">{d.cron} {d.timezone}</span>
           </>
@@ -117,45 +145,49 @@ function Facts({ step, d }: { step: string; d: LoadDetail | undefined }) {
         )}
       </dd>
       <dt className={dt}>{t("loads.drawer.last")}</dt>
-      <dd className="text-ink">
-        {!d ? (
-          <Skel w="12rem" />
-        ) : (
+      <dd aria-hidden={ghost || undefined} className={`text-ink ${gh(ghost)}`}>
+        {
           <>
             {d.lastLoaded ? since(d.lastLoaded) : "—"}
             {d.lastRows !== null && <span className={`ml-1 ${d.readNothing ? "text-state-failed" : ""}`}>· {n("loads.drawer.rows", d.lastRows)}</span>}
             {d.read !== null && <span className="ml-1 text-muted">{t("loads.drawer.read", { n: number(d.read) })}</span>}
           </>
-        )}
+        }
       </dd>
     </dl>
   );
 }
 
-function Body({ workflow, step, d }: { workflow: string; step: string; d: LoadDetail | undefined }) {
+function Body({ workflow, step, d, ghost }: { workflow: string; step: string; d: LoadDetail; ghost: boolean }) {
   const { t } = useT();
   const { number } = useFormat();
   return (
     <div className="space-y-3">
-      {d && d.reason !== "" && <p className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-ink-2">{d.reason}</p>}
-      <Facts step={step} d={d} />
-      {d?.fixing && (
-        <Link to={`/runs/${d.fixing}`} className="inline-block text-[12px] text-state-running hover:underline">
+      {d.reason !== "" && (
+        <p aria-hidden={ghost || undefined} className={`rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-ink-2 ${gh(ghost)}`}>
+          {d.reason}
+        </p>
+      )}
+      <Facts step={step} d={d} ghost={ghost} />
+      {d.fixing && (
+        <Link to={`/runs/${d.fixing}`} className={`inline-block text-[12px] text-state-running hover:underline ${gh(ghost)}`}>
           {t("loads.fixing")} &rarr;
         </Link>
       )}
       <section>
-        <h3 className="mb-2 text-[11px] font-medium tracking-[0.08em] text-muted uppercase">{t("loads.drawer.bars", { n: d ? d.bars.length : "…" })}</h3>
-        {d ? <LoadBars bars={d.bars.map((b) => ({ href: `/runs/${b.runId}`, rows: b.rows, title: b.title }))} missed={d.missed} /> : <Skeleton w="14rem" h="2.75rem" />}
+        <h3 className="mb-2 text-[11px] font-medium tracking-[0.08em] text-muted uppercase">{t("loads.drawer.bars", { n: ghost ? "…" : d.bars.length })}</h3>
+        <div aria-hidden={ghost || undefined} className={gh(ghost)}>
+          <LoadBars bars={d.bars.map((b) => ({ href: `/runs/${b.runId}`, rows: b.rows, title: b.title }))} missed={d.missed} />
+        </div>
         <p className="mt-1.5 text-[11.5px] text-faint">{t("catalog.drawer.legend")}</p>
         <p className="mt-1 text-[12px] text-muted">{t("loads.drawer.drop")}</p>
       </section>
 
       <Card title={t("config.title")}>
-        {!d ? (
-          <Skeleton h="12rem" />
-        ) : d.described && d.config ? (
-          <StepConfigPanel c={d.config} />
+        {d.described && d.config ? (
+          <div aria-hidden={ghost || undefined} className={gh(ghost)}>
+            <StepConfigPanel c={d.config} />
+          </div>
         ) : (
           <p className="px-3.5 py-3 text-[12.5px] text-muted">
             {t("config.undescribed")}{" "}
@@ -167,9 +199,9 @@ function Body({ workflow, step, d }: { workflow: string; step: string; d: LoadDe
         )}
       </Card>
 
-      {d && d.changes.length > 0 && <Changes changes={d.changes} />}
+      {d.changes.length > 0 && <Changes changes={d.changes} ghost={ghost} />}
 
-      <Card title={t("loads.drawer.recent")} count={d?.loadsCount}>
+      <Card title={t("loads.drawer.recent")} count={ghost ? undefined : d.loadsCount}>
         <div className="max-h-[28rem] overflow-auto">
           <table className="ct w-full text-[12.5px]">
             <thead className="sticky top-0 bg-surface">
@@ -180,17 +212,8 @@ function Body({ workflow, step, d }: { workflow: string; step: string; d: LoadDe
                 <th className={`${th} pr-3.5`}>{t("loads.drawer.recent.run")}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line-soft">
-              {!d
-                ? [0, 1, 2].map((i) => (
-                    <tr key={i} aria-hidden="true">
-                      <td className="px-2.5 pl-3.5"><Skeleton w="5rem" h="1rem" /></td>
-                      <td className="px-2.5"><Skeleton w="3rem" h="1rem" className="ml-auto" /></td>
-                      <td className="px-2.5"><Skeleton w="3rem" h="1rem" className="ml-auto" /></td>
-                      <td className="px-2.5 pr-3.5"><Skeleton w="4rem" h="1rem" /></td>
-                    </tr>
-                  ))
-                : d.loads.map((l) => (
+            <tbody aria-hidden={ghost || undefined} className={`divide-y divide-line-soft ${gh(ghost)}`}>
+              {d.loads.map((l) => (
                     <tr key={l.runId}>
                       <td className="px-2.5 pl-3.5 font-mono text-[12px] whitespace-nowrap text-muted tabular-nums">
                         <ShortStamp at={l.loadedAt} />
@@ -209,8 +232,8 @@ function Body({ workflow, step, d }: { workflow: string; step: string; d: LoadDe
         </div>
       </Card>
 
-      {d && d.readBy.length > 0 && (
-        <section>
+      {d.readBy.length > 0 && (
+        <section aria-hidden={ghost || undefined} className={gh(ghost)}>
           <h3 className="mb-2 text-[12.5px] font-semibold text-ink">{t("catalog.drawer.read_by")}</h3>
           <ul className="space-y-1 text-[12.5px]">
             {d.readBy.map((e) => (
@@ -229,22 +252,24 @@ function Body({ workflow, step, d }: { workflow: string; step: string; d: LoadDe
 }
 
 /** The page's verbs: a query of the destination, the workflow, and running it. */
-function Actions({ workflow, d }: { workflow: string; d: LoadDetail | undefined }) {
+function Actions({ workflow, d, ghost }: { workflow: string; d: LoadDetail; ghost: boolean }) {
   const { t } = useT();
   const here = useLocation();
   // Where the run comes back to: this address, as the server knows it.
   const back = here.pathname.replace(/^\/app(?=\/)/, "") + here.search;
   return (
     <>
-      {d && d.query !== "" && (
-        <ButtonLink to={d.query} icon="terminal">
-          {t("loads.drawer.query")}
-        </ButtonLink>
+      {d.query !== "" && (
+        <span aria-hidden={ghost || undefined} className={`inline-flex ${gh(ghost)}`}>
+          <ButtonLink to={d.query} icon="terminal">
+            {t("loads.drawer.query")}
+          </ButtonLink>
+        </span>
       )}
       <ButtonLink to={`/workflows/${encodeURIComponent(workflow)}`}>{t("loads.drawer.workflow")}</ButtonLink>
-      {d?.run === "now" && (
+      {d.run === "now" && (
         // A plain form post: the server runs it and comes back with a flash.
-        <form method="post" action={`/workflows/${encodeURIComponent(workflow)}/trigger`}>
+        <form aria-hidden={ghost || undefined} className={gh(ghost)} method="post" action={`/workflows/${encodeURIComponent(workflow)}/trigger`}>
           <input type="hidden" name="back" value={back} />
           <button type="submit" className={btn(true)}>
             <Icon name="play" className="h-3.5 w-3.5" />
@@ -252,7 +277,7 @@ function Actions({ workflow, d }: { workflow: string; d: LoadDetail | undefined 
           </button>
         </form>
       )}
-      {d?.run === "params" && (
+      {d.run === "params" && (
         <ButtonLink to={`/workflows/${encodeURIComponent(workflow)}#run`} icon="play" primary>
           {t("loads.drawer.run.params")}
         </ButtonLink>
@@ -270,7 +295,8 @@ export default function LoadRoute() {
     topic: "ingest",
     keep: false,
   });
-  const v = q.data;
+  const ghost = !q.data;
+  const v = q.data ?? GHOST;
   // Back to the list as it was filtered: the address minus the destination.
   const list = new URLSearchParams(search);
   list.delete("target");
@@ -290,25 +316,30 @@ export default function LoadRoute() {
             </Link>
             <span className="text-faint">·</span>
             <span className="text-[0.7rem] font-medium tracking-[0.08em] text-muted uppercase">{t("loads.drawer.kicker", { workflow })}</span>
-            {v?.detail ? <Freshness status={v.detail.status} /> : !v && !q.isError ? <Skeleton w="5rem" h=".8rem" /> : null}
+            {v.detail ? (
+              <span aria-hidden={ghost || undefined} className={`inline-flex ${gh(ghost)}`}>
+                <Freshness status={v.detail.status} />
+              </span>
+            ) : null}
           </>
         }
-        actions={<Actions workflow={workflow} d={v?.detail ?? undefined} />}
+        actions={v.detail ? <Actions workflow={workflow} d={v.detail} ghost={ghost} /> : null}
       />
       {q.isError && (
         <p role="alert" className="mb-3 rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">
           {(q.error as Error).message}
         </p>
       )}
-      {v && v.choices.length > 0 && (
+      {v.choices.length > 0 && (
         <FilterRow>
-          <span className="text-[12.5px] text-muted">{n("loads.drawer.choices", v.choices.length)}</span>
+          <span aria-hidden={ghost || undefined} className={`text-[12.5px] text-muted ${gh(ghost)}`}>{n("loads.drawer.choices", v.choices.length)}</span>
           {v.choices.map((c) => (
             <Link
               key={c.uri}
               to={{ search: `?target=${encodeURIComponent(c.uri)}` }}
               aria-current={c.current ? "true" : undefined}
-              className={`inline-flex h-8 items-center rounded-card border px-3 font-mono text-[12px] whitespace-nowrap transition-colors ${
+              aria-hidden={ghost || undefined}
+              className={`inline-flex h-8 items-center rounded-card border px-3 font-mono text-[12px] whitespace-nowrap transition-colors ${gh(ghost)} ${
                 c.current ? "border-ink text-ink" : "border-line text-ink-2 hover:border-line-strong"
               }`}
             >
@@ -317,7 +348,7 @@ export default function LoadRoute() {
           ))}
         </FilterRow>
       )}
-      {!q.isError && (!v || v.detail) && <Body workflow={workflow} step={step} d={v?.detail ?? undefined} />}
+      {!q.isError && v.detail && <Body workflow={workflow} step={step} d={v.detail} ghost={ghost} />}
     </Page>
   );
 }

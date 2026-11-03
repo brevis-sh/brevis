@@ -1,6 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { getJSON } from "./api/client";
 import type { Config, Session } from "./api/session";
+import { bindOperator } from "./ui/seen";
 
 type Messages = { lang: string; messages: Record<string, unknown> };
 
@@ -33,6 +34,7 @@ export async function boot(client: QueryClient): Promise<void> {
   }
   // index.html says "en"; the visitor's language is what screen readers and hyphenation follow.
   document.documentElement.lang = session.lang;
+  bindOperator(session.operator);
   client.setQueryData(["session"], session);
   client.setQueryData(["config"], config);
   client.setQueryData(["messages", session.lang], messages);

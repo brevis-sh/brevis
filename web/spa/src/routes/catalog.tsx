@@ -138,9 +138,9 @@ function CatalogRows({ rows, filter, now }: { rows: CatalogRow[]; filter: Filter
 // What the screen shows before its first answer: the last shape it saw (rows, counts, filters), or
 // this one on a first visit, drawn from the real row markup with placeholder values so it takes the
 // height the loaded rows take.
-type Shape = Omit<Catalog, "rows" | "now"> & { n: number };
-const FIRST: Shape = { n: 4, kinds: ["postgres", "pubsub"], hasLegacy: false, total: 4, shown: 4, counts: { all: 4, attention: 0, continuous: 4 } };
-const shapeOf = (d: Catalog): Shape => ({ n: d.rows.length, kinds: d.kinds, hasLegacy: d.hasLegacy, total: d.total, shown: d.shown, counts: d.counts });
+type Shape = Omit<Catalog, "rows" | "now" | "kinds"> & { n: number; kinds: number };
+const FIRST: Shape = { n: 4, kinds: 2, hasLegacy: false, total: 4, shown: 4, counts: { all: 4, attention: 0, continuous: 4 } };
+const shapeOf = (d: Catalog): Shape => ({ n: d.rows.length, kinds: d.kinds.length, hasLegacy: d.hasLegacy, total: d.total, shown: d.shown, counts: Object.fromEntries(Object.entries(d.counts).filter(([k, n]) => (k === "all" || k === "attention" || STATUSES.includes(k)) && typeof n === "number")) });
 const GHOST_ROW: CatalogRow = {
   target: "postgres://warehouse/schema/table_name",
   kind: "postgres",
@@ -157,7 +157,7 @@ const GHOST_ROW: CatalogRow = {
   recent: [1, 3, 2, 4],
   streamHref: "",
 };
-const ghostOf = (s: Shape): Catalog => ({ ...s, now: "2000-01-02T00:00:00Z", rows: Array.from({ length: s.n }, (_, i) => ({ ...GHOST_ROW, target: `${GHOST_ROW.target}_${i}` })) });
+const ghostOf = (s: Shape): Catalog => ({ ...s, kinds: Array.from({ length: s.kinds }, (_, i) => ["postgres", "file", "pubsub"][i % 3] ?? "file"), now: "2000-01-02T00:00:00Z", rows: Array.from({ length: s.n }, (_, i) => ({ ...GHOST_ROW, target: `${GHOST_ROW.target}_${i}` })) });
 
 function Search({ filter }: { filter: Filter }) {
   const { t } = useT();

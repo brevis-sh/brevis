@@ -16,6 +16,29 @@ export function recall<T extends object>(k: string, fallback: T): T {
   }
 }
 
+/** Forget everything remembered: a sign-out must not leave anything of this operator's screens behind. */
+export function clearSeen() {
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith("brevis.seen.")) localStorage.removeItem(k);
+  } catch {
+    /* storage refused: nothing was kept */
+  }
+}
+
+/** Another operator in this browser starts from nothing. Only a number derived from the name is stored, never the name. */
+export function bindOperator(operator: string) {
+  let h = 7;
+  for (const c of operator) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  try {
+    if (localStorage.getItem(key("operator")) !== String(h)) {
+      clearSeen();
+      localStorage.setItem(key("operator"), String(h));
+    }
+  } catch {
+    /* storage refused: nothing is kept either */
+  }
+}
+
 /** Keep `v` as what the screen showed under `k`. */
 export function remember(k: string, v: object) {
   try {

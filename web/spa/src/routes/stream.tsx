@@ -15,7 +15,6 @@ import { HashTabs } from "../ui/hash-tabs";
 import { Icon } from "../ui/icon";
 import { btn, ButtonLink, Card, Empty, PageHead, linkUnderline, Page } from "../ui/kit";
 import { Logo, useLogoTitle } from "../ui/logo";
-import { useSeen } from "../ui/seen";
 import { Status } from "../ui/status";
 
 const pill = "inline-flex items-center gap-1.5 rounded-card border border-line px-2 py-0.5 text-ink-2";
@@ -349,8 +348,7 @@ export default function StreamRoute() {
     keep: false,
   });
   const ghost = !q.data;
-  const seen = useSeen("stream", q.data, GHOST);
-  const v = q.data ?? seen;
+  const v = q.data ?? GHOST;
   if (q.error instanceof ApiError && q.error.status === 404)
     return (
       <Page>

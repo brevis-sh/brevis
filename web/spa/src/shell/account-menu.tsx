@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { clearSeen } from "../ui/seen";
 import { useConfig, useSession } from "../api/session";
 import { useT } from "../i18n";
 import { Icon } from "../ui/icon";
@@ -190,7 +191,7 @@ export function AccountMenu() {
           {operator && (
             // A POST, not a link: a GET that signs somebody out is a URL anybody can put in an <img>.
             <form method="post" action="/logout">
-              <button type="submit" className={row}>
+              <button type="submit" className={row} onClick={clearSeen}>
                 <svg className={glyph} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
                   <path d="M6.5 13.5H3.5v-11h3" />
                   <path d="M9.5 11l2.5-3-2.5-3" />
