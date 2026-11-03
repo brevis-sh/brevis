@@ -14,6 +14,8 @@ export type Graph = { slug: string; run_id?: string; status?: string; terminal: 
 type Props = {
   /** The graph's URL: /api/runs/{id}/graph or /api/workflows/{slug}/graph. */
   src?: string;
+  /** Told which step is chosen (null when none), for a page that says so under the graph. */
+  onPick?: (id: string | null) => void;
   /** Shorthand for a run's graph; the run is polled until it ends. */
   runId?: string;
 };
@@ -155,7 +157,7 @@ function Inspector({ node, stages, close }: { node: GNode; stages: GNode[]; clos
  * (positions are the executor's own levels), drawn with React Flow. Give it a
  * graph URL, or a run id for a run's graph; a running run is polled.
  */
-export default function Dag({ src, runId }: Props) {
+export default function Dag({ src, runId, onPick }: Props) {
   const url = src ?? (runId ? `/api/runs/${runId}/graph` : "");
   const { data: g, error, isPending } = useQuery({
     queryKey: ["graph", url],
@@ -167,6 +169,7 @@ export default function Dag({ src, runId }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
+  useEffect(() => onPick?.(selected), [selected, onPick]);
   const [collapsed, setCollapsed] = useState<Record<string, true>>({});
 
   useLayoutEffect(() => {

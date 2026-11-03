@@ -181,8 +181,9 @@ function StepsList({ d }: { d?: WorkflowDetail }) {
 function StepsCard({ d, slug }: { d?: WorkflowDetail; slug: string }) {
   const { t, n } = useT();
   const [view, setView] = useState<"graph" | "list">("graph");
+  const [picked, setPicked] = useState<string | null>(null);
   const btn = (v: "graph" | "list", label: string) => (
-    <button type="button" aria-pressed={view === v} onClick={() => setView(v)} className="inline-flex h-full items-center rounded-[2px] px-2.5 text-[0.8rem] text-muted aria-pressed:bg-surface-2 aria-pressed:text-ink">
+    <button type="button" aria-pressed={view === v} onClick={() => setView(v)} className="steps-view-btn">
       {label}
     </button>
   );
@@ -193,8 +194,8 @@ function StepsCard({ d, slug }: { d?: WorkflowDetail; slug: string }) {
     <section className={card}>
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line-soft px-4 py-2.5">
         <h2 className="text-[13px] font-semibold text-ink">
-          {t("graph.title")}
-          <span className="ml-1 inline-flex items-center font-normal text-faint tabular-nums">
+          {t("graph.title")}{" "}
+          <span className="ml-1 font-normal text-faint tabular-nums">
             {d ? <>{n("workflows.steps", d.steps.length)} · {n("graph.stages", d.stages)}</> : <Skeleton w="8rem" h="12px" className="inline-block" />}
           </span>
         </h2>
@@ -209,11 +210,16 @@ function StepsCard({ d, slug }: { d?: WorkflowDetail; slug: string }) {
       {shown === "graph" ? (
         <div className="p-3">
           <Suspense fallback={<Skeleton h="22rem" />}>
-            <Dag src={`/api/workflows/${encodeURIComponent(slug)}/graph`} />
+            <Dag src={`/api/workflows/${encodeURIComponent(slug)}/graph`} onPick={setPicked} />
           </Suspense>
         </div>
       ) : (
         <StepsList d={d} />
+      )}
+      {shown === "graph" && (
+        <div className="border-t border-line-soft px-4 py-3 text-[12.5px] text-muted">
+          {picked ? <span className="font-mono text-ink">{picked}</span> : t("graph.panel.none")}
+        </div>
       )}
     </section>
   );
@@ -487,7 +493,7 @@ export default function WorkflowRoute() {
     );
   }
   return (
-    <PageFrame title={slug} mono actions={<Actions slug={slug} d={d} toggler={toggler} />} aside={d?.description ? <About slug={slug} text={d.description} /> : undefined}>
+    <PageFrame title={slug} mono actions={q.isError && !d ? undefined : <Actions slug={slug} d={d} toggler={toggler} />} aside={d?.description ? <About slug={slug} text={d.description} /> : undefined}>
       {body}
     </PageFrame>
   );
