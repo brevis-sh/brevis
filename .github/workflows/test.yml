@@ -169,7 +169,7 @@ jobs:
             || { echo "::error::rode 'go mod tidy' e commite"; exit 1; }
 
       # web/'s generated artifacts are versioned, because the image has neither
-      # Node nor templ. Checking here catches stale CSS at push time, and not
+      # Node. Checking here catches stale CSS at push time, and not
       # only when it is time to publish.
       - name: Generated artifacts
         run: ./.github/scripts/generated-check.sh
@@ -959,7 +959,7 @@ jobs:
       # names four and reads one, which is the exact shape this repository
       # keeps finding in its own gates. Run per module it is 20 + 11 + 10 + 1.
       #
-      # `@master` was the other half: this repository pins templ and Tailwind
+      # `@master` was the other half: this repository pins Tailwind
       # because `releases/latest` made two developers generate different CSS,
       # and a scanner that changes on its own is the same problem with a worse
       # failure mode, because its findings are what somebody acts on.

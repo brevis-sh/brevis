@@ -69,7 +69,7 @@ help: ## Lists the targets
 # reporting `brevis dev`, with no commit and no date, while the documentation
 # promised the version stamped in -- and telling a local build from a release
 # artifact is exactly what those fields are for.
-build: generate ## Builds the binary into bin/ (generates templ and css first)
+build: generate ## Builds the binary into bin/ (generates the css and the React app first)
 	@go build -trimpath \
 	  -ldflags="-X main.Version=$(VERSION) -X main.Commit=$(COMMIT) -X main.BuildDate=$(BUILD_DATE)" \
 	  -o $(BIN) ./cmd/brevis
@@ -158,10 +158,8 @@ tailwind-install: ## Downloads the standalone Tailwind binary (no Node)
 	   "https://github.com/tailwindlabs/tailwindcss/releases/download/$(TAILWIND_VERSION)/tailwindcss-$$OS-$$ARCH" \
 	 && chmod +x bin/tailwindcss && echo "bin/tailwindcss $(TAILWIND_VERSION) installed"
 
-generate: ## Generates the _templ.go files, the CSS and the React app
-	@command -v templ >/dev/null || { echo "install it: go install github.com/a-h/templ/cmd/templ@$$(go list -m -f '{{.Version}}' github.com/a-h/templ)"; exit 1; }
+generate: ## Generates the CSS and the React app
 	@test -x bin/tailwindcss && ./bin/tailwindcss --help 2>&1 | head -1 | grep -q "$(patsubst v%,%,$(TAILWIND_VERSION))" || $(MAKE) tailwind-install
-	@templ generate
 	@./bin/tailwindcss -i web/assets/app.src.css -o web/assets/app.css --minify
 	@$(MAKE) --no-print-directory spa
 

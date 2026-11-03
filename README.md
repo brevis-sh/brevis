@@ -191,7 +191,7 @@ the workflows' `run:` steps. Details in [`docs/PUBLISHING.md`](docs/PUBLISHING.m
 ## Running locally
 
 ```bash
-make dev     # hot reload: templ + tailwind + go build on every change
+make dev     # hot reload: tailwind + go build on every change
 make up      # Postgres + API
 make smoke   # checks /health and /ready
 make logs

@@ -33,7 +33,6 @@ RUN test -f web/spa/dist/index.html || { echo "web/spa/dist is missing — run '
 # line kept naming `inter-latin.woff2`, and the release build failed after the
 # tag was already pushed. Reading the stylesheet cannot go stale.
 RUN set -eu; fonts=$(grep -oE 'url\([^)]*/assets/fonts/[^)]*\)' web/assets/app.css | sed -E 's|.*/assets/||; s|[")]||g' | sort -u); test -n "$fonts" || { echo "app.css asks for no font at all"; exit 1; }; for f in $fonts; do test -f "web/assets/$f" || { echo "app.css asks for web/assets/$f and it is not here"; exit 1; }; done; echo "fonts: $(echo "$fonts" | wc -w) present"
-RUN test -f web/assets/vendor/xyflow.js || { echo "web/assets/vendor is missing"; exit 1; }
 
 # The version stamped into the binary. `brevis version` inside the container is
 # the only reliable way to know what is running when the image's tag has been
