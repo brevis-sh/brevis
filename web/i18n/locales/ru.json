@@ -1171,7 +1171,6 @@
   "workflows.run_now.zone": "Введённое здесь время читается в зоне расписания ({zone}).",
   "workflows.runs": {"one": "{count} запуск", "few": "{count} запуска", "many": "{count} запусков", "other": "{count} запусков"},
   "workflows.search": "Поиск по имени, тегу или команде",
-  "workflows.see_logs": "Смотреть логи",
   "workflows.slot.option": "{slot} · обрабатывает {from} → {to} UTC",
   "workflows.state.all": "Все",
   "workflows.state.failing": "Падают",

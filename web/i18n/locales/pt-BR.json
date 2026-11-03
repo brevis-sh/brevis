@@ -1081,7 +1081,6 @@
   "workflows.run_now.zone": "Um horário digitado aqui é lido no fuso da agenda ({zone}).",
   "workflows.runs": {"one": "{count} execução", "other": "{count} execuções"},
   "workflows.search": "Buscar por nome, tag ou comando",
-  "workflows.see_logs": "Ver logs",
   "workflows.slot.option": "{slot} · processa {from} → {to} UTC",
   "workflows.state.all": "Todos",
   "workflows.state.failing": "Falhando",

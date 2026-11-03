@@ -1237,7 +1237,6 @@
     "other": "{count} 次运行"
   },
   "workflows.search": "按名称、标签或命令搜索",
-  "workflows.see_logs": "查看日志",
   "workflows.slot.option": "{slot} · 处理 {from} → {to} UTC",
   "workflows.state.all": "全部",
   "workflows.state.failing": "失败中",

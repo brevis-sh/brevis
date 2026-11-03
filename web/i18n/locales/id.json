@@ -1237,7 +1237,6 @@
     "other": "{count} run"
   },
   "workflows.search": "Cari berdasarkan nama, tag, atau perintah",
-  "workflows.see_logs": "Lihat log",
   "workflows.slot.option": "{slot} · memproses {from} → {to} UTC",
   "workflows.state.all": "Semua",
   "workflows.state.failing": "Gagal",

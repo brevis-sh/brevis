@@ -1080,7 +1080,6 @@
   "workflows.run_now.zone": "A time typed here is read in the schedule's zone ({zone}).",
   "workflows.runs": {"one": "{count} run", "other": "{count} runs"},
   "workflows.search": "Search by name, tag or command",
-  "workflows.see_logs": "See logs",
   "workflows.slot.option": "{slot} · processes {from} → {to} UTC",
   "workflows.state.all": "All",
   "workflows.state.failing": "Failing",

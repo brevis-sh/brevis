@@ -1237,7 +1237,6 @@
     "other": "실행 {count}건"
   },
   "workflows.search": "이름, 태그 또는 명령으로 검색",
-  "workflows.see_logs": "로그 보기",
   "workflows.slot.option": "{slot} · 처리 범위 {from} → {to} UTC",
   "workflows.state.all": "전체",
   "workflows.state.failing": "실패 중",

@@ -1237,7 +1237,6 @@
     "other": "{count} 件の実行"
   },
   "workflows.search": "名前、タグ、コマンドで検索",
-  "workflows.see_logs": "ログを見る",
   "workflows.slot.option": "{slot} · 処理範囲 {from} → {to} UTC",
   "workflows.state.all": "すべて",
   "workflows.state.failing": "失敗中",

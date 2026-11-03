@@ -1237,7 +1237,6 @@
     "other": "{count} Runs"
   },
   "workflows.search": "Nach Name, Tag oder Befehl suchen",
-  "workflows.see_logs": "Logs ansehen",
   "workflows.slot.option": "{slot} · verarbeitet {from} → {to} UTC",
   "workflows.state.all": "Alle",
   "workflows.state.failing": "Schlägt fehl",

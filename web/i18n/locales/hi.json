@@ -1237,7 +1237,6 @@
     "other": "{count} run"
   },
   "workflows.search": "नाम, टैग या कमांड से खोजें",
-  "workflows.see_logs": "लॉग देखें",
   "workflows.slot.option": "{slot} · {from} → {to} UTC प्रोसेस करता है",
   "workflows.state.all": "सभी",
   "workflows.state.failing": "विफल हो रहे",

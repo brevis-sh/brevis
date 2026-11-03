@@ -1081,7 +1081,6 @@
   "workflows.run_now.zone": "Una hora escrita aquí se lee en la zona de la programación ({zone}).",
   "workflows.runs": {"one": "{count} ejecución", "other": "{count} ejecuciones"},
   "workflows.search": "Buscar por nombre, etiqueta o comando",
-  "workflows.see_logs": "Ver logs",
   "workflows.slot.option": "{slot} · procesa {from} → {to} UTC",
   "workflows.state.all": "Todos",
   "workflows.state.failing": "Fallando",
