@@ -264,14 +264,14 @@ func TestScrapeOverHTTP(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/ok":
-			w.Write([]byte("# TYPE brevis_gateway_events_received_total counter\nbrevis_gateway_events_received_total{stream=\"a\",format=\"json\"} " +
+			_, _ = w.Write([]byte("# TYPE brevis_gateway_events_received_total counter\nbrevis_gateway_events_received_total{stream=\"a\",format=\"json\"} " +
 				string(rune('0'+n.Add(1))) + "\n"))
 		case "/500":
 			http.Error(w, "boom", 500)
 		case "/redirect":
 			http.Redirect(w, r, "http://169.254.169.254/", http.StatusFound)
 		case "/garbage":
-			w.Write([]byte("{{{"))
+			_, _ = w.Write([]byte("{{{"))
 		}
 	}))
 	defer srv.Close()

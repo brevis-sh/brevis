@@ -243,7 +243,7 @@ func (c *Collector) fetch(ctx context.Context, t *targetState) ([]Sample, string
 		}
 		return nil, "unreachable"
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 64<<10)) // keeps the connection reusable
 		return nil, "status"
