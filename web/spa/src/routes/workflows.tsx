@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getJSON } from "../api/client";
@@ -6,7 +6,8 @@ import { useFallbackInterval, useLive } from "../live/hooks";
 import { useScheduleToggle, type Logo as LogoRef, type WorkflowRow, type WorkflowsList } from "../api/workflows";
 import { useFormat, useT } from "../i18n";
 import { useAgo } from "../ui/format";
-import { buttonClass, chipClass, filterRow, noBar, segGroup, segOff, segOn } from "../ui/button";
+import { buttonClass } from "../ui/button";
+import { FilterBar, SearchField, Segmented, ResultCount, useUrlSearch, type Chip, type FilterDef } from "../ui/filters";
 import { linkClass } from "../ui/card";
 import { CodeBlock } from "../ui/copy";
 import { Drawer, useDrawer } from "../ui/drawer";
@@ -227,140 +228,66 @@ function RowsSkeleton({ links }: { links: Links }) {
   );
 }
 
-// The tags to choose from: a popover of checkboxes, each one a link's worth of filter.
-function TagPopover({ data, links }: { data?: WorkflowsList; links: Links }) {
-  const { t } = useT();
-  const navigate = useNavigate();
-  const [find, setFind] = useState("");
-  const [at, setAt] = useState({ top: 0, left: 0 });
-  const chosen = data ? data.filter.tags : links.sp.getAll("tag");
-  const shown = (data?.tags ?? []).filter((x) => x.toLowerCase().includes(find.toLowerCase()));
-  return (
-    <details className="shrink-0" onToggle={(e) => {
-      // The row scrolls sideways, which would clip an absolute panel: it is placed from the trigger instead.
-      const r = e.currentTarget.querySelector("summary")?.getBoundingClientRect();
-      if (r) setAt({ top: r.bottom + 4, left: Math.min(r.left, window.innerWidth - 270) });
-    }}>
-      <summary className="inline-flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-card border border-line bg-surface px-2.5 text-[0.8rem] text-muted transition-colors duration-150 hover:text-ink [&::-webkit-details-marker]:hidden">
-        <Icon name="tag" className="h-3.5 w-3.5" />
-        {t("workflows.col.tags")}
-        {chosen.length > 0 && <span className="text-[0.72rem] text-ink tabular-nums">{chosen.length}</span>}
-      </summary>
-      <div style={at} className="fixed z-20 w-64 rounded-card border border-line bg-surface p-2 shadow-warm-sm">
-        <input
-          type="search"
-          aria-label={t("workflows.tags.filter")}
-          placeholder={t("workflows.tags.filter")}
-          autoComplete="off"
-          value={find}
-          onChange={(e) => setFind(e.target.value)}
-          className="mb-2 h-8 w-full rounded-card border border-line bg-surface px-2.5 text-[0.82rem] text-ink placeholder:text-faint focus:border-accent-strong focus:outline-none"
-        />
-        <ul className="max-h-60 overflow-y-auto">
-          {shown.map((tag) => (
-            <li key={tag}>
-              <label className="flex cursor-pointer items-center gap-2 rounded-[2px] px-1.5 py-1 text-[0.82rem] text-ink hover:bg-surface-2">
-                <input type="checkbox" className="accent-ink" checked={chosen.includes(tag)} onChange={() => void navigate(links.hrefWith({ tag: toggled(chosen, tag) }))} />
-                {tag}
-              </label>
-            </li>
-          ))}
-        </ul>
-        {shown.length === 0 && <p className="px-1.5 py-1 text-[0.8rem] text-muted">{t("workflows.tags.none")}</p>}
-      </div>
-    </details>
-  );
-}
-
-function Chip({ label, value, to, mono }: { label: string; value: string; to: string; mono?: boolean }) {
-  const { t } = useT();
-  return (
-    <Link to={to} aria-label={t("workflows.chip.remove")} className={chipClass}>
-      <span className="text-muted">{label}:</span>
-      <span className={mono ? "font-mono" : undefined}>{value}</span>
-      <span className="text-muted">×</span>
-    </Link>
-  );
-}
-
-// The three rows of controls. The state question is drawn at once (its counts wait); the
-// tag and language filters come from what the workflows are, so they come with the data.
-function Filters({ data, links }: { data?: WorkflowsList; links: Links }) {
-  const { t } = useT();
-  const { number } = useFormat();
-  const state = data ? data.filter.state : (links.sp.get("state") ?? "");
-  const active = data ? data.filter.active : (links.sp.get("active") ?? "");
-  const project = data ? data.filter.project : (links.sp.get("project") ?? "");
-  const legacyState = state !== "" && !(STATES as readonly string[]).includes(state);
-  return (
-    <>
-      <div role="group" aria-label={t("workflows.filter.state")} className={segGroup}>
-        {STATES.map((s) => (
-          <Link key={s} to={links.hrefWith({ state: s })} aria-current={state === s ? "true" : undefined} className={state === s ? segOn : segOff}>
-            {t(`workflows.state.${s || "all"}`)}
-            <span className={`text-[0.72rem] tabular-nums ${state === s ? "text-muted" : "text-faint"} ${data ? "" : "sk-ghost"}`}>{data ? number(data.counts[s] ?? 0) : "0"}</span>
-          </Link>
-        ))}
-      </div>
-      {legacyState && <Chip label={t("workflows.chip.last_run")} value={t(`state.${state}`)} to={links.hrefWith({ state: null })} />}
-      {active && <Chip label={t("workflows.chip.schedule")} value={t(active === "active" ? "workflows.active" : "workflows.paused")} to={links.hrefWith({ active: null })} />}
-      <LangFilter data={data} links={links} />
-      <TagPopover data={data} links={links} />
-      {data?.filter.tags.map((tag) => (
-        <Link key={tag} to={links.hrefWith({ tag: toggled(data.filter.tags, tag) })} aria-label={t("workflows.tags.remove", { tag })} className={chipClass}>
-          {tag}
-          <span className="text-muted">×</span>
-        </Link>
-      ))}
-      {project && <Chip label={t("workflows.chip.project")} value={project} to={links.hrefWith({ project: null })} mono />}
-    </>
-  );
-}
-
-function LangFilter({ data, links }: { data?: WorkflowsList; links: Links }) {
-  const { t } = useT();
-  const { number } = useFormat();
-  useEffect(() => {
-    if (data) remember("workflows.langs", data.langs.length);
-  }, [data]);
-  const lang = data ? data.filter.lang : (links.sp.get("lang") ?? "");
-  return (
-    <div role="group" aria-label={t("workflows.filter.lang")} className="flex shrink-0 items-center gap-1.5">
-      <span className="text-[0.75rem] text-faint">{t("workflows.filter.lang")}</span>
-      <div className={segGroup}>
-        <Link to={links.hrefWith({ lang: null })} aria-current={lang === "" ? "true" : undefined} className={lang === "" ? segOn : segOff}>{t("workflows.lang.all")}</Link>
-        {!data && Array.from({ length: recalled("workflows.langs", 2) }, (_, i) => (
-          <span key={i} aria-hidden="true" className={`${segOff} sk-ghost`}>
-            <Logo k="python" />
-            <span>language</span>
-            <span className="text-[0.72rem] tabular-nums">0</span>
-          </span>
-        ))}
-        {data?.langs.map((l: LogoRef & { count: number }) => (
-          <Link key={l.key} to={links.hrefWith({ lang: l.key })} aria-current={lang === l.key ? "true" : undefined} className={lang === l.key ? segOn : segOff}>
-            <Logo k={l.key} />
-            {l.name}
-            <span className="text-[0.72rem] text-muted tabular-nums">{number(l.count)}</span>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Count({ data }: { data?: WorkflowsList }) {
+// The bar (see ui/filters): the state question is drawn at once (its counts wait); the language and
+// tag lists come from what the workflows are, so they come with the data. Every change is ONE navigation.
+function WorkflowFilters({ data, links }: { data?: WorkflowsList; links: Links }) {
   const { t, n } = useT();
-  const { number } = useFormat();
-  if (!data) return <p className="sk-ghost mb-2 text-[13px] text-muted" aria-hidden="true"><span className="font-semibold tabular-nums">00</span> {n("workflows.count", 2)}</p>;
-  const f = data.filter;
+  const navigate = useNavigate();
+  const [text, setText] = useUrlSearch("q");
+  const go = (patch: Patch) => void navigate(links.hrefWith(patch));
+  const f = data?.filter;
+  const state = f ? f.state : (links.sp.get("state") ?? "");
+  const active = f ? f.active : (links.sp.get("active") ?? "");
+  const project = f ? f.project : (links.sp.get("project") ?? "");
+  const lang = f ? f.lang : (links.sp.get("lang") ?? "");
+  const tags = f ? f.tags : links.sp.getAll("tag");
+  const q = f ? f.q : (links.sp.get("q") ?? "");
+  const legacyState = state !== "" && !(STATES as readonly string[]).includes(state);
+  const langName = (key: string) => data?.langs.find((l) => l.key === key)?.name ?? key;
+  const filters: FilterDef[] = [
+    {
+      id: "lang", label: t("workflows.filter.lang"), allLabel: t("workflows.lang.all"), pending: !data,
+      options: (data?.langs ?? []).map((l: LogoRef & { count: number }) => ({ key: l.key, label: l.name, icon: <Logo k={l.key} />, count: l.count })),
+      value: lang ? [lang] : [], onChange: (v) => go({ lang: v[0] ?? null }),
+    },
+    {
+      id: "tags", label: t("workflows.col.tags"), icon: "tag", multiple: true, pending: !data, searchLabel: t("workflows.tags.filter"), noneLabel: t("workflows.tags.none"),
+      options: (data?.tags ?? []).map((tag) => ({ key: tag, label: tag })),
+      value: tags, onChange: (v) => go({ tag: v }),
+    },
+  ];
+  const chips: Chip[] = [
+    ...(legacyState ? [{ id: "state", group: t("workflows.chip.last_run"), value: t(`state.${state}`), onRemove: () => go({ state: null }) }] : []),
+    ...(active ? [{ id: "active", group: t("workflows.chip.schedule"), value: t(active === "active" ? "workflows.active" : "workflows.paused"), onRemove: () => go({ active: null }) }] : []),
+    ...(lang ? [{ id: "lang", group: t("workflows.filter.lang"), value: langName(lang), onRemove: () => go({ lang: null }) }] : []),
+    ...tags.map((tag) => ({ id: `tag:${tag}`, group: t("workflows.col.tags"), value: tag, onRemove: () => go({ tag: tags.filter((x) => x !== tag) }) })),
+    ...(project ? [{ id: "project", group: t("workflows.chip.project"), value: project, mono: true, onRemove: () => go({ project: null }) }] : []),
+  ];
+  const any = chips.length > 0 || q !== "" || (state !== "" && !legacyState);
   return (
-    <p className="mb-2 text-[13px] text-muted">
-      <span className="font-semibold text-ink tabular-nums">{number(data.filtered)}</span> {n("workflows.count", data.total)}
-      {f.q && <> {t("workflows.count.search", { q: f.q })}</>}
-      {f.tags.map((tag) => <span key={tag}> · {t("workflows.count.tag", { tag })}</span>)}
-      {f.lang && <> · {data.langs.find((l) => l.key === f.lang)?.name ?? f.lang}</>}
-      {data.filtered !== data.total && <Link to="?" className={`ml-3 text-xs ${linkClass}`}>{t("workflows.clear")}</Link>}
-    </p>
+    <FilterBar
+      search={<SearchField value={text} onChange={setText} label={t("workflows.search")} />}
+      primary={
+        <Segmented
+          label={t("workflows.filter.state")}
+          pending={!data}
+          value={state}
+          onChange={(s) => go({ state: s })}
+          items={STATES.map((s) => ({ key: s, label: t(`workflows.state.${s || "all"}`), count: data ? (data.counts[s] ?? 0) : 0 }))}
+        />
+      }
+      filters={filters}
+      chips={chips}
+      clearable={any}
+      onClearAll={() => go({ q: null, state: null, active: null, lang: null, tag: null, project: null })}
+      count={
+        <ResultCount
+          pending={!data}
+          shown={data?.filtered ?? 0}
+          tail={<>{n("workflows.count", data?.total ?? 2)}{q && <> {t("workflows.count.search", { q })}</>}</>}
+        />
+      }
+    />
   );
 }
 
@@ -413,67 +340,6 @@ function Table({ data, links, toggler, onRun }: { data?: WorkflowsList; links: L
         </div>
       )}
     </div>
-  );
-}
-
-// The search box lives outside the data, so typing never remounts it; it writes
-// to the URL after a pause.
-function SearchBox() {
-  const { t } = useT();
-  const [sp] = useSearchParams();
-  const navigate = useNavigate();
-  const input = useRef<HTMLInputElement>(null);
-  const urlQ = sp.get("q") ?? "";
-  const [text, setText] = useState(urlQ);
-  const sent = useRef(urlQ);
-  useEffect(() => {
-    if (urlQ !== sent.current) {
-      sent.current = urlQ;
-      setText(urlQ);
-    }
-  }, [urlQ]);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement | null;
-      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey || el?.closest("input, textarea, select, [contenteditable], dialog")) return;
-      e.preventDefault();
-      input.current?.focus();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
-  useEffect(() => {
-    const v = text.trim();
-    if (v === sent.current) return;
-    const id = setTimeout(() => {
-      sent.current = v;
-      const q = new URLSearchParams(window.location.search);
-      q.delete("page");
-      if (v) q.set("q", v);
-      else q.delete("q");
-      void navigate(`?${q.toString()}`, { replace: true });
-    }, 250);
-    return () => clearTimeout(id);
-  }, [text, navigate]);
-  return (
-    <form role="search" onSubmit={(e) => e.preventDefault()} className="min-w-[12rem] flex-1">
-      <label className="relative flex min-w-0 items-center">
-        <span className="pointer-events-none absolute left-2.5 text-faint"><Icon name="search" className="h-4 w-4" /></span>
-        <input
-          ref={input}
-          type="search"
-          aria-label={t("workflows.search")}
-          placeholder={t("workflows.search")}
-          autoComplete="off"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="h-8 w-full rounded-card border border-line bg-surface pr-9 pl-8 text-[0.82rem] text-ink placeholder:text-faint focus:border-accent-strong focus:outline-none"
-        />
-        <span className="pointer-events-none absolute right-2">
-          <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded-card border border-line bg-surface-2 px-1 font-mono text-[0.68rem] leading-none text-muted">/</kbd>
-        </span>
-      </label>
-    </form>
   );
 }
 
@@ -570,16 +436,12 @@ export default function WorkflowsRoute() {
         {t("workflows.lead.before")} <strong className="font-medium text-ink">{t("workflows.lead.strong")}</strong>
         {t("workflows.lead.after")} <Link to="/runs" className={linkClass}>{t("workflows.lead.run")}</Link>.
       </p>
-      <div className={`${filterRow} mb-3`} style={noBar}>
-        <SearchBox />
-        <Filters data={data} links={links} />
-      </div>
+      <WorkflowFilters data={data} links={links} />
       <div aria-busy={q.isPlaceholderData || !data} className={q.isPlaceholderData ? "opacity-60 transition-opacity" : undefined}>
         {q.isError && !data ? (
           <LoadError onRetry={() => void q.refetch()} />
         ) : (
           <>
-            <Count data={data} />
             <div role="status">
               {note && (
                 <p className="mb-2 text-[12.5px] text-muted">

@@ -9,6 +9,7 @@ import { useCrumb } from "../shell/nav";
 import { buttonClass } from "../ui/button";
 import { linkClass } from "../ui/card";
 import { until, useAgo, useBrief, useNumbers } from "../ui/format";
+import { Segmented } from "../ui/filters";
 import { Icon } from "../ui/icon";
 import { Logo } from "../ui/logo";
 import { PageFrame } from "../ui/page-frame";
@@ -213,11 +214,6 @@ function StepsCard({ d, slug }: { d?: WorkflowDetail; slug: string }) {
   const { t, n } = useT();
   const [view, setView] = useState<"graph" | "list">("graph");
   const [picked, setPicked] = useState<string | null>(null);
-  const btn = (v: "graph" | "list", label: string) => (
-    <button type="button" aria-pressed={view === v} onClick={() => setView(v)} className="steps-view-btn">
-      {label}
-    </button>
-  );
   // A one-step workflow has nothing to draw: its list is its line.
   const oneStep = !!d && d.steps.length < 2;
   const shown = oneStep ? "list" : view;
@@ -232,9 +228,17 @@ function StepsCard({ d, slug }: { d?: WorkflowDetail; slug: string }) {
         </h2>
         <p className="text-[12.5px] text-muted max-[860px]:hidden">{t("graph.hint")}</p>
         {!oneStep && (
-          <div role="group" aria-label={t("graph.view")} className="ml-auto inline-flex h-8 items-center gap-0.5 rounded-card border border-line bg-surface p-0.5">
-            {btn("graph", t("graph.view.graph"))}
-            {btn("list", t("graph.view.list"))}
+          <div className="ml-auto">
+            {/* A VIEW toggle (how the same steps are drawn), not a filter: icon + word, same segmented family. */}
+            <Segmented
+              label={t("graph.view")}
+              value={view}
+              onChange={(v) => setView(v as "graph" | "list")}
+              items={[
+                { key: "graph", label: t("graph.view.graph"), icon: <Icon name="workflow" className="h-3.5 w-3.5" /> },
+                { key: "list", label: t("graph.view.list"), icon: <Icon name="table" className="h-3.5 w-3.5" /> },
+              ]}
+            />
           </div>
         )}
       </header>

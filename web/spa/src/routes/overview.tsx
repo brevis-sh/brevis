@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getJSON } from "../api/client";
 import { useSession } from "../api/session";
 import { useFormat, useT } from "../i18n";
-import { filterRow, noBar } from "../ui/button";
+import { FilterBar, Segmented } from "../ui/filters";
 import { Empty, Panel, linkClass } from "../ui/card";
 import { until, useNumbers } from "../ui/format";
 import { Logos } from "../ui/logo";
@@ -54,23 +54,12 @@ function useOverview(window: WindowKey) {
   });
 }
 
-// The three windows as links: the address carries the choice, so it can be shared.
+// The three windows: the address carries the choice, so it can be shared. A segmented FILTER (it narrows
+// every number below), the same control as every other list's.
 function WindowToggle({ current }: { current: WindowKey }) {
   const { t } = useT();
-  return (
-    <nav aria-label={t("window.label")} className="flex items-center rounded-card border border-line text-[12px]">
-      {WINDOWS.map((k) => (
-        <Link
-          key={k}
-          to={{ search: `?window=${k}` }}
-          aria-current={k === current ? "page" : undefined}
-          className={k === current ? "bg-surface-2 px-2.5 py-1 font-medium text-ink" : "px-2.5 py-1 text-muted hover:text-ink"}
-        >
-          {t(`window.short.${k}`)}
-        </Link>
-      ))}
-    </nav>
-  );
+  const navigate = useNavigate();
+  return <Segmented label={t("window.label")} value={current} onChange={(k) => void navigate({ search: `?window=${k}` })} items={WINDOWS.map((k) => ({ key: k, label: t(`window.short.${k}`) }))} />;
 }
 
 // The four numbers: how much passed, what failed, what runs and waits, what fires next.
@@ -181,7 +170,6 @@ function NextTriggers({ o }: { o?: Overview }) {
 
 const IN_FLIGHT = ["running", "queued", "retrying"];
 type RecentFilter = "all" | "failed" | "running";
-const pill = "rounded-[5px] px-2.5 py-1 text-[12.5px] text-muted hover:text-ink aria-pressed:bg-surface-2 aria-pressed:text-ink";
 
 // The filter and the link are the screen's; only the rows wait for the runs.
 function RecentRuns({ runs }: { runs?: RunRow[] }) {
@@ -196,13 +184,20 @@ function RecentRuns({ runs }: { runs?: RunRow[] }) {
   const choices: [RecentFilter, string][] = [["all", t("runs.all")], ["failed", t("runs.failed")], ["running", t("runs.in_flight")]];
   return (
     <>
-      <div className={`${filterRow} justify-between px-3.5 py-2.5`} style={noBar}>
-        <div role="group" aria-label={t("runs.state")} className="inline-flex rounded-card border border-line p-0.5">
-          {choices.map(([k, label]) => (
-            <button key={k} type="button" aria-pressed={filter === k} onClick={() => setFilter(k)} className={pill}>{label}</button>
-          ))}
-        </div>
-        <Link to="/runs" className={`ml-auto shrink-0 text-[12.5px] ${linkClass}`}>{t("overview.all_runs")} →</Link>
+      <div className="px-3.5 py-2.5">
+        <FilterBar
+          className=""
+          primary={
+            <Segmented
+              label={t("runs.state")}
+              value={filter}
+              pending={!runs}
+              onChange={(k) => setFilter(k as RecentFilter)}
+              items={choices.map(([k, label]) => ({ key: k, label, count: (runs ?? []).filter((r) => k === "all" || (k === "running" ? IN_FLIGHT.includes(r.status) : r.status === k)).length }))}
+            />
+          }
+          actions={<Link to="/runs" className={`shrink-0 text-[12.5px] ${linkClass}`}>{t("overview.all_runs")} →</Link>}
+        />
       </div>
       {runs && runs.length === 0 ? (
         <div className="px-3.5 pb-3"><Empty text={t("runs.empty")} hint="brevis scheduler" /></div>

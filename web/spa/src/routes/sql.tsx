@@ -8,6 +8,7 @@ import { useFormat, useT } from "../i18n";
 import { CodeEditor } from "../ui/CodeEditor";
 import { DataGrid } from "../ui/DataGrid";
 import { buttonClass } from "../ui/buttons";
+import { DropdownFilter } from "../ui/filters";
 import { Icon } from "../ui/icon";
 import { Page } from "../ui/kit";
 import { Kbd } from "../ui/kbd";
@@ -446,18 +447,13 @@ function Workbench({ state }: { state: State | undefined }) {
               </button>
             )}
             <Kbd keys="⌘↵" />
-            <label className={`flex min-w-0 max-w-[16rem] items-center rounded-card border border-line bg-surface px-2 ${ctl}`}>
-              <span className="sr-only">{t("sql.tree.connection")}</span>
-              {state ? (
-                <select value={target} onChange={(e) => setPicked(e.target.value)} className="min-w-0 flex-1 bg-transparent font-mono text-xs text-ink focus:outline-none">
-                  {state.connections.map((c) => (
-                    <option key={c.target} value={c.target} disabled={!c.queryable}>{c.name}</option>
-                  ))}
-                </select>
-              ) : (
-                <Skeleton w="8rem" h="0.8rem" />
-              )}
-            </label>
+            <DropdownFilter
+              def={{
+                id: "connection", label: t("sql.tree.connection"), required: true, mono: true, pending: !state,
+                options: (state?.connections ?? []).map((c) => ({ key: c.target, label: c.name, disabled: !c.queryable })),
+                value: target ? [target] : [], onChange: (v) => v[0] && setPicked(v[0]),
+              }}
+            />
             {writable && (
               <span className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-card bg-state-queued/13 px-2 text-xs font-medium text-state-queued">
                 <Icon name="triangle-alert" className="h-3.5 w-3.5" />
