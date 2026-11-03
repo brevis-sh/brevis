@@ -3,6 +3,7 @@ import { ApiError } from "../api/client";
 import { useData } from "../api/live";
 import type { Change, Load, LoadDetail } from "../api/ingest";
 import { useFormat, useT } from "../i18n";
+import { useCrumb } from "../shell/nav";
 import { Icon } from "../ui/icon";
 import { btn, ButtonLink, Card, Empty, FilterRow, PageHead, ShortStamp, linkUnderline, Page } from "../ui/kit";
 import { Logo, useLogoTitle } from "../ui/logo";
@@ -260,6 +261,7 @@ export default function LoadRoute() {
   const { workflow = "", step = "" } = useParams();
   const { t, n } = useT();
   const { search } = useLocation();
+  useCrumb(`${workflow} · ${step}`);
   const q = useData<Load>(["ingest", "load", workflow, step, search], `/api/ingest/loads/${encodeURIComponent(workflow)}/${encodeURIComponent(step)}${search}`, {
     every: 15_000,
     keep: false,

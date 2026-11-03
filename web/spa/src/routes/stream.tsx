@@ -5,6 +5,7 @@ import { useData } from "../api/live";
 import type { Stream } from "../api/ingest";
 import { useT } from "../i18n";
 import { useBrief } from "../ui/format";
+import { useCrumb } from "../shell/nav";
 import { ConfigNote, DeadLetterPanel } from "../ui/cfg";
 import { CopyButton } from "../ui/copy";
 import { FlowDiagram } from "../ui/flow";
@@ -317,6 +318,7 @@ export default function StreamRoute() {
   // The stream's path is the tail of the address: /ingest/streams/<gateway>/<path...>.
   const { gateway = "", "*": rest = "" } = useParams();
   const path = `/${rest}`;
+  useCrumb(`POST ${path}`, { mono: true });
   const q = useData<Stream>(["ingest", "stream", gateway, rest], `/api/ingest/streams/${encodeURIComponent(gateway)}/${rest.split("/").map(encodeURIComponent).join("/")}`, {
     every: 15_000,
     keep: false,

@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router";
 import { ApiError, postJSON } from "../api/client";
 import { useData } from "../api/live";
 import { useFormat, useT } from "../i18n";
+import { useCrumb } from "../shell/nav";
 import { CodeBlock } from "../ui/copy";
 import { Icon } from "../ui/icon";
 import { btn, Card, MethodPill, PageHead, StatCells, linkUnderline, Page } from "../ui/kit";
@@ -502,6 +503,7 @@ function EndpointPage({ api, d }: { api: string; d: Endpoint | undefined }) {
 export default function EndpointRoute() {
   const { api = "", name = "" } = useParams();
   const q = useData<Endpoint>(["endpoint", api, name], `/api/endpoints/${encodeURIComponent(api)}/${encodeURIComponent(name)}`, { keep: false });
+  useCrumb(q.data?.path ?? "", { mono: true });
   if (q.isError)
     return (
       <p role="alert" className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">

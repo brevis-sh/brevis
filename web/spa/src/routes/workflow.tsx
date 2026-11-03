@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ApiError, getJSON } from "../api/client";
 import { useScheduleToggle, type WorkflowDetail } from "../api/workflows";
 import { useFormat, useT } from "../i18n";
+import { useCrumb } from "../shell/nav";
 import { buttonClass } from "../ui/button";
 import { linkClass } from "../ui/card";
 import { until, useAgo, useBrief, useNumbers } from "../ui/format";
@@ -438,6 +439,7 @@ function Actions({ slug, d, toggler }: { slug: string; d?: WorkflowDetail; toggl
 export default function WorkflowRoute() {
   const { t } = useT();
   const { slug = "" } = useParams();
+  useCrumb(slug);
   const [sp] = useSearchParams();
   const day = sp.get("day") ?? "";
   const toggler = useScheduleToggle();

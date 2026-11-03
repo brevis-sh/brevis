@@ -11,6 +11,7 @@ import { LogView } from "../ui/log-view";
 import { Skeleton } from "../ui/skeleton";
 import { Retry, Status } from "../ui/status";
 import { Tabs } from "../ui/tabs";
+import { useCrumb } from "../shell/nav";
 import "../ui/bar.css";
 import { ContextPanel, ParamsPanel, StepsPanel } from "./run-panels";
 
@@ -259,6 +260,8 @@ function RunScreen({ id }: { id: string }) {
     retry: (n, e) => !(e instanceof ApiError && e.status === 404) && n < 1,
   });
 
+  // As the old page: "<workflow> · <first 8 of the id>".
+  useCrumb(run ? `${run.workflow} · ${id.slice(0, 8)}` : "", { mono: true });
   const wanted = hash.slice(1);
   const tab: Tab = (TABS as readonly string[]).includes(wanted) ? (wanted as Tab) : "logs";
   const pick = (k: string) => void navigate({ hash: `#${k}` }, { replace: true });

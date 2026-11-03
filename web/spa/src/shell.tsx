@@ -1,6 +1,8 @@
 import { Suspense, useEffect } from "react";
 import { Outlet, useLocation } from "react-router";
 import { useConfig } from "./api/session";
+import { useT } from "./i18n";
+import { metaFor, useCurrentCrumb } from "./shell/nav";
 import { Palette } from "./shell/palette";
 import { setDrawer } from "./shell/prefs";
 import { installHints } from "./shell/hint";
@@ -33,9 +35,14 @@ export function Shell() {
 
   // A new page closes the phone's drawer; the title follows the brand.
   useEffect(() => setDrawer(false), [pathname]);
+  // The tab reads as the old pages did: "<page> · <brand>".
+  const { t } = useT();
+  const meta = metaFor(pathname);
+  const crumb = useCurrentCrumb();
+  const page = meta ? (meta.named && crumb ? crumb.text : t(meta.title)) : "";
   useEffect(() => {
-    document.title = brand.title;
-  }, [brand.title]);
+    document.title = page ? `${page} · ${brand.title}` : brand.title;
+  }, [page, brand.title]);
 
   return (
     <>

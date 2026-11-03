@@ -2,7 +2,7 @@
 // a page sits. Same list as web/layouts/nav.go (one list for two readers).
 //
 // ROUTE-HANDLE CONVENTION. A screen declares where it sits with ONE LINE in
-// `routeMeta` below: `{ path: "/ingest/loads", section: "loads" }`.
+// `routeMeta` below: `{ path: "/ingest/loads", section: "loads", title: "loads.title" }`.
 //   - path:    the route's pattern as in main.tsx, without the /app basename.
 //   - section: a nav key (the `nav.<key>` message). It lights that sidebar item
 //              and gives the breadcrumb its Group / Section.
@@ -50,24 +50,26 @@ export function groups(sql: boolean): Group[] {
 /** The project switcher's place: not a section, so it sits under no group. */
 export const projectsSection: Section = { key: "projects", href: "/projects", icon: "folder" };
 
-export type RouteMeta = { path: string; section: string; detail?: boolean };
+// title: the message the tab is named by (the old pages'' <title>: "<title> · <brand>");
+// named: the tab takes the page''s own name (useCrumb) instead once it is known.
+export type RouteMeta = { path: string; section: string; title: string; detail?: boolean; named?: boolean };
 
 export const routeMeta: RouteMeta[] = [
-  { path: "/", section: "overview" },
-  { path: "/runs", section: "runs" },
-  { path: "/runs/:id", section: "runs", detail: true },
-  { path: "/projects", section: "projects" },
-  { path: "/sql", section: "sql" },
-  { path: "/workflows", section: "workflows" },
-  { path: "/workflows/:slug", section: "workflows", detail: true },
-  { path: "/ingest/streams", section: "streams" },
-  { path: "/ingest/streams/:gateway/*", section: "streams", detail: true },
-  { path: "/ingest/loads", section: "loads" },
-  { path: "/ingest/loads/:workflow/:step", section: "loads", detail: true },
-  { path: "/data", section: "catalog" },
-  { path: "/data/target", section: "catalog", detail: true },
-  { path: "/data/endpoints", section: "endpoints" },
-  { path: "/data/endpoints/:api/:name", section: "endpoints", detail: true },
+  { path: "/", section: "overview", title: "overview.title" },
+  { path: "/runs", section: "runs", title: "runs.title" },
+  { path: "/runs/:id", section: "runs", detail: true, title: "runs.title" },
+  { path: "/projects", section: "projects", title: "nav.projects" },
+  { path: "/sql", section: "sql", title: "nav.sql" },
+  { path: "/workflows", section: "workflows", title: "nav.workflows" },
+  { path: "/workflows/:slug", section: "workflows", detail: true, title: "nav.workflows", named: true },
+  { path: "/ingest/streams", section: "streams", title: "streams.title" },
+  { path: "/ingest/streams/:gateway/*", section: "streams", detail: true, title: "streams.title", named: true },
+  { path: "/ingest/loads", section: "loads", title: "loads.title" },
+  { path: "/ingest/loads/:workflow/:step", section: "loads", detail: true, title: "loads.title" },
+  { path: "/data", section: "catalog", title: "catalog.title" },
+  { path: "/data/target", section: "catalog", detail: true, title: "catalog.title" },
+  { path: "/data/endpoints", section: "endpoints", title: "endpoints.title" },
+  { path: "/data/endpoints/:api/:name", section: "endpoints", detail: true, title: "endpoints.title", named: true },
 ];
 
 export function metaFor(pathname: string): RouteMeta | undefined {
