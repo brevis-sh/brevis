@@ -16,6 +16,16 @@ export async function boot(client: QueryClient): Promise<void> {
     getJSON<Config>("/api/config"),
     getJSON<Messages>("/api/messages"),
   ]);
+  // The client's theme goes in BEFORE the first render: applied from an effect it
+  // would paint one frame in the default colours first.
+  if (config.brand.css) {
+    const el = document.createElement("style");
+    el.dataset.brand = "";
+    el.textContent = config.brand.css;
+    document.head.appendChild(el);
+  }
+  // index.html says "en"; the visitor's language is what screen readers and hyphenation follow.
+  document.documentElement.lang = session.lang;
   client.setQueryData(["session"], session);
   client.setQueryData(["config"], config);
   client.setQueryData(["messages", session.lang], messages);

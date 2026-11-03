@@ -23,16 +23,6 @@ export function Shell() {
   useShortcuts();
   useEffect(() => installHints(), []);
 
-  // The server's theme (branding.CSS): one source for a client's colours.
-  useEffect(() => {
-    if (!brand.css) return;
-    const el = document.createElement("style");
-    el.dataset.brand = "";
-    el.textContent = brand.css;
-    document.head.appendChild(el);
-    return () => el.remove();
-  }, [brand.css]);
-
   // The phone's drawer, as the server pages do it (assets/ui.js) and a little
   // more: Escape closes it, focus goes into it and back to its button, and while
   // it is open the page behind is inert (no Tab out of it, no scrolling it).
