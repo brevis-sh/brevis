@@ -84,3 +84,43 @@ func TestParseCapsAndGarbage(t *testing.T) {
 		t.Fatal("garbage parsed")
 	}
 }
+
+// The fixtures are expositions captured from the real binaries (a gateway and a
+// brevis-sql-api running natively with traffic), so these tests fail if a
+// series is renamed or a label changes: the numbers on screen come from them.
+func TestRealExpositionsFeedTheSpecs(t *testing.T) {
+	for _, tc := range []struct {
+		file string
+		kind Kind
+		want map[string]bool // entity -> expects a counter or a bucket
+	}{
+		{"testdata/gateway-traffic.prom", Gateway, map[string]bool{"clicks": true, "orders": true}},
+		{"testdata/sqlapi.prom", Endpoints, map[string]bool{"orders": true, "sales": true}},
+	} {
+		f, err := os.Open(tc.file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ss, err := Parse(f, 8<<20)
+		_ = f.Close()
+		if err != nil {
+			t.Fatalf("%s: %v", tc.file, err)
+		}
+		seen := map[string]map[class]bool{}
+		for _, s := range ss {
+			ent, c, _ := specs[tc.kind].classify(s)
+			if c == skip {
+				continue
+			}
+			if seen[ent] == nil {
+				seen[ent] = map[class]bool{}
+			}
+			seen[ent][c] = true
+		}
+		for ent := range tc.want {
+			if !seen[ent][counter] || !seen[ent][bucket] {
+				t.Errorf("%s: %s lacks counters or histogram buckets: %v", tc.file, ent, seen[ent])
+			}
+		}
+	}
+}
