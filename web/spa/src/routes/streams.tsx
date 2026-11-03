@@ -107,7 +107,7 @@ function Rows({ rows }: { rows: StreamRow[] }) {
 // What the screen shows before its first answer: the last shape it saw, or this one on a first visit,
 // drawn from the real row markup with placeholder values so it takes the height the loaded rows take.
 type Shape = { n: number; total: number; gateways: number; withDeadLetter: number; kinds: number };
-const FIRST: Shape = { n: 3, total: 3, gateways: 1, withDeadLetter: 1, kinds: 2 };
+const FIRST: Shape = { n: 2, total: 2, gateways: 1, withDeadLetter: 1, kinds: 2 };
 const shapeOf = (v: Streams): Shape => ({ n: v.rows.length, total: v.total, gateways: v.gateways, withDeadLetter: v.withDeadLetter, kinds: v.kinds.length });
 const PLACE = { uri: "", kind: "postgres", kindTitle: "", where: "postgres://warehouse/", what: "table_name", note: "" };
 const GHOST_ROW: StreamRow = { gateway: "events_gateway", path: "/v1/stream_path", href: "", note: "", sink: PLACE, batch: "1 second or 500", deadLetter: PLACE };
