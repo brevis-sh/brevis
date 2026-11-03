@@ -27,37 +27,12 @@
   --st-skipped: var(--color-state-skipped);
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 var(--font-sans); }
-.shell { display: grid; grid-template-columns: 14rem 1fr; min-height: 100dvh; }
-.side { display: flex; flex-direction: column; gap: .25rem; padding: 1rem; border-right: 1px solid var(--line); }
-.side a { color: inherit; text-decoration: none; padding: .4rem .6rem; border-radius: .4rem; }
-.side a.active { background: var(--card); font-weight: 600; }
-.brand { margin-bottom: .75rem; }
-.main { padding: 1.25rem; min-width: 0; }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-panel); padding: 1rem 1.25rem; display: grid; gap: .75rem; }
-.card h1 { margin: 0; font-size: 1.25rem; }
+body { margin: 0; background: var(--bg); color: var(--fg); }
 .sk { display: block; border-radius: .3rem; background: linear-gradient(90deg, var(--sk) 25%, var(--sk-hi) 50%, var(--sk) 75%); background-size: 200% 100%; animation: sk 1.4s linear infinite; }
 .sk-text { display: grid; gap: .5rem; }
 @keyframes sk { to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
-@media (max-width: 767px) {
-  .shell { grid-template-columns: 1fr; }
-  .side { flex-direction: row; align-items: center; border-right: 0; border-bottom: 1px solid var(--line); }
-  .brand { margin: 0 .75rem 0 0; }
-}
 .muted { color: var(--muted); }
-.brand { display: flex; align-items: center; gap: .5rem; }
-.mono { font-family: var(--font-mono); font-size: .75rem; }
-.page-title { margin: 0 0 1rem; font-size: 1.25rem; }
-.lead { max-width: 48rem; margin: 0 0 1rem; font-size: .875rem; }
-.proj-grid { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
-.proj { display: grid; gap: .9rem; padding: 1.1rem; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-panel); color: inherit; text-decoration: none; }
-a.proj:hover { border-color: var(--muted); }
-.proj-head { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; }
-.proj-head h3 { margin: 0; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.proj-nums { display: flex; gap: 1.5rem; margin: 0; }
-.proj-nums dt { font-size: .7rem; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
-.proj-nums dd { margin: 0; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
 
 /* Visually hidden text (.sr-only, absolutely positioned) inside a table that scrolls
    sideways in its own box must be positioned against the TABLE: with no positioned
