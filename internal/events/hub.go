@@ -35,13 +35,15 @@ var (
 type Options struct {
 	Interval time.Duration // detector period; default 1s
 	MaxSubs  int           // concurrent subscriptions; default 500
-	// MaxDetectors bounds the topics watched at once; default 128. Each is a
-	// goroutine and a database query per tick, and the dynamic topics
-	// (run:<id>, workflow:<slug>) are named by the client: without this, 500
-	// connections of 20 distinct names each would be ten thousand queries a
-	// second, and the cap on subscriptions would not have been what stopped it.
-	MaxDetectors int
-	Log          *slog.Logger
+	// MaxDynamicDetectors bounds the NAMED topics watched at once (run:<id>,
+	// workflow:<slug>); default 96. Each is a goroutine and a database query per
+	// tick, and the client names them: without this, 500 connections of 20
+	// distinct names each would be ten thousand queries a second, and the cap on
+	// subscriptions would not have been what stopped it. The fixed topics (six,
+	// shared by everyone) are NOT counted: they must always be startable, or one
+	// client filling the named slots would keep every other screen from updating.
+	MaxDynamicDetectors int
+	Log                 *slog.Logger
 	// After is the clock: a channel that fires after d, and a stop func.
 	// Injected so tests drive the detectors without sleeping.
 	After func(d time.Duration) (<-chan time.Time, func())
@@ -86,8 +88,8 @@ func NewHub(ctx context.Context, f Factory, opt Options) *Hub {
 	if opt.MaxSubs <= 0 {
 		opt.MaxSubs = 500
 	}
-	if opt.MaxDetectors <= 0 {
-		opt.MaxDetectors = 128
+	if opt.MaxDynamicDetectors <= 0 {
+		opt.MaxDynamicDetectors = 96
 	}
 	if opt.Log == nil {
 		opt.Log = slog.Default()
@@ -99,6 +101,8 @@ func NewHub(ctx context.Context, f Factory, opt Options) *Hub {
 		}
 	}
 	if opt.Jitter == nil {
+		// #nosec G404 -- spreads the detectors' ticks (+-10%) so they do not all hit
+		// the database in the same instant; it is timing, not a secret.
 		opt.Jitter = func() float64 { return 0.9 + 0.2*rand.Float64() }
 	}
 	h := &Hub{opt: opt, factory: f, ctx: ctx, topics: map[string]*topic{}, subs: map[*Sub]struct{}{}}
@@ -134,16 +138,21 @@ func (h *Hub) Subscribe(ctx context.Context, topics []string) (*Sub, error) {
 		h.mu.Unlock()
 		return nil, ErrFull
 	}
-	// Count the detectors this subscription would START (topics nobody watches
-	// yet) and refuse it whole if they do not fit: counted before anything is
-	// registered, under the lock, so a refusal leaves no trace.
-	fresh := 0
+	// Count the NAMED detectors this subscription would START (named topics
+	// nobody watches yet) and refuse it whole if they do not fit: counted before
+	// anything is registered, under the lock, so a refusal leaves no trace.
+	live, fresh := 0, 0
+	for name := range h.topics {
+		if !fixedTopic(name) {
+			live++
+		}
+	}
 	for _, name := range topics {
-		if h.topics[name] == nil {
+		if h.topics[name] == nil && !fixedTopic(name) {
 			fresh++
 		}
 	}
-	if len(h.topics)+fresh > h.opt.MaxDetectors {
+	if live+fresh > h.opt.MaxDynamicDetectors {
 		h.mu.Unlock()
 		return nil, ErrFull
 	}

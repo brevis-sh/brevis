@@ -4,7 +4,15 @@
 // WHY a singleton: a connection per screen would burn the server's per-user
 // cap and re-open on every route change.
 
-type Listener = () => void;
+/**
+ * What woke a subscriber: the server said the topic `change`d, or the connection
+ * said `ready` (a connect that may have missed something). They are different:
+ * a change always means "refetch", a `ready` only means "make sure what you hold
+ * is not stale", and what was fetched a moment ago is not.
+ */
+export type Wake = "ready" | "change";
+type Listener = (wake: Wake) => void;
+type Watcher = () => void;
 
 const MAX_TOPICS = 20; // the server's cap per connection
 const SETTLE_MS = 50; // a route change unsubscribes and subscribes in the same tick: open once
@@ -13,7 +21,7 @@ const GRACE_MS = 10_000; // a blip this short is not worth polling for
 const RETRY_MS = 15_000; // the browser gives up on 4xx/5xx: this is our own reopen
 
 const subs = new Map<string, Set<Listener>>();
-const watchers = new Set<Listener>(); // useSyncExternalStore subscribers
+const watchers = new Set<Watcher>(); // useSyncExternalStore subscribers
 const supported = typeof EventSource !== "undefined";
 
 let cur: EventSource | null = null; // the connection that has said `ready`
@@ -36,7 +44,7 @@ const setUp = (v: boolean) => {
   watchers.forEach((w) => w());
 };
 
-const call = (topic: string) => subs.get(topic)?.forEach((fn) => fn());
+const call = (topic: string, wake: Wake = "change") => subs.get(topic)?.forEach((fn) => fn(wake));
 
 function closeAll() {
   cur?.close();
@@ -68,7 +76,7 @@ function open(key: string) {
     // A topic that was already covered saw every change; everything else (first
     // connection, reconnect, resume from hidden) may have missed some: refetch it.
     const now = new Set(key.split(","));
-    for (const t of now) if (!covered.has(t)) call(t);
+    for (const t of now) if (!covered.has(t)) call(t, "ready");
     covered = now;
   });
 
@@ -132,7 +140,7 @@ export function subscribe(topic: string, fn: Listener): () => void {
 }
 
 /** useSyncExternalStore pair: is the stream delivering (or only briefly interrupted)? */
-export const watchUp = (w: Listener) => {
+export const watchUp = (w: Watcher) => {
   watchers.add(w);
   return () => void watchers.delete(w);
 };
@@ -146,7 +154,7 @@ if (typeof document !== "undefined") {
     }
     clearTimeout(hiddenT);
     if (!cur && !next) sync(); // its `ready` refetches everything
-    else [...missed].forEach(call);
+    else [...missed].forEach((t) => call(t, "change"));
     missed.clear();
   });
 }

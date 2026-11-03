@@ -43,6 +43,9 @@ var (
 	slugRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$`)
 )
 
+// fixedTopic reports whether name is one of the shared topics.
+func fixedTopic(name string) bool { return fixed[name] }
+
 // ErrTopics is the 400 for a topic list that cannot be served.
 var ErrTopics = errors.New("invalid topics")
 
@@ -58,6 +61,13 @@ func ParseTopics(raw string) ([]string, error) {
 	for _, t := range strings.Split(raw, ",") {
 		if err := validTopic(t); err != nil {
 			return nil, err
+		}
+		// One run is one slot however the id is spelled (upper case, braces,
+		// no dashes): the canonical form is what a detector is keyed by.
+		if strings.HasPrefix(t, "run:") {
+			if u, err := uuid.Parse(t[4:]); err == nil {
+				t = "run:" + u.String()
+			}
 		}
 		if !seen[t] {
 			seen[t] = true

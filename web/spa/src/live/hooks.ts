@@ -1,6 +1,12 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { useQueryClient, type QueryKey } from "@tanstack/react-query";
-import { isUp, subscribe, watchUp } from "./connection";
+import { isUp, subscribe, watchUp, type Wake } from "./connection";
+
+// On `ready`, data fetched in the last few seconds is as fresh as a refetch would
+// make it: the screen fetched on mount and the stream connected right after.
+// Refetching it anyway doubled every request of every page load (a run's detail,
+// the nav badges). Older data is refetched: it may have missed a change.
+const READY_FRESH_MS = 3_000;
 
 /**
  * Refetch `invalidate` when the server says one of `topics` changed, and once
@@ -15,7 +21,17 @@ export function useLive(topics: string[], invalidate: QueryKey[]) {
   useEffect(() => {
     // cancelRefetch:false joins a fetch already in flight instead of aborting it
     // (an aborted read shows as a red "(canceled)" in the network panel).
-    const run = () => invalidate.forEach((queryKey) => void qc.invalidateQueries({ queryKey }, { cancelRefetch: false }));
+    const run = (wake: Wake) =>
+      invalidate.forEach(
+        (queryKey) =>
+          void qc.invalidateQueries(
+            {
+              queryKey,
+              predicate: wake === "ready" ? (q) => Date.now() - q.state.dataUpdatedAt > READY_FRESH_MS : undefined,
+            },
+            { cancelRefetch: false },
+          ),
+      );
     const offs = topics.map((t) => subscribe(t, run));
     return () => offs.forEach((off) => off());
     // tk/ik are the value-stable stand-ins for the two arrays

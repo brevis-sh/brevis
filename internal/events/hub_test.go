@@ -257,34 +257,35 @@ func TestCapacity(t *testing.T) {
 	}
 }
 
-// THE CAP IS ON DETECTORS, NOT ONLY ON SUBSCRIBERS: a client that names many
-// distinct runs or workflows must not be able to start a query per name per
-// second. A refusal leaves nothing behind, and a shared topic costs nothing.
+// THE CAP IS ON NAMED DETECTORS, NOT ONLY ON SUBSCRIBERS: a client that names
+// many distinct runs or workflows must not be able to start a query per name per
+// second. A refusal leaves nothing behind, a shared topic costs nothing, and the
+// fixed topics are never refused for the named ones' sake.
 func TestDetectorsAreCapped(t *testing.T) {
 	r := newRig(t, 100)
-	r.hub.opt.MaxDetectors = 3
+	r.hub.opt.MaxDynamicDetectors = 2
 	ctx := context.Background()
-	a, err := r.hub.Subscribe(ctx, []string{"runs", "nav"})
+	a, err := r.hub.Subscribe(ctx, []string{"runs", "workflow:x"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	// a shared topic starts no detector, so it fits even at the cap's edge
-	if _, err := r.hub.Subscribe(ctx, []string{"runs", "workflow:x"}); err != nil {
-		t.Fatalf("one new detector at 2 of 3 must fit: %v", err)
+	if _, err := r.hub.Subscribe(ctx, []string{"runs", "workflow:y"}); err != nil {
+		t.Fatalf("a second named detector (2 of 2) must fit: %v", err)
 	}
 	made := r.made.Load()
-	if _, err := r.hub.Subscribe(ctx, []string{"workflow:y"}); !errors.Is(err, ErrFull) {
-		t.Fatalf("a fourth detector: err = %v, want ErrFull", err)
+	if _, err := r.hub.Subscribe(ctx, []string{"workflow:z"}); !errors.Is(err, ErrFull) {
+		t.Fatalf("a third named detector: err = %v, want ErrFull", err)
 	}
-	if r.made.Load() != made || len(r.hub.topics) != 3 {
-		t.Fatalf("a refused subscription left detectors behind: made %d -> %d, topics %d", made, r.made.Load(), len(r.hub.topics))
+	if r.made.Load() != made || len(r.hub.topics) != 3 || len(r.hub.subs) != 2 {
+		t.Fatalf("a refused subscription left a trace: made %d -> %d, topics %d, subs %d", made, r.made.Load(), len(r.hub.topics), len(r.hub.subs))
 	}
-	if len(r.hub.subs) != 2 {
-		t.Fatalf("a refused subscription stayed registered: %d subs", len(r.hub.subs))
+	// the shared topics are always startable, even with every named slot taken
+	if _, err := r.hub.Subscribe(ctx, []string{"nav", "overview", "catalog"}); err != nil {
+		t.Fatalf("a fixed topic was refused because named slots were full: %v", err)
 	}
-	a.Close() // frees "nav": the cap is on what is WATCHED, so a slot comes back
-	if _, err := r.hub.Subscribe(ctx, []string{"workflow:y"}); err != nil {
-		t.Fatalf("a freed detector slot was not reusable: %v", err)
+	a.Close() // frees workflow:x: the cap is on what is WATCHED, so a slot comes back
+	if _, err := r.hub.Subscribe(ctx, []string{"workflow:z"}); err != nil {
+		t.Fatalf("a freed named slot was not reusable: %v", err)
 	}
 }
 
@@ -296,6 +297,11 @@ func TestParseTopics(t *testing.T) {
 	many := "workflow:a1"
 	for i := 2; i <= 21; i++ {
 		many += ",workflow:a" + string(rune('a'+i))
+	}
+	// one run is one slot however its id is spelled
+	spelled := "run:9F1C7A0E-1B2C-4D3E-8F90-A1B2C3D4E5F6,run:9f1c7a0e1b2c4d3e8f90a1b2c3d4e5f6,run:9f1c7a0e-1b2c-4d3e-8f90-a1b2c3d4e5f6"
+	if got, err := ParseTopics(spelled); err != nil || len(got) != 1 || got[0] != "run:9f1c7a0e-1b2c-4d3e-8f90-a1b2c3d4e5f6" {
+		t.Errorf("ParseTopics(%q) = %v, %v; want the one canonical run topic", spelled, got, err)
 	}
 	// a client names a few runs/workflows at most; the fixed topics are shared
 	dyn := "runs,workflow:a,workflow:b,workflow:c,workflow:d"
