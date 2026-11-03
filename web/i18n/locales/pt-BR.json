@@ -775,6 +775,7 @@
   "streams.how.batch.text": "Grava a cada N minutos ou N eventos, o que vier primeiro: menos custo, latência previsível.",
   "streams.how.post": "POST no gateway",
   "streams.how.post.text": "Um hook pode reformatar o evento; o gateway dá a ele uma identidade (ingestion_id) para reentregas não duplicarem.",
+  "streams.how.title": "Como os streams funcionam",
   "streams.how.write": "Grava, ou guarda o que falhou",
   "streams.how.write.text": "BigQuery, auto_table, Postgres, MySQL, Redshift, arquivos ou um tópico Pub/Sub. O que for recusado vai para a dead letter.",
   "streams.kind": "Destino",

@@ -227,7 +227,7 @@ templ streamPlace(p Place) {
 // howItWorks is the footer: a stream in three steps, for somebody who has
 // not set one up.
 templ howItWorks() {
-	<ol data-how-it-works class="mt-4 grid grid-cols-1 overflow-hidden rounded-card border border-line bg-surface min-[860px]:grid-cols-3">
+	<ol data-how-it-works aria-label={ i18n.T(ctx, "streams.how.title") } class="mt-4 grid grid-cols-1 overflow-hidden rounded-card border border-line bg-surface min-[860px]:grid-cols-3">
 		for i, step := range []string{"post", "batch", "write"} {
 			<li class="border-line-soft px-4 py-3.5 not-first:border-t min-[860px]:not-first:border-t-0 min-[860px]:not-first:border-l">
 				<p class="text-[11px] font-medium tracking-[0.08em] text-muted uppercase">{ howStep(ctx, i) }</p>

@@ -124,6 +124,9 @@ export type StreamRow = {
   note: string;
   sink: Place;
   batch: string;
+  // The declared values behind `batch` ("2m", 2000): optional so an older server still draws the sentence.
+  batchEvery?: string;
+  batchRecords?: number | null;
   deadLetter: Place | null;
 };
 

@@ -84,6 +84,18 @@ func TestAStreamsBatchIsInWords(t *testing.T) {
 	}
 }
 
+// THE COMPACT BATCH is the declared values, not words: the app writes "2m · 2,000" from them in any language.
+func TestAStreamRowCarriesTheDeclaredBatch(t *testing.T) {
+	ctx := context.Background()
+	row := streamRowJSON(ctx, Stream{Config: sourceConfig(field("buffer.flush.every", "2m"), field("buffer.flush.records", 2000.0))})
+	if row.BatchEvery != "2m" || row.BatchRecords == nil || *row.BatchRecords != 2000 {
+		t.Errorf("batch = %q, %v", row.BatchEvery, row.BatchRecords)
+	}
+	if none := streamRowJSON(ctx, Stream{}); none.BatchEvery != "" || none.BatchRecords != nil {
+		t.Error("no buffer declared says a batch")
+	}
+}
+
 // THE SUMMARY AND THE FOOTER: how many streams, gateways and dead letters,
 // and how a stream works, in three steps.
 func TestTheStreamsHeadAndFoot(t *testing.T) {

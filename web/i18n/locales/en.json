@@ -774,6 +774,7 @@
   "streams.how.batch.text": "Written every N minutes or N events, whichever comes first: less cost, a latency you can predict.",
   "streams.how.post": "POST to the gateway",
   "streams.how.post.text": "A hook can reshape the event; the gateway gives it an identity (ingestion_id) so a redelivery is not a duplicate.",
+  "streams.how.title": "How streams work",
   "streams.how.write": "Written, or kept when it fails",
   "streams.how.write.text": "BigQuery, auto_table, Postgres, MySQL, Redshift, files or a Pub/Sub topic. What is refused goes to the dead letter.",
   "streams.kind": "Destination",

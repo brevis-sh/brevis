@@ -892,6 +892,7 @@
   "streams.how.batch.text": "Пишется каждые N минут или N событий, что наступит раньше: дешевле и предсказуемая задержка.",
   "streams.how.post": "POST в gateway",
   "streams.how.post.text": "Hook может изменить форму события; gateway присваивает ему идентичность (ingestion_id), чтобы повторная доставка не дублировалась.",
+  "streams.how.title": "Как работают stream",
   "streams.how.write": "Записывается или сохраняется при сбое",
   "streams.how.write.text": "BigQuery, auto_table, Postgres, MySQL, Redshift, файлы или топик Pub/Sub. Отклонённое уходит в dead letter.",
   "streams.kind": "Назначение",

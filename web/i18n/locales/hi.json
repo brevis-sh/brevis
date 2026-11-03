@@ -892,6 +892,7 @@
   "streams.how.batch.text": "हर N मिनट या N इवेंट पर लिखा जाता है, जो पहले हो: कम लागत, अनुमान लगाने लायक latency।",
   "streams.how.post": "Gateway को POST",
   "streams.how.post.text": "Hook इवेंट का आकार बदल सकता है; gateway उसे एक पहचान (ingestion_id) देता है ताकि दोबारा पहुँचा इवेंट duplicate न बने।",
+  "streams.how.title": "stream कैसे काम करता है",
   "streams.how.write": "लिखा गया, या विफल होने पर रखा गया",
   "streams.how.write.text": "BigQuery, auto_table, Postgres, MySQL, Redshift, फ़ाइलें या Pub/Sub topic। जो ठुकराया जाता है वह dead letter में जाता है।",
   "streams.kind": "गंतव्य",

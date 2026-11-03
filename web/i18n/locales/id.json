@@ -892,6 +892,7 @@
   "streams.how.batch.text": "Ditulis setiap N menit atau N event, mana yang lebih dulu: biaya lebih rendah, latensi yang bisa diprediksi.",
   "streams.how.post": "POST ke gateway",
   "streams.how.post.text": "Sebuah hook dapat membentuk ulang event; gateway memberinya identitas (ingestion_id) agar pengiriman ulang tidak menjadi duplikat.",
+  "streams.how.title": "Cara kerja stream",
   "streams.how.write": "Ditulis, atau disimpan saat gagal",
   "streams.how.write.text": "BigQuery, auto_table, Postgres, MySQL, Redshift, file, atau topik Pub/Sub. Yang ditolak masuk ke dead letter.",
   "streams.kind": "Tujuan",

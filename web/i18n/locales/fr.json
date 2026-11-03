@@ -892,6 +892,7 @@
   "streams.how.batch.text": "Écrit toutes les N minutes ou tous les N événements, au premier atteint : moins de coût, une latence prévisible.",
   "streams.how.post": "POST vers le gateway",
   "streams.how.post.text": "Un hook peut remodeler l'événement ; le gateway lui donne une identité (ingestion_id) pour qu'une relivraison ne soit pas un doublon.",
+  "streams.how.title": "Comment fonctionnent les streams",
   "streams.how.write": "Écrit, ou conservé en cas d'échec",
   "streams.how.write.text": "BigQuery, auto_table, Postgres, MySQL, Redshift, fichiers ou un topic Pub/Sub. Ce qui est refusé va vers la dead letter.",
   "streams.kind": "Destination",
