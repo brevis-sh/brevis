@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useFallbackInterval } from "../live/hooks";
 import { Link } from "react-router";
 import { getJSON } from "../api/client";
 import { useT } from "../i18n";
@@ -24,12 +25,12 @@ type Item = {
 type Target = { target: string; status: string; workflow: string; missed: string };
 export type Attention = { total: number; items: Item[]; more: number; targets: Target[]; targetsMore: number };
 
-/** "Needs your attention" follows itself every ten seconds (the old page's cadence); a hidden tab pauses it. */
+/** "Needs your attention"; the overview screen refetches it on the `overview` topic, and the fallback polls only while the stream is down. */
 export const attentionQuery = {
   queryKey: ["overview", "attention"],
   queryFn: ({ signal }: { signal: AbortSignal }) => getJSON<Attention>("/api/overview/attention", signal),
-  refetchInterval: 10_000,
 };
+export const useAttention = () => useQuery({ ...attentionQuery, refetchInterval: useFallbackInterval() });
 
 /** The card that stands where the section will be: the same box as "all is well", its text on its way. */
 export function AttentionSkeleton() {
@@ -127,7 +128,7 @@ const more = "block border-t border-state-failed/20 px-4 py-2 text-[12.5px] text
 
 export function AttentionSection() {
   const { t, n } = useT();
-  const q = useQuery(attentionQuery);
+  const q = useAttention();
   const a = q.data;
   if (q.isError && !a) return <section className="mb-3"><LoadError onRetry={() => void q.refetch()} /></section>;
   if (!a) return <AttentionSkeleton />;

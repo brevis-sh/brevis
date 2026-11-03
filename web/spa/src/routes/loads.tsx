@@ -168,7 +168,7 @@ function LoadsData({ filter }: { filter: Filter }) {
   const { t } = useT();
   const qs = new URLSearchParams();
   for (const f of FIELDS) if (filter.get(f)) qs.set(f, filter.get(f));
-  const q = useData<Loads>(["ingest", "loads", qs.toString()], `/api/ingest/loads${qs.size ? `?${qs}` : ""}`);
+  const q = useData<Loads>(["ingest", "loads", qs.toString()], `/api/ingest/loads${qs.size ? `?${qs}` : ""}`, { topic: "ingest" });
   const v = q.data;
   const status = filter.get("status");
   const source = filter.get("source");

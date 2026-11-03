@@ -3,6 +3,7 @@ import { Background, Controls, ReactFlow, type Edge, type Node, type NodeChange,
 import { useQuery } from "@tanstack/react-query";
 import "@xyflow/react/dist/style.css";
 import { getJSON } from "../../api/client";
+import { useFallbackInterval, useLive } from "../../live/hooks";
 import { useFormat, useT } from "../../i18n";
 import { Skeleton } from "../skeleton";
 import { langLabel, NODE_TYPES, stageTone, tone, type NodeData } from "./nodes";
@@ -16,7 +17,7 @@ type Props = {
   src?: string;
   /** Told which step is chosen (null when none), for a page that says so under the graph. */
   onPick?: (id: string | null) => void;
-  /** Shorthand for a run's graph; the run is polled until it ends. */
+  /** Shorthand for a run's graph; it refetches when the server reports the run. */
   runId?: string;
 };
 
@@ -25,9 +26,12 @@ const FIT_PAD = 0.09;
 const MAX_ZOOM = 1.5;
 const NODE_W = 230; // nodeWidth in internal/api/graph.go
 
-// The old island's cadence: 2s while it moves, 10s once failed (a retry may
-// come), none when terminal -- and a workflow's graph (no run) never polls.
-const every = (g: Graph | undefined): number | false => (!g || g.terminal || !g.run_id ? false : g.status === "failed" ? 10_000 : 2_000);
+// The topic that says this graph changed: the run's, or the workflow's own.
+const topicOf = (runId: string | undefined, src: string | undefined) => {
+  if (runId) return `run:${runId}`;
+  const slug = src?.match(/^\/api\/workflows\/([^/]+)\/graph/)?.[1];
+  return slug ? `workflow:${decodeURIComponent(slug)}` : "";
+};
 
 // Column labels, from where the server put the steps.
 function columnLabels(nodes: GNode[], word: string): GNode[] {
@@ -155,16 +159,20 @@ function Inspector({ node, stages, close }: { node: GNode; stages: GNode[]; clos
 /**
  * The workflow's flow: nodes, edges and states from the server's graph JSON
  * (positions are the executor's own levels), drawn with React Flow. Give it a
- * graph URL, or a run id for a run's graph; a running run is polled.
+ * graph URL, or a run id for a run's graph; it refetches when the server reports the run or workflow.
  */
 export default function Dag({ src, runId, onPick }: Props) {
   const url = src ?? (runId ? `/api/runs/${runId}/graph` : "");
+  const topic = topicOf(runId, src);
+  useLive(topic ? [topic] : [], [["graph", url]]);
+  const fallback = useFallbackInterval();
   const { data: g, error, isPending } = useQuery({
     queryKey: ["graph", url],
     queryFn: ({ signal }) => getJSON<Graph>(url, signal),
     enabled: url !== "",
     staleTime: 0,
-    refetchInterval: (q) => every(q.state.data),
+    // Only a run in flight has anything to follow while the stream is down.
+    refetchInterval: (q) => (!q.state.data || q.state.data.terminal || !q.state.data.run_id ? false : fallback),
   });
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);

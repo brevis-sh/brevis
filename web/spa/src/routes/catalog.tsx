@@ -165,7 +165,7 @@ function Catalog({ filter }: { filter: Filter }) {
   const logoTitle = useLogoTitle();
   const qs = new URLSearchParams();
   for (const f of FIELDS) if (filter.get(f)) qs.set(f, filter.get(f));
-  const q = useData<Catalog>(["catalog", qs.toString()], `/api/catalog${qs.size ? `?${qs}` : ""}`);
+  const q = useData<Catalog>(["catalog", qs.toString()], `/api/catalog${qs.size ? `?${qs}` : ""}`, { topic: "catalog" });
   const data = q.data;
   const status = filter.get("status");
   const kind = filter.get("kind");
@@ -247,7 +247,7 @@ export default function CatalogRoute() {
 
   // /data/target?u= is the catalog with one destination's drawer open over it.
   const u = pathname.endsWith("/data/target") ? (params.get("u") ?? "") : null;
-  const target = useData<TargetDetail>(["catalog-target", u], `/api/catalog/target?u=${encodeURIComponent(u ?? "")}`, { enabled: !!u, keep: false });
+  const target = useData<TargetDetail>(["catalog-target", u], `/api/catalog/target?u=${encodeURIComponent(u ?? "")}`, { topic: "catalog", enabled: !!u, keep: false });
   const missing = u !== null && target.error instanceof ApiError && target.error.status === 404;
 
   return (

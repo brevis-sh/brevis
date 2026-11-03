@@ -45,11 +45,4 @@ export type Run = {
   log: RunLog;
 };
 
-// The old page's cadence (ui.js): 2s while it moves, 10s once failed (a retry
-// may come), none when terminal.
-export function pollEvery(r: Pick<Run, "terminal" | "status"> | undefined): number | false {
-  if (!r || r.terminal) return false;
-  return r.status === "failed" ? 10_000 : 2_000;
-}
-
 export const cancelRun = (id: string) => postJSON<{ outcome: string; status: string }>(`/api/runs/${id}/cancel`);

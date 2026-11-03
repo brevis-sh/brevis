@@ -15,6 +15,7 @@ import { Skeleton } from "../ui/skeleton";
 import { Stats, type StatProps } from "../ui/stat";
 import { StatusMark, runKind } from "../ui/status";
 import { TabBar } from "../ui/tab-bar";
+import { useLive } from "../live/hooks";
 import { AttentionSection, attentionQuery } from "./overview-attention";
 import { RunsChart, type Bucket } from "./overview-chart";
 
@@ -288,6 +289,8 @@ function Tabs({ o }: { o?: Overview }) {
 export default function OverviewRoute() {
   const { t } = useT();
   const window = useWindow();
+  // One topic feeds both the numbers and the attention list (every key starts with "overview").
+  useLive(["overview"], [["overview"]]);
   const q = useOverview(window);
   const o = q.data;
   const grain = window === "24h" ? "hour" : "day";

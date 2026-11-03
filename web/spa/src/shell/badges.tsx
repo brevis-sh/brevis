@@ -1,22 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
 import { getJSON } from "../api/client";
+import { useFallbackInterval, useLive } from "../live/hooks";
 import { useFormat, useT } from "../i18n";
 
 type Badges = { failing: number; running: number; attention: number };
 
-// The sidebar's live numbers (JSON sibling of /nav/runs). Polled every 10s;
-// react-query pauses the interval while the tab is hidden and catches up on
-// focus. Nothing is drawn until the first answer, and a failed poll keeps the
-// last numbers: this is decoration.
-export const useBadges = () =>
-  useQuery({
+// The sidebar's live numbers (JSON sibling of /nav/runs). Refetched when the
+// server reports the `nav` topic; the slow fallback only runs while the event
+// stream is down. Nothing is drawn until the first answer, and a failed read
+// keeps the last numbers: this is decoration.
+export const useBadges = () => {
+  useLive(["nav"], [["nav"]]);
+  return useQuery({
     queryKey: ["nav", "runs"],
     queryFn: ({ signal }) => getJSON<Badges>("/api/nav/runs", signal),
-    refetchInterval: 10_000,
-    refetchIntervalInBackground: false,
+    refetchInterval: useFallbackInterval(),
     refetchOnWindowFocus: true,
     staleTime: 0,
   }).data;
+};
 
 export function NavBadge({ kind, children }: { kind: "fail" | "run"; children: string }) {
   return <span className={`nav-badge nav-badge-${kind}`}>{children}</span>;

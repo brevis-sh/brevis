@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, Outlet, useLocation, useParams, useSearchParams } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getJSON } from "../api/client";
+import { useFallbackInterval, useLive } from "../live/hooks";
 import { useFormat, useT } from "../i18n";
 import { segGroup, segOff, segOn } from "../ui/button";
 import { Empty } from "../ui/card";
@@ -37,7 +38,6 @@ function withParam(params: URLSearchParams, key: string, value: string): string 
 }
 
 const LIVE_KEY = "brevis.runs.live"; // the old page's own key: the choice carries over
-const LIVE_EVERY = 5000;
 
 function useLiveChoice(): [boolean, (on: boolean) => void] {
   const [on, set] = useState(() => {
@@ -60,13 +60,15 @@ function useLiveChoice(): [boolean, (on: boolean) => void] {
   ];
 }
 
-// The list follows itself every 5 s when Live is on; a hidden tab pauses it.
+// The list follows the `runs` topic only when Live is on; off means no subscription and no polling.
 function useRuns(qs: string, live: boolean) {
+  useLive(live ? ["runs"] : [], [["runs"]]);
+  const fallback = useFallbackInterval();
   return useQuery({
     queryKey: ["runs", qs],
     queryFn: ({ signal }) => getJSON<RunsData>(`/api/runs${qs ? `?${qs}` : ""}`, signal),
     placeholderData: keepPreviousData,
-    refetchInterval: live ? LIVE_EVERY : false,
+    refetchInterval: live ? fallback : false,
   });
 }
 

@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useRef, useState, type ReactNode } from "rea
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ApiError, getJSON } from "../api/client";
+import { useFallbackInterval, useLive } from "../live/hooks";
 import { useScheduleToggle, type WorkflowDetail } from "../api/workflows";
 import { useFormat, useT } from "../i18n";
 import { useCrumb } from "../shell/nav";
@@ -492,11 +493,12 @@ export default function WorkflowRoute() {
   const day = sp.get("day") ?? "";
   const toggler = useScheduleToggle();
   const runDrawer = useRunDrawer();
+  useLive([`workflow:${slug}`], [["workflow", slug]]);
   const q = useQuery({
     queryKey: ["workflow", slug, day],
     queryFn: ({ signal }) => getJSON<WorkflowDetail>(`/api/workflows/${encodeURIComponent(slug)}${day ? `?day=${encodeURIComponent(day)}` : ""}`, signal),
     placeholderData: keepPreviousData,
-    refetchInterval: 5_000,
+    refetchInterval: useFallbackInterval(),
     retry: (count, e) => !(e instanceof ApiError && e.status === 404) && count < 1,
   });
   const d = q.data;
