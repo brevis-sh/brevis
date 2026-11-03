@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -18,6 +19,9 @@ export default defineConfig({
       transformIndexHtml: (html) => html.replace("<!--brevis:app-css-->", '<link rel="stylesheet" href="/assets/app.css" />'),
     },
   ],
+  // Unit tests (npm run test). jsdom because the logic under test touches `document`,
+  // `localStorage` and React; e2e/ belongs to Playwright and must not be collected here.
+  test: { environment: "jsdom", setupFiles: ["src/test/setup.ts"], include: ["src/**/*.test.{ts,tsx}"], restoreMocks: true },
   build: { outDir: "dist", emptyOutDir: true, sourcemap: false },
   server: {
     // The logo marks live with the server's components (web/components/logos).
