@@ -1,26 +1,78 @@
 import { useT } from "../i18n";
-import "./status.css";
 
-// One vocabulary of state: a shape and a colour, and always the word, so the
-// colour never carries the meaning alone. Same looks as components/status.go.
-const LOOK: Record<string, [shape: string, tone: string]> = {
-  on_time: ["dot", "success"],
-  late: ["triangle", "warn"],
-  stale: ["diamond-hollow", "failed"],
-  paused: ["square", "off"],
-  continuous: ["pulse", "run"],
-  no_schedule: ["ring", "off"],
-  unidentified: ["ring", "off"],
+// The console's one vocabulary of state (web/components/status.go): a shape and
+// a colour, and always the word, so the colour never carries the meaning alone.
+// The marks themselves are drawn by the server's sheet (.st, .st-dot, ...).
+const LOOK: Record<string, [shape: string, colour: string]> = {
+  success: ["dot", "text-state-success"],
+  failed: ["diamond", "text-state-failed"],
+  running: ["spin", "text-state-running"],
+  queued: ["ring", "text-state-queued"],
+  retrying: ["spin-dashed", "text-state-retrying"],
+  canceled: ["square", "text-state-canceled"],
+  pending: ["ring", "text-state-pending"],
+  skipped: ["square", "text-state-skipped"],
+  never_ran: ["ring-dashed", "text-state-pending"],
+  on_time: ["dot", "text-state-success"],
+  late: ["triangle", "text-state-queued"],
+  stale: ["diamond-hollow", "text-state-failed"],
+  paused: ["square", "text-state-canceled"],
+  continuous: ["pulse", "text-state-running"],
+  no_schedule: ["ring", "text-muted"],
+  unidentified: ["ring-dashed", "text-muted"],
+  live: ["pulse", "text-state-success"],
 };
 
-/** A catalog status as a state kind: whatever the catalog does not name has no schedule to be late against. */
+/** A run's or a step's status as a kind: the engine says "" for a step that never ran. */
+const runKind = (s: string) => s || "never_ran";
+
+/** A catalog status as a kind: whatever the catalog does not name has no schedule to be late against. */
 export function freshnessKind(s: string): string {
-  return s in LOOK ? s : "no_schedule";
+  return ["on_time", "late", "stale", "paused", "continuous", "unidentified"].includes(s) ? s : "no_schedule";
 }
 
-export function StatusBadge({ status }: { status: string }) {
+/** A kind's word in the reader's language; one nobody translated reads as itself. */
+export function useStateWord() {
   const { t } = useT();
-  const kind = freshnessKind(status);
-  const [shape, tone] = LOOK[kind]!;
-  return <span className={`st st-${shape} st-${tone}`}>{t(`state.${kind}`)}</span>;
+  return (kind: string) => {
+    const key = `state.${runKind(kind)}`;
+    const word = t(key);
+    return word === `[${key}]` ? kind : word;
+  };
+}
+
+const look = (kind: string) => LOOK[kind] ?? ["ring", "text-muted"];
+
+/** A mark and its word, both in the state's colour. */
+export function Status({ kind }: { kind: string }) {
+  const k = runKind(kind);
+  const [shape, colour] = look(k);
+  return <span className={`st st-${shape} ${colour}`}>{useStateWord()(k)}</span>;
+}
+
+/** The mark alone, for a dense column where the word is said elsewhere. */
+export function StatusMark({ kind }: { kind: string }) {
+  const k = runKind(kind);
+  const [shape, colour] = look(k);
+  const word = useStateWord()(k);
+  return <span className={`st st-mark st-${shape} ${colour}`} title={word} role="img" aria-label={word} />;
+}
+
+/** "↻2" on a run on its second attempt or later; attempt counts from 0, so nothing on a first try. */
+export function Retry({ attempt }: { attempt: number }) {
+  const { t } = useT();
+  if (attempt < 1) return null;
+  return (
+    <span
+      title={t("run.retry_title", { n: attempt + 1 })}
+      className="ml-1.5 inline-flex h-[17px] cursor-help items-center rounded-[4px] bg-state-retrying/13 px-[5px] font-mono text-[11px] font-medium text-state-retrying"
+    >
+      ↻{attempt + 1}
+    </span>
+  );
+}
+
+/** A catalog status (on time, late, stale, ...) as a state. */
+export function StatusBadge({ status }: { status: string }) {
+  return <Status kind={freshnessKind(status)} />;
 }

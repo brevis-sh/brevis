@@ -6,7 +6,6 @@ import { getJSON } from "../../api/client";
 import { useFormat, useT } from "../../i18n";
 import { Skeleton } from "../skeleton";
 import { langLabel, NODE_TYPES, stageTone, tone, type NodeData } from "./nodes";
-import "../status-badge.css";
 import "./dag.css";
 
 type GNode = Node<NodeData> & { parentId?: string };
@@ -95,6 +94,7 @@ function Inspector({ node, stages, close }: { node: GNode; stages: GNode[]; clos
   const { duration } = useFormat();
   const d = node.data;
   const ctx = d.context ? Object.entries(d.context as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)) : [];
+  const avail = d.available ? (Object.entries(d.available) as [string, Record<string, unknown>][]).sort(([a], [b]) => a.localeCompare(b)) : [];
   const rows: [string, string][] = [
     ["step", node.id],
     ["state", t(`state.${tone(d.status)}`)],
@@ -106,9 +106,15 @@ function Inspector({ node, stages, close }: { node: GNode; stages: GNode[]; clos
     ...(d.tools?.length ? [["tools", (d.tools as string[]).map(langLabel).join(", ")] as [string, string]] : []),
     // Values as they were written: a number stays a number.
     ...ctx.map(([k, v]) => [`context.${k}`, typeof v === "string" ? v : JSON.stringify(v)] as [string, string]),
+    // What the steps above published and this one may read.
+    ...avail.flatMap(([step, values]) =>
+      Object.entries(values ?? {})
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, v]) => [`available ${step}.${k}`, `${typeof v === "string" ? v : JSON.stringify(v)}  \u2190 ${step}`] as [string, string]),
+    ),
   ];
   return (
-    <aside className="dag-insp" aria-label="Step details">
+    <aside className="dag-insp shadow-warm" aria-label="Step details">
       <header>
         <h4>Details</h4>
         <button type="button" onClick={close} aria-label="Close">
@@ -238,7 +244,7 @@ export default function Dag({ src, runId }: Props) {
 
   const shape = g?.nodes?.length ?? 0;
   return (
-    <div ref={box} className="dag" style={{ height: view?.height ?? 380 }} aria-busy={isPending}>
+    <div ref={box} className="dag rounded-card border border-line bg-surface shadow-warm-sm" style={{ height: view?.height ?? 380 }} aria-busy={isPending}>
       {isPending && <Skeleton h="100%" />}
       {error && <div className="dag-err" role="alert">could not load the graph: {error.message}</div>}
       {view && (
@@ -258,7 +264,13 @@ export default function Dag({ src, runId }: Props) {
             edgesFocusable={false}
             onNodesChange={onNodesChange}
             onPaneClick={() => setSelected(null)}
-            defaultEdgeOptions={{ style: { stroke: "var(--muted)", strokeWidth: 1.4 }, labelStyle: { fill: "var(--muted)", fontSize: 11 } }}
+            defaultEdgeOptions={{
+              style: { stroke: "var(--color-line-strong)", strokeWidth: 1.4 },
+              labelStyle: { fill: "var(--muted)", fontSize: 11, fontWeight: 500 },
+              labelBgStyle: { fill: "var(--card)", fillOpacity: 0.92 },
+              labelBgPadding: [6, 3],
+              labelBgBorderRadius: 6,
+            }}
             aria-label={t("run.tab.steps")}
           >
             <Background gap={22} size={1.4} color="var(--st-pending)" />
