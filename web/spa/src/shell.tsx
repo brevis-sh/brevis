@@ -50,6 +50,7 @@ function Nav() {
         {t("nav.overview")}
       </NavLink>
       <NavLink to="/projects">{t("nav.projects")}</NavLink>
+      <NavLink to="/data" end>{t("nav.catalog")}</NavLink>
     </>
   );
 }

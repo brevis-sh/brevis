@@ -1,0 +1,23 @@
+.dt-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: .6rem; background: var(--bg); }
+.dt { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.dt th { padding: .5rem .65rem; border-bottom: 1px solid var(--line); background: var(--card); color: var(--muted); font-size: .72rem; font-weight: 500; text-align: left; white-space: nowrap; }
+.dt td { padding: .7rem .65rem; border-top: 1px solid var(--line); vertical-align: top; }
+.dt tbody tr:first-child td { border-top: 0; }
+.dt tbody tr:hover { background: var(--card); }
+.dt th:first-child, .dt td:first-child { padding-left: 1rem; }
+.dt th:last-child, .dt td:last-child { padding-right: 1rem; }
+.dt .num { text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 1279px) { .dt-hide-xl { display: none; } }
+@media (max-width: 1099px) { .dt-hide-lg { display: none; } }
+@media (max-width: 959px) { .dt-hide-md { display: none; } }
+/* Under 768px a row is a card: the header row goes, each cell says its column. */
+@media (max-width: 767px) {
+  .dt-wrap { border: 0; background: none; overflow: visible; }
+  .dt, .dt tbody { display: block; }
+  .dt thead { display: none; }
+  .dt tr { display: grid; gap: .3rem; margin-bottom: .6rem; padding: .75rem .9rem; border: 1px solid var(--line); border-radius: .6rem; background: var(--bg); }
+  .dt td, .dt td:first-child, .dt td:last-child { display: flex; align-items: baseline; gap: .6rem; padding: 0; border: 0; }
+  .dt td[data-label]::before { content: attr(data-label); flex: none; min-width: 5.5rem; color: var(--muted); font-size: .72rem; }
+  .dt-hide-xl, .dt-hide-lg, .dt-hide-md { display: flex; }
+  .dt td.dt-go { display: none; }
+}

@@ -1,0 +1,26 @@
+/* The console's one vocabulary of state, as the server's pages draw it: the
+   shape carries the meaning the colour also carries (filled is settled, a ring
+   is waiting, a diamond needs a person), so two states in one colour differ in
+   shape. Colours are tokens with fallbacks; the brand CSS may override them. */
+:root {
+  --st-ok: #15803d; --st-warn: #b45309; --st-bad: #b91c1c; --st-info: #1d4ed8; --st-idle: #6b7280;
+  --accent-bar: #4f6df5;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --st-ok: #4ade80; --st-warn: #fbbf24; --st-bad: #f87171; --st-info: #60a5fa; --st-idle: #98a2b3; --accent-bar: #8197ff; }
+}
+.st { display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap; }
+.st-mark { display: inline-block; flex: none; width: .65rem; height: .65rem; color: var(--st-idle); }
+.st-mark::before { content: ""; display: block; width: 100%; height: 100%; box-sizing: border-box; background: currentColor; border-radius: 50%; }
+.st-ring::before, .st-spin::before { background: none; border: 2px solid currentColor; }
+.st-ring-dashed::before { background: none; border: 2px dashed currentColor; }
+.st-square::before { border-radius: 1px; }
+.st-diamond::before { transform: rotate(45deg) scale(.85); border-radius: 1px; }
+.st-diamond-hollow::before { background: none; border: 2px solid currentColor; transform: rotate(45deg) scale(.85); border-radius: 1px; }
+.st-triangle::before { background: currentColor; border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.st-pulse::before { box-shadow: 0 0 0 0 currentColor; animation: st-pulse 1.8s ease-out infinite; }
+@keyframes st-pulse { 70% { box-shadow: 0 0 0 .4rem transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .st-pulse::before { animation: none; } }
+.st-c-ok { color: var(--st-ok); } .st-c-warn { color: var(--st-warn); } .st-c-bad { color: var(--st-bad); }
+.st-c-info { color: var(--st-info); } .st-c-idle { color: var(--st-idle); }
+.st-word { color: var(--fg); }
