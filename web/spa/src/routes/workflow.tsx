@@ -1,9 +1,9 @@
 import { Suspense, lazy, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, getJSON } from "../api/client";
 import { useFallbackInterval, useLive } from "../live/hooks";
-import { useScheduleToggle, type WorkflowDetail } from "../api/workflows";
+import { useScheduleToggle, type WorkflowDetail, type WorkflowsList } from "../api/workflows";
 import { useFormat, useT } from "../i18n";
 import { useCrumb } from "../shell/nav";
 import { buttonClass } from "../ui/button";
@@ -166,7 +166,7 @@ function WorkflowStats({ d }: { d?: WorkflowDetail }) {
 
 // ---- the steps: the graph, or the list ----
 
-function StepsList({ d }: { d?: WorkflowDetail }) {
+function StepsList({ d, ghostRows = 4 }: { d?: WorkflowDetail; ghostRows?: number }) {
   const { t } = useT();
   const { elapsed } = useNumbers();
   return (
@@ -185,7 +185,7 @@ function StepsList({ d }: { d?: WorkflowDetail }) {
         </thead>
         <tbody className="divide-y divide-line-soft">
           {!d ? (
-            <Rows cols={["1.2rem", "6rem", "5rem", "3rem", "5rem", "14rem", "3rem"]} />
+            <Rows cols={["1.2rem", "6rem", "5rem", "3rem", "5rem", "14rem", "3rem"]} rows={ghostRows} />
           ) : (
             d.steps.map((s, i) => (
               <tr key={s.id} className="align-top transition-colors hover:bg-hover">
@@ -210,12 +210,28 @@ function StepsList({ d }: { d?: WorkflowDetail }) {
   );
 }
 
+// How many steps a workflow has, from what the app already read BEFORE this page's
+// own answer: the Workflows list rows carry it. Memory only (react-query's cache),
+// never storage: it is API text. Null when the list was not read this visit (a
+// page opened straight from its address), and then the card opens as a drawn graph.
+function useStepsHint(slug: string): number | null {
+  const qc = useQueryClient();
+  for (const [, list] of qc.getQueriesData<WorkflowsList>({ queryKey: ["workflows"] })) {
+    const row = list?.rows?.find((r) => r.slug === slug);
+    if (row?.steps != null) return row.steps;
+  }
+  return null;
+}
+
 function StepsCard({ d, slug }: { d?: WorkflowDetail; slug: string }) {
   const { t, n } = useT();
+  const hint = useStepsHint(slug);
   const [view, setView] = useState<"graph" | "list">("graph");
   const [picked, setPicked] = useState<string | null>(null);
-  // A one-step workflow has nothing to draw: its list is its line.
-  const oneStep = !!d && d.steps.length < 2;
+  // A one-step workflow has nothing to draw: its list is its line. Before the answer
+  // the list rows' step count says which card to hold the place of, so opening a
+  // one-step workflow from the list shifts nothing (a graph box would collapse).
+  const oneStep = d ? d.steps.length < 2 : hint !== null && hint < 2;
   const shown = oneStep ? "list" : view;
   return (
     <section className={card}>
@@ -249,7 +265,7 @@ function StepsCard({ d, slug }: { d?: WorkflowDetail; slug: string }) {
           </Suspense>
         </div>
       ) : (
-        <StepsList d={d} />
+        <StepsList d={d} ghostRows={hint ?? 4} />
       )}
       {shown === "graph" && (
         <div className="border-t border-line-soft px-4 py-3 text-[12.5px] text-muted">
