@@ -11,6 +11,14 @@ export class ApiError extends Error {
 
 export async function getJSON<T>(path: string, signal?: AbortSignal): Promise<T> {
   const res = await fetch(path, { headers: { Accept: "application/json" }, signal });
+  // The Gate answers a GET without a session with a 303 to /login, and fetch
+  // follows it into a 200 HTML page. That is a 401: send the browser to the
+  // login and bring it back to this screen (the `next` the login screen reads).
+  if (res.redirected && new URL(res.url).pathname === "/login") {
+    const here = location.pathname + location.search;
+    location.assign(`/login?next=${encodeURIComponent(here)}`);
+    throw new ApiError(401, `${path}: no session`);
+  }
   if (!res.ok) throw new ApiError(res.status, `${path}: HTTP ${res.status}`);
   return (await res.json()) as T;
 }

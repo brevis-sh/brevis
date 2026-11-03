@@ -1,4 +1,43 @@
+import { Suspense, useEffect } from "react";
 import { NavLink, Outlet } from "react-router";
+import { useBranding, useSession } from "./api/session";
+import { Skeleton } from "./ui/skeleton";
+
+// The sidebar's identity block. It suspends on the session and the branding,
+// so the shell around it draws at once and this part shows a skeleton of the
+// same size.
+function Identity() {
+  const brand = useBranding();
+  const session = useSession();
+
+  // The server's theme, as it writes it for the pages (branding.CSS): one
+  // source for a client's colours. Injected once, removed on unmount.
+  useEffect(() => {
+    if (!brand.css) return;
+    const el = document.createElement("style");
+    el.dataset.brand = "";
+    el.textContent = brand.css;
+    document.head.appendChild(el);
+    return () => el.remove();
+  }, [brand.css]);
+
+  return (
+    <>
+      <span className="brand">
+        <img src={brand.logo} alt="" width={20} height={20} /> <strong>{brand.title}</strong>
+      </span>
+      {session.operator && <small className="muted">{session.operator}</small>}
+    </>
+  );
+}
+
+function IdentitySkeleton() {
+  return (
+    <span className="brand" aria-busy="true">
+      <Skeleton w="7rem" h="1.25rem" />
+    </span>
+  );
+}
 
 // The shell is a placeholder for the real sidebar and topbar (base.templ). It
 // fixes the responsive contract now: a column from 768px up, a bar below it.
@@ -6,7 +45,9 @@ export function Shell() {
   return (
     <div className="shell">
       <nav className="side" aria-label="Main">
-        <strong className="brand">Brevis</strong>
+        <Suspense fallback={<IdentitySkeleton />}>
+          <Identity />
+        </Suspense>
         <NavLink to="/" end>
           Overview
         </NavLink>

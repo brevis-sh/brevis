@@ -24,3 +24,5 @@ body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system
   .side { flex-direction: row; align-items: center; border-right: 0; border-bottom: 1px solid var(--line); }
   .brand { margin: 0 .75rem 0 0; }
 }
+.muted { color: var(--muted); }
+.brand { display: flex; align-items: center; gap: .5rem; }

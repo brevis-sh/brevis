@@ -384,6 +384,8 @@ func (u *UI) Registrar(mux *http.ServeMux) {
 	// The React app, being built beside the pages above and replacing them one
 	// screen at a time. Behind the same login as everything else.
 	mux.Handle("GET "+spa.Prefix, spa.Handler())
+	mux.HandleFunc("GET /api/session", u.session)
+	mux.HandleFunc("GET /api/branding", u.branding)
 }
 
 // loads is Ingest → Batch loads (screen-loads): one row per step and
