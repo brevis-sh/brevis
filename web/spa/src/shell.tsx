@@ -51,6 +51,7 @@ export function Shell() {
         <NavLink to="/" end>
           Overview
         </NavLink>
+        <NavLink to="/projects">Projects</NavLink>
       </nav>
       <main className="main">
         <Outlet />

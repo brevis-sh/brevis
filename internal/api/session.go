@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"time"
 
 	"brevis.sh/brevis/internal/auth"
 	"brevis.sh/brevis/internal/branding"
@@ -70,4 +71,30 @@ func (u *UI) config(w http.ResponseWriter, _ *http.Request) {
 		Version: u.version,
 		SQL:     u.preview.Configured(),
 	})
+}
+
+// projectView is one project as the Projects screen lists it.
+type projectView struct {
+	Slug      string    `json:"slug"`
+	Name      string    `json:"name"`
+	Workflows int       `json:"workflows"`
+	Runs      int       `json:"runs"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+// projects is the Projects screen's data. The list is always an array, empty
+// included, so the app does not have to tell null from none.
+func (u *UI) projects(w http.ResponseWriter, r *http.Request) {
+	ps, err := u.leitura.Projects(r.Context())
+	if err != nil {
+		u.log.Error("listing the projects", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "the projects are unavailable"})
+		return
+	}
+	out := make([]projectView, 0, len(ps))
+	for _, p := range ps {
+		out = append(out, projectView{Slug: p.Slug, Name: p.Name, Workflows: p.Workflows, Runs: p.Runs, CreatedAt: p.CreatedAt})
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, http.StatusOK, out)
 }

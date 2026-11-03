@@ -3,14 +3,18 @@ package api_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"brevis.sh/brevis/internal/api"
 	"brevis.sh/brevis/internal/auth"
 	"brevis.sh/brevis/internal/branding"
+	"brevis.sh/brevis/internal/infrastructure/postgres"
 	"brevis.sh/brevis/web/i18n"
 )
 
@@ -80,5 +84,57 @@ func TestTheConfigCarriesTheBrandTheVersionAndTheServices(t *testing.T) {
 	}
 	if body["version"] != "1.2.3" || body["sql"] != false {
 		t.Errorf("config = %v", body)
+	}
+}
+
+type projectsFake struct {
+	api.Leitura
+	ps  []postgres.ProjectSummary
+	err error
+}
+
+func (f projectsFake) Projects(context.Context) ([]postgres.ProjectSummary, error) {
+	return f.ps, f.err
+}
+
+func projectsUI(f projectsFake) *api.UI {
+	return api.NewUI(f, nil, nil, nil, nil, catalogFake{}, branding.Default(), slog.New(slog.DiscardHandler))
+}
+
+// THE PROJECTS ARE AN ARRAY, EMPTY INCLUDED: `[]`, never `null`, so the screen
+// has one shape to read.
+func TestTheProjectsAreAlwaysAnArray(t *testing.T) {
+	mux := http.NewServeMux()
+	projectsUI(projectsFake{}).Registrar(mux)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/projects", nil))
+	if rec.Code != http.StatusOK || strings.TrimSpace(rec.Body.String()) != "[]" {
+		t.Errorf("%d %q; want 200 and []", rec.Code, rec.Body.String())
+	}
+}
+
+func TestTheProjectsListTheirNumbers(t *testing.T) {
+	at := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
+	mux := http.NewServeMux()
+	projectsUI(projectsFake{ps: []postgres.ProjectSummary{{Slug: "sales", Name: "Sales", Workflows: 3, Runs: 40, CreatedAt: at}}}).Registrar(mux)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/projects", nil))
+	var got []map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil || len(got) != 1 {
+		t.Fatalf("body %q: %v", rec.Body.String(), err)
+	}
+	if got[0]["slug"] != "sales" || got[0]["workflows"] != float64(3) || got[0]["runs"] != float64(40) || got[0]["createdAt"] != "2026-10-01T09:00:00Z" {
+		t.Errorf("project = %v", got[0])
+	}
+}
+
+// A READ THAT FAILS IS A 500 IN JSON, not an HTML error page the app cannot parse.
+func TestAFailingProjectsReadIsAJSON500(t *testing.T) {
+	mux := http.NewServeMux()
+	projectsUI(projectsFake{err: errors.New("down")}).Registrar(mux)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/projects", nil))
+	if rec.Code != http.StatusInternalServerError || !strings.Contains(rec.Header().Get("Content-Type"), "json") {
+		t.Errorf("%d %q; want a JSON 500", rec.Code, rec.Header().Get("Content-Type"))
 	}
 }

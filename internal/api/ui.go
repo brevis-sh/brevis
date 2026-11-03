@@ -386,6 +386,7 @@ func (u *UI) Registrar(mux *http.ServeMux) {
 	mux.Handle("GET "+spa.Prefix, spa.Handler())
 	mux.HandleFunc("GET /api/session", u.session)
 	mux.HandleFunc("GET /api/config", u.config)
+	mux.HandleFunc("GET /api/projects", u.projects)
 }
 
 // loads is Ingest → Batch loads (screen-loads): one row per step and
