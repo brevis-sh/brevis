@@ -1,5 +1,5 @@
 {
-  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count; ru: catalog.count and loads.count say \"назначений\"/\"загрузок\" after \"из\", which is wrong for counts ending in 1 except 11 (21, 31, 101), because the catalog has only one/other",
+  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count; ru: catalog.count and loads.count say \"назначений\"/\"загрузок\" after \"из\", which is wrong for counts ending in 1 except 11 (21, 31, 101), because the catalog has only one/other, state.unknown, streams.health.*",
   "app.not_found": "Не найдено.",
   "auto.adjusted_at": "часы, которые читаются вместо now()",
   "auto.date": "день UTC из adjusted_at — партиция",
@@ -814,6 +814,7 @@
   "state.stale": "устарело",
   "state.success": "успех",
   "state.unidentified": "не определено",
+  "state.unknown": "нет данных",
   "streamcfg.buffer.claim": "Координирует запись между репликами",
   "streamcfg.buffer.durability": "Надёжность",
   "streamcfg.buffer.every": "Пишет каждые",
@@ -885,6 +886,8 @@
   "streams.empty": "Streams пока нет. Появится, когда будет опубликован gateway:",
   "streams.empty.filtered": "Ничего не подходит под этот фильтр.",
   "streams.gateway": "Gateway HTTP",
+  "streams.health.destination_unnamed": "Опубликованный манифест не смог назвать место назначения этого потока, поэтому Brevis нечего читать.",
+  "streams.health.not_reported": "Brevis хранит конфигурацию этого потока, но не его трафик: счётчики принятых, отклонённых и попавших в dead letter событий находятся в /metrics gateway.",
   "streams.how.1": "1 · Источник",
   "streams.how.2": "2 · Батч",
   "streams.how.3": "3 · Назначение",

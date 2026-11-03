@@ -10,7 +10,8 @@ import { btn, Empty, Lead, MethodPill, PageHead, linkUnderline, Page } from "../
 import { Logo, useLogoTitle } from "../ui/logo";
 import { FilterBar, ResultCount, SearchField, useUrlSearch, type Chip, type FilterDef } from "../ui/filters";
 import { recall, remember, useSeen } from "../ui/seen";
-import { Status } from "../ui/status";
+import { HealthStatus } from "../ui/health";
+import { Status, useStatusWord } from "../ui/status";
 import { Row, Table, Td, Th } from "../ui/table";
 import { useFilter } from "../ui/use-filter";
 import "./streams.css";
@@ -136,7 +137,7 @@ function Rows({ rows, gateway }: { rows: StreamRow[]; gateway: boolean }) {
             </Td>
             <Td>
               <div className="stl-state">
-                <Status kind="continuous" />
+                <HealthStatus health={s.health} />
                 {s.deadLetter && (
                   <span className="stl-dl" title={`${s.deadLetter.kind ? kindName(s.deadLetter.kind) : ""} ${s.deadLetter.uri || t("streams.unidentified")}`.trim()}>
                     {t("streams.col.dead_letter")}
@@ -170,6 +171,20 @@ const ghostOf = (s: Shape): Streams => ({
   kinds: Array.from({ length: s.kinds }, (_, i): Choice => ({ key: `kind${i}`, label: "Kind" })),
   filter: { kind: "", q: "" },
 });
+
+// Every stream's health, counted by state and said with the state's own mark: the summary never claims a state
+// nobody measured, so a console that holds no traffic says "no data" and a failing stream would say "N failing".
+function HealthSummary({ v }: { v: Streams }) {
+  const word = useStatusWord();
+  const counts = v.healthCounts ?? { unknown: v.total };
+  return (
+    <>
+      {Object.entries(counts).map(([state, count]) => (
+        <Status key={state} kind={state} label={`${count} ${word(state)}`} />
+      ))}
+    </>
+  );
+}
 
 // The bar (see ui/filters): a search and the destination kinds, drawn at once from the last shape seen.
 function StreamsBar({ filter, v, ghost }: { filter: Filter; v: Streams; ghost: boolean }) {
@@ -223,7 +238,7 @@ function StreamsData({ filter }: { filter: Filter }) {
             {n("streams.summary.gateways", v.gateways)}
             {oneGateway && <> <span className="stl-gw">{oneGateway}</span></>}
           </span>
-          <Status kind="continuous" />
+          <HealthSummary v={v} />
           {v.withDeadLetter > 0 && <span>{n("streams.summary.dead_letter", v.withDeadLetter)}</span>}
         </div>
       )}

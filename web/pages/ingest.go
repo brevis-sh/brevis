@@ -534,8 +534,10 @@ func (f StreamFilter) With(field, value string) string {
 type StreamsView struct {
 	Rows                            []Stream
 	Total, Gateways, WithDeadLetter int
-	Kinds                           []string
-	Filter                          StreamFilter
+	// HealthCounts is every stream's health state, whatever the filter shows.
+	HealthCounts map[string]int
+	Kinds        []string
+	Filter       StreamFilter
 }
 
 // SearchText is what a search looks in, lower-cased: the gateway, the path,
@@ -555,12 +557,13 @@ func (s Stream) Key() string { return s.Gateway + " " + s.Path }
 // kind and the search drop what they exclude, on the server, so a filtered
 // list is a link. The counts are every stream's.
 func BuildStreams(entries []postgres.CatalogEntry, f StreamFilter) StreamsView {
-	v := StreamsView{Filter: f}
+	v := StreamsView{Filter: f, HealthCounts: map[string]int{}}
 	q := strings.ToLower(f.Q)
 	for _, g := range StreamsOf(entries) {
 		v.Gateways++
 		for _, s := range g.Streams {
 			v.Total++
+			v.HealthCounts[s.Health().State]++
 			if s.DeadLetter != nil {
 				v.WithDeadLetter++
 			}

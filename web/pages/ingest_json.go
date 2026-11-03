@@ -469,6 +469,8 @@ type StreamRowJSON struct {
 	BatchEvery   string     `json:"batchEvery"`
 	BatchRecords *int64     `json:"batchRecords"`
 	DeadLetter   *PlaceJSON `json:"deadLetter"`
+	// Health is added beside the old fields: a client that does not know it ignores it.
+	Health StreamHealth `json:"health"`
 }
 
 // StreamsJSON is /api/ingest/streams.
@@ -477,8 +479,10 @@ type StreamsJSON struct {
 	Total          int             `json:"total"`
 	Gateways       int             `json:"gateways"`
 	WithDeadLetter int             `json:"withDeadLetter"`
-	Kinds          []ChoiceJSON    `json:"kinds"`
-	Filter         struct {
+	// HealthCounts is every stream's health state, whatever the filter keeps.
+	HealthCounts map[string]int `json:"healthCounts"`
+	Kinds        []ChoiceJSON   `json:"kinds"`
+	Filter       struct {
 		Kind string `json:"kind"`
 		Q    string `json:"q"`
 	} `json:"filter"`
@@ -486,7 +490,7 @@ type StreamsJSON struct {
 
 func streamRowJSON(ctx context.Context, s Stream) StreamRowJSON {
 	out := StreamRowJSON{Gateway: s.Gateway, Path: s.Path, Href: s.Href(), Note: s.Note(),
-		Sink: placeJSON(ctx, s.Sink), Batch: s.BatchIn(ctx), BatchEvery: s.Field("buffer.flush.every")}
+		Sink: placeJSON(ctx, s.Sink), Batch: s.BatchIn(ctx), BatchEvery: s.Field("buffer.flush.every"), Health: s.Health()}
 	if n, err := strconv.ParseInt(s.Field("buffer.flush.records"), 10, 64); err == nil {
 		out.BatchRecords = &n
 	}
@@ -500,7 +504,7 @@ func streamRowJSON(ctx context.Context, s Stream) StreamRowJSON {
 // StreamsAsJSON lays the streams list out for the app.
 func StreamsAsJSON(ctx context.Context, v StreamsView) StreamsJSON {
 	out := StreamsJSON{Rows: make([]StreamRowJSON, 0, len(v.Rows)), Total: v.Total, Gateways: v.Gateways,
-		WithDeadLetter: v.WithDeadLetter, Kinds: []ChoiceJSON{}}
+		WithDeadLetter: v.WithDeadLetter, HealthCounts: v.HealthCounts, Kinds: []ChoiceJSON{}}
 	out.Filter.Kind, out.Filter.Q = v.Filter.Kind, v.Filter.Q
 	for _, s := range v.Rows {
 		out.Rows = append(out.Rows, streamRowJSON(ctx, s))
@@ -561,6 +565,7 @@ type StreamJSON struct {
 	DeadLetter   *PlaceJSON         `json:"deadLetter"`
 	PublishedAt  *time.Time         `json:"publishedAt"`
 	Format       string             `json:"format"`
+	Health       StreamHealth       `json:"health"`
 	Lede         string             `json:"lede"`
 	Summary      string             `json:"summary"`
 	Flow         *FlowJSON          `json:"flow"`
@@ -581,7 +586,7 @@ type StreamJSON struct {
 func StreamAsJSON(ctx context.Context, v StreamView) StreamJSON {
 	out := StreamJSON{
 		Gateway: v.Gateway, Path: v.Path, Sink: placeJSON(ctx, v.Sink), PublishedAt: ptrTime(v.PublishedAt),
-		Format: v.Field("format"), Lede: v.Lede(ctx), Summary: v.Summary(ctx), Flow: flowJSON(ctx, streamFlow(v.Stream)),
+		Format: v.Field("format"), Health: v.Health(), Lede: v.Lede(ctx), Summary: v.Summary(ctx), Flow: flowJSON(ctx, streamFlow(v.Stream)),
 		Tables: append([]string{}, v.Tables()...), ReadBy: readersJSON(v.ReadBy), HasConfig: v.Config != nil,
 		Cards: []CardJSON{}, Changes: []StreamChangeJSON{}, BuriedMetric: v.BuriedMetric(),
 		TestEvent: TestEventJSON{Format: v.TestFormat(), Body: v.TestBody(), CurlHead: v.TestCurlHead(),

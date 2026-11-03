@@ -1,5 +1,5 @@
 {
-  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count; hi: stage, step, run, load, stream, endpoints stay in Latin script like the older keys",
+  "_review": "first pass, needs a native speaker: app.not_found, login.*, projects.*, loaderror.*, filters.title, graph.{inspector,details,failed,published,retry,expand,collapse,inferred}, workflow.purpose.*, workflow.trend.*, run.error.*, run.timeline, run.log.exit, run.steps.ok, {catalog,endpoints,loads,streams}.count; hi: stage, step, run, load, stream, endpoints stay in Latin script like the older keys, state.unknown, streams.health.*",
   "app.not_found": "नहीं मिला।",
   "auto.adjusted_at": "now() की जगह पढ़ी जाने वाली घड़ी",
   "auto.date": "adjusted_at का UTC दिन — पार्टिशन",
@@ -814,6 +814,7 @@
   "state.stale": "stale",
   "state.success": "सफल",
   "state.unidentified": "अज्ञात",
+  "state.unknown": "कोई डेटा नहीं",
   "streamcfg.buffer.claim": "replica के बीच write का समन्वय करता है",
   "streamcfg.buffer.durability": "Durability",
   "streamcfg.buffer.every": "हर इतने पर लिखता है",
@@ -885,6 +886,8 @@
   "streams.empty": "अभी कोई stream नहीं। gateway प्रकाशित होने पर एक दिखता है:",
   "streams.empty.filtered": "इस फ़िल्टर से कुछ मेल नहीं खाता।",
   "streams.gateway": "Gateway HTTP",
+  "streams.health.destination_unnamed": "प्रकाशित मैनिफ़ेस्ट इस स्ट्रीम का गंतव्य नहीं बता सका, इसलिए Brevis के पास पढ़ने को कुछ नहीं है।",
+  "streams.health.not_reported": "Brevis इस स्ट्रीम का कॉन्फ़िगरेशन रखता है, उसका ट्रैफ़िक नहीं: स्वीकार, अस्वीकार और dead letter की गिनती gateway के /metrics पर है।",
   "streams.how.1": "1 · स्रोत",
   "streams.how.2": "2 · Batch",
   "streams.how.3": "3 · गंतव्य",
