@@ -14,13 +14,7 @@ export function buttonClass(kind: "secondary" | "primary" | "danger" = "secondar
   return `${base} ${dim} ${look}`;
 }
 
-// components.Segmented: a filter with few values drawn as one control, each choice a link.
+// The Runs list's state control (the one list not on ui/filters yet).
 export const segGroup = "inline-flex h-8 shrink-0 items-center gap-0.5 rounded-card border border-line bg-surface p-0.5";
 export const segOn = "inline-flex h-full shrink-0 items-center gap-1.5 rounded-[2px] bg-surface-2 px-2.5 text-[0.8rem] font-medium whitespace-nowrap text-ink";
 export const segOff = "inline-flex h-full shrink-0 items-center gap-1.5 rounded-[2px] px-2.5 text-[0.8rem] whitespace-nowrap text-muted transition-colors duration-150 hover:text-ink";
-// A filter that is on, as the chip with its ×.
-export const chipClass = "inline-flex h-8 items-center gap-1.5 rounded-card border border-line-strong bg-surface-2 px-2.5 text-[0.8rem] text-ink";
-
-// ONE ROW of filters, whatever the width: it scrolls sideways instead of wrapping or stacking.
-export const filterRow = "flex items-center gap-2 overflow-x-auto whitespace-nowrap";
-export const noBar = { scrollbarWidth: "none" } as const;

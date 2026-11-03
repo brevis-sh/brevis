@@ -4,15 +4,16 @@ import type { Choice, LoadRow, Loads, Source } from "../api/ingest";
 import { useFormat, useT } from "../i18n";
 import { localStamp, useSince } from "../ui/format";
 import { Icon } from "../ui/icon";
-import { ButtonLink, Empty, FilterRow, Lead, PageHead, linkUnderline, Page } from "../ui/kit";
+import { ButtonLink, Empty, Lead, PageHead, linkUnderline, Page } from "../ui/kit";
 import { Logo } from "../ui/logo";
 import { Place, PlaceBlock } from "../ui/place";
-import { Band, SearchBox, Segmented, Switch } from "../ui/segmented";
+import { FilterBar, ResultCount, SearchField, ToggleFilter, useUrlSearch, type Chip, type FilterDef } from "../ui/filters";
 import { useSeen } from "../ui/seen";
+import { useStatusFilter } from "../ui/status-filter";
 import { Sparkline } from "../ui/sparkline";
-import { Freshness, FreshnessMark, freshnessKind } from "../ui/status";
+import { Freshness, FreshnessMark } from "../ui/status";
 import { Row, Table, Td, Th } from "../ui/table";
-import { useFilter, useSearchBox } from "../ui/use-filter";
+import { useFilter } from "../ui/use-filter";
 
 // The statuses a load can have, in the band's order (a step is never
 // continuous, nor its destination unidentified).
@@ -171,10 +172,50 @@ function Summary({ v, ghost }: { v: Loads; ghost: boolean }) {
   );
 }
 
-function Search({ filter }: { filter: Filter }) {
+// The bar (see ui/filters): drawn at once from the last shape seen; only the counts wait.
+function LoadsBar({ filter, v, ghost }: { filter: Filter; v: Loads; ghost: boolean }) {
   const { t } = useT();
-  const [text, setText] = useSearchBox(filter.get("q"), (q) => filter.hrefWith({ q }));
-  return <SearchBox value={text} onChange={setText} label={t("loads.search")} />;
+  const { number } = useFormat();
+  const navigate = useNavigate();
+  const [text, setText] = useUrlSearch("q");
+  const go = (patch: Record<string, string>) => void navigate(filter.hrefWith(patch));
+  const source = filter.get("source");
+  const legacy = filter.get("legacy") === "1";
+  const q = filter.get("q");
+  const st = useStatusFilter({
+    statuses: STATUSES,
+    count: (k) => v.counts[k] ?? 0,
+    pending: ghost,
+    mark: (s) => <FreshnessMark status={s} />,
+    status: filter.get("status"),
+    onChange: (status) => go({ status }),
+  });
+  const sourceMark = (k: string) => (k === "http" || k === "file" ? <Logo k={k} /> : k === "database" ? <Icon name="database" className="h-3.5 w-3.5 text-muted" /> : undefined);
+  const filters: FilterDef[] = [
+    st.def,
+    ...(v.sources.length > 1
+      ? [{
+          id: "source", label: t("loads.source"), allLabel: t("loads.source.all"), pending: ghost,
+          options: v.sources.map((s) => ({ key: s.key, label: s.label, icon: sourceMark(s.key) })),
+          value: source ? [source] : [], onChange: (x: string[]) => go({ source: x[0] ?? "" }),
+        } satisfies FilterDef]
+      : []),
+  ];
+  const chips: Chip[] = [
+    ...st.chip,
+    ...(source ? [{ id: "source", group: t("loads.source"), value: v.sources.find((s) => s.key === source)?.label ?? source, onRemove: () => go({ source: "" }) }] : []),
+  ];
+  return (
+    <FilterBar
+      search={<SearchField value={text} onChange={setText} label={t("loads.search")} />}
+      primary={<>{st.primary}{v.hasLegacy && <ToggleFilter label={t("catalog.legacy")} on={legacy} onChange={(on) => go({ legacy: on ? "1" : "" })} />}</>}
+      filters={filters}
+      chips={chips}
+      clearable={filter.any}
+      onClearAll={() => go({ status: "", source: "", legacy: "", q: "" })}
+      count={<ResultCount pending={ghost} shown={v.rows.length} tail={<>/ {number(v.total)}{q && <> {t("workflows.count.search", { q })}</>}</>} />}
+    />
+  );
 }
 
 function LoadsData({ filter }: { filter: Filter }) {
@@ -186,61 +227,13 @@ function LoadsData({ filter }: { filter: Filter }) {
   // Only the unfiltered answer is remembered: a filter's counts are not the list's shape.
   const seen = useSeen("loads", qs.size === 0 && q.data ? shapeOf(q.data) : undefined, FIRST);
   const v = q.data ?? ghostOf(seen);
-  const status = filter.get("status");
-  const source = filter.get("source");
-  const legacy = filter.get("legacy") === "1";
   const shown = v.total > 0 || v.hasLegacy;
-  const band = [
-    { key: "", status: "", label: t("catalog.status.all"), tip: "", mark: "" },
-    { key: "attention", status: "attention", label: t("catalog.status.attention"), tip: t("catalog.tip.attention"), mark: "stale" },
-    ...STATUSES.map((s) => ({ key: s, status: s, label: t(`state.${freshnessKind(s)}`), tip: t(`catalog.tip.${s}`), mark: s })),
-  ];
   const none = v.rows.length === 0;
   return (
     <>
       <Summary v={v} ghost={ghost} />
       {shown && (
-        <FilterRow>
-          <Search filter={filter} />
-          <nav aria-label={t("catalog.band")} className={ghost ? "sk-ghost" : undefined} aria-busy={ghost || undefined}>
-            {band.map((b) => (
-              <Band
-                key={b.key}
-                to={filter.hrefWith({ status: b.status })}
-                current={status === b.status}
-                tip={b.tip}
-                mark={b.mark ? <FreshnessMark status={b.mark} /> : null}
-                label={b.label}
-                count={v.counts[b.key] ?? 0}
-              />
-            ))}
-          </nav>
-          {v.sources.length > 1 && (
-            <Segmented
-              className={ghost ? "sk-ghost" : ""}
-              label={t("loads.source")}
-              choices={[
-                { key: "", label: t("loads.source.all"), to: filter.hrefWith({ source: "" }), current: source === "" },
-                ...v.sources.map((s) => ({
-                  key: s.key,
-                  label: (
-                    <>
-                      {s.key === "http" || s.key === "file" ? <Logo k={s.key} /> : s.key === "database" ? <Icon name="database" className="h-3.5 w-3.5 text-muted" /> : null}
-                      {s.label}
-                    </>
-                  ),
-                  to: filter.hrefWith({ source: s.key }),
-                  current: source === s.key,
-                })),
-              ]}
-            />
-          )}
-          {v.hasLegacy && (
-            <Switch className={ghost ? "sk-ghost" : ""} on={legacy} to={filter.hrefWith({ legacy: legacy ? "" : "1" })}>
-              {t("catalog.legacy")}
-            </Switch>
-          )}
-        </FilterRow>
+        <LoadsBar filter={filter} v={v} ghost={ghost} />
       )}
       <div aria-busy={ghost}>
         {q.isError ? (

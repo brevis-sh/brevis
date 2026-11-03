@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 
 /**
  * Filters live in the URL, under the old page's parameter names, so a filtered
@@ -20,32 +19,4 @@ export function useFilter(fields: readonly string[], path: string) {
     return s ? `${to}?${s}` : to;
   };
   return { get, hrefWith, any: fields.some((f) => get(f) !== "") };
-}
-
-/**
- * The search box: it keeps what is typed, and moves the URL a beat after the
- * last key (replacing the history entry, so typing does not fill the back
- * button). The list under it keeps its old rows until the answer arrives.
- */
-export function useSearchBox(value: string, apply: (q: string) => string) {
-  const navigate = useNavigate();
-  const [text, setText] = useState(value);
-  const last = useRef(value);
-  // An outside change (a link, back) replaces what is typed.
-  useEffect(() => {
-    if (value !== last.current) {
-      last.current = value;
-      setText(value);
-    }
-  }, [value]);
-  useEffect(() => {
-    if (text.trim() === last.current) return;
-    const id = setTimeout(() => {
-      last.current = text.trim();
-      navigate(apply(text.trim()), { replace: true });
-    }, 250);
-    return () => clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text]);
-  return [text, setText] as const;
 }

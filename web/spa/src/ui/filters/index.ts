@@ -6,3 +6,4 @@ export { DropdownFilter, type FilterDef } from "./DropdownFilter";
 export { type Option } from "./OptionList";
 export { FilterChips, type Chip } from "./FilterChips";
 export { ResultCount } from "./ResultCount";
+export { ToggleFilter } from "./ToggleFilter";
