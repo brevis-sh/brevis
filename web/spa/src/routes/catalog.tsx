@@ -14,6 +14,7 @@ import { Freshness, StatusMark, freshnessKind } from "../ui/status";
 import { Row, Table, Td, Th } from "../ui/table";
 import { useFilter } from "../ui/use-filter";
 import type { TargetDetail } from "./target-drawer";
+import "./catalog-list.css";
 
 export type CatalogRow = {
   target: string;
@@ -65,18 +66,15 @@ function Recent({ counts }: { counts: (number | null)[] }) {
   );
 }
 
-const legacyChip = "ml-1.5 rounded border border-line px-1.5 font-mono text-[10.5px] text-muted";
-
 function Head() {
   const { t } = useT();
   return (
     <>
       <Th edge="first" cls="whitespace-nowrap">{t("catalog.col.target")}</Th>
       <Th cls="whitespace-nowrap">{t("catalog.col.status")}</Th>
-      <Th cls="whitespace-nowrap max-[860px]:hidden">{t("catalog.col.writer")}</Th>
-      <Th cls="whitespace-nowrap max-[640px]:hidden">{t("catalog.col.last")}</Th>
-      <Th cls="whitespace-nowrap text-right max-[1100px]:hidden">{t("catalog.col.rows")}</Th>
-      <Th cls="whitespace-nowrap max-[1100px]:hidden">{t("catalog.col.recent")}</Th>
+      <Th cls="whitespace-nowrap">{t("catalog.col.last")}</Th>
+      <Th cls="whitespace-nowrap text-right">{t("catalog.col.rows")}</Th>
+      <Th cls="whitespace-nowrap">{t("catalog.col.recent")}</Th>
       <Th edge="last" cls="w-8" />
     </>
   );
@@ -91,42 +89,49 @@ function CatalogRows({ rows, filter, now }: { rows: CatalogRow[]; filter: Filter
     <>
       {rows.map((r) => {
         const href = r.streamHref || filter.hrefWith({}, "/data/target", { u: r.target });
+        // A gateway-only row already names its writer as the destination; any other row says it once, muted, under it.
+        const sub = r.target === "" ? "" : r.writer;
         return (
           <Row key={r.target || r.streamHref} onOpen={() => navigate(href)}>
-            <Td edge="first">
-              <Link to={href} className="inline-flex min-w-0 flex-wrap items-center gap-1.5 font-mono text-[12.5px]">
-                {r.target === "" ? (
-                  <>
-                    <Logo k="gateway" />
-                    <span className="text-ink-2">{r.writer}</span>
-                  </>
-                ) : (
-                  <>
-                    <Logo k={r.kind} />
-                    <span className="text-faint">{r.where}</span>
-                    <span className="font-medium text-ink">{r.what}</span>
-                  </>
-                )}
-              </Link>{" "}
-              {r.legacy && <span className={legacyChip}>{t("catalog.chip.legacy")}</span>}{" "}
-              {r.autoTable && <span className={legacyChip}>auto_table</span>}
+            <Td edge="first" cls="ctl-fill">
+              <div className="ctl-to">
+                <Link to={href} className="ctl-link" title={r.target || r.writer}>
+                  {r.target === "" ? (
+                    <>
+                      <Logo k="gateway" />
+                      <span className="ctl-what">{r.writer}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Logo k={r.kind} />
+                      <span className="ctl-where">{r.where}</span>
+                      <span className="ctl-what">{r.what}</span>
+                    </>
+                  )}
+                </Link>
+                {r.legacy && <span className="ctl-chip">{t("catalog.chip.legacy")}</span>}
+                {r.autoTable && <span className="ctl-chip">auto_table</span>}
+              </div>
+              {sub !== "" && (
+                <p className="ctl-sub" title={`${t("catalog.col.writer")}: ${sub}${r.more > 0 ? ` +${r.more}` : ""}`}>
+                  <span className="sr-only">{t("catalog.col.writer")}: </span>
+                  {sub}
+                  {r.more > 0 && <span className="ctl-more">+{r.more}</span>}
+                </p>
+              )}
             </Td>
             <Td>
               <Freshness status={r.status} />
               {r.queued && <p className="mt-0.5 text-[11.5px] text-muted">{t("catalog.queued")}</p>}
             </Td>
-            <Td cls="font-mono text-[12px] text-ink-2 max-[860px]:hidden">
-              {r.writer}
-              {r.more > 0 && <span className="ml-1 font-sans text-faint">+{r.more}</span>}
-            </Td>
-            <Td cls="text-xs whitespace-nowrap text-muted max-[640px]:hidden"><span>{r.lastAt ? since(r.lastAt, now) : "—"}</span></Td>
-            <Td cls="text-right text-xs tabular-nums text-ink-2 max-[1100px]:hidden">
+            <Td cls="ctl-last"><span>{r.lastAt ? since(r.lastAt, now) : "—"}</span></Td>
+            <Td cls="ctl-rows">
               {r.lastRows !== null ? f.number(r.lastRows) : <span title={t("catalog.no_rows")} className="text-faint">—</span>}
             </Td>
-            <Td cls="max-[1100px]:hidden">
+            <Td cls="ctl-recent">
               <Recent counts={r.recent} />
             </Td>
-            <Td edge="last" cls="text-right text-faint">
+            <Td edge="last" cls="ctl-go text-right text-faint">
               <Icon name="chevron-right" className="ml-auto h-4 w-4" />
             </Td>
           </Row>
@@ -206,6 +211,9 @@ function CatalogBar({ filter, data, ghost }: { filter: Filter; data: Catalog; gh
   );
 }
 
+// The phone draws cards, whose heights are not the table rows': each keeps its own memory of row heights.
+const phone = () => typeof matchMedia === "function" && matchMedia("(max-width: 768px)").matches;
+
 function Catalog({ filter }: { filter: Filter }) {
   const { t } = useT();
   const qs = new URLSearchParams();
@@ -234,7 +242,7 @@ function Catalog({ filter }: { filter: Filter }) {
         </Empty>
         </div>
       ) : (
-        <Table catalog head={<Head />} foot={t("catalog.order")} ghost={ghost} memo="catalog">
+        <Table catalog cls="ctl" head={<Head />} foot={`${t("catalog.order")} ${t("catalog.honest")}`} ghost={ghost} memo={phone() ? "catalog.phone" : "catalog"}>
           <CatalogRows rows={data.rows} filter={filter} now={data.now} />
         </Table>
       )}
@@ -256,8 +264,7 @@ export default function CatalogRoute() {
   return (
     <Page>
       <PageHead title={t("catalog.title")} />
-      <Lead before={t("catalog.lead.before")} strong={t("catalog.lead.strong")} after={t("catalog.lead.after")} cls="" />
-      <p className="mt-2 mb-4 max-w-3xl text-[12px] text-faint">{t("catalog.honest")}</p>
+      <Lead before={t("catalog.lead.before")} strong={t("catalog.lead.strong")} after={t("catalog.lead.after")} />
       {missing && (
         <p className="mb-3 rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">{t("catalog.missing", { target: u ?? "" })}</p>
       )}

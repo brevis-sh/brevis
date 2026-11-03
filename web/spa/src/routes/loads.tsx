@@ -8,7 +8,6 @@ import { localStamp, useSince } from "../ui/format";
 import { Icon } from "../ui/icon";
 import { ButtonLink, Empty, Lead, PageHead, linkUnderline, Page } from "../ui/kit";
 import { Logo } from "../ui/logo";
-import { Place, PlaceBlock } from "../ui/place";
 import { FilterBar, ResultCount, SearchField, ToggleFilter, useUrlSearch, type Chip, type FilterDef } from "../ui/filters";
 import { useSeen } from "../ui/seen";
 import { useStatusFilter } from "../ui/status-filter";
@@ -18,6 +17,7 @@ import { Row, Table, Td, Th } from "../ui/table";
 import { useFilter } from "../ui/use-filter";
 import { useCrumb } from "../shell/nav";
 import { LoadDrawer, useLoad } from "./load";
+import "./loads.css";
 
 // The statuses a load can have, in the band's order (a step is never
 // continuous, nor its destination unidentified).
@@ -25,23 +25,23 @@ const STATUSES = ["stale", "late", "on_time", "paused", "unscheduled"] as const;
 const FIELDS = ["status", "source", "legacy", "q"] as const;
 type Filter = ReturnType<typeof useFilter>;
 
-function SourceCell({ s }: { s: Source }) {
+/** Where the load reads, as one quiet line under the destination: "HTTP API · api.example.com". A step the SDK did not describe says so. */
+function From({ s }: { s: Source }) {
   const { t } = useT();
   if (s.kind === "")
     return (
-      <div className="max-w-[12rem] min-w-0">
-        <span className="text-[12px] text-faint" title={t("loads.source.none.tip")}>
-          {t("loads.source.none")}
-        </span>
-      </div>
+      <p className="ldl-from ldl-none" title={t("loads.source.none.tip")}>
+        <span className="sr-only">{t("loads.source")}: </span>
+        {t("loads.source.none")}
+      </p>
     );
   return (
-    <PlaceBlock
-      max="max-w-[12rem]"
-      mark={s.kind === "http" || s.kind === "file" ? <Logo k={s.kind} /> : s.kind === "database" ? <Icon name="database" className="h-3.5 w-3.5 text-muted" /> : null}
-      label={s.label}
-      where={s.where || undefined}
-    />
+    <p className="ldl-from">
+      <span className="sr-only">{t("loads.source")}: </span>
+      <span aria-hidden="true">&larr; </span>
+      {s.label}
+      {s.where && <span> &middot; {s.where}</span>}
+    </p>
   );
 }
 
@@ -50,10 +50,10 @@ function Head() {
   return (
     <>
       <Th edge="first">{t("loads.col.who")}</Th>
-      <Th cls="max-[860px]:hidden">{t("loads.col.flow")}</Th>
+      <Th>{t("loads.col.flow")}</Th>
       <Th>{t("loads.col.status")}</Th>
-      <Th cls="max-[640px]:hidden">{t("loads.col.last")}</Th>
-      <Th cls="text-right max-[1100px]:hidden">{t("loads.col.rows")}</Th>
+      <Th>{t("loads.col.last")}</Th>
+      <Th cls="text-right">{t("loads.col.rows")}</Th>
       <Th edge="last" cls="max-[1100px]:hidden">
         {t("loads.col.recent")}
       </Th>
@@ -74,6 +74,12 @@ function useRowHref(filter: Filter) {
 }
 const PUSHED = { drawer: true };
 
+// The tooltip keeps what the line gave up: the full destination URI, its note, and where it is read from.
+function destTitle(r: LoadRow) {
+  const to = r.target.uri === "" ? r.target.note : r.target.note ? `${r.target.uri} \u2014 ${r.target.note}` : r.target.uri;
+  return r.source.kind === "" ? to : `${r.source.label}${r.source.where ? ` (${r.source.where})` : ""} \u2192 ${to}`;
+}
+
 function Rows({ rows, filter }: { rows: LoadRow[]; filter: Filter }) {
   const href = useRowHref(filter);
   const { t, n } = useT();
@@ -84,41 +90,44 @@ function Rows({ rows, filter }: { rows: LoadRow[]; filter: Filter }) {
     <>
       {rows.map((r) => (
         <Row key={r.href} onOpen={() => navigate(href(r.href), { state: PUSHED })}>
-          <Td edge="first">
-            <Link to={`/workflows/${encodeURIComponent(r.workflow)}`} className="font-mono text-[13px] font-medium text-ink hover:underline">
-              {r.workflow}
+          <Td edge="first" cls="ldl-fill">
+            <Link to={href(r.href)} state={PUSHED} data-load={`${r.workflow}/${r.step}`} data-target={r.target.uri} className="ldl-link" title={`${r.workflow} · ${r.step}`}>
+              <span className="ldl-wf">{r.workflow}</span>
+              <span className="ldl-step">{r.step}</span>
             </Link>
-            <p className="mt-0.5 text-[12px] text-muted">
-              <Link to={href(r.href)} state={PUSHED} data-load={`${r.workflow}/${r.step}`} data-target={r.target.uri} className="font-mono text-ink-2 hover:underline">
-                {r.step}
-              </Link>{" "}
-              <span className="text-faint">·</span> {r.schedule}
+            <p className="ldl-sub" title={r.schedule}>
+              {r.schedule}
             </p>
           </Td>
-          <Td cls="max-[860px]:hidden">
-            <div className="flex items-start gap-3">
-              <SourceCell s={r.source} />
-              <span className="mt-2 text-faint" aria-hidden="true">
-                &rarr;
-              </span>
-              <div className="min-w-0">
-                <Place p={r.target} max="max-w-[16rem]" />
-                {r.legacy && <span className="mt-1 inline-block rounded border border-line px-1.5 font-mono text-[10.5px] text-muted">{t("catalog.chip.legacy")}</span>}
-              </div>
+          <Td cls="ldl-fill-dest">
+            <div title={destTitle(r)}>
+              <p className="ldl-to">
+                {r.target.kind !== "" && <Logo k={r.target.kind} />}
+                {r.target.uri === "" ? (
+                  <span className="ldl-what ldl-none">{t("streams.unidentified")}</span>
+                ) : (
+                  <>
+                    <span className="ldl-where">{r.target.where}</span>
+                    <span className="ldl-what">{r.target.what}</span>
+                  </>
+                )}
+                {r.legacy && <span className="ldl-chip">{t("catalog.chip.legacy")}</span>}
+              </p>
+              <From s={r.source} />
             </div>
           </Td>
           <Td>
             <Freshness status={r.status} />
             {r.fixing && (
-              <Link to={`/runs/${r.fixing}`} className="mt-0.5 block text-[11.5px] text-state-running hover:underline">
+              <Link to={`/runs/${r.fixing}`} className="ldl-fixing">
                 {t("loads.fixing")}
               </Link>
             )}
           </Td>
-          <Td cls="text-xs whitespace-nowrap text-muted max-[640px]:hidden" title={r.lastLoaded ? localStamp(r.lastLoaded) : undefined}>
+          <Td cls="ldl-last" title={r.lastLoaded ? localStamp(r.lastLoaded) : undefined}>
             <span>{r.lastLoaded ? since(r.lastLoaded) : "—"}</span>
           </Td>
-          <Td cls="text-right text-xs tabular-nums text-ink-2 max-[1100px]:hidden">
+          <Td cls="ldl-rows">
             {r.rows === null ? (
               <span className="text-faint" title={t("catalog.no_rows")}>
                 —
@@ -127,7 +136,7 @@ function Rows({ rows, filter }: { rows: LoadRow[]; filter: Filter }) {
               <span title={n("loads.drawer.rows", r.rows)}>{number(r.rows)}</span>
             )}
           </Td>
-          <Td edge="last" cls="max-[1100px]:hidden">
+          <Td edge="last" cls="ldl-recent">
             <Sparkline values={r.recent} />
           </Td>
         </Row>
@@ -236,6 +245,9 @@ function LoadsBar({ filter, v, ghost }: { filter: Filter; v: Loads; ghost: boole
   );
 }
 
+// The phone draws cards, whose heights are not the table rows': each keeps its own memory of row heights.
+const phone = () => typeof matchMedia === "function" && matchMedia("(max-width: 768px)").matches;
+
 function LoadsData({ filter }: { filter: Filter }) {
   const { t } = useT();
   const qs = new URLSearchParams();
@@ -274,7 +286,7 @@ function LoadsData({ filter }: { filter: Filter }) {
           )}
           </div>
         ) : (
-          <Table id="load-rows" head={<Head />} foot={t("loads.honest")} ghost={ghost} memo="loads">
+          <Table id="load-rows" cls="ldl" head={<Head />} foot={t("loads.honest")} ghost={ghost} memo={phone() ? "loads.phone" : "loads"}>
             <Rows rows={v.rows} filter={filter} />
           </Table>
         )}
