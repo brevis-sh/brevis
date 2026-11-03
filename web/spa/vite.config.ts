@@ -23,6 +23,11 @@ export default defineConfig({
   // `localStorage` and React; e2e/ belongs to Playwright and must not be collected here.
   test: { environment: "jsdom", setupFiles: ["src/test/setup.ts"], include: ["src/**/*.test.{ts,tsx}"], restoreMocks: true },
   build: { outDir: "dist", emptyOutDir: true, sourcemap: false },
+  // The graph (React Flow) is only imported by a lazy chunk. Pre-bundled up front it is
+  // never "discovered" in the middle of a session: a late discovery makes the dev server
+  // re-optimize, and every open tab then fails with 504 "Outdated Optimize Dep" and
+  // "Failed to fetch dynamically imported module" until it is reloaded.
+  optimizeDeps: { include: ["@xyflow/react"] },
   server: {
     // The logo marks live with the server's components (web/components/logos).
     fs: { allow: [".."] },
