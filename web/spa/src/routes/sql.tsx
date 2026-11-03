@@ -486,7 +486,8 @@ function Workbench({ state }: { state: State | undefined }) {
         <Grip axis="y" prop="--editor" min={120} label={t("sql.editor.resize")} host={host} />
         <section className="workbench-results">
           {/* One row too: the tabs over the answer, then what the run said and the export. */}
-          <div className={`${bar} gap-1 border-b border-line-soft`}>
+          {/* The CSV button (26px plus its margins) comes with the first result: the row is that tall from the start, or the answer under it drops 6px when the result lands. */}
+          <div className={`${bar} gap-1 border-b border-line-soft`} style={{ minHeight: 35 }}>
             <div role="tablist" aria-label={t("sql.result.tabs")} className="flex shrink-0 items-center gap-1">
               {(["results", "json", "history"] as const).map((k) => (
                 <button key={k} type="button" role="tab" id={`tab-${k}`} aria-selected={tab === k} aria-controls="wb-panel" className={resultTab} onClick={() => setTab(k)}>

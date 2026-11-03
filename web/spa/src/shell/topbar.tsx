@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router";
 import { useConfig } from "../api/session";
 import { useT } from "../i18n";
 import { Icon } from "../ui/icon";
+import { Ghost } from "../ui/skeleton";
 import { groups, metaFor, projectsSection, useCurrentCrumb } from "./nav";
 import { setDrawer, useDrawerOpen } from "./prefs";
 
@@ -27,6 +28,9 @@ export function Topbar() {
     }
   }
   const title = meta?.detail && crumb ? crumb : null;
+  // A detail page's name arrives with its data. The trail is drawn as it will end ("Runs / ...") with the last
+  // segment's box held open, so the section word does not change colour and position when the name lands.
+  const waiting = !!meta?.detail && !meta.unnamed && !crumb;
 
   return (
     <header className="app-topbar flex h-13 shrink-0 items-center gap-3 border-b border-line-soft px-4 min-[860px]:px-6">
@@ -51,7 +55,7 @@ export function Topbar() {
               </span>
             </>
           )}
-          {title ? (
+          {title || waiting ? (
             <>
               <Link to={section.href} className="shrink-0 text-muted transition-colors hover:text-ink">
                 {t(`nav.${section.key}`)}
@@ -59,9 +63,13 @@ export function Topbar() {
               <span aria-hidden="true" className="text-faint">
                 /
               </span>
-              <span data-crumb-current className={`truncate text-ink${title.mono ? " font-mono text-[0.78rem]" : ""}`}>
-                {title.text}
-              </span>
+              {title ? (
+                <span data-crumb-current className={`truncate text-ink${title.mono ? " font-mono text-[0.78rem]" : ""}`}>
+                  {title.text}
+                </span>
+              ) : (
+                <Ghost>000000000000000</Ghost>
+              )}
             </>
           ) : (
             <span className="truncate text-ink">{t(`nav.${section.key}`)}</span>

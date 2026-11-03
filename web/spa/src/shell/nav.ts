@@ -52,7 +52,8 @@ export const projectsSection: Section = { key: "projects", href: "/projects", ic
 
 // title: the message the tab is named by (the old pages'' <title>: "<title> · <brand>");
 // named: the tab takes the page''s own name (useCrumb) instead once it is known.
-export type RouteMeta = { path: string; section: string; title: string; detail?: boolean; named?: boolean };
+// unnamed: a detail page whose screen never calls useCrumb, so the breadcrumb has no last segment to wait for.
+export type RouteMeta = { path: string; section: string; title: string; detail?: boolean; named?: boolean; unnamed?: boolean };
 
 export const routeMeta: RouteMeta[] = [
   { path: "/", section: "overview", title: "overview.title" },
@@ -67,7 +68,7 @@ export const routeMeta: RouteMeta[] = [
   { path: "/ingest/loads", section: "loads", title: "loads.title" },
   { path: "/ingest/loads/:workflow/:step", section: "loads", detail: true, title: "loads.title" },
   { path: "/data", section: "catalog", title: "catalog.title" },
-  { path: "/data/target", section: "catalog", detail: true, title: "catalog.title" },
+  { path: "/data/target", section: "catalog", detail: true, unnamed: true, title: "catalog.title" },
   { path: "/data/endpoints", section: "endpoints", title: "endpoints.title" },
   { path: "/data/endpoints/:api/:name", section: "endpoints", detail: true, title: "endpoints.title", named: true },
 ];
