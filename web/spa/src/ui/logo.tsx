@@ -39,6 +39,9 @@ export function useLogoTitle() {
   return (k: string) => (k === "file" || k === "gateway" ? t(`logo.${k}`) : (MARKS[k]?.[0] ?? MONOGRAMS[k]?.[0] ?? k));
 }
 
+/** Whether the registry draws this key (a step card shows a mark only for these). */
+export const hasMark = (k: string) => k in MARKS || k in MONOGRAMS;
+
 export function Logo({ k, size = 18, title: given }: { k: string; size?: 18 | 28 | 40; title?: string }) {
   const name = useLogoTitle()(k);
   const marks = useMarks();

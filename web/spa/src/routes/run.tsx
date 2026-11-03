@@ -12,6 +12,8 @@ import { Skeleton } from "../ui/skeleton";
 import { Retry, Status } from "../ui/status";
 import { Tabs } from "../ui/tabs";
 import "../ui/bar.css";
+import { useCrumb } from "../shell/nav";
+import { Logos } from "../ui/logo";
 import { ContextPanel, ParamsPanel, StepsPanel } from "./run-panels";
 
 const TABS = ["logs", "steps", "params", "context"] as const;
@@ -19,15 +21,6 @@ type Tab = (typeof TABS)[number];
 
 // The strip of the phases' bars, by how each went (web/pages phaseBar).
 const BAR: Record<string, string> = { done: "bg-state-success", current: "bg-state-running animate-pulse", failed: "bg-state-failed" };
-
-// What a run is called when its logos have no drawn mark: the server's monogram tile.
-function Logo({ k }: { k: string }) {
-  return (
-    <span role="img" aria-label={k} title={k} className="cg cg-mono cg-28">
-      {k.slice(0, 2).replace(/^./, (c) => c.toUpperCase())}
-    </span>
-  );
-}
 
 function Why({ run, onGoto }: { run: Run; onGoto: () => void }) {
   const { t, n } = useT();
@@ -137,9 +130,9 @@ function RunHead({ id, run, onGoto }: { id: string; run: Run | undefined; onGoto
 
   return (
     <>
-      <div className="bar-row mb-2 flex flex-nowrap items-start justify-between gap-x-4 overflow-x-auto">
-        <div className="min-w-0 shrink">
-          <div className="mb-1 flex h-5 items-center text-sm">
+      <div className="mb-2 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div className="min-w-0">
+          <div className="mb-1 flex h-[18px] items-center text-sm">
             {run ? (
               <>
                 <Status kind={run.status} />
@@ -152,9 +145,7 @@ function RunHead({ id, run, onGoto }: { id: string; run: Run | undefined; onGoto
           <h2 className="flex min-w-0 items-center gap-2 font-mono text-[22px] leading-tight font-medium text-ink">
             {run ? (
               <>
-                {run.logos.map((k) => (
-                  <Logo key={k} k={k} />
-                ))}
+                <Logos keys={run.logos} size={28} />
                 <span className="break-all">{run.workflow}</span>
               </>
             ) : (
@@ -259,6 +250,7 @@ function RunScreen({ id }: { id: string }) {
     retry: (n, e) => !(e instanceof ApiError && e.status === 404) && n < 1,
   });
 
+  useCrumb(run ? `${run.workflow} · ${id.slice(0, 8)}` : "", { mono: true });
   const wanted = hash.slice(1);
   const tab: Tab = (TABS as readonly string[]).includes(wanted) ? (wanted as Tab) : "logs";
   const pick = (k: string) => void navigate({ hash: `#${k}` }, { replace: true });

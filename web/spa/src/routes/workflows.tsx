@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getJSON } from "../api/client";
 import { useScheduleToggle, type Logo as LogoRef, type WorkflowRow, type WorkflowsList } from "../api/workflows";
 import { useFormat, useT } from "../i18n";
+import { useAgo } from "../ui/format";
 import { buttonClass, chipClass, filterRow, noBar, segGroup, segOff, segOn } from "../ui/button";
 import { linkClass } from "../ui/card";
 import { Icon } from "../ui/icon";
@@ -96,7 +97,8 @@ const Tag = ({ tag, to }: { tag: string; to: string }) => (
 
 function Row({ w, links, busy, onToggle }: { w: WorkflowRow; links: Links; busy: boolean; onToggle: () => void }) {
   const { t, n } = useT();
-  const { since, dateTime } = useFormat();
+  const { dateTime } = useFormat();
+  const since = useAgo();
   const navigate = useNavigate();
   const paused = w.hasSchedule && !w.active;
   const href = `/workflows/${encodeURIComponent(w.slug)}`;

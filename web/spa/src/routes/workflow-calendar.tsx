@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useFormat, useT } from "../i18n";
 import { Panel, linkClass } from "../ui/card";
@@ -109,12 +110,21 @@ function Summary({ d }: { d: WorkflowDetail }) {
 /** The year's panel: its words and legend are the page's; the summary and the squares are data. */
 export function YearOfRuns({ d }: { d?: WorkflowDetail }) {
   const { t } = useT();
+  // A year is wider than a phone: where it scrolls it opens at this week, as the server page does.
+  const box = useRef<HTMLDivElement>(null);
+  const placed = useRef(false);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!d || !el || placed.current) return;
+    placed.current = true;
+    if (el.scrollWidth > el.clientWidth) el.scrollLeft = el.scrollWidth;
+  }, [d]);
   return (
     <Panel title={t("calendar.title")}>
       <div className="px-3.5 py-3">
         <p className="mb-2 text-[12.5px] text-muted">{t("calendar.lead")}</p>
         {d ? <Summary d={d} /> : <p className="mb-3" style={{ height: 19 }}><Skeleton w="22rem" h="14px" /></p>}
-        <div className="max-w-full overflow-x-auto">{d ? <Plot d={d} /> : <Skeleton w={WIDTH} h={HEIGHT} />}</div>
+        <div ref={box} className="max-w-full overflow-x-auto">{d ? <Plot d={d} /> : <Skeleton w={WIDTH} h={HEIGHT} />}</div>
         <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted">
           {([["var(--color-state-success)", "calendar.ok"], ["var(--color-state-failed)", "calendar.some_failed"], ["var(--color-state-queued)", "calendar.open"], ["var(--color-surface-2)", "calendar.no_run"]] as const).map(([c, k]) => (
             <span key={k} className="inline-flex items-center gap-1.5">

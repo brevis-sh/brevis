@@ -102,8 +102,8 @@ export function LogView({ log, live, downloadHref, gotoCause = 0 }: Props) {
     });
   };
 
-  const small = buttonClass("secondary", "regular");
-  const toggle = "inline-flex h-8 shrink-0 items-center rounded-card px-2.5 text-[12.5px] whitespace-nowrap text-muted hover:text-ink aria-pressed:bg-surface-2 aria-pressed:text-ink";
+  const small = buttonClass("secondary", "small");
+  const toggle = "inline-flex shrink-0 items-center rounded-card px-2.5 py-1 text-[12.5px] whitespace-nowrap text-muted hover:text-ink aria-pressed:bg-surface-2 aria-pressed:text-ink";
 
   return (
     <div data-log data-wrap={wrap ? "" : undefined} className="overflow-hidden rounded-card border border-line bg-surface">
@@ -120,9 +120,9 @@ export function LogView({ log, live, downloadHref, gotoCause = 0 }: Props) {
             className="h-8 w-full rounded-card border border-line bg-canvas pr-2 pl-8 text-[13px] text-ink placeholder:text-faint focus:border-line-strong focus:outline-none"
           />
         </label>
-        <div role="group" aria-label={t("run.log.level")} className="inline-flex h-8 shrink-0 items-center rounded-card border border-line p-0.5">
+        <div role="group" aria-label={t("run.log.level")} className="inline-flex shrink-0 rounded-card border border-line p-0.5">
           {LEVELS.map((l) => (
-            <button key={l} type="button" aria-pressed={level === l} onClick={() => setLevel(l)} className="h-full rounded-[5px] px-2.5 text-[12.5px] text-muted hover:text-ink aria-pressed:bg-surface-2 aria-pressed:text-ink">
+            <button key={l} type="button" aria-pressed={level === l} onClick={() => setLevel(l)} className="rounded-[5px] px-2.5 py-1 text-[12.5px] text-muted hover:text-ink aria-pressed:bg-surface-2 aria-pressed:text-ink">
               {t(`run.log.level.${l}`)}
             </button>
           ))}

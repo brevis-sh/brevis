@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { useFormat, useT } from "../../i18n";
 import { langLabel } from "../lang";
+import { Logo, hasMark } from "../logo";
 
 // The wire keys (nome, estado, numeros, rotulo, acao, erro, tentativa,
 // duracao_ms, instancias, grupo, node type `etapa`) are internal/api/graph.go's
@@ -34,12 +35,15 @@ export function StepCard({ data: d }: P) {
   const took = last ? d.last_duration_ms : d.duracao_ms;
   const tools: string[] = d.tools ?? [];
   const inferred = d.runtime_source === "inferred";
+  const lang: string = d.runtime || tools[0] || "";
+  const mark = hasMark(lang) ? lang : "";
   const published = d.context ? Object.keys(d.context).length : 0;
   return (
     <div className="dag-card" style={colour(st)} data-status={d.status} data-tall={d.hasStages ? "" : undefined}>
       <Handle type="target" position={Position.Left} />
       <div className="dag-row">
         <span className="dag-dot" />
+        {mark && <Logo k={mark} size={18} />}
         <span className="dag-name" title={d.label}>
           {d.label}
         </span>
