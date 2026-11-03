@@ -67,7 +67,7 @@ function Phases({ run }: { run: Run | undefined }) {
   // The four steps are the run's own words and values: they wait for it, in the strip's own shape.
   const ps = run?.phases ?? [0, 1, 2, 3].map((i) => ({ key: String(i), label: "", detail: "", state: "" }));
   return (
-    <ol aria-label="Timeline" aria-busy={!run} className="mb-3 grid grid-cols-2 overflow-hidden rounded-card border border-line bg-surface @2xl:grid-cols-4">
+    <ol aria-label={t("run.timeline")} aria-busy={!run} className="mb-3 grid grid-cols-2 overflow-hidden rounded-card border border-line bg-surface @2xl:grid-cols-4">
       {ps.map((p) => (
         <li key={p.key} aria-current={p.state === "current" ? "step" : undefined} className="relative min-w-0 border-b border-line-soft px-3.5 pt-3 pb-2.5 odd:border-r @2xl:border-b-0 @2xl:not-last:border-r">
           <span aria-hidden="true" className={`absolute top-0 right-0 left-0 h-[2px] ${BAR[p.state] ?? "bg-line-strong"}`} />
@@ -322,13 +322,23 @@ class Boundary extends Component<{ children: ReactNode }, { error: Error | null 
     if (!e) return this.props.children;
     return (
       <section role="alert" className="rounded-card border border-line bg-surface p-4">
-        <p className="m-0 text-sm text-ink">{e instanceof ApiError && e.status === 404 ? "Run not found." : "The run could not be loaded."}</p>
-        <a href="/runs" className="mt-1 inline-block text-[13px] text-muted underline hover:text-ink">
-          Runs
-        </a>
+        <RunError missing={e instanceof ApiError && e.status === 404} />
       </section>
     );
   }
+}
+
+// Apart from the class above because a class cannot call the hook.
+function RunError({ missing }: { missing: boolean }) {
+  const { t } = useT();
+  return (
+    <>
+      <p className="m-0 text-sm text-ink">{t(missing ? "run.error.not_found" : "run.error.failed")}</p>
+      <a href="/runs" className="mt-1 inline-block text-[13px] text-muted underline hover:text-ink">
+        {t("nav.runs")}
+      </a>
+    </>
+  );
 }
 
 export default function RunRoute() {

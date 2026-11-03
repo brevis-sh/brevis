@@ -5,21 +5,8 @@ import { getJSON } from "../api/client";
 import { safeNext, signIn } from "../api/login";
 import { useConfig, useSession, type Config, type Session } from "../api/session";
 import { bindOperator } from "../ui/seen";
+import { useT } from "../i18n";
 import "./login.css";
-
-// The words are English literals, as the old page's (web/pages/login.templ) are:
-// the catalog has no login.* keys yet, and the locale files are not this
-// change's to edit. When the keys land, these move to t().
-const words = {
-  title: "Sign in",
-  username: "Username",
-  password: "Password",
-  show: "Show password",
-  hide: "Hide password",
-  submit: "Sign in",
-  locked: "Too many attempts.",
-  wait: (n: number) => `Try again in ${n} s.`,
-};
 
 const DEFAULT_LOGO = "/assets/logo.svg";
 const field =
@@ -37,6 +24,16 @@ function Mark() {
 // The sign-in screen: outside the Shell (its sidebar links lead to screens this
 // visitor cannot open yet), on a flat ground, with one job.
 export default function LoginRoute() {
+  const { t } = useT();
+  const words = {
+    title: t("login.title"),
+    username: t("login.username"),
+    password: t("login.password"),
+    show: t("login.show"),
+    hide: t("login.hide"),
+    locked: t("login.locked"),
+    wait: (n: number) => t("login.wait", { n }),
+  };
   const { brand } = useConfig();
   const session = useSession();
   const [params] = useSearchParams();
@@ -55,7 +52,7 @@ export default function LoginRoute() {
 
   useEffect(() => {
     document.title = `${words.title} · ${brand.title}`;
-  }, [brand.title]);
+  }, [brand.title, words.title]);
 
   // Focus goes to the message when one appears: a keyboard or screen-reader
   // user who pressed Enter would otherwise get no sign of what happened.
@@ -100,7 +97,7 @@ export default function LoginRoute() {
     if (passwordRef.current) passwordRef.current.value = "";
     if (!res.ok) {
       setBusy(false);
-      setError(res.error);
+      setError(res.error || t("login.failed"));
       setRetry(0);
       if (res.status === 429 && res.retryAfter) {
         setRetry(res.retryAfter);
@@ -190,7 +187,7 @@ export default function LoginRoute() {
             disabled={busy || left > 0}
             className="mt-1 inline-flex h-10 w-full items-center justify-center rounded-card bg-accent-strong px-4 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong/90 disabled:opacity-60"
           >
-            {words.submit}
+            {words.title}
           </button>
         </form>
         <p className="mt-8 text-center text-xs tracking-wide text-muted">{brand.attribution}</p>

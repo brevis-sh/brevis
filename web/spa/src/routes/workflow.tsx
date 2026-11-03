@@ -447,8 +447,8 @@ function About({ slug, text }: { slug: string; text: string }) {
     <>
       <button
         type="button"
-        title="What this workflow is for"
-        aria-label="What this workflow is for"
+        title={t("workflow.purpose.title")}
+        aria-label={t("workflow.purpose.title")}
         onClick={() => dialog.current?.showModal()}
         className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-line text-[0.7rem] font-semibold text-muted transition-colors hover:border-line-strong hover:text-ink focus-visible:text-ink"
       >
@@ -457,7 +457,7 @@ function About({ slug, text }: { slug: string; text: string }) {
       <dialog ref={dialog} className="w-[min(680px,92vw)] rounded-card border border-line bg-surface p-0 text-ink shadow-warm backdrop:bg-ink/40 backdrop:backdrop-blur-[2px]">
         <div className="flex items-start justify-between gap-4 border-b border-line px-6 py-4">
           <div className="min-w-0">
-            <p className="text-[11.5px] text-muted">What this is for</p>
+            <p className="text-[11.5px] text-muted">{t("workflow.purpose.label")}</p>
             <p className="display mt-1 truncate text-2xl">{slug}</p>
           </div>
           <form method="dialog">
@@ -511,9 +511,9 @@ function WhatItLoads({ load }: { load: NonNullable<WorkflowDetail["load"]> }) {
                 </div>
                 <p className="mt-1 font-serif text-2xl text-ink tabular-nums">{s.latest}</p>
                 {s.flat ? (
-                  <p className="mt-1 text-xs text-muted">one day so far &mdash; a trend needs two</p>
+                  <p className="mt-1 text-xs text-muted">{t("workflow.trend.flat")}</p>
                 ) : (
-                  <svg viewBox="0 0 300 56" className="mt-2 h-[56px] w-full" preserveAspectRatio="none" role="img" aria-label={`${s.label} over ${load.window}`}>
+                  <svg viewBox="0 0 300 56" className="mt-2 h-[56px] w-full" preserveAspectRatio="none" role="img" aria-label={t("workflow.trend.aria", { label: s.label, window: load.window })}>
                     <polyline points={s.area} className="fill-ink/10" stroke="none" />
                     <polyline points={s.path} className="stroke-ink-2" fill="none" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
                     {s.points.map((p) => (

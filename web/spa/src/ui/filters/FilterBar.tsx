@@ -40,17 +40,18 @@ import "./filters.css";
 /** The folded "Filters" button: every secondary group in one popover, with the count of what is active. */
 function FoldedFilters({ defs }: { defs: FilterDef[] }) {
   const btn = useRef<HTMLButtonElement>(null);
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const active = defs.reduce((n, d) => n + (d.required ? 0 : d.value.length), 0);
   return (
     <>
       <button ref={btn} type="button" className="flt-ctl flt-dd flt-narrow" data-active={active > 0} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <span className="flt-dd-label">Filters</span>
+        <span className="flt-dd-label">{t("filters.title")}</span>
         {active > 0 && <span className="flt-badge" aria-label={`${active}`}>{active}</span>}
         <Icon name="chevron-down" className="flt-chev h-3.5 w-3.5" />
       </button>
       {open && (
-        <Popover anchor={btn} label="Filters" width={288} onClose={(refocus) => { setOpen(false); if (refocus) btn.current?.focus(); }}>
+        <Popover anchor={btn} label={t("filters.title")} width={288} onClose={(refocus) => { setOpen(false); if (refocus) btn.current?.focus(); }}>
           {defs.map((d, i) => (
             <section key={d.id}>
               <h3 className="flt-pop-head">{d.label}</h3>
