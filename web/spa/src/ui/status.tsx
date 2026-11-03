@@ -74,3 +74,8 @@ export function RetryMark({ attempt }: { attempt: number }) {
 export function StatusBadge({ status }: { status: string }) {
   return <Status kind={freshnessKind(status)} />;
 }
+
+// The run and SQL screens were written against these two names; they are the same
+// things as RetryMark and useStatusWord, kept as aliases so there is one of each.
+export const Retry = RetryMark;
+export const useStateWord = useStatusWord;

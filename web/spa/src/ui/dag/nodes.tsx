@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { useFormat, useT } from "../../i18n";
+import { langLabel } from "../lang";
 
 // The wire keys (nome, estado, numeros, rotulo, acao, erro, tentativa,
 // duracao_ms, instancias, grupo, node type `etapa`) are internal/api/graph.go's
@@ -15,14 +16,11 @@ export const tone = (s: string | undefined) => (s && known.has(s) ? s : "pending
 // A stage's state reuses the steps' palette: `done` is the same green as `success`.
 const STAGE_TONE: Record<string, string> = { done: "success", running: "running", failed: "failed", aborted: "canceled" };
 export const stageTone = (s: string | undefined) => STAGE_TONE[s ?? ""] ?? "pending";
+// A language's own token; the chip falls back to the muted ink where the sheet has none.
+const tint = (id: string) => ({ "--t": `var(--color-lang-${id}, var(--muted))` }) as CSSProperties;
 const colour = (t: string) => ({ "--c": `var(--st-${t})` }) as CSSProperties;
 
-const LANG: Record<string, string> = {
-  python: "Python", go: "Go", node: "Node.js", java: "Java", rust: "Rust", php: "PHP", ruby: "Ruby", dotnet: ".NET",
-  sql: "SQL", shell: "Shell", dbt: "dbt", spark: "Spark", airbyte: "Airbyte", soda: "Soda", sqlmesh: "SQLMesh",
-  meltano: "Meltano", dlt: "dlt", duckdb: "DuckDB", pandas: "pandas", polars: "Polars", airflow: "Airflow", terraform: "Terraform",
-};
-export const langLabel = (id: string) => LANG[id] ?? id;
+export { langLabel };
 
 // The numbers worth showing on a stage's line, in order (dag.js's HIGHLIGHT).
 const HIGHLIGHT = ["in", "out", "groups", "rows", "pages", "objects"];
@@ -69,7 +67,7 @@ export function StepCard({ data: d }: P) {
       {(d.runtime || tools.length > 0) && (
         <div className="dag-chips">
           {d.runtime && (
-            <span className={`dag-chip strong${inferred ? " inferred" : ""}`} title={inferred ? "inferred from the command" : d.runtime_source}>
+            <span className={`dag-chip strong${inferred ? " inferred" : ""}`} style={tint(d.runtime)} title={`${langLabel(d.runtime)} — ${inferred ? "inferred from the command" : d.runtime_source}`}>
               {langLabel(d.runtime)}
             </span>
           )}
