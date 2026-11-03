@@ -362,3 +362,20 @@ func TestRefusedRequestsCountAsRejected(t *testing.T) {
 		t.Errorf("%+v %+v", h, h.Window)
 	}
 }
+
+// A source that was down for a long stretch leaves minutes nobody observed. They
+// are not judged, they are not "quiet", and walking back over them must not fail.
+func TestAssessAcrossAGapInTheSeries(t *testing.T) {
+	good := WindowCounts{Received: 1000, Delivered: 5}
+	ms := flat(10, good)
+	ms = append(ms, make([]Minute, 20)...) // 20 unobserved minutes
+	ms = append(ms, flat(8, good)...)
+	h := Assess(input(ms))
+	if h.State != HealthHealthy || h.Since == nil {
+		t.Errorf("%+v since=%v", h, h.Since)
+	}
+	// Only a gap: nothing was judged, so nothing is claimed.
+	if h := Assess(input(make([]Minute, 12))); h.State != HealthUnknown || h.Reason != ReasonWaiting {
+		t.Errorf("%+v", h)
+	}
+}

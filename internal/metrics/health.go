@@ -223,24 +223,29 @@ func Assess(in Input) Health {
 	if n == 0 || raws[n-1] == nil {
 		return unknown(ReasonWaiting)
 	}
-	shown := func(i int) (Health, bool) { // the worst raw state of the hold, the latest among equals
+	// shown is the state of minute i: the worst raw state of the hold, the
+	// latest among equals. ok is false when no minute of the hold was judged
+	// (the source was silent for the whole of it).
+	shown := func(i int) (h Health, held, ok bool) {
 		var worst *Health
 		for j := max(first, i-RecoverMinutes+1); j <= i; j++ {
 			if raws[j] != nil && (worst == nil || rank[raws[j].State] >= rank[worst.State]) {
 				worst = raws[j]
 			}
 		}
-		return *worst, worst != raws[i]
+		if worst == nil {
+			return Health{}, false, false
+		}
+		return *worst, worst != raws[i], true
 	}
-	h, held := shown(n - 1)
+	h, held, _ := shown(n - 1)
 	h.Recovering = held && rank[raws[n-1].State] < rank[h.State]
 
 	// Since: walk back while the shown state stays the same. Reaching the first
 	// minute the ring could judge means the beginning was not seen, so no claim.
 	i := n - 1
 	for i > first {
-		prev, _ := shown(i - 1)
-		if prev.State != h.State {
+		if prev, _, ok := shown(i - 1); !ok || prev.State != h.State {
 			break
 		}
 		i--
