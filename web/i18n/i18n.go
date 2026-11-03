@@ -185,22 +185,3 @@ func fill(text string, args []any) string {
 	}
 	return text
 }
-
-// ScriptKeys are the messages ui.js writes itself. The page hands them over
-// in its own language (Script), so the file holds no sentence of its own; a
-// key the script needs is added here and to the three catalogs.
-var ScriptKeys = []string{
-	"copy.done",
-	"palette.empty", "palette.loading", "palette.failed", "palette.open_run",
-	"palette.group.runs",
-	"run.live.following", "run.live.finished",
-}
-
-// Script is ScriptKeys in ctx's language, for the page's i18n block.
-func Script(ctx context.Context) map[string]string {
-	out := make(map[string]string, len(ScriptKeys))
-	for _, k := range ScriptKeys {
-		out[k] = T(ctx, k)
-	}
-	return out
-}

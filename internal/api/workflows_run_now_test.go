@@ -32,52 +32,6 @@ func runNowUI(spy *triggerSpy) *api.UI {
 	return api.NewUI(reads, defs, nil, spy, nil, catalogFake{}, branding.Default(), slog.New(slog.DiscardHandler))
 }
 
-// dialogOf is the <dialog> with that id.
-func dialogOf(t *testing.T, body, id string) string {
-	t.Helper()
-	at := strings.Index(body, `<dialog id="`+id+`"`)
-	if at < 0 {
-		t.Fatalf("there is no dialog %s", id)
-	}
-	return body[at : at+strings.Index(body[at:], "</dialog>")]
-}
-
-// RUN ASKS WHEN, WHEN THERE IS A WHEN: a workflow with no parameters opens
-// "Run it now", which offers its schedule's last fourteen slots and a time of
-// one's own; a workflow with parameters goes to its drawer; a manual-only one
-// has no slot to offer. With no script, ▶ still posts the trigger.
-func TestRunAsksWhenThereIsAWhen(t *testing.T) {
-	_, body := get(t, runNowUI(&triggerSpy{}), "/workflows")
-
-	daily := rowOf(t, body, "daily")
-	if !strings.Contains(daily, `action="/workflows/daily/trigger"`) || !strings.Contains(daily, `data-dialogo="run-now-daily"`) {
-		t.Error("daily's ▶ neither posts nor opens its dialog")
-	}
-	d := dialogOf(t, body, "run-now-daily")
-	if n := strings.Count(d, `<option value="20`); n != 14 {
-		t.Errorf("the dialog offers %d slots, want 14", n)
-	}
-	for _, want := range []string{`name="when" value="now"`, `name="when" value="slot"`, `value="other"`, `type="datetime-local" name="slot_at"`, "data-run-error"} {
-		if !strings.Contains(d, want) {
-			t.Errorf("the dialog has no %s", want)
-		}
-	}
-	if !strings.Contains(d, "processes") {
-		t.Error("a slot does not say the window it processes")
-	}
-
-	if d := dialogOf(t, body, "run-now-handmade"); strings.Contains(d, `value="slot"`) {
-		t.Error("a manual-only workflow offers a slot")
-	}
-	_, js := get(t, runNowUI(&triggerSpy{}), "/assets/ui.js")
-	if !strings.Contains(strip(js), `form[data-run-now]`) {
-		t.Error("ui.js does not post the Run dialog")
-	}
-	if tuned := rowOf(t, body, "tuned"); !strings.Contains(tuned, `href="/workflows/tuned#run"`) || strings.Contains(tuned, "run-now-tuned") {
-		t.Error("a workflow with parameters does not go to its drawer")
-	}
-}
-
 func postRun(t *testing.T, ui *api.UI, form url.Values, script bool) *httptest.ResponseRecorder {
 	t.Helper()
 	mux := http.NewServeMux()

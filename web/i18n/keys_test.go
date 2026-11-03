@@ -19,12 +19,12 @@ func sources(t *testing.T) map[string]string {
 			if err != nil || d.IsDir() {
 				return err
 			}
-			if strings.HasSuffix(p, "_test.go") || strings.HasSuffix(p, "_templ.go") || strings.Contains(p, "/vendor/") {
+			if strings.HasSuffix(p, "_test.go") || strings.Contains(p, "/vendor/") {
 				return nil
 			}
 			e := filepath.Ext(p)
 			spa := (e == ".ts" || e == ".tsx") && strings.Contains(p, "/spa/src/") && !strings.Contains(p, ".test.") && !strings.Contains(p, "/spa/src/test/")
-			if e == ".go" || e == ".templ" || spa || (e == ".js" && filepath.Base(p) == "ui.js") {
+			if e == ".go" || spa {
 				raw, err := os.ReadFile(p)
 				if err != nil {
 					return err
@@ -61,7 +61,6 @@ func TestEveryKeyUsedExistsAndEveryKeyIsUsed(t *testing.T) {
 	src := sources(t)
 	all := strings.Join(mapValues(src), "\n")
 	literal := regexp.MustCompile(`i18n\.[TN]\(ctx,\s*"([a-z_.]+)"`)
-	script := regexp.MustCompile(`\bt\("([a-z_.]+)"`)
 	en := catalogs["en"]
 	// The React app asks through useT: t("a.b") and n("a.b", count) name a key
 	// whole; t(`a.${x}`) names a family by its prefix. The app's other keys sit in
@@ -95,23 +94,11 @@ func TestEveryKeyUsedExistsAndEveryKeyIsUsed(t *testing.T) {
 				t.Errorf("%s asks for %s, which the catalog lacks", path, m[1])
 			}
 		}
-		if strings.HasSuffix(path, "ui.js") {
-			for _, m := range script.FindAllStringSubmatch(code, -1) {
-				if !contains(ScriptKeys, m[1]) {
-					t.Errorf("ui.js asks for %s, which is not in ScriptKeys, so the page never hands it over", m[1])
-				}
-			}
-		}
-	}
-	for _, k := range ScriptKeys {
-		if _, ok := en[k]; !ok {
-			t.Errorf("ScriptKeys has %s, which the catalog lacks", k)
-		}
 	}
 
 	for key := range en {
 		// A family the SPA completes at run time (t(`a.${x}`)) uses every key under its prefix.
-		if strings.Contains(all, `"`+key+`"`) || contains(ScriptKeys, key) || hasPrefixIn(key, spaPrefixes) {
+		if strings.Contains(all, `"`+key+`"`) || hasPrefixIn(key, spaPrefixes) {
 			continue
 		}
 		if used := byFamily(key, all); !used {
@@ -173,15 +160,6 @@ func TestTheGlossarysFixedTermsAreNotTranslated(t *testing.T) {
 			}
 		}
 	}
-}
-
-func contains(list []string, s string) bool {
-	for _, v := range list {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }
 
 func mapValues(m map[string]string) []string {
