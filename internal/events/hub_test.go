@@ -317,3 +317,21 @@ func TestParseTopics(t *testing.T) {
 		}
 	}
 }
+
+// The two live-volume topics are fixed (shared, not counted against the named
+// slots), parse in a list with the others, and the junk beside them is refused.
+func TestMetricsTopicsAreFixedTopics(t *testing.T) {
+	got, err := ParseTopics("runs,metrics:streams,metrics:endpoints,metrics:streams")
+	if err != nil || len(got) != 3 || !fixedTopic(MetricsStreams) || !fixedTopic(MetricsEndpoints) {
+		t.Fatalf("%v %v", got, err)
+	}
+	for _, bad := range []string{"metrics", "metrics:", "metrics:other", "metrics:streams:x"} {
+		if _, err := ParseTopics(bad); err == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+	// Four named topics are the cap; the fixed two do not eat into it.
+	if _, err := ParseTopics("metrics:streams,metrics:endpoints,workflow:a,workflow:b,workflow:c,workflow:d"); err != nil {
+		t.Errorf("fixed topics counted as named: %v", err)
+	}
+}

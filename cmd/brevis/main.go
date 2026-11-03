@@ -41,6 +41,7 @@ import (
 	"brevis.sh/brevis/internal/infrastructure/endpointcall"
 	"brevis.sh/brevis/internal/infrastructure/postgres"
 	"brevis.sh/brevis/internal/infrastructure/sqlserve"
+	scrape "brevis.sh/brevis/internal/metrics"
 	"brevis.sh/brevis/internal/notify"
 	"brevis.sh/brevis/internal/observability"
 	"brevis.sh/brevis/internal/observability/metrics"
@@ -1436,6 +1437,11 @@ func serve(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	collector, err := newScraper(cfg, log)
+	if err != nil {
+		return err
+	}
+	go collector.Run(ctx)
 	ui := api.NewUI(postgres.NewReadRepo(pool), postgres.NewWorkflowRepo(pool),
 		runsRepo, uiActions{schedules: schedules, sched: sched, runs: runsRepo},
 		alerts.New(pool.Pool), postgres.NewReadRepo(pool), brand, log).
@@ -1461,7 +1467,8 @@ func serve(ctx context.Context) error {
 		// Server-sent change notifications. Bound to ctx so the signal that
 		// starts the graceful shutdown also ends every open stream; otherwise
 		// srv.Shutdown would wait on them until its timeout.
-		WithChangeHub(events.NewHub(ctx, api.NewFingerprints(postgres.NewFingerprints(pool)),
+		WithMetrics(collector).
+		WithChangeHub(events.NewHub(ctx, api.WithMetricsTopics(api.NewFingerprints(postgres.NewFingerprints(pool)), collector),
 			events.Options{Log: log})).
 		WithVersion(Version, updateChecker(ctx, log))
 	// `inseguro` follows the environment: locally the server listens on plain
@@ -1522,4 +1529,22 @@ func updateChecker(ctx context.Context, log *slog.Logger) api.UpdateSource {
 	}
 	go c.Run(ctx)
 	return c
+}
+
+// newScraper reads the live-volume sources from the environment. REFUSED AT
+// START when a list is malformed, like BREVIS_ENDPOINTS_URLS: a source that
+// silently is not scraped is a chart that says "no traffic".
+func newScraper(cfg config.Config, log *slog.Logger) (*scrape.Collector, error) {
+	gw, err := scrape.ParseTargets(scrape.Gateway, "BREVIS_GATEWAY_METRICS_URLS", cfg.GatewayMetricsURLs)
+	if err != nil {
+		return nil, err
+	}
+	ep, err := scrape.ParseTargets(scrape.Endpoints, "BREVIS_ENDPOINTS_METRICS_URLS", cfg.EndpointsMetricsURLs)
+	if err != nil {
+		return nil, err
+	}
+	if len(gw)+len(ep) > 0 {
+		log.Info("live volume sources", "gateways", len(gw), "endpoint_apis", len(ep))
+	}
+	return scrape.New(scrape.Config{Targets: append(gw, ep...), Interval: cfg.MetricsScrapeInterval, Log: log}), nil
 }

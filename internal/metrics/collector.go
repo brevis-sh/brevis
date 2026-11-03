@@ -22,10 +22,26 @@ const (
 	// maxBody caps one exposition. A gateway with hundreds of streams is a few
 	// hundred KiB; past this it is not a metrics endpoint.
 	maxBody = 8 << 20
-	// maxEntities per target bounds memory against a label set that grows
-	// without bound (the stream/endpoint names are the operator's, but a
-	// misconfigured URL can point at anything that answers text).
-	maxEntities = 500
+	// THE CAPS. A target is the operator's, but a misconfigured URL can point
+	// at anything that answers text, and a real exporter can explode a label.
+	// What a target says never decides how much this process keeps:
+	//
+	//	maxSeries      samples looked at per scrape; the rest are counted, not kept
+	//	maxEntities    streams/endpoints tracked per target
+	//	maxLabelValue  bytes of any label value; a longer one drops the series
+	//	                (truncating would merge two different names into one)
+	//	maxBounds      distinct histogram `le` per entity, first seen win
+	//
+	// MEMORY BOUND per target, worst case: maxEntities x Retention buckets x
+	// (a cell of 24 B + 8 counters x 8 B + maxBounds x 8 B) = 1000 x 180 x ~600 B
+	// = ~110 MB, and only when every entity is full of traffic for three hours;
+	// a gateway with 20 streams and 12 bounds is ~1 MB. The previous scrape
+	// (prev) is at most maxSeries entries. Truncation is surfaced (Owner.Dropped),
+	// never silent.
+	maxSeries     = 20_000
+	maxEntities   = 1_000
+	maxLabelValue = 256
+	maxBounds     = 64
 	// recentWindow is what "now" means: the last minute of scrapes.
 	recentWindow = 60 * time.Second
 )
@@ -57,10 +73,16 @@ type Collector struct {
 type bucketCell struct {
 	minute int64
 	v      []float64
-	lat    map[float64]float64
+	// lat[i] is the increase of the cumulative bucket les[i] of its entity: a
+	// slice and not a map, so 64 bounds x 180 minutes is 92 KB, not a hash
+	// table per minute.
+	lat []float64
 }
 
 type entityState struct {
+	// les is the entity's admitted bucket bounds, in first-seen order and at
+	// most maxBounds. A bound outside it is ignored for good.
+	les     []float64
 	ring    []bucketCell
 	gauge   []float64
 	gaugeAt time.Time
@@ -85,7 +107,7 @@ type targetState struct {
 	lastTry, lastOK time.Time
 	lastErr         string // a class, never the error's text (it may hold the URL)
 	diffs           int    // successful scrapes that produced a delta
-	truncated       bool
+	dropped         int    // series of the last scrape that a cap kept out
 
 	prev      map[string]seriesVal
 	prevAt    time.Time
@@ -257,11 +279,15 @@ func isTimeout(err error) bool {
 //   - the increase is attributed to the minute of the scrape that saw it, so
 //     events can sit up to one interval after the minute they happened in.
 func (t *targetState) ingest(samples []Sample, at time.Time, maxGap time.Duration) {
-	cur := make(map[string]seriesVal, len(samples))
+	cur := make(map[string]seriesVal, min(len(samples), maxSeries))
 	gauges := map[string][]float64{}
 	var start float64
-	t.truncated = false
-	for _, s := range samples {
+	t.dropped = 0
+	for i, s := range samples {
+		if i >= maxSeries {
+			t.dropped += len(samples) - i
+			break
+		}
 		if s.Name == "process_start_time_seconds" {
 			start = s.Value
 			continue
@@ -270,11 +296,18 @@ func (t *targetState) ingest(samples []Sample, at time.Time, maxGap time.Duratio
 		if c == skip {
 			continue
 		}
-		if _, known := t.ents[ent]; !known && len(t.ents) >= maxEntities {
-			t.truncated = true
+		if longLabel(s.Labels) {
+			t.dropped++
 			continue
 		}
-		t.entity(ent)
+		e, known := t.ents[ent]
+		if !known {
+			if len(t.ents) >= maxEntities {
+				t.dropped++
+				continue
+			}
+			e = t.entity(ent)
+		}
 		switch c {
 		case gauge:
 			if gauges[ent] == nil {
@@ -286,6 +319,10 @@ func (t *targetState) ingest(samples []Sample, at time.Time, maxGap time.Duratio
 			if c == bucket {
 				le, ok := parseLE(s.Labels["le"])
 				if !ok {
+					continue
+				}
+				if sv.idx = e.bound(le); sv.idx < 0 {
+					t.dropped++
 					continue
 				}
 				sv.le = le
@@ -313,10 +350,11 @@ func (t *targetState) ingest(samples []Sample, at time.Time, maxGap time.Duratio
 			}
 			b := t.ents[c.ent].slot(minute, len(t.spec.counters))
 			if c.c == bucket {
-				if b.lat == nil {
-					b.lat = map[float64]float64{}
+				// idx is the bound's position in the entity's admitted set.
+				for len(b.lat) <= c.idx {
+					b.lat = append(b.lat, 0)
 				}
-				b.lat[c.le] += d
+				b.lat[c.idx] += d
 				continue
 			}
 			b.v[c.idx] += d
@@ -348,6 +386,30 @@ func (t *targetState) entity(name string) *entityState {
 		t.ents[name] = e
 	}
 	return e
+}
+
+// bound is the position of le in the entity's admitted bounds, admitting it
+// while there is room; -1 when the set is full and le is not in it.
+func (e *entityState) bound(le float64) int {
+	for i, b := range e.les {
+		if b == le {
+			return i
+		}
+	}
+	if len(e.les) >= maxBounds {
+		return -1
+	}
+	e.les = append(e.les, le)
+	return len(e.les) - 1
+}
+
+func longLabel(ls map[string]string) bool {
+	for _, v := range ls {
+		if len(v) > maxLabelValue {
+			return true
+		}
+	}
+	return false
 }
 
 // slot is the minute's cell, recycled when the ring has wrapped onto it.

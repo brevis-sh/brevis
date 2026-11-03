@@ -29,8 +29,11 @@ type Owner struct {
 	LastSuccess *time.Time `json:"lastSuccess"`
 	// Error is a class (timeout, unreachable, status, unreadable, too_large),
 	// never the error's text: that quotes the address.
-	Error     string `json:"error,omitempty"`
-	Truncated bool   `json:"truncated,omitempty"`
+	Error string `json:"error,omitempty"`
+	// Dropped is how many series the last scrape had beyond the caps (too
+	// many series, entities or histogram bounds, or a label value too long).
+	// Non-zero means the numbers are a floor; it is said on screen.
+	Dropped int `json:"dropped,omitempty"`
 }
 
 // Latency is a percentile pair estimated from the histogram's buckets, which
@@ -77,6 +80,10 @@ type Snapshot struct {
 	Entities    []Entity  `json:"entities"`
 }
 
+// unconfigured answers for a nil *Collector, so a console without sources and
+// one with none yet are the same "not configured".
+var unconfigured = New(Config{})
+
 type acc struct {
 	owner, name string
 	m           [][]float64 // [measure][minute]
@@ -101,12 +108,18 @@ func newAcc(owner, name string, measures, n int) *acc {
 // Entities, with the same consolidated Total for the screen's header.
 func (c *Collector) Snapshot(k Kind, minutes int, only *[2]string) Snapshot {
 	n := min(max(minutes, 1), Retention)
+	if c == nil {
+		c = unconfigured
+	}
 	now := c.now()
 	snap := Snapshot{Configured: c.Configured(k), Since: c.started, IntervalSec: c.cfg.Interval.Seconds(), Entities: []Entity{}, Owners: []Owner{}}
 	cur := now.Unix() / 60
 	snap.Window = Window{Start: (cur - int64(n) + 1) * 60, Minutes: n}
 	if !snap.Configured {
-		snap.Total = emptyEntity(nil, "", "", n)
+		snap.Total = emptyEntity(specs[k], "", "", n)
+		if only != nil {
+			snap.Entities = append(snap.Entities, emptyEntity(specs[k], only[0], only[1], n))
+		}
 		return snap
 	}
 	sp := specs[k]
@@ -176,11 +189,11 @@ func (c *Collector) Snapshot(k Kind, minutes int, only *[2]string) Snapshot {
 					for j, v := range b.v {
 						a.m[j][i] += v
 					}
-					for le, v := range b.lat {
+					for k, v := range b.lat {
 						if a.lat[i] == nil {
 							a.lat[i] = map[float64]float64{}
 						}
-						a.lat[i][le] += v
+						a.lat[i][e.les[k]] += v
 					}
 				}
 				if up {
@@ -382,7 +395,7 @@ func ownerState(name string, ts []*targetState, now time.Time, fresh time.Durati
 			o.Error = t.lastErr
 		}
 		diffs += t.diffs
-		o.Truncated = o.Truncated || t.truncated
+		o.Dropped += t.dropped
 	}
 	switch {
 	case o.Reachable == o.Replicas && diffs == 0:
