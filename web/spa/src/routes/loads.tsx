@@ -1,4 +1,6 @@
-import { Link, useNavigate } from "react-router";
+import { useEffect, useRef } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
+import { ApiError } from "../api/client";
 import { useData } from "../api/live";
 import type { Choice, LoadRow, Loads, Source } from "../api/ingest";
 import { useFormat, useT } from "../i18n";
@@ -14,6 +16,8 @@ import { Sparkline } from "../ui/sparkline";
 import { Freshness, FreshnessMark } from "../ui/status";
 import { Row, Table, Td, Th } from "../ui/table";
 import { useFilter } from "../ui/use-filter";
+import { useCrumb } from "../shell/nav";
+import { LoadDrawer, useLoad } from "./load";
 
 // The statuses a load can have, in the band's order (a step is never
 // continuous, nor its destination unidentified).
@@ -57,7 +61,21 @@ function Head() {
   );
 }
 
-function Rows({ rows }: { rows: LoadRow[] }) {
+// A row opens the load's drawer at its address, with the list's filter after it so that closing comes back to
+// the list as it was (the old console's keepFilter). `drawer` tells the drawer it was pushed, so closing steps back.
+function useRowHref(filter: Filter) {
+  return (href: string) => {
+    if (href.startsWith("#")) return href;
+    const [path = "", query = ""] = href.split("?");
+    const q = new URLSearchParams(query);
+    for (const f of FIELDS) if (filter.get(f)) q.set(f, filter.get(f));
+    return q.size ? `${path}?${q}` : path;
+  };
+}
+const PUSHED = { drawer: true };
+
+function Rows({ rows, filter }: { rows: LoadRow[]; filter: Filter }) {
+  const href = useRowHref(filter);
   const { t, n } = useT();
   const { number } = useFormat();
   const since = useSince();
@@ -65,13 +83,13 @@ function Rows({ rows }: { rows: LoadRow[] }) {
   return (
     <>
       {rows.map((r) => (
-        <Row key={r.href} onOpen={() => navigate(r.href)}>
+        <Row key={r.href} onOpen={() => navigate(href(r.href), { state: PUSHED })}>
           <Td edge="first">
             <Link to={`/workflows/${encodeURIComponent(r.workflow)}`} className="font-mono text-[13px] font-medium text-ink hover:underline">
               {r.workflow}
             </Link>
             <p className="mt-0.5 text-[12px] text-muted">
-              <Link to={r.href} className="font-mono text-ink-2 hover:underline">
+              <Link to={href(r.href)} state={PUSHED} data-load={`${r.workflow}/${r.step}`} data-target={r.target.uri} className="font-mono text-ink-2 hover:underline">
                 {r.step}
               </Link>{" "}
               <span className="text-faint">·</span> {r.schedule}
@@ -257,7 +275,7 @@ function LoadsData({ filter }: { filter: Filter }) {
           </div>
         ) : (
           <Table id="load-rows" head={<Head />} foot={t("loads.honest")} ghost={ghost} memo="loads">
-            <Rows rows={v.rows} />
+            <Rows rows={v.rows} filter={filter} />
           </Table>
         )}
       </div>
@@ -265,10 +283,35 @@ function LoadsData({ filter }: { filter: Filter }) {
   );
 }
 
-/** The list; `missing` names a step the address asked for that writes no destination (the server draws the list with that note). */
-export default function LoadsRoute({ missing = "" }: { missing?: string }) {
+/** The list; a load's address (/ingest/loads/:workflow/:step) draws the same list with that load's drawer open over it. */
+export default function LoadsRoute() {
   const { t } = useT();
   const filter = useFilter(FIELDS, "/ingest/loads");
+  const { workflow = "", step = "" } = useParams();
+  const { state, search } = useLocation();
+  const navigate = useNavigate();
+  const open = workflow !== "" && step !== "";
+  const target = new URLSearchParams(search).get("target") ?? "";
+  useCrumb(open ? `${workflow} · ${step}` : "");
+  const load = useLoad(workflow, step, target, open);
+  // A step that writes no destination is the list with a note, as the server drew it.
+  const missing = open && load.error instanceof ApiError && load.error.status === 404 ? `${workflow} · ${step}` : "";
+
+  // Pushed by a row: Back is the way out, so the history does not grow. Entered by address: replace it.
+  const close = () => (state?.drawer ? void navigate(-1) : void navigate(filter.hrefWith({}), { replace: true }));
+  // The focus goes back to the row that opened it, whichever way the drawer was left (Esc, backdrop, ×, Back).
+  const was = useRef<{ key: string; target: string } | null>(null);
+  const shown = open && missing === "";
+  useEffect(() => {
+    if (shown) {
+      was.current = { key: `${workflow}/${step}`, target };
+      return;
+    }
+    const w = was.current;
+    was.current = null;
+    if (w) [...document.querySelectorAll<HTMLElement>("#load-rows [data-load]")].find((a) => a.dataset.load === w.key && (!w.target || a.dataset.target === w.target))?.focus();
+  }, [shown, workflow, step, target]);
+
   return (
     <Page>
       <PageHead
@@ -284,6 +327,7 @@ export default function LoadsRoute({ missing = "" }: { missing?: string }) {
         <p className="mb-3 rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">{t("loads.missing", { step: missing })}</p>
       )}
       <LoadsData filter={filter} />
+      {shown && <LoadDrawer workflow={workflow} step={step} target={target} q={load} close={close} />}
     </Page>
   );
 }

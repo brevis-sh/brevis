@@ -1,13 +1,12 @@
-import { Link, useLocation, useParams } from "react-router";
-import { ApiError } from "../api/client";
+import { useRef } from "react";
+import { Link, useLocation } from "react-router";
 import { useData } from "../api/live";
 import type { Change, Load, LoadDetail, Place } from "../api/ingest";
 import { useFormat, useT } from "../i18n";
 import { useSince } from "../ui/format";
-import LoadsRoute from "./loads";
-import { useCrumb } from "../shell/nav";
+import { Drawer } from "../ui/drawer";
 import { Icon } from "../ui/icon";
-import { btn, ButtonLink, Card, PageHead, ShortStamp, linkUnderline, Page } from "../ui/kit";
+import { btn, ButtonLink, Card, ShortStamp, linkUnderline } from "../ui/kit";
 import { Logo, useLogoTitle } from "../ui/logo";
 import { LoadBars } from "../ui/sparkline";
 import { Freshness } from "../ui/status";
@@ -252,14 +251,14 @@ function Body({ workflow, step, d, ghost }: { workflow: string; step: string; d:
 }
 
 /** The page's verbs: a query of the destination, the workflow, and running it. */
-function Actions({ workflow, d, ghost }: { workflow: string; d: LoadDetail; ghost: boolean }) {
+function Actions({ workflow, d, ghost }: { workflow: string; d: LoadDetail | null; ghost: boolean }) {
   const { t } = useT();
   const here = useLocation();
   // Where the run comes back to: this address, as the server knows it.
   const back = here.pathname.replace(/^\/app(?=\/)/, "") + here.search;
   return (
     <>
-      {d.query !== "" && (
+      {d && d.query !== "" && (
         <span aria-hidden={ghost || undefined} className={`inline-flex ${gh(ghost)}`}>
           <ButtonLink to={d.query} icon="terminal">
             {t("loads.drawer.query")}
@@ -267,7 +266,7 @@ function Actions({ workflow, d, ghost }: { workflow: string; d: LoadDetail; ghos
         </span>
       )}
       <ButtonLink to={`/workflows/${encodeURIComponent(workflow)}`}>{t("loads.drawer.workflow")}</ButtonLink>
-      {d.run === "now" && (
+      {d?.run === "now" && (
         // A plain form post: the server runs it and comes back with a flash.
         <form aria-hidden={ghost || undefined} className={gh(ghost)} method="post" action={`/workflows/${encodeURIComponent(workflow)}/trigger`}>
           <input type="hidden" name="back" value={back} />
@@ -277,7 +276,7 @@ function Actions({ workflow, d, ghost }: { workflow: string; d: LoadDetail; ghos
           </button>
         </form>
       )}
-      {d.run === "params" && (
+      {d?.run === "params" && (
         <ButtonLink to={`/workflows/${encodeURIComponent(workflow)}#run`} icon="play" primary>
           {t("loads.drawer.run.params")}
         </ButtonLink>
@@ -286,69 +285,87 @@ function Actions({ workflow, d, ghost }: { workflow: string; d: LoadDetail; ghos
   );
 }
 
-export default function LoadRoute() {
-  const { workflow = "", step = "" } = useParams();
-  const { t, n } = useT();
-  const { search } = useLocation();
-  useCrumb(`${workflow} · ${step}`);
-  const q = useData<Load>(["ingest", "load", workflow, step, search], `/api/ingest/loads/${encodeURIComponent(workflow)}/${encodeURIComponent(step)}${search}`, {
+/** The load behind the address; the list reads it too (a 404 is its note), and one key keeps that one request. */
+export function useLoad(workflow: string, step: string, target: string, enabled: boolean) {
+  return useData<Load>(["ingest", "load", workflow, step, target], `/api/ingest/loads/${encodeURIComponent(workflow)}/${encodeURIComponent(step)}${target ? `?target=${encodeURIComponent(target)}` : ""}`, {
     topic: "ingest",
     keep: false,
+    enabled,
   });
+}
+
+const choiceCls = "block rounded-card border px-3 py-2 font-mono text-[12px] break-all transition-colors";
+
+/**
+ * One step landing on one destination, as a drawer over the loads list (it is mounted by the list, so the list
+ * stays as it was). Opening another load swaps the content of this same dialog. The title and the labels are
+ * static; only the values wait.
+ */
+export function LoadDrawer({ workflow, step, target, q, close }: { workflow: string; step: string; target: string; q: ReturnType<typeof useLoad>; close: () => void }) {
+  const { t, n } = useT();
+  // Kept across the swap so that closing still knows whether the drawer was pushed.
+  const { state } = useLocation();
   const ghost = !q.data;
   const v = q.data ?? GHOST;
-  // Back to the list as it was filtered: the address minus the destination.
-  const list = new URLSearchParams(search);
-  list.delete("target");
-  const back = `/ingest/loads${list.toString() === "" ? "" : `?${list}`}`;
-
-  if (q.error instanceof ApiError && q.error.status === 404)
-    return <LoadsRoute missing={`${workflow} · ${step}`} />;
+  // The choices of this step stay while another destination loads: the link that was pressed must not vanish
+  // under the keyboard.
+  const seen = useRef<{ key: string; uris: string[] }>({ key: "", uris: [] });
+  const key = `${workflow}/${step}`;
+  if (v.choices.length > 0) seen.current = { key, uris: v.choices.map((c) => c.uri) };
+  const uris = v.choices.length > 0 ? v.choices.map((c) => c.uri) : seen.current.key === key ? seen.current.uris : [];
+  const choosing = !ghost && v.choosing;
   return (
-    <Page>
-      <PageHead
-        mono
-        title={step}
-        eyebrow={
-          <>
-            <Link to={back} className="text-[0.75rem] text-muted hover:text-ink">
-              &larr; {t("nav.loads")}
-            </Link>
-            <span className="text-faint">·</span>
-            <span className="text-[0.7rem] font-medium tracking-[0.08em] text-muted uppercase">{t("loads.drawer.kicker", { workflow })}</span>
-            {v.detail ? (
-              <span aria-hidden={ghost || undefined} className={`inline-flex ${gh(ghost)}`}>
-                <Freshness status={v.detail.status} />
-              </span>
-            ) : null}
-          </>
-        }
-        actions={v.detail ? <Actions workflow={workflow} d={v.detail} ghost={ghost} /> : null}
-      />
-      {q.isError && (
-        <p role="alert" className="mb-3 rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">
-          {(q.error as Error).message}
-        </p>
-      )}
-      {v.choices.length > 0 && (
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span aria-hidden={ghost || undefined} className={`text-[12.5px] text-muted ${gh(ghost)}`}>{n("loads.drawer.choices", v.choices.length)}</span>
-          {v.choices.map((c) => (
-            <Link
-              key={c.uri}
-              to={{ search: `?target=${encodeURIComponent(c.uri)}` }}
-              aria-current={c.current ? "true" : undefined}
-              aria-hidden={ghost || undefined}
-              className={`inline-flex h-8 items-center rounded-card border px-3 font-mono text-[12px] whitespace-nowrap transition-colors ${gh(ghost)} ${
-                c.current ? "border-ink text-ink" : "border-line text-ink-2 hover:border-line-strong"
-              }`}
-            >
-              {c.uri}
-            </Link>
-          ))}
+    <Drawer
+      plain
+      id="load"
+      title={step}
+      open
+      onHide={close}
+      head={
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium tracking-[0.08em] text-muted uppercase">{t("loads.drawer.kicker", { workflow })}</p>
+          <h2 id="load-title" className="font-mono text-[15px] font-semibold break-all text-ink">{step}</h2>
+          {v.detail && !choosing && (
+            <p aria-hidden={ghost || undefined} className={`mt-1 ${gh(ghost)}`}>
+              <Freshness status={v.detail.status} />
+            </p>
+          )}
         </div>
-      )}
-      {!q.isError && v.detail && <Body workflow={workflow} step={step} d={v.detail} ghost={ghost} />}
-    </Page>
+      }
+      foot={<Actions workflow={workflow} d={v.detail} ghost={ghost} />}
+    >
+      <div className="space-y-4">
+        {q.isError && (
+          <p role="alert" className="rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-muted">
+            {(q.error as Error).message}
+          </p>
+        )}
+        {uris.length > 0 && (
+          <section>
+            <p aria-hidden={ghost || undefined} className={`mb-2 text-[12.5px] text-muted ${gh(ghost)}`}>{n("loads.drawer.choices", uris.length)}</p>
+            <ul className="space-y-1">
+              {uris.map((uri) => {
+                const current = uri === target;
+                return (
+                  <li key={uri}>
+                    {/* A swap, not a push: Back leaves the drawer, it does not walk through the destinations. */}
+                    <Link
+                      to={{ search: `?target=${encodeURIComponent(uri)}` }}
+                      replace
+                      state={state}
+                      aria-current={current ? "true" : undefined}
+                      className={`${choiceCls} ${current ? "border-ink text-ink" : "border-line text-ink-2 hover:border-line-strong"}`}
+                    >
+                      {uri}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+        {!q.isError && v.detail && !choosing && <Body workflow={workflow} step={step} d={v.detail} ghost={ghost} />}
+      </div>
+    </Drawer>
   );
 }

@@ -13,7 +13,6 @@ import ProjectsRoute from "./routes/projects";
 import StreamsRoute from "./routes/streams";
 import StreamRoute from "./routes/stream";
 import LoadsRoute from "./routes/loads";
-import LoadRoute from "./routes/load";
 import CatalogRoute from "./routes/catalog";
 import EndpointsRoute from "./routes/endpoints";
 import EndpointRoute from "./routes/endpoint";
@@ -53,8 +52,10 @@ createRoot(document.getElementById("root")!).render(
             <Route path="workflows/:slug" element={<WorkflowRoute />} />
             <Route path="ingest/streams" element={<StreamsRoute />} />
             <Route path="ingest/streams/:gateway/*" element={<StreamRoute />} />
-            <Route path="ingest/loads" element={<LoadsRoute />} />
-            <Route path="ingest/loads/:workflow/:step" element={<LoadRoute />} />
+            {/* The load is a drawer over the list: the list reads the child's params, so it stays mounted. */}
+            <Route path="ingest/loads" element={<LoadsRoute />}>
+              <Route path=":workflow/:step" />
+            </Route>
             <Route path="data" element={<CatalogRoute />} />
             <Route path="data/target" element={<CatalogRoute />} />
             <Route path="data/endpoints" element={<EndpointsRoute />} />
