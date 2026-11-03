@@ -165,7 +165,7 @@ func rowJSON(r ConfigRow) RowJSON {
 	o := RowJSON{Path: r.Path, Label: r.Label, Value: r.Value, Default: r.Default, Note: r.Note,
 		List: append([]string{}, r.List...), Before: []NoteJSON{}}
 	for _, b := range r.Before {
-		o.Before = append(o.Before, NoteJSON{Label: b.Label, Text: b.Text})
+		o.Before = append(o.Before, NoteJSON(b))
 	}
 	return o
 }
@@ -361,7 +361,7 @@ type ReaderJSON struct {
 func readersJSON(rs []EndpointRef) []ReaderJSON {
 	out := make([]ReaderJSON, 0, len(rs))
 	for _, r := range rs {
-		out = append(out, ReaderJSON{API: r.API, Name: r.Name, Path: r.Path, Href: r.Href})
+		out = append(out, ReaderJSON(r))
 	}
 	return out
 }
