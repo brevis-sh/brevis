@@ -11,7 +11,7 @@ import { recall, remember } from "./seen";
  * rows those heights and the columns those widths, so rows that wrap or carry a note do not move what
  * is under them, nor the cells sideways, on arrival.
  */
-export function Table({ id, head, children, foot, catalog, ghost, memo }: { id?: string; head: ReactNode; children: ReactNode; foot?: ReactNode; catalog?: boolean; ghost?: boolean; memo?: string }) {
+export function Table({ id, head, children, foot, catalog, ghost, memo, cls = "" }: { id?: string; head: ReactNode; children: ReactNode; foot?: ReactNode; catalog?: boolean; ghost?: boolean; memo?: string; cls?: string }) {
   const grid = useRef<HTMLTableElement>(null);
   const saved = useRef("");
   useLayoutEffect(() => {
@@ -44,7 +44,7 @@ export function Table({ id, head, children, foot, catalog, ghost, memo }: { id?:
   return (
     <div className={`overflow-hidden rounded-card border border-line bg-surface ${catalog ? "shadow-warm-sm" : ""}`}>
       <div className="overflow-x-auto">
-        <table ref={grid} id={id} className={`ct w-full ${catalog ? "text-sm" : "text-[13px]"}`}>
+        <table ref={grid} id={id} className={`ct w-full ${catalog ? "text-sm" : "text-[13px]"} ${cls}`.trim()}>
           <thead>
             <tr className={`border-b border-line text-left text-[11.5px] font-medium ${catalog ? "bg-parchment-soft/60 text-faint" : "text-muted"}`}>{head}</tr>
           </thead>

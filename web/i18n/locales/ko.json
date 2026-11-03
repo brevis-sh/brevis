@@ -843,6 +843,7 @@
   "streams.how.batch.text": "N분마다 또는 N개 이벤트마다, 먼저 오는 쪽에 쓰기: 비용은 줄고 지연은 예측 가능합니다.",
   "streams.how.post": "Gateway로 POST",
   "streams.how.post.text": "hook이 이벤트의 형태를 바꿀 수 있고, Gateway는 이벤트에 식별자(ingestion_id)를 부여해 재전달이 중복이 되지 않게 합니다.",
+  "streams.how.title": "stream이 동작하는 방식",
   "streams.how.write": "기록되거나, 실패하면 보관됨",
   "streams.how.write.text": "BigQuery, auto_table, Postgres, MySQL, Redshift, 파일 또는 Pub/Sub 토픽. 거부된 것은 dead letter로 갑니다.",
   "streams.kind": "목적지",

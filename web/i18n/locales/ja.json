@@ -843,6 +843,7 @@
   "streams.how.batch.text": "N 分ごと、または N イベントごとの、先に到達したほうで書き込み: コストが下がり、遅延も予測できます。",
   "streams.how.post": "Gateway に POST",
   "streams.how.post.text": "hook でイベントの形を変えられます。Gateway はイベントに識別子(ingestion_id)を付与するので、再配信が重複になりません。",
+  "streams.how.title": "streamのしくみ",
   "streams.how.write": "書き込み、失敗時は保管",
   "streams.how.write.text": "BigQuery、auto_table、Postgres、MySQL、Redshift、ファイル、または Pub/Sub トピック。拒否されたものは dead letter に送られます。",
   "streams.kind": "宛先",

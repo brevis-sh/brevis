@@ -843,6 +843,7 @@
   "streams.how.batch.text": "每 N 分钟或每 N 个事件写入一次，以先到者为准：成本更低，延迟可预测。",
   "streams.how.post": "POST 到 gateway",
   "streams.how.post.text": "Hook 可以重塑事件；gateway 会赋予其标识（ingestion_id），重复投递不会产生重复数据。",
+  "streams.how.title": "stream 的工作方式",
   "streams.how.write": "写入，失败则保留",
   "streams.how.write.text": "BigQuery、auto_table、Postgres、MySQL、Redshift、文件或 Pub/Sub topic。被拒绝的内容进入 dead letter。",
   "streams.kind": "目标",
