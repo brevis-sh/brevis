@@ -1,4 +1,5 @@
-import type { Flow } from "../api/ingest";
+import type { Flow, FlowNode } from "../api/ingest";
+import { useSaid } from "../api/said";
 import { useT } from "../i18n";
 import { Icon } from "./icon";
 
@@ -11,7 +12,10 @@ const ICON: Record<string, string> = { source: "plug", buffer: "rows-3", dead_le
  */
 export function FlowDiagram({ flow }: { flow: Flow }) {
   const { t } = useT();
+  const say = useSaid();
   const title = (kind: string) => t(`flow.${kind}`);
+  // What a step does, then the destination's own comment.
+  const detail = (n: FlowNode) => [say(n.detail), n.note ?? ""].filter(Boolean).join(" · ");
   return (
     <div className="flow-ground px-4 py-4 sm:px-6">
       <ol className="flex flex-col gap-3 min-[700px]:flex-row min-[700px]:items-stretch">
@@ -26,8 +30,8 @@ export function FlowDiagram({ flow }: { flow: Flow }) {
               <Icon name={ICON[n.kind] ?? "database"} className="h-3.5 w-3.5" />
               {i + 1} · {title(n.kind)}
             </p>
-            <p className="mt-1 font-mono text-[0.78rem] break-all text-ink">{n.main}</p>
-            {n.detail !== "" && <p className="mt-0.5 text-[0.72rem] text-muted">{n.detail}</p>}
+            <p className="mt-1 font-mono text-[0.78rem] break-all text-ink">{say(n.main)}</p>
+            {detail(n) !== "" && <p className="mt-0.5 text-[0.72rem] text-muted">{detail(n)}</p>}
           </li>
         ))}
       </ol>
@@ -38,8 +42,8 @@ export function FlowDiagram({ flow }: { flow: Flow }) {
               <Icon name="triangle-alert" className="h-3.5 w-3.5" />
               {title(flow.deadLetter.kind)}
             </p>
-            <p className="mt-1 font-mono text-[0.78rem] break-all text-ink">{flow.deadLetter.main}</p>
-            <p className="mt-0.5 text-[0.72rem] text-state-failed">{flow.deadLetter.detail}</p>
+            <p className="mt-1 font-mono text-[0.78rem] break-all text-ink">{say(flow.deadLetter.main)}</p>
+            <p className="mt-0.5 text-[0.72rem] text-state-failed">{detail(flow.deadLetter)}</p>
           </div>
         </div>
       )}

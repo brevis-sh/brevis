@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router";
 import { EndpointRowRate, EndpointsStrip } from "../ui/metrics/endpoints";
 import { useData } from "../api/live";
+import { useSaid, type Said } from "../api/said";
 import { useFormat, useT, type Vars } from "../i18n";
 import { useSince } from "../ui/format";
 import { useDrawer } from "../ui/drawer";
@@ -24,7 +25,8 @@ export type EndpointRow = {
   freshness: "stale" | "fresh" | "";
   reads: string[];
   rebuilt: { at: string; by: string } | null;
-  ttl: string;
+  /** How long its answers are kept: a string, or a message the app says; null with no cache. */
+  ttl: Said;
   params: number;
   required: number;
   publishedAt: string;
@@ -130,6 +132,7 @@ function Head() {
 
 function Rows({ rows, now }: { rows: EndpointRow[]; now: string }) {
   const { t } = useT();
+  const say = useSaid();
   const since = useSince();
   const navigate = useNavigate();
   const paramsSaid = useParamsSaid();
@@ -176,7 +179,7 @@ function Rows({ rows, now }: { rows: EndpointRow[]; now: string }) {
               )}
             </Td>
             <Td cls="text-[12.5px] whitespace-nowrap text-ink-2 max-[1180px]:hidden">
-              {r.ttl ? <span>{t("endpoints.ttl", { ttl: r.ttl })}</span> : <span className="text-faint">—</span>}
+              {say(r.ttl) ? <span>{t("endpoints.ttl", { ttl: say(r.ttl) })}</span> : <span className="text-faint">—</span>}
             </Td>
             <Td cls="text-[12.5px] whitespace-nowrap text-ink-2 max-[1180px]:hidden"><span>{paramsSaid(r.params, r.required)}</span></Td>
             <Td cls="whitespace-nowrap">

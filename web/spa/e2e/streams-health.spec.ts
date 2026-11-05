@@ -17,7 +17,7 @@ const list = {
 };
 const detail = (health: { state: string; reason: string }) => ({
   gateway: "events_gateway", path: "/v1/stream_0", health, sink: place("postgres://warehouse/sales.events_0"), deadLetter: null,
-  publishedAt: "2026-11-01T10:00:00Z", format: "json", lede: "Takes events.", summary: "Events land.", flow: null, tables: [],
+  publishedAt: "2026-11-01T10:00:00Z", format: "json", lede: [{ k: "streams.page.lede", a: { dest: "PostgreSQL" } }], summary: "Events land.", flow: null, tables: [],
   catalogHref: "", query: "", readBy: [], hasConfig: false, cards: [], yaml: "", changes: [], deadLetterPanel: null, buriedMetric: "",
   testEvent: { format: "json", body: "{}", curlHead: "", lands: "", table: "", allow: [], dataset: "" },
 });

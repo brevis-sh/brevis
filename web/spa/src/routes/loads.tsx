@@ -96,8 +96,8 @@ function Rows({ rows, filter }: { rows: LoadRow[]; filter: Filter }) {
               <span className="ldl-wf">{r.workflow}</span>
               <span className="ldl-step">{r.step}</span>
             </Link>
-            <p className="ldl-sub" title={r.schedule}>
-              {r.schedule}
+            <p className="ldl-sub" title={r.manual ? t("loads.manual") : r.schedule}>
+              {r.manual ? t("loads.manual") : r.schedule}
             </p>
           </Td>
           <Td cls="ldl-fill-dest">
@@ -159,12 +159,13 @@ const GHOST_ROW: LoadRow = {
   workflow: "workflow_name",
   step: "load_step_name",
   href: "",
-  target: { uri: "", kind: "postgres", kindTitle: "", where: "postgres://warehouse/", what: "table_name", note: "" },
+  target: { uri: "", kind: "postgres", where: "postgres://warehouse/", what: "table_name", note: "" },
   legacy: false,
   status: "on_time",
   lastLoaded: "2000-01-01T00:00:00Z",
   rows: 1000,
   schedule: "every hour",
+  manual: false,
   source: { kind: "http", driver: "", label: "Source label", where: "api.example.com" },
   recent: [1, 3, 2, 4],
   fixing: null,

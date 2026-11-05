@@ -6,7 +6,7 @@ import { expect, test } from "./support";
 const place = (kind: string, where: string, what: string) => ({ uri: where + what, kind, kindTitle: "", where, what, note: "" });
 const load = (i: number, fixing: boolean) => ({
   workflow: "orders", step: `load_${i}`, href: `/ingest/loads/orders/load_${i}`, target: place("postgres", "postgres://warehouse/public.", `orders_${i}`), legacy: false,
-  status: "on_time", lastLoaded: "2026-11-01T10:00:00Z", rows: 1200, schedule: "every hour",
+  status: "on_time", lastLoaded: "2026-11-01T10:00:00Z", rows: 1200, schedule: "every hour", manual: false,
   source: { kind: "http", driver: "", label: "HTTP API", where: "api.example.com" }, recent: [1, 2, 3, 2], fixing: fixing ? "run1" : null,
 });
 const loadsAnswer = {

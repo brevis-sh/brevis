@@ -4,7 +4,8 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { postJSON } from "../api/client";
 import { useData } from "../api/live";
-import { useFormat, useT } from "../i18n";
+import { useSaid, type Said } from "../api/said";
+import { useFormat, useT, type Msg } from "../i18n";
 import { useSince } from "../ui/format";
 import { useCrumb } from "../shell/nav";
 import { CodeBlock } from "../ui/copy";
@@ -24,10 +25,10 @@ type Lineage = {
   known: boolean;
   status: string;
   lastAt: string | null;
-  origin: { main: string; sub: string } | null;
+  origin: { main: Said; sub: Said } | null;
   writer: { name: string; href: string } | null;
   sql: boolean;
-  cacheTtl: string;
+  cacheTtl: Said;
 };
 type Field = { name: string; kind: string; value: string; options: string[]; required: boolean; maxLen: number };
 type Endpoint = {
@@ -38,13 +39,13 @@ type Endpoint = {
   keyed: boolean;
   freshness: "stale" | "fresh" | "";
   publishedAt: string;
-  stale: { reason: string; target: string } | null;
+  stale: { reason: Msg[]; target: string } | null;
   lineage: Lineage[];
-  cache: { state: "set" | "none" | "unknown"; ttl: string; type: string; addrFrom: string; reads: string[]; bump: string };
-  params: { name: string; type: string; required: boolean; note: string; accepts: string; default: string }[];
+  cache: { state: "set" | "none" | "unknown"; ttl: Said; type: string; addrFrom: string; reads: string[]; bump: string };
+  params: { name: string; type: string; required: boolean; note: string; accepts: Said; default: string }[];
   paramCount: number;
   required: number;
-  limits: { timeout: string; maxRows: number; maxBytes: number };
+  limits: { timeout: Said; maxRows: number; maxBytes: number };
   canRun: boolean;
   form: Field[];
   curlHead: string;
@@ -144,13 +145,14 @@ function Eyebrow({ api, d, ghost }: { api: string; d: Endpoint; ghost: boolean }
 /** Why the table is behind, in its writer's words, that the endpoint answers with the last good data meanwhile, and the table in the Catalog. */
 function Stale({ s }: { s: NonNullable<Endpoint["stale"]> }) {
   const { t } = useT();
+  const say = useSaid();
   return (
     <section role="note" className="max-w-3xl rounded-card border border-state-queued/40 bg-state-queued/8 px-4 py-3 text-[13px]">
       <p className="flex items-center gap-2 font-semibold text-state-queued">
         <FreshnessMark status="stale" />
         {t("endpoint.stale.title")}
       </p>
-      {s.reason && <p className="mt-1.5 text-ink-2">{s.reason}</p>}
+      {s.reason.length > 0 && <p className="mt-1.5 text-ink-2">{say(s.reason)}</p>}
       <p className="mt-1 text-muted">{t("endpoint.stale.serves")}</p>
       <Link to={`/data/target?u=${encodeURIComponent(s.target)}`} className={`mt-2 inline-block text-[12.5px] ${linkUnderline}`}>
         {t("endpoint.stale.catalog")} &rarr;
@@ -179,6 +181,7 @@ const lineageRow =
 /** Where the data comes from: per table read, origin, writer, table and this endpoint; stacked on a narrow screen. */
 function LineagePanel({ d, ghost }: { d: Endpoint; ghost: boolean }) {
   const { t } = useT();
+  const say = useSaid();
   const since = useSince();
   return (
     <Card title={t("endpoint.lineage")} count={ghost ? undefined : String(d.lineage.length)} id="lineage">
@@ -190,10 +193,10 @@ function LineagePanel({ d, ghost }: { d: Endpoint; ghost: boolean }) {
               <Step label={t("endpoint.lineage.origin")}>
                 {l.origin ? (
                   <>
-                    <p className="truncate text-ink-2">{l.origin.main}</p>
-                    {l.origin.sub && (
-                      <p className="truncate font-mono text-[11.5px] text-muted" title={l.origin.sub}>
-                        {l.origin.sub}
+                    <p className="truncate text-ink-2">{say(l.origin.main)}</p>
+                    {say(l.origin.sub) && (
+                      <p className="truncate font-mono text-[11.5px] text-muted" title={say(l.origin.sub)}>
+                        {say(l.origin.sub)}
                       </p>
                     )}
                   </>
@@ -235,7 +238,7 @@ function LineagePanel({ d, ghost }: { d: Endpoint; ghost: boolean }) {
               <Arrow />
               <Step label={t("endpoint.lineage.endpoint")}>
                 <p className="truncate font-mono text-ink">GET {d.path}</p>
-                {l.cacheTtl && <p className="text-[11.5px] text-muted">{t("endpoint.lineage.cache", { ttl: l.cacheTtl })}</p>}
+                {say(l.cacheTtl) && <p className="text-[11.5px] text-muted">{t("endpoint.lineage.cache", { ttl: say(l.cacheTtl) })}</p>}
               </Step>
             </li>
           );
@@ -248,6 +251,7 @@ function LineagePanel({ d, ghost }: { d: Endpoint; ghost: boolean }) {
 /** How long an answer is kept, what clears it, what holds it, and the command to clear it by hand. */
 function CachePanel({ c, ghost }: { c: Endpoint["cache"]; ghost: boolean }) {
   const { t } = useT();
+  const say = useSaid();
   const cell = "bg-surface px-4 py-3";
   return (
     <Card title={t("endpoints.col.cache")} id="cache">
@@ -256,7 +260,7 @@ function CachePanel({ c, ghost }: { c: Endpoint["cache"]; ghost: boolean }) {
           <dl className="grid grid-cols-1 gap-px bg-line-soft min-[720px]:grid-cols-3">
             <div className={cell}>
               <dt className="text-[11.5px] text-muted">{t("endpoint.cache.ttl")}</dt>
-              <dd className="mt-0.5 text-[15px] font-semibold text-ink">{c.ttl}</dd>
+              <dd className="mt-0.5 text-[15px] font-semibold text-ink">{say(c.ttl)}</dd>
               <dd className="text-[11.5px] text-faint">{t("endpoint.cache.ttl.hint")}</dd>
             </div>
             <div className={cell}>
@@ -295,6 +299,7 @@ const pd = "px-3 py-2.5";
 
 function ParamsPanel({ d, ghost }: { d: Endpoint; ghost: boolean }) {
   const { t } = useT();
+  const say = useSaid();
   const paramsSaid = useParamsSaid();
   return (
     <Card title={t("endpoints.col.params")} count={ghost ? undefined : paramsSaid(d.paramCount, d.required)}>
@@ -320,7 +325,7 @@ function ParamsPanel({ d, ghost }: { d: Endpoint; ghost: boolean }) {
                     {p.note && <p className="mt-1 max-w-md text-[0.75rem] whitespace-pre-line text-muted">{p.note}</p>}
                   </td>
                   <td className={`${pd} font-mono text-[0.75rem] text-muted`}>{p.type}</td>
-                  <td className={`${pd} text-[0.78rem] text-ink-2`}>{p.accepts}</td>
+                  <td className={`${pd} text-[0.78rem] text-ink-2`}>{say(p.accepts)}</td>
                   <td className={`${pd} pr-4 font-mono text-[0.75rem] text-ink`}>{p.default === "" ? <span className="text-faint">—</span> : p.default}</td>
                 </tr>
               ))}
@@ -334,6 +339,7 @@ function ParamsPanel({ d, ghost }: { d: Endpoint; ghost: boolean }) {
 
 function Limits({ l, ghost }: { l: Endpoint["limits"]; ghost: boolean }) {
   const { t } = useT();
+  const say = useSaid();
   const f = useFormat();
   const v = (x: string) => (
     <span aria-hidden={ghost || undefined} className={gh(ghost)}>
@@ -345,7 +351,7 @@ function Limits({ l, ghost }: { l: Endpoint["limits"]; ghost: boolean }) {
       <h2 className="mb-2 text-[0.875rem] font-semibold text-ink">{t("endpoint.limits")}</h2>
       <StatCells
         items={[
-          { label: t("endpoint.limits.timeout"), icon: "clock", value: v(l.timeout) },
+          { label: t("endpoint.limits.timeout"), icon: "clock", value: v(say(l.timeout)) },
           { label: t("endpoint.limits.rows"), icon: "rows-3", value: v(f.number(l.maxRows)) },
           { label: t("endpoint.limits.bytes"), icon: "hard-drive", value: v(l.maxBytes > 0 ? bytesText(l.maxBytes) : t("endpoint.limits.no_ceiling")) },
         ]}

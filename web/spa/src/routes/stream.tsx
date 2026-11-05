@@ -3,6 +3,7 @@ import { StreamPanel } from "../ui/metrics/streams";
 import { Link, useParams } from "react-router";
 import { ApiError } from "../api/client";
 import { useData } from "../api/live";
+import { useSaid } from "../api/said";
 import type { Stream } from "../api/ingest";
 import { useT } from "../i18n";
 import { useBrief } from "../ui/format";
@@ -28,7 +29,7 @@ const h2 = "mb-3 hidden text-[13px] font-semibold text-ink";
 // Before the first answer the page draws the last stream it showed (or this typical one) through the same
 // markup, as a ghost (.sk-ghost): the words are the page's own, the values are bars, and the heights are the
 // loaded heights. Only the data-bound parts are ghosted; titles, labels, tabs and buttons are never.
-const GHOST_PLACE = { uri: "postgres://warehouse/schema/table_name", kind: "postgres", kindTitle: "PostgreSQL", where: "postgres://warehouse/schema/", what: "table_name", note: "" };
+const GHOST_PLACE = { uri: "postgres://warehouse/schema/table_name", kind: "postgres", where: "postgres://warehouse/schema/", what: "table_name", note: "" };
 const GHOST: Stream = {
   gateway: "",
   path: "",
@@ -36,7 +37,7 @@ const GHOST: Stream = {
   deadLetter: { ...GHOST_PLACE, kind: "file", uri: "file:///var/dead-letter/stream/" },
   publishedAt: "2000-01-01T00:00:00Z",
   format: "json",
-  lede: "Takes json events over HTTP, batches them and writes them to PostgreSQL. What the destination refuses goes to the dead letter.",
+  lede: [{ k: "streams.page.lede.format", a: { format: "json", dest: "PostgreSQL" } }, { k: "streams.page.lede.dead_letter" }],
   summary: "JSON events posted to the path land in a Postgres table, merged by ingestion id so a redelivery is ignored, in batches of 100 events; batches the destination refuses go to files.",
   flow: {
     nodes: [
@@ -111,6 +112,7 @@ function Strip({ gateway, v, ghost }: { gateway: string; v: Stream; ghost: boole
 
 function Overview({ path, v, ghost }: { path: string; v: Stream; ghost: boolean }) {
   const { t } = useT();
+  const say = useSaid();
   return (
     <section className="mb-3">
       <h2 className={h2}>{t("streams.tab.overview")}</h2>
@@ -118,7 +120,7 @@ function Overview({ path, v, ghost }: { path: string; v: Stream; ghost: boolean 
       <div className="mt-3 grid grid-cols-1 gap-3 min-[1180px]:grid-cols-[minmax(0,1fr)_360px]">
         <Card title={t("streams.page.sentence")}>
           <div className="px-4 py-3">
-            <p aria-hidden={ghost || undefined} className={`text-[13.5px] text-ink ${gh(ghost)}`}>{v.summary}</p>
+            <p aria-hidden={ghost || undefined} className={`text-[13.5px] text-ink ${gh(ghost)}`}>{say(v.summary)}</p>
             <p className="mt-3 border-t border-line-soft pt-3 text-[12px] text-muted">{t("streams.page.metrics")}</p>
           </div>
         </Card>
@@ -246,7 +248,7 @@ function Config({ v, ghost }: { v: Stream; ghost: boolean }) {
               {v.changes.map((c, i) => (
                 <span key={c.at}>
                   {i > 0 && <span className="text-faint"> · </span>}
-                  {brief(c.at)} UTC — {c.text}
+                  {brief(c.at)} UTC — {c.first ? t("streamcfg.history.first") : c.earlier ? t("config.earlier") : t("streamcfg.history.changed", { paths: c.paths.join(", ") })}
                 </span>
               ))}
             </p>
@@ -354,6 +356,7 @@ function TestEvent({ path, v, ghost }: { path: string; v: Stream; ghost: boolean
 
 export default function StreamRoute() {
   const { t } = useT();
+  const say = useSaid();
   // The stream's path is the tail of the address: /ingest/streams/<gateway>/<path...>.
   const { gateway = "", "*": rest = "" } = useParams();
   const path = `/${rest}`;
@@ -405,7 +408,7 @@ export default function StreamRoute() {
           <ErrorText error={q.error} />
         </p>
       )}
-      <div aria-hidden={ghost || undefined} className={`mb-4 max-w-3xl text-[13.5px] text-muted ${gh(ghost)}`}>{v.lede}</div>
+      <div aria-hidden={ghost || undefined} className={`mb-4 max-w-3xl text-[13.5px] text-muted ${gh(ghost)}`}>{say(v.lede)}</div>
       <Strip gateway={gateway} v={v} ghost={ghost} />
       <div className="mb-4">
         <StreamPanel gateway={gateway} path={path} />

@@ -1,7 +1,8 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
-import { useT } from "../i18n";
+import { useSaid } from "../api/said";
+import { useT, type Msg } from "../i18n";
 import { CopyButton } from "../ui/copy";
 import { Icon } from "../ui/icon";
 import { ButtonLink } from "../ui/kit";
@@ -21,7 +22,7 @@ type Writer = {
   status: string;
   cron: string;
   runInFlight: string | null;
-  reason: string;
+  reason: Msg[];
   href: string;
 };
 export type TargetDetail = {
@@ -39,6 +40,7 @@ const h3 = "mb-2 text-[12.5px] font-semibold text-ink";
 /** The writers, the loads, what reads it, how each writer is configured: what comes from the data, under headings that do not. */
 function Body({ d, u }: { d: TargetDetail | undefined; u: string }) {
   const { t } = useT();
+  const say = useSaid();
   return (
     <div className="dialog-body space-y-4">
       {d
@@ -56,7 +58,7 @@ function Body({ d, u }: { d: TargetDetail | undefined; u: string }) {
                   </Link>
                 )}
               </div>
-              {w.reason && <p className="px-3.5 py-2.5 text-[12.5px] text-ink-2">{w.reason}</p>}
+              {w.reason.length > 0 && <p className="px-3.5 py-2.5 text-[12.5px] text-ink-2">{say(w.reason)}</p>}
             </section>
           ))
         : [0, 1].map((i) => <Skeleton key={i} h="4.5rem" className="rounded-card" />)}

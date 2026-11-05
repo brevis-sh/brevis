@@ -1,7 +1,11 @@
 // The Ingest endpoints' shapes (internal/api/*_api.go, web/pages/ingest_json.go).
 // Lists are always arrays; a missing value is null; times are RFC 3339.
+// `Said` is words: a string the data owns, or a message (a catalog key and its values) the app says in the reader's
+// language (api/said.ts).
+import type { Msg } from "../i18n";
+import type { Said } from "./said";
 
-export type Place = { uri: string; kind: string; kindTitle: string; where: string; what: string; note: string };
+export type Place = { uri: string; kind: string; where: string; what: string; note: string };
 export type Source = { kind: string; driver: string; label: string; where: string };
 export type Choice = { key: string; label: string };
 
@@ -14,7 +18,9 @@ export type LoadRow = {
   status: string;
   lastLoaded: string | null;
   rows: number | null;
+  /** When it runs, in words (empty for a step that runs by hand: `manual`). */
   schedule: string;
+  manual: boolean;
   source: Source;
   recent: (number | null)[];
   fixing: string | null;
@@ -41,7 +47,7 @@ export type CfgRow = {
   before: { label: string; text: string }[];
 };
 
-export type FlowNode = { kind: string; main: string; detail: string };
+export type FlowNode = { kind: string; main: Said; detail: Said; /** The destination's own comment, after the detail. */ note?: string };
 export type Flow = { nodes: FlowNode[]; deadLetter: FlowNode | null };
 
 export type Change = {
@@ -83,7 +89,8 @@ export type Reader = { api: string; name: string; path: string; href: string };
 
 export type LoadDetail = {
   status: string;
-  reason: string;
+  /** Why the writer stands where it does: sentences that read as one passage (none when it is where it should be). */
+  reason: Msg[];
   source: Source;
   target: Place;
   hasSchedule: boolean;
@@ -100,7 +107,7 @@ export type LoadDetail = {
   bars: { runId: string; rows: number | null; title: string }[];
   missed: number;
   loads: { loadedAt: string; rows: number | null; bytes: number | null; runId: string }[];
-  loadsCount: string;
+  loadsCount: Msg;
   described: boolean;
   config: StepConfig | null;
   changes: Change[];
@@ -146,7 +153,8 @@ export type StreamRow = {
   href: string;
   note: string;
   sink: Place;
-  batch: string;
+  /** How the stream batches, in words: null with no buffer declared. */
+  batch: Said;
   // The declared values behind `batch` ("2m", 2000): optional so an older server still draws the sentence.
   batchEvery?: string;
   batchRecords?: number | null;
@@ -161,7 +169,7 @@ export type Streams = {
   gateways: number;
   withDeadLetter: number;
   healthCounts?: Record<string, number>;
-  kinds: Choice[];
+  kinds: string[];
   filter: { kind: string; q: string };
 };
 
@@ -173,8 +181,9 @@ export type Stream = {
   deadLetter: Place | null;
   publishedAt: string | null;
   format: string;
-  lede: string;
-  summary: string;
+  /** The sentences under the stream's name; they read as one passage. */
+  lede: Msg[];
+  summary: Said;
   flow: Flow | null;
   tables: string[];
   catalogHref: string;
@@ -183,7 +192,8 @@ export type Stream = {
   hasConfig: boolean;
   cards: { key: string; title: string; rows: { path: string; label: string; value: string; default: boolean; note: string }[] }[];
   yaml: string;
-  changes: { at: string; text: string }[];
+  /** `first`: the first publish; `earlier`: one whose changes were not kept; otherwise the settings it changed. */
+  changes: { at: string; first: boolean; earlier: boolean; paths: string[] }[];
   deadLetterPanel: { where: string; commands: string; readable: boolean; write: string } | null;
   buriedMetric: string;
   testEvent: { format: string; body: string; curlHead: string; lands: string; table: string; allow: string[]; dataset: string };

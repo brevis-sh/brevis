@@ -8,7 +8,7 @@ const row = (i: number, dead: boolean) => ({
   sink: place("postgres", "postgres://warehouse/sales.", `events_${i}`), batch: "1 second or 500", batchEvery: "1s", batchRecords: 500,
   deadLetter: dead ? place("file", "file:///var/dead-letter/", String(i)) : null,
 });
-const answer = { rows: [row(0, true), row(1, false), row(2, true)], total: 3, gateways: 1, withDeadLetter: 2, kinds: [{ key: "postgres", label: "PostgreSQL" }], filter: { kind: "", q: "" } };
+const answer = { rows: [row(0, true), row(1, false), row(2, true)], total: 3, gateways: 1, withDeadLetter: 2, kinds: ["postgres"], filter: { kind: "", q: "" } };
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/ingest/streams*", (r) => r.fulfill({ json: answer }));
