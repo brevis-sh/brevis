@@ -1,7 +1,7 @@
 import { lazy, Suspense, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { fieldErrors, triggerRun } from "../api/trigger";
+import { fieldErrors, fieldText, triggerRun } from "../api/trigger";
 import { useT } from "../i18n";
 import { toast } from "../shell/toast";
 
@@ -68,7 +68,7 @@ export function useQuickRun(stay = false) {
     } catch (e) {
       // Without the drawer there is no field to put a refusal beside: it says which one.
       const [first] = Object.entries(fieldErrors(e));
-      toast(first ? `${first[0]}: ${first[1]}` : (e as Error).message, { kind: "fail" });
+      toast(first ? `${first[0]}: ${fieldText(t, first[1])}` : (e as Error).message, { kind: "fail" });
     } finally {
       setPending(null);
     }

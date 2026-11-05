@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { ApiError, getJSON } from "../api/client";
-import { fieldErrors, triggerRun, type TriggerBody } from "../api/trigger";
+import { fieldErrors, fieldText, triggerRun, type FieldError, type TriggerBody } from "../api/trigger";
 import type { WorkflowDetail } from "../api/workflows";
 import { useFormat, useT } from "../i18n";
 import { toast } from "../shell/toast";
@@ -236,7 +236,7 @@ export default function RunDrawer({ slug, rerun, onClose }: { slug: string; reru
   const [when, setWhen] = useState<"now" | "slot">("now");
   const [sel, setSel] = useState("");
   const [at, setAt] = useState("");
-  const [server, setServer] = useState<Record<string, string>>({});
+  const [server, setServer] = useState<Record<string, FieldError>>({});
   const [formError, setFormError] = useState("");
   // What is typed in a chips field and not yet committed still counts on submit.
   const drafts = useRef<Record<string, string>>({});
@@ -276,7 +276,7 @@ export default function RunDrawer({ slug, rerun, onClose }: { slug: string; reru
   };
 
   const rows = params.map((p) => ({ p, v: value(p) }));
-  const problems = new Map(rows.map(({ p, v }) => [p.name, problemOf(p, v) || server[p.name] || ""]));
+  const problems = new Map(rows.map(({ p, v }) => [p.name, problemOf(p, v) || (server[p.name] ? fieldText(t, server[p.name]!) : "")]));
   const invalid = [...problems.values()].filter(Boolean).length;
   const changed = rows.filter(({ p, v }) => norm(p, v) !== norm(p, defOf(p)));
 
@@ -324,7 +324,7 @@ export default function RunDrawer({ slug, rerun, onClose }: { slug: string; reru
 
   const edit = (p: Param, v: string) => {
     setValues((cur) => ({ ...(cur ?? {}), [p.name]: v }));
-    setServer((s) => (s[p.name] ? { ...s, [p.name]: "" } : s));
+    setServer(({ [p.name]: _gone, ...rest }) => rest);
   };
   const reset = () => {
     setValues(Object.fromEntries(params.map((p) => [p.name, norm(p, defOf(p))])));
@@ -381,7 +381,7 @@ export default function RunDrawer({ slug, rerun, onClose }: { slug: string; reru
     body = (
       <>
         {picks && (
-          <SlotPicker d={d} when={when} setWhen={setWhen} sel={sel} setSel={setSel} at={at} setAt={setAt} problem={server.slot} />
+          <SlotPicker d={d} when={when} setWhen={setWhen} sel={sel} setSel={setSel} at={at} setAt={setAt} problem={server.slot ? fieldText(t, server.slot) : undefined} />
         )}
         {bare && !picks && <p className="text-muted">{t("workflows.run_now.manual")}</p>}
         {picks && params.length > 0 && (
