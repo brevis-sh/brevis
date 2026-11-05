@@ -144,7 +144,7 @@ export function GroupBox({ data: d }: P) {
       <button type="button" className="nodrag" aria-expanded={!d.collapsed} onClick={(e) => { e.stopPropagation(); d.onToggle(); }}>
         <span style={{ fontSize: 9 }}>{d.collapsed ? "▸" : "▾"}</span>
         {d.label}
-        {d.membros ? <small>· {d.membros} {d.membros === 1 ? "step" : "steps"}</small> : null}
+        {d.members ? <small>· {d.members} {d.members === 1 ? "step" : "steps"}</small> : null}
       </button>
     </div>
   );

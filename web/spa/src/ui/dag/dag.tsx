@@ -242,7 +242,7 @@ export default function Dag({ src, runId, onPick }: Props) {
         const members = all.filter((o) => o.data?.group === n.data.label).length;
         nodes.push({
           ...n,
-          data: { ...n.data, membros: members, collapsed: !!collapsed[n.id], onToggle: () => toggle(n.id) },
+          data: { ...n.data, members: members, collapsed: !!collapsed[n.id], onToggle: () => toggle(n.id) },
           style: collapsed[n.id] ? { width: NODE_W, height: 46 } : n.style,
         });
       } else if (withStages.has(n.id)) {
