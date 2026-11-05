@@ -77,7 +77,7 @@ func TestSecretsRefusesWhatIsNotACoordinate(t *testing.T) {
 		"no slash":          "GABRIEL_SESSION_COOKIE: eyJhbGciOiJkaXIi==",
 		"empty secret":      "GABRIEL_SESSION_COOKIE: /cookie",
 		"empty key":         "GABRIEL_SESSION_COOKIE: gabriel-session/",
-		"barra demais":      "GABRIEL_SESSION_COOKIE: ns/gabriel-session/cookie",
+		"too many slashes":  "GABRIEL_SESSION_COOKIE: ns/gabriel-session/cookie",
 		"invalid name":      "GABRIEL-SESSION-COOKIE: gabriel-session/cookie",
 		"name with a space": "'GABRIEL COOKIE': gabriel-session/cookie",
 	}

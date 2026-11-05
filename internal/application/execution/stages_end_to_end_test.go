@@ -227,11 +227,11 @@ func TestStagesArriveThroughTheStepsLog(t *testing.T) {
 		Persist: spy,
 		Report:  screen,
 		Process: sdkSpeaker{lines: []string{
-			`@brevis:{"type":"sdk","version":"v0.44.1","pipeline":"clima"}`,
+			`@brevis:{"type":"sdk","version":"v0.44.1","pipeline":"weather"}`,
 			"fetching page 1",
 			`@brevis:{"type":"stage","name":"extract","state":"running","at":"now"}`,
 			`@brevis:{"type":"stage","name":"extract","state":"done","ms":2400,"pages":300}`,
-			"pronto",
+			"done",
 		}},
 	}
 	if err := r.Run(context.Background(), oneStepWorkflow()); err != nil {
@@ -262,7 +262,7 @@ func TestStagesArriveThroughTheStepsLog(t *testing.T) {
 		}
 	}
 	// And the real output is still intact.
-	for _, expected := range []string{"fetching page 1", "pronto"} {
+	for _, expected := range []string{"fetching page 1", "done"} {
 		if !strings.Contains(spy.log, expected) {
 			t.Errorf("the program's output was lost with it: %q is missing from\n%s", expected, spy.log)
 		}
@@ -276,7 +276,7 @@ func TestAPlainStepRecordsNoStages(t *testing.T) {
 	r := app.Runner{
 		RunID:   uuid.New(),
 		Persist: spy,
-		Process: sdkSpeaker{lines: []string{"compilando", "pronto"}},
+		Process: sdkSpeaker{lines: []string{"compiling", "done"}},
 	}
 	if err := r.Run(context.Background(), oneStepWorkflow()); err != nil {
 		t.Fatal(err)
@@ -334,7 +334,7 @@ func TestTheLoadRowReachesTheDatabaseOnceThroughTheStepsLog(t *testing.T) {
 // the trend draws toward a floor that never happened.
 func TestAStepWithNoLoadWritesNoTrendRow(t *testing.T) {
 	for name, lines := range map[string][]string{
-		"a plain command": {"copying files", "pronto"},
+		"a plain command": {"copying files", "done"},
 		"an SDK step whose load failed": {
 			`@brevis:{"type":"stage","index":0,"name":"extract","state":"done","at":"x","ms":900}`,
 			`@brevis:{"type":"stage","index":1,"name":"load","state":"failed","at":"x","rows":40000}`,

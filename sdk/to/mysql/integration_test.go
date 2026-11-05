@@ -852,7 +852,7 @@ func TestTheModeCompletesTheDeclarationRatherThanSilencingIt(t *testing.T) {
 	opt := sdk.WriteOptions{Schema: declared, Columns: declared.Names()}
 
 	_, err := to.Write(context.Background(), []sdk.Envelope{{Payload: map[string]any{
-		"brevis_ingestion_id": "id-1", "achada": "x",
+		"brevis_ingestion_id": "id-1", "found": "x",
 	}}}, opt)
 	if err == nil {
 		t.Fatal("a declared column the chain does not produce was accepted: " +
@@ -908,7 +908,7 @@ func TestADiscoveredColumnIsNeverKeyed(t *testing.T) {
 	to := tomy.Table{DSN: dsn(t), Name: name, Evolve: sdk.EvolveAdditiveFromPayload}
 
 	if _, err := to.Write(context.Background(), []sdk.Envelope{{Payload: map[string]any{
-		"brevis_ingestion_id": "id-1", "achada": "x",
+		"brevis_ingestion_id": "id-1", "found": "x",
 	}}}, sdk.WriteOptions{Schema: declared, Columns: declared.Names()}); err != nil {
 		t.Fatalf("a discovered LONGTEXT column: %v", err)
 	}
@@ -916,7 +916,7 @@ func TestADiscoveredColumnIsNeverKeyed(t *testing.T) {
 	var nullable, key string
 	if err := db.QueryRow(`
 		SELECT is_nullable, column_key FROM information_schema.columns
-		WHERE table_schema = DATABASE() AND table_name = ? AND column_name = 'achada'`,
+		WHERE table_schema = DATABASE() AND table_name = ? AND column_name = 'found'`,
 		name).Scan(&nullable, &key); err != nil {
 		t.Fatal(err)
 	}
@@ -952,7 +952,7 @@ func TestATableCreatedFromTheBatchTakesNullableColumns(t *testing.T) {
 	opt := sdk.WriteOptions{Schema: declared, Columns: declared.Names()}
 
 	if _, err := to.Write(context.Background(), []sdk.Envelope{{Payload: map[string]any{
-		"brevis_ingestion_id": "id-1", "achada": "x",
+		"brevis_ingestion_id": "id-1", "found": "x",
 	}}}, opt); err != nil {
 		t.Fatalf("creating from the batch: %v", err)
 	}
@@ -960,7 +960,7 @@ func TestATableCreatedFromTheBatchTakesNullableColumns(t *testing.T) {
 	var nullable string
 	if err := db.QueryRow(`
 		SELECT is_nullable FROM information_schema.columns
-		WHERE table_schema = DATABASE() AND table_name = ? AND column_name = 'achada'`,
+		WHERE table_schema = DATABASE() AND table_name = ? AND column_name = 'found'`,
 		name).Scan(&nullable); err != nil {
 		t.Fatal(err)
 	}

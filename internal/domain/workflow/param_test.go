@@ -118,7 +118,7 @@ func TestPatternWidensWhatIsAccepted(t *testing.T) {
 
 // An invalid default would only surface on the first scheduled run, at 3am.
 func TestAnInvalidPatternFailsAtPublishTime(t *testing.T) {
-	w := withParams(wf.Param{Name: "days", Type: wf.ParamInteger, Default: "muitos"})
+	w := withParams(wf.Param{Name: "days", Type: wf.ParamInteger, Default: "many"})
 	if err := w.Validate(); err == nil {
 		t.Fatal("an invalid default value passed validation")
 	}

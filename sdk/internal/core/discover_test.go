@@ -175,7 +175,7 @@ func TestCheckRowLetsADiscoveredColumnBeAbsent(t *testing.T) {
 	}
 
 	// Discovered and absent: fine.
-	if err := CheckRow(WriteOptions{Columns: []string{"id", "achada"}, Discovered: []string{"achada"}}, records); err != nil {
+	if err := CheckRow(WriteOptions{Columns: []string{"id", "found"}, Discovered: []string{"found"}}, records); err != nil {
 		t.Errorf("a discovered column absent from this record was refused: %v\n\n"+
 			"A batch holds N records and they need not carry the same fields. "+
 			"The union is what the table has to have; a record missing one of "+
@@ -184,8 +184,8 @@ func TestCheckRowLetsADiscoveredColumnBeAbsent(t *testing.T) {
 	}
 
 	// And the other half still fires: an undeclared field is still refused.
-	err = CheckRow(WriteOptions{Columns: []string{"id"}, Discovered: []string{"achada"}}, batch(map[string]any{"id": "A", "nova": 1}))
-	if err == nil || !strings.Contains(err.Error(), "nova") {
+	err = CheckRow(WriteOptions{Columns: []string{"id"}, Discovered: []string{"found"}}, batch(map[string]any{"id": "A", "fresh": 1}))
+	if err == nil || !strings.Contains(err.Error(), "fresh") {
 		t.Errorf("an undeclared field was accepted: %v", err)
 	}
 }

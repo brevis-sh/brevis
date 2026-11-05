@@ -1037,7 +1037,7 @@ func TestTheModeCompletesTheDeclarationRatherThanSilencingIt(t *testing.T) {
 	opt := sdk.WriteOptions{Schema: declared, Columns: declared.Names()}
 
 	_, err := to.Write(context.Background(), []sdk.Envelope{env(map[string]any{
-		"brevis_ingestion_id": "id-1", "achada": "x",
+		"brevis_ingestion_id": "id-1", "found": "x",
 	})}, opt)
 	if err == nil {
 		t.Fatal("a declared column the chain does not produce was accepted: " +

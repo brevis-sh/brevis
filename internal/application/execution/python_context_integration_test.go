@@ -53,7 +53,7 @@ bucket = context.get("extract.bucket")
 print("python read:", bucket)
 
 context.set(name="Daniel")
-context.set(label="Nome")
+context.set(label="Name")
 context.set(rows=48213)
 `), 0o600); err != nil {
 		t.Fatal(err)
@@ -138,7 +138,7 @@ context.set(rows=48213)
 	// the two separate set() calls, which is the merge the request asked about.
 	seen := readJSON(t, filepath.Join(dir, "seen"))
 	got := seen["transform"]
-	if got["name"] != "Daniel" || got["label"] != "Nome" {
+	if got["name"] != "Daniel" || got["label"] != "Name" {
 		t.Errorf("the two set() calls did not both survive: %v", got)
 	}
 	if got["rows"] != float64(48213) {

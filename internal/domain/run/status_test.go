@@ -99,7 +99,7 @@ func TestCanceling(t *testing.T) {
 }
 
 func TestAnUnknownState(t *testing.T) {
-	if err := Validate(Status("inventado"), StatusQueued); err == nil {
+	if err := Validate(Status("made-up"), StatusQueued); err == nil {
 		t.Error("expected an error for an unknown state")
 	}
 }

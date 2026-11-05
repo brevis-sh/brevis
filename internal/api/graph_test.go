@@ -242,7 +242,7 @@ func TestTheGraphRefusesInvalidInput(t *testing.T) {
 		{"unknown workflow", newUI(defsFake{err: errors.New("no rows")}, execsFake{}),
 			"/api/workflows/ghost/graph", http.StatusNotFound},
 		{"malformed uuid", newUI(defsFake{}, execsFake{}),
-			"/api/runs/nao-e-uuid/graph", http.StatusBadRequest},
+			"/api/runs/not-a-uuid/graph", http.StatusBadRequest},
 		{"unknown run", newUI(defsFake{}, execsFake{err: errors.New("no rows")}),
 			"/api/runs/" + uuid.New().String() + "/graph", http.StatusNotFound},
 		{"cycle stored in the testDB", newUI(defsFake{w: wf.Workflow{

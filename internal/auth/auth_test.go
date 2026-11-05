@@ -223,7 +223,7 @@ func TestAnExternalDestinationIsDiscarded(t *testing.T) {
 	for raw, expected := range map[string]string{
 		"https://malicioso.example": "/",
 		"//malicioso.example":       "/",
-		"/runs?pagina=2":            "/runs?pagina=2",
+		"/runs?page=2":              "/runs?page=2",
 		"":                          "/",
 	} {
 		if d := auth.Target(raw); d != expected {

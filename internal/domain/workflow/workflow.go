@@ -819,7 +819,7 @@ func (w Workflow) findCycle() string {
 	}
 
 	const (
-		fresh = iota // without iota, inUse and pronto would repeat novo's value
+		fresh = iota // without iota, inUse and ready would repeat fresh's value
 		inUse
 		ready
 	)

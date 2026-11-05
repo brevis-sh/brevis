@@ -59,8 +59,8 @@ func TestAggregatorsComputeWhatTheyPromise(t *testing.T) {
 			"name_final": MaxBy("name", "year"),
 			"name_old":   MinBy("name", "year"),
 			"range":      Range("value"),
-			"algum_ok":   Any("ok"),
-			"todos_ok":   All("ok"),
+			"any_ok":     Any("ok"),
+			"all_ok":     All("ok"),
 		},
 	}, sales()...)
 
@@ -78,7 +78,7 @@ func TestAggregatorsComputeWhatTheyPromise(t *testing.T) {
 		"total": 40.0, "mean": 20.0, "min": 10.0, "max": 30.0,
 		"first": "a", "last": "d",
 		"name_final": "b", "name_old": "d",
-		"range": 20.0, "algum_ok": true, "todos_ok": false,
+		"range": 20.0, "any_ok": true, "all_ok": false,
 	}
 	for k, want := range cases {
 		if secondLine[k] != want {
@@ -299,7 +299,7 @@ func heapPeak(t *testing.T, n, groups int, agg map[string]Aggregator) uint64 {
 	for k, v := range agg {
 		withProbe[k] = v
 	}
-	withProbe["_sonda"] = Custom(Accumulator{
+	withProbe["_probe"] = Custom(Accumulator{
 		Init: func() any { return nil },
 		Add: func(any, map[string]any) error {
 			i++

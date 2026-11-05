@@ -226,7 +226,7 @@ func TestTheInstantAndThePage(t *testing.T) {
 	}
 	for _, s := range []string{"", "0", "-3", "abc"} {
 		if page(s) != 1 {
-			t.Errorf("pagina(%q) = %d, want 1", s, page(s))
+			t.Errorf("page(%q) = %d, want 1", s, page(s))
 		}
 	}
 	if page("4") != 4 {

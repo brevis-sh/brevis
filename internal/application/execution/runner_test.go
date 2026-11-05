@@ -189,7 +189,7 @@ func TestCancelingFiresNoRetry(t *testing.T) {
 // A step with no configured executor has to fail with a clear message, and not
 // be skipped in silence.
 func TestAStepWithNoExecutorFailsExplicitly(t *testing.T) {
-	w := wf.Workflow{Slug: "w", Nodes: []wf.Node{{ID: "n", Action: "qualquer"}}}
+	w := wf.Workflow{Slug: "w", Nodes: []wf.Node{{ID: "n", Action: "any"}}}
 	err := app.Runner{Report: &collector{}}.Run(context.Background(), w)
 	if err == nil {
 		t.Fatal("expected an error, not silence")
@@ -268,7 +268,7 @@ func TestStderrIsKeptAsTheLastLines(t *testing.T) {
 		t.Fatal(err)
 	}
 	w := wf.Workflow{Slug: "verbose", Nodes: []wf.Node{
-		{ID: "ruido", Run: "sh -c 'for i in 1 2 3 4 5 6 7 8 9 10; do echo line $i >&2; done; exit 9'"},
+		{ID: "noise", Run: "sh -c 'for i in 1 2 3 4 5 6 7 8 9 10; do echo line $i >&2; done; exit 9'"},
 	}}
 
 	failure := app.Runner{
@@ -299,8 +299,8 @@ func TestStderrOnASucceedingStepIsNotAFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	w := wf.Workflow{Slug: "avisos", Nodes: []wf.Node{
-		{ID: "ok", Run: "sh -c 'echo aviso >&2; exit 0'"},
+	w := wf.Workflow{Slug: "warnings", Nodes: []wf.Node{
+		{ID: "ok", Run: "sh -c 'echo warning >&2; exit 0'"},
 	}}
 	if failure := (app.Runner{
 		Process: exec, Report: &collector{},
@@ -338,7 +338,7 @@ func TestAFailureWithNoStderrUsesStdout(t *testing.T) {
 // error, and the normal output should not crowd the message out.
 func TestStderrTakesPrecedenceOverStdout(t *testing.T) {
 	exec, _ := local.New("local")
-	w := wf.Workflow{Slug: "misto", Nodes: []wf.Node{{
+	w := wf.Workflow{Slug: "mixed", Nodes: []wf.Node{{
 		ID:  "run",
 		Run: `sh -c 'echo "normal progress line"; echo "the real cause" >&2; exit 1'`,
 	}}}
@@ -382,7 +382,7 @@ func TestSlotsLimitSimultaneousSteps(t *testing.T) {
 
 	// All at the SAME level: with no dependency between them, the runner fires all
 	// ten at once if nothing holds it back.
-	w := wf.Workflow{Slug: "paralelo"}
+	w := wf.Workflow{Slug: "parallel"}
 	for i := 0; i < steps; i++ {
 		w.Nodes = append(w.Nodes, wf.Node{ID: fmt.Sprintf("p%d", i), Action: "busy"})
 	}
@@ -454,10 +454,10 @@ func TestSlotsAreSharedBetweenRuns(t *testing.T) {
 // gain a limit nobody asked for.
 func TestWithNoSlotsThereIsNoLimit(t *testing.T) {
 	reg := execution.NewRegistry()
-	reg.MustRegister(execution.FuncTask{TaskName: "nada", Fn: func(context.Context, execution.Input) error { return nil }})
+	reg.MustRegister(execution.FuncTask{TaskName: "noop", Fn: func(context.Context, execution.Input) error { return nil }})
 
 	w := wf.Workflow{Slug: "livre", Nodes: []wf.Node{
-		{ID: "a", Action: "nada"}, {ID: "b", Action: "nada"},
+		{ID: "a", Action: "noop"}, {ID: "b", Action: "noop"},
 	}}
 	if err := (app.Runner{Go: local.NewGoExecutor(reg), Report: &collector{}}).Run(context.Background(), w); err != nil {
 		t.Fatal(err)

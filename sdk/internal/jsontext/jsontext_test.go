@@ -74,9 +74,9 @@ func TestAppendJSONStringAgreesWithTheEncoder(t *testing.T) {
 // TestAppendJSONStringAppendsToTheDestination: it takes the buffer and returns the
 // buffer, so it does not allocate one per string on a load of millions.
 func TestAppendJSONStringAppendsToTheDestination(t *testing.T) {
-	dst := []byte("antes:")
+	dst := []byte("before:")
 	got := string(AppendJSONString(dst, "x"))
-	if got != `antes:"x"` {
+	if got != `before:"x"` {
 		t.Errorf("= %q", got)
 	}
 }

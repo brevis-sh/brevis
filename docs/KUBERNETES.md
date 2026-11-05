@@ -731,7 +731,7 @@ failure alert does exist (see below).
 ## Failure alerting
 
 ```bash
-kubectl -n dados create secret generic brevis-slack \
+kubectl -n data create secret generic brevis-slack \
   --from-literal=webhook='https://hooks.slack.com/services/...'
 ```
 
@@ -798,9 +798,9 @@ cluster already has a scheduler. And `--dry-run` prints what the message would
 have said, which is how somebody comes to trust a weekly summary:
 
 ```bash
-kubectl -n dados run brevis-report --rm -it --restart=Never \
+kubectl -n data run brevis-report --rm -it --restart=Never \
   --image=brevissh/brevis:0.2.1-worker \
-  --env=BREVIS_DATABASE_URL="$(kubectl -n dados get secret brevis-db -o jsonpath='{.data.url}' | base64 -d)" \
+  --env=BREVIS_DATABASE_URL="$(kubectl -n data get secret brevis-db -o jsonpath='{.data.url}' | base64 -d)" \
   -- report --window 168h --dry-run
 ```
 
@@ -820,10 +820,10 @@ is what guarantees the alert arrives.
 
 ```bash
 kubectl apply -f deployments/kubernetes/rbac.yaml
-kubectl -n dados create secret generic brevis-db --from-literal=url='postgres://...'
-kubectl -n dados create secret generic brevis-task-env \
+kubectl -n data create secret generic brevis-db --from-literal=url='postgres://...'
+kubectl -n data create secret generic brevis-task-env \
   --from-literal=STAGE=prod --from-literal=GOOGLE_PROJECT_ID=acme-...
-kubectl -n dados create configmap brevis-brand --from-file=brand.yaml
+kubectl -n data create configmap brevis-brand --from-file=brand.yaml
 kubectl apply -f deployments/kubernetes/api.yaml \
               -f deployments/kubernetes/scheduler.yaml \
               -f deployments/kubernetes/alert.yaml \

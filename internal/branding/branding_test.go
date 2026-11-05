@@ -35,11 +35,11 @@ func TestAMissingFileUsesTheDefault(t *testing.T) {
 
 // A missing field inherits the default: a two-line file is a valid file.
 func TestMissingFieldsInheritTheDefault(t *testing.T) {
-	m, err := branding.Load(writeFile(t, "title: Acme Dados\n"))
+	m, err := branding.Load(writeFile(t, "title: Acme Data\n"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if m.Title != "Acme Dados" {
+	if m.Title != "Acme Data" {
 		t.Errorf("title = %q", m.Title)
 	}
 	if m.Subtitle != branding.Default().Subtitle {

@@ -22,7 +22,7 @@ import (
 // the endpoint answers null for unauthenticated, ExpiresAt does not find
 // "expires", and the run dies before the first page.
 //
-// The test that existed used srv.URL + "/dados", whose directory is "/", which
+// The test that existed used srv.URL + "/data", whose directory is "/", which
 // matches everything. It passed because the source was at the root, and no real
 // API is.
 func TestTheRefreshGetsTheCredentialUnderAnotherPrefix(t *testing.T) {

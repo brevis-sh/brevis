@@ -128,7 +128,7 @@ func TestAFailedWriteDoesNotStopTheRun(t *testing.T) {
 		URL:   srv.URL + "/data",
 		Stats: &stats,
 		Auth: &core.Credential{
-			Value: func(context.Context) (string, error) { return "session=velho", nil },
+			Value: func(context.Context) (string, error) { return "session=old", nil },
 			Apply: core.AsCookie,
 			Refresh: &core.Refresh{
 				URL:   srv.URL + "/auth",

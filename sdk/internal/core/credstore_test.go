@@ -426,7 +426,7 @@ func TestTheStoreComesBeforeTheSeed(t *testing.T) {
 
 	var seedUsed bool
 	c := &Credential{
-		Value:   func(context.Context) (string, error) { seedUsed = true; return "da-semente", nil },
+		Value:   func(context.Context) (string, error) { seedUsed = true; return "from-seed", nil },
 		Apply:   AsCookie,
 		Refresh: &Refresh{URL: "http://x", Store: s},
 	}
@@ -448,7 +448,7 @@ func TestWithNoStoredValueItUsesTheSeed(t *testing.T) {
 	s, _ := readyStore(t)
 
 	c := &Credential{
-		Value:   func(context.Context) (string, error) { return "da-semente", nil },
+		Value:   func(context.Context) (string, error) { return "from-seed", nil },
 		Apply:   AsCookie,
 		Refresh: &Refresh{URL: "http://x", Store: s},
 	}
@@ -456,7 +456,7 @@ func TestWithNoStoredValueItUsesTheSeed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
-	if got != "da-semente" {
+	if got != "from-seed" {
 		t.Errorf("Get = %q, want the seed", got)
 	}
 }

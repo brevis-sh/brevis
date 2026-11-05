@@ -129,7 +129,7 @@ func TestParamsIsNeverNil(t *testing.T) {
 	// With no engine at all: reading a missing key must not blow up.
 	p := pipeline(srv.URL)
 	p.Before = func(ctx context.Context, p *sdk.Pipeline) error {
-		_ = p.Run.Params["qualquer"]
+		_ = p.Run.Params["any"]
 		return nil
 	}
 	run(t, p) // a panic here fails the test

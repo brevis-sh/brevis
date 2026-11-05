@@ -24,7 +24,7 @@ func TestAPlainLineStaysALogLine(t *testing.T) {
 		"running the extract",
 		"@brevis",
 		"@brevis:this is not json",
-		`prefixo @brevis:{"type":"stage","name":"load","state":"done"}`,
+		`prefix @brevis:{"type":"stage","name":"load","state":"done"}`,
 	} {
 		if c.line(line) {
 			t.Errorf("it swallowed a line that was a log line: %q", line)
@@ -75,7 +75,7 @@ func TestTheArrivalOrderIsPreserved(t *testing.T) {
 // about them.
 func TestAnUnknownStageIsIgnored(t *testing.T) {
 	var c stageCollector
-	if !c.line(`@brevis:{"type":"stage","name":"reticulando","state":"running"}`) {
+	if !c.line(`@brevis:{"type":"stage","name":"reticulating","state":"running"}`) {
 		t.Error("the line is a marker and should be consumed even when unknown")
 	}
 	if len(c.Stages) != 0 {

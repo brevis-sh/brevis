@@ -188,7 +188,7 @@ func TestTheRotationAppliesToThePagesEvenWhenExpiresAtFails(t *testing.T) {
 	source := core.Source{
 		URL: srv.URL + "/api/proxy/data",
 		Auth: &core.Credential{
-			Value: func(context.Context) (string, error) { return "session=velho", nil },
+			Value: func(context.Context) (string, error) { return "session=old", nil },
 			Apply: core.AsCookie,
 			Refresh: &core.Refresh{
 				URL: srv.URL + "/api/auth/session",

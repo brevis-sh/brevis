@@ -36,7 +36,7 @@ func TestTheNamesComeSorted(t *testing.T) {
 	}
 	got := r.Names()
 	if len(got) != 3 || got[0] != "alfa" || got[2] != "zeta" {
-		t.Errorf("Nomes() = %v, wanted sorted", got)
+		t.Errorf("Names() = %v, wanted sorted", got)
 	}
 }
 

@@ -472,6 +472,8 @@ HOMOGRAPHS = {
     "fila": "ambiguous",
     "dado": "ambiguous",
     "usa": "USA",
+    "ja": "ja, the Japanese language code",
+    "novo": "ambiguous",
     "eco": "eco- prefix",
     "grande": "Rio Grande and similar",
     "agora": "English: agora",
@@ -517,6 +519,8 @@ contaminado leva guarda corpo conflitos pausa unico palavra renomeado
 indice numeros versao registros partes parte
 extrair estavel coleta cobre cobrir lote lotes chegou sobe desce vira faz roda
 fonte destino origem
+pronto clima nada falador buscando pagina paginas compilando ruido misto paralelo
+demais muitos inventado reticulando velho achada achado nova semente
 """.split()) - set(HOMOGRAPHS)
 
 # ID_ALLOW: (path suffix, the words that file may contain, WHY). One entry per
@@ -560,6 +564,25 @@ def brit_parts(ident):
 # sentence.
 SENTENCE_PT = set("sem com uma dos das nas nos pelo pela".split())
 PHRASE = re.compile(r"[a-z0-9' ,._-]{3,60}")
+# a string that is one name or phrase, in a test: a fixture word, a case key, a subtest name
+
+# Test files whose fixtures ARE the legacy spellings, so the single words in them
+# are data. Each guards a legacy reader listed in CONTRIBUTING.md.
+FIXTURE_ALLOW = [
+    ("sdk/checkpoint_test.go", "a depot written before the rename: parte-00000.ndjson and its Portuguese manifest keys"),
+    ("sdk/internal/checkpoint/format_test.go", "the manifest reader's legacy format"),
+    ("internal/application/execution/stages_test.go", "the stage reader's legacy marker lines"),
+    ("internal/application/execution/stages_end_to_end_test.go", "the legacy marker line, read end to end"),
+    ("internal/application/workflow/unknown_test.go", "`tipo` is the deliberately unknown key of a spec"),
+    ("sdk/to/files_object_test.go", "the `parte-` object prefix landing zones already hold"),
+    ("internal/config/config_test.go", "the deprecated Portuguese environment variables"),
+    ("sdk/internal/core/metadata_test.go", "the deprecated SDK environment variable"),
+    ("internal/infrastructure/postgres/legacy_schema_test.go", "the pre-00033 schema"),
+    ("internal/infrastructure/postgres/upgrade_00033_test.go", "the upgrade test of migration 00033"),
+    ("internal/infrastructure/postgres/failed_ends_test.go", "a revision before 00033"),
+    ("internal/infrastructure/postgres/index_test.go", "a revision before 00033"),
+]
+
 USED = set()
 
 def id_allowed(path, words):
@@ -647,10 +670,12 @@ for s in FILES:
         for kind, text, line in go_tokens(src):
             if kind == "id" and text not in GO_KEYWORDS:
                 judge_ident(s, text, line, "identifier")
-            elif kind == "str" and is_test and "\n" not in text and PHRASE.fullmatch(text) and " " in text.strip():
-                # a subtest name or a table-case key: a short lowercase phrase
-                hit = [w for w in re.findall(r"[a-z]+", text) if w in PT_ID or w in SENTENCE_PT]
-                if hit and not allowed(s, text):
+            elif kind == "str" and is_test and "\n" not in text and PHRASE.fullmatch(text):
+                # a subtest name, a table-case key or a fixture word: a short
+                # lowercase string. SENTENCE_PT only counts in a phrase, where
+                # `sem` is a word and not a semaphore.
+                hit = [w for w in re.findall(r"[a-z]+", text) if w in PT_ID or (" " in text.strip() and w in SENTENCE_PT)]
+                if hit and not allowed(s, text) and not any(s.endswith(f) for f, _ in FIXTURE_ALLOW):
                     ruins.append((s, line, hit[0], "Portuguese in a test name or case key", text))
             elif kind == "str" and SQL_RE.search(text) and not s.startswith("sql/") \
                     and not any(s.endswith(f) for f, _ in SQL_ALLOW):

@@ -713,7 +713,7 @@ func TestIntegrationBigQueryTheModeCompletesTheDeclaration(t *testing.T) {
 	_, err := l.Load(ctx, core.Envelope{
 		Provider: "p", Entity: "e", SourceKey: "k", RecordTS: "t",
 		Payload: map[string]any{
-			"ts": "2026-09-26T10:00:00Z", "id": "A-1", "achada": "x",
+			"ts": "2026-09-26T10:00:00Z", "id": "A-1", "found": "x",
 		},
 	})
 	if err == nil {
