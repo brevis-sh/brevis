@@ -260,7 +260,7 @@ func TestIntegrationGCSStrategy(t *testing.T) {
 	}
 }
 
-// TestIntegrationMergeNaoDobra is the criterion asked for in v0.2: load the
+// TestIntegrationMergeDoesNotDouble is the criterion asked for in v0.2: load the
 // same batch twice and the count must not double.
 func TestIntegrationMergeDoesNotDouble(t *testing.T) {
 	env := requireIntegration(t)
@@ -577,7 +577,7 @@ func TestIntegrationWritesOnlyTheCallersFields(t *testing.T) {
 		// which is the opposite of what this test is about.
 		core.WithSchema(core.Schema{
 			{Name: "sku", Type: core.TypeString},
-			{Name: "quantidade", Type: core.TypeInt64},
+			{Name: "quantity", Type: core.TypeInt64},
 		}),
 	)
 	if err != nil {
@@ -590,7 +590,7 @@ func TestIntegrationWritesOnlyTheCallersFields(t *testing.T) {
 		Entity:    "widgets",
 		SourceKey: "k-1",
 		RecordTS:  "2026-01-01T00:00:00Z",
-		Payload:   map[string]any{"sku": "W-1", "quantidade": 3},
+		Payload:   map[string]any{"sku": "W-1", "quantity": 3},
 	}}
 
 	if _, err := loader.Load(ctx, batch...); err != nil {
@@ -606,7 +606,7 @@ func TestIntegrationWritesOnlyTheCallersFields(t *testing.T) {
 	for _, f := range meta.Schema {
 		got[f.Name] = true
 	}
-	for _, want := range []string{"sku", "quantidade"} {
+	for _, want := range []string{"sku", "quantity"} {
 		if !got[want] {
 			t.Errorf("the caller's field %q is not in the table", want)
 		}
@@ -645,9 +645,9 @@ func TestIntegrationMetadataColumnsAreNotNull(t *testing.T) {
 			{Name: "ingestion_id", Type: core.TypeString},
 			{Name: "ingestion_loaded_at", Type: core.TypeTimestamp},
 			{Name: "sku", Type: core.TypeString},
-			{Name: "quantidade", Type: core.TypeInt64},
+			{Name: "quantity", Type: core.TypeInt64},
 		}),
-		core.WithColumns([]string{"ingestion_id", "ingestion_loaded_at", "sku", "quantidade"}),
+		core.WithColumns([]string{"ingestion_id", "ingestion_loaded_at", "sku", "quantity"}),
 		core.WithClusterBy("sku"),
 	)
 	if err != nil {
@@ -657,7 +657,7 @@ func TestIntegrationMetadataColumnsAreNotNull(t *testing.T) {
 	batch := []core.Envelope{{
 		Provider: "acme", Entity: "widgets", SourceKey: "k-1",
 		RecordTS: "2026-01-01T00:00:00Z",
-		Payload:  withIngestionOnRow(map[string]any{"sku": "W-1", "quantidade": 3}),
+		Payload:  withIngestionOnRow(map[string]any{"sku": "W-1", "quantity": 3}),
 	}}
 	if _, err := loader.Load(ctx, batch...); err != nil {
 		t.Fatalf("load: %v", err)
@@ -680,7 +680,7 @@ func TestIntegrationMetadataColumnsAreNotNull(t *testing.T) {
 		t.Errorf("ingestion_loaded_at is not TIMESTAMP NOT NULL: %+v", f)
 	}
 	// The caller's columns stay the caller's: typed by BigQuery, nullable.
-	for _, n := range []string{"sku", "quantidade"} {
+	for _, n := range []string{"sku", "quantity"} {
 		if f := byName[n]; f == nil || f.Required {
 			t.Errorf("the SDK changed the caller's column %q: %+v", n, f)
 		}
@@ -694,7 +694,7 @@ func TestIntegrationMetadataColumnsAreNotNull(t *testing.T) {
 
 	// And a second load still lands, against the fixed schema.
 	if _, err := loader.Load(ctx, core.Envelope{
-		Payload: withIngestionOnRow(map[string]any{"sku": "W-2", "quantidade": 9}),
+		Payload: withIngestionOnRow(map[string]any{"sku": "W-2", "quantity": 9}),
 	}); err != nil {
 		t.Fatalf("second load into the typed table: %v", err)
 	}
@@ -786,7 +786,7 @@ func TestIntegrationColumnsMatchTheDDL(t *testing.T) {
 		core.WithDataset(env.dataset),
 		core.WithTable(name),
 		core.WithColumns([]string{"ingestion_id", "ingestion_loaded_at", "amount", "label"}),
-		core.WithColumns(append(append([]string{}, declared...), "coluna_inventada")),
+		core.WithColumns(append(append([]string{}, declared...), "invented_column")),
 	)
 	if err != nil {
 		t.Fatalf("New: %v", err)
@@ -795,7 +795,7 @@ func TestIntegrationColumnsMatchTheDDL(t *testing.T) {
 	if err == nil {
 		t.Fatal("a declaration naming a column the table lacks must be refused")
 	}
-	if !strings.Contains(err.Error(), "coluna_inventada") {
+	if !strings.Contains(err.Error(), "invented_column") {
 		t.Errorf("the error does not name the column: %v", err)
 	}
 }
@@ -821,8 +821,8 @@ func TestIntegrationCreateSQLRunsTheCallersDDL(t *testing.T) {
 
 	ddl := fmt.Sprintf(`CREATE TABLE `+"`%s.%s.%s`"+` (
 		sku STRING NOT NULL,
-		quantidade INT64,
-		preco NUMERIC
+		quantity INT64,
+		price NUMERIC
 	)`, env.project, env.dataset, name)
 
 	loader, err := New(ctx, nil,
@@ -837,7 +837,7 @@ func TestIntegrationCreateSQLRunsTheCallersDDL(t *testing.T) {
 	}
 
 	if _, err := loader.Load(ctx, core.Envelope{
-		Payload: map[string]any{"sku": "W-1", "quantidade": 3, "preco": "9.99"},
+		Payload: map[string]any{"sku": "W-1", "quantity": 3, "price": "9.99"},
 	}); err != nil {
 		t.Fatalf("load into a table created by CreateSQL: %v", err)
 	}
@@ -852,7 +852,7 @@ func TestIntegrationCreateSQLRunsTheCallersDDL(t *testing.T) {
 	}
 	// NUMERIC is the point: autodetect would never produce that from JSON, and
 	// that is precisely why CreateSQL exists.
-	if f := byName["preco"]; f == nil || f.Type != bigquery.NumericFieldType {
+	if f := byName["price"]; f == nil || f.Type != bigquery.NumericFieldType {
 		t.Errorf("the caller's DDL did not survive: price = %+v", f)
 	}
 	if f := byName["sku"]; f == nil || !f.Required {
@@ -933,12 +933,12 @@ func TestIntegrationKeepStagedFile(t *testing.T) {
 	ctx := context.Background()
 
 	for _, c := range []struct {
-		name   string
-		manter bool
-		await  int
+		name  string
+		keep  bool
+		await int
 	}{
-		{"o padrão apaga", false, 0},
-		{"KeepStagedFile mantém", true, 1},
+		{"the default deletes", false, 0},
+		{"KeepStagedFile keeps", true, 1},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			client, name := createTable(ctx, t, env, bigquery.Schema{
@@ -955,7 +955,7 @@ func TestIntegrationKeepStagedFile(t *testing.T) {
 				core.WithStagingPrefix(prefix),
 				core.WithThresholdForGCS(1), // forces the GCS path
 			}
-			if c.manter {
+			if c.keep {
 				opts = append(opts, core.WithKeepStagedFile(true))
 			}
 
@@ -1014,8 +1014,8 @@ func TestIntegrationInlineLimitPicksTheStrategy(t *testing.T) {
 		lines    int
 		expected string
 	}{
-		{"abaixo do limite vai inline", 10, 3, "inline"},
-		{"acima do limite passa pelo GCS", 2, 3, "gcs"},
+		{"below the limit goes inline", 10, 3, "inline"},
+		{"above the limit goes through GCS", 2, 3, "gcs"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			_, name := createTable(ctx, t, env, bigquery.Schema{

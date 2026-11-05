@@ -134,7 +134,7 @@ func TestTheConditionalWrite(t *testing.T) {
 	g := &fakeGCS{}
 	c := credential(t, g)
 
-	if err := c.Save("primeiro"); err != nil {
+	if err := c.Save("first"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := c.Load(); err != nil { // remembers generation 1
@@ -144,11 +144,11 @@ func TestTheConditionalWrite(t *testing.T) {
 	// Another process writes from outside, advancing the generation.
 	g.mu.Lock()
 	g.generation++
-	g.content = []byte("brevis-cred/1p\nde-outro-processo")
+	g.content = []byte("brevis-cred/1p\nfrom-another-process")
 	g.mu.Unlock()
 
 	// This run's write was conditional on the generation it read.
-	if err := c.Save("meu-valor"); err != nil {
+	if err := c.Save("my-value"); err != nil {
 		t.Fatalf("the conflict became an error: %v", err)
 	}
 	g.mu.Lock()
@@ -158,7 +158,7 @@ func TestTheConditionalWrite(t *testing.T) {
 	if conflicts != 1 {
 		t.Errorf("conflicts = %d, want 1 -- the write was not conditional", conflicts)
 	}
-	if !strings.Contains(content, "de-outro-processo") {
+	if !strings.Contains(content, "from-another-process") {
 		t.Errorf("overwrote the newer value: %q", content)
 	}
 }
@@ -174,10 +174,10 @@ func TestTheFirstWriteUsesDoesNotExist(t *testing.T) {
 	}
 	// Another process creates the object first.
 	g.mu.Lock()
-	g.exists, g.generation, g.content = true, 7, []byte("brevis-cred/1p\nde-outro")
+	g.exists, g.generation, g.content = true, 7, []byte("brevis-cred/1p\nfrom-another")
 	g.mu.Unlock()
 
-	if err := c.Save("meu"); err != nil {
+	if err := c.Save("my"); err != nil {
 		t.Fatalf("the conflict became an error: %v", err)
 	}
 	g.mu.Lock()
@@ -185,8 +185,8 @@ func TestTheFirstWriteUsesDoesNotExist(t *testing.T) {
 	if g.conflicts != 1 {
 		t.Errorf("conflicts = %d; the first write did not use DoesNotExist", g.conflicts)
 	}
-	if !strings.Contains(string(g.content), "de-outro") {
-		t.Errorf("sobrescreveu: %q", g.content)
+	if !strings.Contains(string(g.content), "from-another") {
+		t.Errorf("overwrote: %q", g.content)
 	}
 }
 
@@ -201,8 +201,8 @@ func TestBucketAndObjectAreRequired(t *testing.T) {
 
 // TestDescribeRevealsNothing: Describe reaches the log.
 func TestDescribeRevealsNothing(t *testing.T) {
-	c := Credential{Bucket: "b", Object: "o", Key: "chave-secreta-aqui"}
-	if strings.Contains(c.Describe(), "chave-secreta") {
+	c := Credential{Bucket: "b", Object: "o", Key: "secret-key-here"}
+	if strings.Contains(c.Describe(), "secret-key") {
 		t.Errorf("Describe leaks the key: %q", c.Describe())
 	}
 	if c.Describe() != "gs://b/o" {

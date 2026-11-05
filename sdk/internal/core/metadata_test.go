@@ -32,12 +32,12 @@ func TestColumnsRefusesAColumnNobodyDelivered(t *testing.T) {
 func TestColumnsRefusesAnUndeclaredField(t *testing.T) {
 	err := CheckColumns(
 		[]string{"provider", "payload"},
-		coreLine(map[string]any{"provider": "p", "payload": "{}", "surpresa": 1}),
+		coreLine(map[string]any{"provider": "p", "payload": "{}", "surprise": 1}),
 	)
 	if err == nil {
 		t.Fatal("an undeclared field would be written to a table that never mentioned it")
 	}
-	if !strings.Contains(err.Error(), "surpresa") {
+	if !strings.Contains(err.Error(), "surprise") {
 		t.Errorf("the error does not name the field: %v", err)
 	}
 }
@@ -86,7 +86,7 @@ func TestEnvIntFallsBackToTheDefaultInsteadOfBreaking(t *testing.T) {
 // Does an invalid log level take the pipeline down? No: it warns and carries
 // on.
 func TestAnInvalidLogLevelDoesNotBringItDown(t *testing.T) {
-	t.Setenv(EnvLogLevel, "nao-existe")
+	t.Setenv(EnvLogLevel, "does-not-exist")
 	if got := LogLevel(); got != slog.LevelInfo {
 		t.Errorf("LogLevel = %v, want info", got)
 	}

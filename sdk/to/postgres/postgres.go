@@ -117,7 +117,7 @@ func (t Table) Write(ctx context.Context, envelopes []core.Envelope, opt core.Wr
 		return fail(fmt.Errorf("postgres.Table needs DSN (or Conn)"))
 	}
 	if t.Name == "" {
-		return fail(fmt.Errorf("postgres.Table needs Name, with the schema: \"landing.pedidos\""))
+		return fail(fmt.Errorf("postgres.Table needs Name, with the schema: \"landing.orders\""))
 	}
 	if len(envelopes) == 0 {
 		return fail(nil)

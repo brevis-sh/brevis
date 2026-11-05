@@ -118,7 +118,7 @@ func (d Dialect) Build(m model.Model, st dialect.State) ([]string, error) {
 	ref := m.Ref()
 
 	var out []string
-	switch m.Materialised {
+	switch m.Materialized {
 	case model.Incremental:
 		// A REBUILD IS A TABLE BUILD. Nothing is there to add to -- or a
 		// `--full-refresh` said to pretend so -- and from tomorrow the

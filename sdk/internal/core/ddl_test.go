@@ -19,7 +19,7 @@ var sample = Schema{
 // A default on a TEXT, JSON or BLOB column is parenthesized for MySQL, and for
 // nobody else. Error 1101 is what the plain form gets, and only a real server
 // says so.
-func TestMySQLParenthesisesTheDefaultsItHasTo(t *testing.T) {
+func TestMySQLParenthesizesTheDefaultsItHasTo(t *testing.T) {
 	for _, c := range []struct {
 		ct   ColumnType
 		want string
@@ -46,7 +46,7 @@ func TestMySQLParenthesisesTheDefaultsItHasTo(t *testing.T) {
 	// And Postgres does not parenthesize, because it has no reason to.
 	got, _ := Schema{{Name: "c", Type: TypeString, Default: "x"}}.CreateTable(Postgres, "t")
 	if strings.Contains(got, "DEFAULT ('x')") {
-		t.Errorf("postgres parenthesised a default it does not need to: %s", got)
+		t.Errorf("postgres parenthesized a default it does not need to: %s", got)
 	}
 }
 

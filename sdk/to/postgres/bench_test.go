@@ -19,7 +19,7 @@ import (
 //	BREVIS_IT_PG_DSN=... go test -run XXX -bench CargaPostgres ./to/postgres/
 func BenchmarkPostgresLoad(b *testing.B) {
 	d := ""
-	if d = envOuPular(b); d == "" {
+	if d = envOrSkip(b); d == "" {
 		return
 	}
 	conn := connectBench(b, d)
@@ -34,7 +34,7 @@ func BenchmarkPostgresLoad(b *testing.B) {
 			"ingestion_loaded_at": now,
 			"provider":            "bench",
 			"source_key":          fmt.Sprintf("k%d", i),
-			"valor":               "10.50",
+			"value":               "10.50",
 		}}
 	}
 

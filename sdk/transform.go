@@ -266,14 +266,14 @@ func Rename(names map[string]string) (tr Transformer) {
 			to    string
 			value any
 		}
-		var trocas []swap
+		var swaps []swap
 		for from, to := range names {
 			if v, present := obj[from]; present {
-				trocas = append(trocas, swap{to, v})
+				swaps = append(swaps, swap{to, v})
 				delete(obj, from)
 			}
 		}
-		for _, t := range trocas {
+		for _, t := range swaps {
 			obj[t.to] = t.value
 		}
 		return obj, nil

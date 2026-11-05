@@ -350,11 +350,11 @@ func TestAcceptAfterRename(t *testing.T) {
 
 // Nothing to name, nothing to do.
 func TestAcceptPassesScalarsThrough(t *testing.T) {
-	got, err := Accept("a")("um texto")
+	got, err := Accept("a")("some text")
 	if err != nil {
 		t.Fatalf("a scalar record has no fields to name: %v", err)
 	}
-	if got != "um texto" {
+	if got != "some text" {
 		t.Errorf("the record changed: %v", got)
 	}
 }

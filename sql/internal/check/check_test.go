@@ -11,7 +11,7 @@ import (
 var pg = postgres.Dialect{}
 
 func orders() model.Model {
-	return model.Model{Schema: "marts", Name: "orders", Materialised: model.Table}
+	return model.Model{Schema: "marts", Name: "orders", Materialized: model.Table}
 }
 
 func only(t *testing.T, test model.Test) Check {

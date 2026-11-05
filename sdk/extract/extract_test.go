@@ -357,7 +357,7 @@ func TestPostSendsMethodBodyAndHeaders(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	body := `{"consulta":"tudo"}`
+	body := `{"query":"everything"}`
 	lines, err := JSON(context.Background(), core.Source{
 		URL:    srv.URL,
 		Method: http.MethodPost,
@@ -373,7 +373,7 @@ func TestPostSendsMethodBodyAndHeaders(t *testing.T) {
 	n := 0
 	for _, err := range lines {
 		if err != nil {
-			t.Fatalf("iterando: %v", err)
+			t.Fatalf("iterating: %v", err)
 		}
 		n++
 	}

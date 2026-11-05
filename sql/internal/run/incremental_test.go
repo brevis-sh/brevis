@@ -86,7 +86,7 @@ func open(t *testing.T, name string) *warehouse {
 func (w *warehouse) source(t *testing.T, rows string) {
 	t.Helper()
 	w.buildOne(t, model.Model{
-		Schema: w.schema, Name: "src", Materialised: model.Table, SQL: rows,
+		Schema: w.schema, Name: "src", Materialized: model.Table, SQL: rows,
 	}, run.Options{})
 }
 
@@ -94,7 +94,7 @@ func (w *warehouse) source(t *testing.T, rows string) {
 func (w *warehouse) build(t *testing.T, opt run.Options) run.Result {
 	t.Helper()
 	return w.buildOne(t, model.Model{
-		Schema: w.schema, Name: "orders", Materialised: model.Incremental,
+		Schema: w.schema, Name: "orders", Materialized: model.Incremental,
 		UniqueKey: []string{"k"}, Watermark: "w",
 		SQL: "SELECT k, v, w FROM " + w.schema + ".src",
 	}, opt)

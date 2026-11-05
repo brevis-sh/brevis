@@ -47,7 +47,7 @@ func TestTheSecondRunUsesWhatCameFromTheVolume(t *testing.T) {
 			return
 		}
 		generation++
-		http.SetCookie(w, &http.Cookie{Name: "session", Value: fmt.Sprintf("rotacionado-%d", generation)})
+		http.SetCookie(w, &http.Cookie{Name: "session", Value: fmt.Sprintf("rotated-%d", generation)})
 		_, _ = fmt.Fprintf(w, `{"expires":%q}`, time.Now().Add(30*24*time.Hour).Format(time.RFC3339))
 	})
 	mux.HandleFunc("/api/proxy/occurrences", func(w http.ResponseWriter, _ *http.Request) {
@@ -87,7 +87,7 @@ func TestTheSecondRunUsesWhatCameFromTheVolume(t *testing.T) {
 	}
 
 	// First: the seed exists, and the rotation is written.
-	if err := runIt("colado-pelo-humano"); err != nil {
+	if err := runIt("pasted-by-a-human"); err != nil {
 		t.Fatalf("first run: %v", err)
 	}
 
@@ -101,10 +101,10 @@ func TestTheSecondRunUsesWhatCameFromTheVolume(t *testing.T) {
 	if len(seenValues) != 2 {
 		t.Fatalf("the renewal received the credential %d times, want 2: %v", len(seenValues), seenValues)
 	}
-	if seenValues[0] != "colado-pelo-humano" {
+	if seenValues[0] != "pasted-by-a-human" {
 		t.Errorf("the first run used %q", seenValues[0])
 	}
-	if seenValues[1] != "rotacionado-1" {
+	if seenValues[1] != "rotated-1" {
 		t.Errorf("the second run used %q; expected the value the first one wrote", seenValues[1])
 	}
 }
@@ -114,10 +114,10 @@ func TestTheSecondRunUsesWhatCameFromTheVolume(t *testing.T) {
 func TestAFailedWriteDoesNotStopTheRun(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/auth", func(w http.ResponseWriter, _ *http.Request) {
-		http.SetCookie(w, &http.Cookie{Name: "session", Value: "novo"})
+		http.SetCookie(w, &http.Cookie{Name: "session", Value: "new"})
 		_, _ = fmt.Fprint(w, `{"ok":1}`)
 	})
-	mux.HandleFunc("/dados", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/data", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = fmt.Fprint(w, `{"ok":1}`)
 	})
 	srv := httptest.NewServer(mux)
@@ -125,7 +125,7 @@ func TestAFailedWriteDoesNotStopTheRun(t *testing.T) {
 
 	var stats core.Stats
 	seq, err := JSON(context.Background(), core.Source{
-		URL:   srv.URL + "/dados",
+		URL:   srv.URL + "/data",
 		Stats: &stats,
 		Auth: &core.Credential{
 			Value: func(context.Context) (string, error) { return "session=velho", nil },
@@ -142,7 +142,7 @@ func TestAFailedWriteDoesNotStopTheRun(t *testing.T) {
 	lines := 0
 	for _, err := range seq {
 		if err != nil {
-			t.Fatalf("iterando: %v", err)
+			t.Fatalf("iterating: %v", err)
 		}
 		lines++
 	}
@@ -157,8 +157,8 @@ func TestAFailedWriteDoesNotStopTheRun(t *testing.T) {
 type nonWritingStore struct{}
 
 func (nonWritingStore) Load() (string, error) { return "", nil }
-func (nonWritingStore) Save(string) error     { return fmt.Errorf("disco cheio") }
-func (nonWritingStore) Describe() string      { return "store de teste" }
+func (nonWritingStore) Save(string) error     { return fmt.Errorf("disk full") }
+func (nonWritingStore) Describe() string      { return "test store" }
 
 // TestTheCredentialNeverAppearsInALog is §7.8 of the spec. A value that leaks
 // into the log leaks into the log aggregator, which plenty of people read -- and
@@ -166,7 +166,7 @@ func (nonWritingStore) Describe() string      { return "store de teste" }
 // where one is not kept.
 func TestTheCredentialNeverAppearsInALog(t *testing.T) {
 	const secret = "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..MUlTVFJP"
-	const rotated = "ROTACIONADO-eyJhbGciOiJkaXI"
+	const rotated = "ROTATED-eyJhbGciOiJkaXI"
 
 	dir := t.TempDir()
 	if err := os.Chmod(dir, 0o700); err != nil {
@@ -180,7 +180,7 @@ func TestTheCredentialNeverAppearsInALog(t *testing.T) {
 		http.SetCookie(w, &http.Cookie{Name: "session", Value: rotated})
 		_, _ = fmt.Fprintf(w, `{"expires":%q}`, time.Now().Add(time.Hour).Format(time.RFC3339))
 	})
-	mux.HandleFunc("/api/proxy/dados", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/api/proxy/data", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = fmt.Fprint(w, `{"ok":1}`)
 	})
 	srv := httptest.NewServer(mux)
@@ -193,7 +193,7 @@ func TestTheCredentialNeverAppearsInALog(t *testing.T) {
 	defer slog.SetDefault(previous)
 
 	seq, err := JSON(context.Background(), core.Source{
-		URL: srv.URL + "/api/proxy/dados",
+		URL: srv.URL + "/api/proxy/data",
 		Auth: &core.Credential{
 			Value: func(context.Context) (string, error) { return "session=" + secret, nil },
 			Apply: core.AsCookie,
@@ -209,7 +209,7 @@ func TestTheCredentialNeverAppearsInALog(t *testing.T) {
 	}
 	for _, err := range seq {
 		if err != nil {
-			t.Fatalf("iterando: %v", err)
+			t.Fatalf("iterating: %v", err)
 		}
 	}
 

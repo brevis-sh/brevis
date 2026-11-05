@@ -17,7 +17,7 @@ type slowSource struct {
 	pause   time.Duration
 }
 
-func (slowSource) Describe() string { return "origem.lenta" }
+func (slowSource) Describe() string { return "source.slow" }
 
 func (o slowSource) Read(context.Context, ReadOptions) (iter.Seq2[Envelope, error], error) {
 	return func(yield func(Envelope, error) bool) {
@@ -60,7 +60,7 @@ func testPipeline(src Reader, box *[]Envelope) *Pipeline {
 		Source:    Source{From: src},
 		Transform: []Transformer{SkipWithout("id")},
 		Target:    Target{To: keepingTarget{received: box}},
-		Run:       RunContext{ID: "run-etapas", Attempt: 0},
+		Run:       RunContext{ID: "run-stages", Attempt: 0},
 	}
 }
 
@@ -94,7 +94,7 @@ func TestPhasesFollowThePipelineShape(t *testing.T) {
 		"load:running", "load:done",
 	}
 	if strings.Join(trail, " ") != strings.Join(wantedList, " ") {
-		t.Errorf("trilha:\n  %v\nesperada:\n  %v", trail, wantedList)
+		t.Errorf("trail:\n  %v\nexpected:\n  %v", trail, wantedList)
 	}
 }
 
@@ -168,7 +168,7 @@ func TestAMapStageSaysHowManyItDropped(t *testing.T) {
 	events, err := stagesOf(t, testPipeline(countedSource{
 		records: []any{
 			map[string]any{"id": 1},
-			map[string]any{"sem_id": true},
+			map[string]any{"without_id": true},
 			map[string]any{"id": 3},
 		},
 		reads: new(int),
@@ -309,10 +309,10 @@ func TestTheSourceAndTargetSayWhichTheyAre(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if d := findStage(t, events, "extract", "done")["detail"]; d != "origem.teste" {
+	if d := findStage(t, events, "extract", "done")["detail"]; d != "source.test" {
 		t.Errorf("the source does not say which it is: %v", d)
 	}
-	if d := findStage(t, events, "load", "done")["detail"]; d != "destino.teste" {
+	if d := findStage(t, events, "load", "done")["detail"]; d != "target.test" {
 		t.Errorf("the destination does not say which it is: %v", d)
 	}
 }

@@ -163,7 +163,7 @@ func ValidateTarget(t Target) error { return t.validate() }
 func (d Target) validate() error {
 	if d.To == nil {
 		return fmt.Errorf("Target.To is required: pass a destination, such as " +
-			"bigquery.Table{Dataset: \"bronze\", Name: \"pedidos\"}")
+			"bigquery.Table{Dataset: \"bronze\", Name: \"orders\"}")
 	}
 	if len(d.Columns) > 0 && len(d.Schema) > 0 {
 		return fmt.Errorf("Target declares both Columns and Schema, and they are two " +

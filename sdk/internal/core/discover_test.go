@@ -19,7 +19,7 @@ func TestDiscovered(t *testing.T) {
 	found, err := Discovered(WriteOptions{Columns: declared}, batch(map[string]any{
 		"brevis_ingestion_id": "x",
 		"source_key":          "k",
-		"valor":               8.89,
+		"value":               8.89,
 		"meta":                map[string]any{"uf": "SP"},
 	}))
 	if err != nil {
@@ -33,7 +33,7 @@ func TestDiscovered(t *testing.T) {
 	if found[0].Name != "meta" || found[0].Type != TypeJSON {
 		t.Errorf("first is %v", found[0])
 	}
-	if found[1].Name != "valor" || found[1].Type != TypeString {
+	if found[1].Name != "value" || found[1].Type != TypeString {
 		t.Errorf("second is %v", found[1])
 	}
 
@@ -86,11 +86,11 @@ func TestDiscoveredIsTheUnionOfTheBatch(t *testing.T) {
 // Postgres would quote it and create it, and the same fetcher would break the
 // day somebody points it at BigQuery.
 func TestDiscoveredRefusesAFieldThatCannotBeAColumn(t *testing.T) {
-	_, err := Discovered(WriteOptions{Columns: []string{"id"}}, batch(map[string]any{"id": "A", "meu-campo": 1}))
+	_, err := Discovered(WriteOptions{Columns: []string{"id"}}, batch(map[string]any{"id": "A", "my-campo": 1}))
 	if err == nil {
-		t.Fatal("\"meu-campo\" was accepted as a column name")
+		t.Fatal("\"my-campo\" was accepted as a column name")
 	}
-	if !strings.Contains(err.Error(), "meu-campo") {
+	if !strings.Contains(err.Error(), "my-campo") {
 		t.Errorf("the refusal does not name the field: %v", err)
 	}
 	// A field the declaration ALREADY has is not checked again: it is the
@@ -169,8 +169,8 @@ func TestCheckRowLetsADiscoveredColumnBeAbsent(t *testing.T) {
 	records := batch(map[string]any{"id": "A"})
 
 	// Declared and absent: still refused, naming the column.
-	err := CheckRow(WriteOptions{Columns: []string{"id", "declarada"}}, records)
-	if err == nil || !strings.Contains(err.Error(), "declarada") {
+	err := CheckRow(WriteOptions{Columns: []string{"id", "declared"}}, records)
+	if err == nil || !strings.Contains(err.Error(), "declared") {
 		t.Fatalf("a declared column the row does not deliver was accepted: %v", err)
 	}
 

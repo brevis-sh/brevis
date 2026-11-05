@@ -350,8 +350,8 @@ func TestSanitiseLabel(t *testing.T) {
 		strings.Repeat("a", 80): strings.Repeat("a", 63),
 	}
 	for in, want := range cases {
-		if got := sanitiseLabel(in); got != want {
-			t.Errorf("sanitiseLabel(%q) = %q, want %q", in, got, want)
+		if got := sanitizeLabel(in); got != want {
+			t.Errorf("sanitizeLabel(%q) = %q, want %q", in, got, want)
 		}
 	}
 }
@@ -554,7 +554,7 @@ func TestLayoutOnTheJobIsOffWhenTheSDKCreatesTheTable(t *testing.T) {
 
 func TestTypedTableDeclaresTheMetadataColumnsNotNull(t *testing.T) {
 	inferred := bigquery.Schema{
-		{Name: "quantidade", Type: bigquery.IntegerFieldType},
+		{Name: "quantity", Type: bigquery.IntegerFieldType},
 		{Name: "ingestion_loaded_at", Type: bigquery.TimestampFieldType},
 		{Name: "sku", Type: bigquery.StringFieldType},
 		{Name: "ingestion_id", Type: bigquery.StringFieldType},
@@ -580,7 +580,7 @@ func TestTypedTableDeclaresTheMetadataColumnsNotNull(t *testing.T) {
 	}
 
 	// The caller's, untouched -- the SDK infers no type of its own.
-	for _, name := range []string{"quantidade", "sku"} {
+	for _, name := range []string{"quantity", "sku"} {
 		if f := byName[name]; f == nil || f.Required {
 			t.Errorf("the SDK changed the caller's column %q: %+v", name, f)
 		}
@@ -656,7 +656,7 @@ func TestStagedFileIsDeletedByDefault(t *testing.T) {
 func TestDedupMergeRequiresTheIngestionIDColumn(t *testing.T) {
 	_, err := resolveConfig(&core.LoadConfig{
 		ProjectID: "p", Dataset: "d", Table: "t", Format: "ndjson",
-		Dedup: core.DedupMerge, Columns: []string{"sku", "quantidade"},
+		Dedup: core.DedupMerge, Columns: []string{"sku", "quantity"},
 	})
 	if err == nil {
 		t.Fatal("the merge matches on ingestion_id; without the declared column there is no way")

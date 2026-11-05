@@ -83,9 +83,9 @@ func TestAbsentIsNotAnError(t *testing.T) {
 func TestTheNonceDoesNotRepeat(t *testing.T) {
 	s, dir := readyStore(t)
 
-	vistos := map[string]bool{}
+	seen := map[string]bool{}
 	for i := 0; i < 50; i++ {
-		if err := s.Save("mesmo-valor-sempre"); err != nil {
+		if err := s.Save("same-value-always"); err != nil {
 			t.Fatal(err)
 		}
 		raw, err := os.ReadFile(filepath.Join(dir, "gabriel-session.cred"))
@@ -94,10 +94,10 @@ func TestTheNonceDoesNotRepeat(t *testing.T) {
 		}
 		_, body, _ := firstLine(raw)
 		nonce := string(body[:12])
-		if vistos[nonce] {
+		if seen[nonce] {
 			t.Fatalf("nonce repeated in write %d", i)
 		}
-		vistos[nonce] = true
+		seen[nonce] = true
 	}
 }
 
@@ -187,7 +187,7 @@ func TestWithAKeyItDoesNotWriteInTheClear(t *testing.T) {
 // Falling back to the seed is right; returning garbage would be worse.
 func TestEncryptedWithoutAKeyFallsBackToTheSeed(t *testing.T) {
 	s, dir := readyStore(t)
-	if err := s.Save("segredo"); err != nil {
+	if err := s.Save("secret"); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv(EnvCredentialKey, "")
@@ -212,8 +212,8 @@ func TestAKeyOfTheWrongLength(t *testing.T) {
 	}
 	t.Setenv(EnvCredentialDir, dir)
 	for _, bad := range []string{
-		base64.StdEncoding.EncodeToString([]byte("curta")),
-		"isto nao e base64!!",
+		base64.StdEncoding.EncodeToString([]byte("short")),
+		"this is not base64!!",
 	} {
 		t.Setenv(EnvCredentialKey, bad)
 		if err := (FileStore{Name: "x"}).CheckStore(); err == nil {
@@ -237,7 +237,7 @@ func TestWithNoDirectoryItTurnsOffInsteadOfFailing(t *testing.T) {
 	if v, err := s.Load(); err != nil || v != "" {
 		t.Errorf("Load disabled = (%q, %v)", v, err)
 	}
-	if err := s.Save("qualquer"); err != nil {
+	if err := s.Save("any"); err != nil {
 		t.Errorf("Save disabled = %v", err)
 	}
 }
@@ -263,7 +263,7 @@ func TestALooseDirectoryIsRefused(t *testing.T) {
 
 // TestPermissions: the file at 0600, the directory at 0700.
 func TestPermissions(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "criado-por-mim")
+	dir := filepath.Join(t.TempDir(), "created-by-me")
 	t.Setenv(EnvCredentialDir, dir)
 	t.Setenv(EnvCredentialKey, testKey(t))
 
@@ -294,11 +294,11 @@ func TestPermissions(t *testing.T) {
 // during a rollout.
 func TestAnUnreadableFileFallsBackToTheSeed(t *testing.T) {
 	cases := map[string][]byte{
-		"versao futura": []byte("brevis-cred/9\nqualquer coisa aqui dentro"),
-		"sem versao":    []byte("nao tem newline nenhum"),
-		"truncado":      []byte(formatEncrypted + "\ncurto"),
-		"nao decifra":   append([]byte(formatEncrypted+"\n"), make([]byte, 60)...),
-		"arquivo vazio": {},
+		"future version":   []byte("brevis-cred/9\nanything in here"),
+		"no version":       []byte("has no newline at all"),
+		"truncated":        []byte(formatEncrypted + "\nshort"),
+		"does not decrypt": append([]byte(formatEncrypted+"\n"), make([]byte, 60)...),
+		"empty file":       {},
 	}
 	for name, content := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -330,7 +330,7 @@ func TestASwappedKeyDoesNotDecrypt(t *testing.T) {
 	t.Setenv(EnvCredentialDir, dir)
 
 	t.Setenv(EnvCredentialKey, testKey(t))
-	if err := (FileStore{Name: "x"}).Save("segredo"); err != nil {
+	if err := (FileStore{Name: "x"}).Save("secret"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -348,7 +348,7 @@ func TestASwappedKeyDoesNotDecrypt(t *testing.T) {
 // has to invalidate, and not produce garbage that becomes a credential.
 func TestTamperingIsDetected(t *testing.T) {
 	s, dir := readyStore(t)
-	if err := s.Save("segredo"); err != nil {
+	if err := s.Save("secret"); err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join(dir, "gabriel-session.cred")
@@ -372,7 +372,7 @@ func TestANameThatIsAPathIsRefused(t *testing.T) {
 	t.Setenv(EnvCredentialDir, t.TempDir())
 	t.Setenv(EnvCredentialKey, testKey(t))
 
-	for _, bad := range []string{"", "../fora", "sub/dir", ".", ".."} {
+	for _, bad := range []string{"", "../outside", "sub/dir", ".", ".."} {
 		if err := (FileStore{Name: bad}).CheckStore(); err == nil {
 			t.Errorf("accepted Name = %q", bad)
 		}

@@ -39,7 +39,7 @@ func TestTheCorpus(t *testing.T) {
 					if err != nil {
 						t.Fatalf("extracting: %v", err)
 					}
-					if g, w := normalise(got), normalise(splitLines(string(wantRaw))); g != w {
+					if g, w := normalize(got), normalize(splitLines(string(wantRaw))); g != w {
 						t.Errorf("references differ\n got: %s\nwant: %s\n\nthe query:\n%s", g, w, sql)
 					}
 				})
@@ -69,7 +69,7 @@ func TestWhatIsNotAReference(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if g := normalise(got); g != c.want {
+			if g := normalize(got); g != c.want {
 				t.Errorf("got %q, wanted %q", g, c.want)
 			}
 		})
@@ -91,7 +91,7 @@ func TestPostgresFoldsAnUnquotedIdentifier(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if g := normalise(got); g != "raw.orders" {
+	if g := normalize(got); g != "raw.orders" {
 		t.Errorf("got %q, wanted one relation %q — Postgres folds unquoted names", g, "raw.orders")
 	}
 }
@@ -104,7 +104,7 @@ func TestBigQueryKeepsTheCase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if g := normalise(got); g != "RAW.Orders raw.orders" {
+	if g := normalize(got); g != "RAW.Orders raw.orders" {
 		t.Errorf("got %q, wanted both — BigQuery table names are case-sensitive", g)
 	}
 }
@@ -121,7 +121,7 @@ func splitLines(s string) []string {
 
 // Sorted and joined, because the ORDER a query mentions its tables in is not
 // something a dependency edge cares about.
-func normalise(in []string) string {
+func normalize(in []string) string {
 	seen := map[string]bool{}
 	var out []string
 	for _, r := range in {
@@ -192,7 +192,7 @@ func TestChainedCTEsAreAllDefinitions(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if g := normalise(got); g != c.want {
+			if g := normalize(got); g != c.want {
 				t.Errorf("got %q, wanted %q", g, c.want)
 			}
 		})

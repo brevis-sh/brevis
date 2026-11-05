@@ -85,7 +85,7 @@ func TestTheColumnTakesItsTypeFromTheFirstRecordThatHasAValue(t *testing.T) {
 	}
 
 	later, err := LandingSchemaOf(map[string]any{
-		"id": "A-2", "vehicle_fuel": []any{"gasolina", "etanol"},
+		"id": "A-2", "vehicle_fuel": []any{"gasoline", "ethanol"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -227,7 +227,7 @@ func TestTheDeclarationAndTheDiscoveryAgreeAboutNulls(t *testing.T) {
 	batch := []map[string]any{
 		{"id": "A-1", "vehicle_fuel": nil, "note": nil, "meta": map[string]any{"uf": "SP"}},
 		{"id": "A-2", "vehicle_fuel": nil, "note": nil},
-		{"id": "A-3", "vehicle_fuel": []any{"gasolina", "etanol"}, "note": nil, "price": "11"},
+		{"id": "A-3", "vehicle_fuel": []any{"gasoline", "ethanol"}, "note": nil, "price": "11"},
 		{"id": "A-4", "vehicle_fuel": nil, "note": nil},
 	}
 

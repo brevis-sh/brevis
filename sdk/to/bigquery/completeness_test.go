@@ -26,9 +26,9 @@ func TestEveryLoadConfigFieldIsReachable(t *testing.T) {
 
 	// These the adapter does not write, and for stated reasons.
 	notApplicable := map[string]string{
-		"Format":   "sempre ndjson: é o único formato que o load escreve",
-		"Provider": "vem do lote, não do Target -- ver Write",
-		"Entity":   "vem do lote, não do Target -- ver Write",
+		"Format":   "always ndjson: it is the only format the load writes",
+		"Provider": "comes from the batch, not from the Target -- see Write",
+		"Entity":   "comes from the batch, not from the Target -- see Write",
 	}
 
 	var missing []string

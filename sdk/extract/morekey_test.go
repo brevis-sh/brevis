@@ -47,7 +47,7 @@ func count(t *testing.T, s core.Source) int {
 	n := 0
 	for _, err := range seq {
 		if err != nil {
-			t.Fatalf("iterando: %v", err)
+			t.Fatalf("iterating: %v", err)
 		}
 		n++
 	}

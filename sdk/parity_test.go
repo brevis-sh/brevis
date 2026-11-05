@@ -46,8 +46,8 @@ func TestIngestionIDWithPycompatMatchesPython(t *testing.T) {
 	script := `
 import uuid
 ns = uuid.UUID('e3a4f8c0-1b9d-4ea0-9c2e-77f6a6c4a4d7')
-chave = '|'.join(str(v) for v in ['acme', None, 19.0, True])
-print(uuid.uuid5(ns, chave))`
+key = '|'.join(str(v) for v in ['acme', None, 19.0, True])
+print(uuid.uuid5(ns, key))`
 	b, err := exec.Command("python3", "-c", script).Output()
 	if err != nil {
 		t.Fatalf("python3: %v", err)
@@ -79,7 +79,7 @@ func TestKeyWithMatchesPython(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got != "None|19.0|True" {
-		t.Errorf("KeyWith = %q, o Python daria \"None|19.0|True\"", got)
+		t.Errorf("KeyWith = %q, Python would give \"None|19.0|True\"", got)
 	}
 
 	fallback, err := sdk.Key("a", "b", "c")(record)
@@ -134,7 +134,7 @@ func TestTextOrEmptyIsPythonsIdiom(t *testing.T) {
 	}{
 		{nil, "None"}, {"", "''"}, {json.Number("0.0"), "0.0"}, {int64(0), "0"},
 		{false, "False"}, {[]any{}, "[]"}, {map[string]any{}, "{}"},
-		{"ola", "'ola'"}, {json.Number("19.0"), "19.0"}, {true, "True"},
+		{"hello", "'hello'"}, {json.Number("19.0"), "19.0"}, {true, "True"},
 	}
 
 	var literals []string
@@ -181,7 +181,7 @@ func TestTheDivergenceBetweenTheDefaultAndPython(t *testing.T) {
 		{json.Number("19.0"), "19.0", "19.0"},
 		{json.Number("0.0"), "0.0", "0.0"},
 		// These do NOT diverge, and that is what keeps the list above short.
-		{"ola", "ola", "ola"},
+		{"hello", "hello", "hello"},
 		{json.Number("-20.04"), "-20.04", "-20.04"},
 	}
 
@@ -240,10 +240,10 @@ func TestTheCallersUserAgentWins(t *testing.T) {
 
 	drain(t, sdk.Source{From: from.HTTP{
 		URL:    srv.URL,
-		Header: map[string][]string{"User-Agent": {"meu-fetcher/2.0"}},
+		Header: map[string][]string{"User-Agent": {"my-fetcher/2.0"}},
 	}})
 
-	if seen != "meu-fetcher/2.0" {
+	if seen != "my-fetcher/2.0" {
 		t.Errorf("UA = %q; the caller's should win", seen)
 	}
 }
@@ -290,7 +290,7 @@ func drain(t *testing.T, source sdk.Source) {
 	}
 	for _, err := range data.Records {
 		if err != nil {
-			t.Fatalf("iterando: %v", err)
+			t.Fatalf("iterating: %v", err)
 		}
 	}
 }
