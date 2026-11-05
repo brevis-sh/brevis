@@ -266,12 +266,12 @@ func (c *stageCollector) line(msg string) bool {
 		// NAME -- there could be only one `transform`, so the name was the
 		// identity. Reusing that box's position keeps those drawing exactly as
 		// they did, instead of turning `running` and `done` into two boxes.
-		indice := c.positionFor(ev.TaskName)
+		index := c.positionFor(ev.TaskName)
 		if ev.Index != nil {
-			indice = *ev.Index
+			index = *ev.Index
 		}
 		c.apply(Stage{
-			Index: indice, TaskName: ev.TaskName, State: ev.State, Ms: ev.Ms, At: ev.At,
+			Index: index, TaskName: ev.TaskName, State: ev.State, Ms: ev.Ms, At: ev.At,
 			Numbers: numbersOf(body),
 		})
 		return true
@@ -282,16 +282,16 @@ func (c *stageCollector) line(msg string) bool {
 // positionFor is the position an unindexed phase belongs at: the one it already
 // occupies, or the next free one.
 func (c *stageCollector) positionFor(name string) int {
-	maior := -1
+	largest := -1
 	for _, e := range c.Stages {
 		if e.TaskName == name {
 			return e.Index
 		}
-		if e.Index > maior {
-			maior = e.Index
+		if e.Index > largest {
+			largest = e.Index
 		}
 	}
-	return maior + 1
+	return largest + 1
 }
 
 // aplicar replaces the phase at the same POSITION, keeping the pipeline's order.
@@ -316,19 +316,19 @@ var reservedFields = map[string]bool{
 }
 
 func numbersOf(body string) map[string]any {
-	var tudo map[string]any
-	if err := json.Unmarshal([]byte(body), &tudo); err != nil {
+	var all map[string]any
+	if err := json.Unmarshal([]byte(body), &all); err != nil {
 		return nil
 	}
-	for k := range tudo {
+	for k := range all {
 		if reservedFields[k] {
-			delete(tudo, k)
+			delete(all, k)
 		}
 	}
-	if len(tudo) == 0 {
+	if len(all) == 0 {
 		return nil
 	}
-	return tudo
+	return all
 }
 
 // translateOldType maps the old format's type. See stageCollector.line.

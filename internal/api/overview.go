@@ -103,10 +103,10 @@ func (u *UI) rerunValues(ctx context.Context, slug string, used map[string]strin
 // inFlightBySlug is each workflow's run in flight, if any: a failing workflow
 // whose rerun is going says so instead of offering another.
 func (u *UI) inFlightBySlug(ctx context.Context) map[string]string {
-	if u.leitura == nil {
+	if u.reads == nil {
 		return nil
 	}
-	runs, err := u.leitura.InFlight(ctx, 100)
+	runs, err := u.reads.InFlight(ctx, 100)
 	if err != nil {
 		u.log.Warn("the runs in flight are unavailable", "error", err)
 		return nil

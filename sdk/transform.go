@@ -122,7 +122,7 @@ func transformAll(upstream iter.Seq2[Envelope, error], fns []Transformer, origin
 // what makes the saving structural instead of an optimisation to be remembered
 // in every new driver.
 func applyAll(fns []Transformer, payload any) (any, bool, error) {
-	if obj, ehObjeto := payload.(map[string]any); ehObjeto && len(fns) > 0 {
+	if obj, isObject := payload.(map[string]any); isObject && len(fns) > 0 {
 		copied := make(map[string]any, len(obj))
 		for k, v := range obj {
 			copied[k] = v

@@ -63,12 +63,12 @@ func TestValidateRefusesASelfDependency(t *testing.T) {
 }
 
 func TestValidateRequiresExactlyOneWayToRun(t *testing.T) {
-	casos := map[string]Node{
+	cases := map[string]Node{
 		"neither run nor action": {ID: "a"},
 		"run e action":           {ID: "a", Run: "echo", Action: "docker.run"},
 		"with, no action":        {ID: "a", Run: "echo", With: map[string]any{"image": "x"}},
 	}
-	for name, n := range casos {
+	for name, n := range cases {
 		t.Run(name, func(t *testing.T) {
 			w := Workflow{Slug: "x", Nodes: []Node{n}}
 			if err := w.Validate(); err == nil {

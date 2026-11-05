@@ -27,7 +27,7 @@ func waitingRun(t *testing.T, pool *postgres.Pool, slug, group string, limit, pr
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := repo.Transicionar(ctx, r.ID, dom.StatusQueued); err != nil {
+	if err := repo.Transition(ctx, r.ID, dom.StatusQueued); err != nil {
 		t.Fatal(err)
 	}
 	var claimedAt any

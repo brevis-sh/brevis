@@ -89,8 +89,8 @@ func (q *Queue) Enqueue(ctx context.Context, runID uuid.UUID, priority int, avai
 // concurrency allows, because whoever counts the slots is whoever asks.
 //
 // Claims are serialized across processes by an advisory lock (see claimLock).
-func (q *Queue) Claim(ctx context.Context, worker string, limite int) ([]Item, error) {
-	if limite <= 0 {
+func (q *Queue) Claim(ctx context.Context, worker string, limit int) ([]Item, error) {
+	if limit <= 0 {
 		return nil, nil
 	}
 
@@ -174,7 +174,7 @@ func (q *Queue) Claim(ctx context.Context, worker string, limite int) ([]Item, e
 			FOR UPDATE OF q SKIP LOCKED
 		)
 		RETURNING id, run_id, prioridade, disponivel_em, reivindicado_em`,
-		worker, limite)
+		worker, limit)
 	if err != nil {
 		return nil, fmt.Errorf("claiming items: %w", err)
 	}
@@ -240,13 +240,13 @@ func (q *Queue) Done(ctx context.Context, it Item) error {
 //
 // Fenced on the claim, as Done is, so a stale holder cannot hand somebody
 // else's run back to the queue.
-func (q *Queue) Release(ctx context.Context, it Item, atraso time.Duration) error {
+func (q *Queue) Release(ctx context.Context, it Item, delay time.Duration) error {
 	_, err := q.pool.Exec(ctx, `
 		UPDATE queue_items
 		SET reivindicado_em = NULL, reivindicado_por = NULL, renovado_em = NULL,
 		    disponivel_em = now() + $3::interval
 		WHERE id = $1 AND reivindicado_em IS NOT DISTINCT FROM $2`,
-		it.ID, it.claim(), fmt.Sprintf("%d milliseconds", atraso.Milliseconds()))
+		it.ID, it.claim(), fmt.Sprintf("%d milliseconds", delay.Milliseconds()))
 	return err
 }
 
@@ -261,7 +261,7 @@ func (q *Queue) Release(ctx context.Context, it Item, atraso time.Duration) erro
 // process that crashed would stay stuck forever. That was exactly the failure
 // mode of the zombie runs that jammed pipelines for 33 days in the previous
 // system.
-func (q *Queue) Recover(ctx context.Context, limite time.Duration) ([]Item, error) {
+func (q *Queue) Recover(ctx context.Context, limit time.Duration) ([]Item, error) {
 	// It returns the items, not just the count: whoever recovers needs to know
 	// WHICH runs were left dangling in order to fix their state too. With the
 	// count alone, the item went back to the queue but the Run stayed "running"
@@ -272,7 +272,7 @@ func (q *Queue) Recover(ctx context.Context, limite time.Duration) ([]Item, erro
 		WHERE reivindicado_em IS NOT NULL
 		  AND COALESCE(renovado_em, reivindicado_em) < now() - $1::interval
 		RETURNING id, run_id, prioridade`,
-		fmt.Sprintf("%d milliseconds", limite.Milliseconds()))
+		fmt.Sprintf("%d milliseconds", limit.Milliseconds()))
 	if err != nil {
 		return nil, err
 	}

@@ -20,7 +20,7 @@ type WorkflowRepo struct{ pool *Pool }
 
 func NewWorkflowRepo(p *Pool) *WorkflowRepo { return &WorkflowRepo{pool: p} }
 
-// Publicar writes the workflow and its schedule in one transaction.
+// Publish writes the workflow and its schedule in one transaction.
 //
 // Both things together, and not in separate calls: publishing the graph without
 // the schedule would leave a workflow that never fires, and the schedule without
@@ -31,7 +31,7 @@ func NewWorkflowRepo(p *Pool) *WorkflowRepo { return &WorkflowRepo{pool: p} }
 // schedule -- is in the events feed, in the same transaction, with actor as
 // who did it. One that changed nothing is not: a CI republishing everything on
 // every deploy must not fill the feed.
-func (r *WorkflowRepo) Publicar(ctx context.Context, w wf.Workflow, projeto uuid.UUID, actor string) error {
+func (r *WorkflowRepo) Publish(ctx context.Context, w wf.Workflow, project uuid.UUID, actor string) error {
 	def, err := json.Marshal(w)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func (r *WorkflowRepo) Publicar(ctx context.Context, w wf.Workflow, projeto uuid
 		       s.cron IS DISTINCT FROM NULLIF($4, '')
 		FROM workflows w LEFT JOIN schedules s ON s.workflow_slug = w.slug
 		WHERE w.project_id = $1 AND w.slug = $2
-		FOR UPDATE OF w`, projeto, w.Slug, def, w.Schedule).Scan(&exists, &graphChanged, &scheduleChanged)
+		FOR UPDATE OF w`, project, w.Slug, def, w.Schedule).Scan(&exists, &graphChanged, &scheduleChanged)
 	if errors.Is(err, pgx.ErrNoRows) {
 		scheduleChanged = w.Schedule != ""
 	} else if err != nil {
@@ -59,7 +59,7 @@ func (r *WorkflowRepo) Publicar(ctx context.Context, w wf.Workflow, projeto uuid
 	}
 	if !exists || graphChanged || scheduleChanged {
 		var project string
-		if err := tx.QueryRow(ctx, `SELECT slug FROM projects WHERE id = $1`, projeto).Scan(&project); err != nil {
+		if err := tx.QueryRow(ctx, `SELECT slug FROM projects WHERE id = $1`, project).Scan(&project); err != nil {
 			return err
 		}
 		if err := recordEvent(ctx, tx, events.WorkflowPublished, w.Slug, actor, map[string]any{
@@ -74,7 +74,7 @@ func (r *WorkflowRepo) Publicar(ctx context.Context, w wf.Workflow, projeto uuid
 		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (project_id, slug) DO UPDATE
 		SET name = EXCLUDED.name, definicao = EXCLUDED.definicao, updated_at = now()`,
-		uuid.New(), projeto, w.Slug, w.Name, def)
+		uuid.New(), project, w.Slug, w.Name, def)
 	if err != nil {
 		return fmt.Errorf("publishing workflow %q: %w", w.Slug, err)
 	}
@@ -106,13 +106,13 @@ func (r *WorkflowRepo) Publicar(ctx context.Context, w wf.Workflow, projeto uuid
 
 // Definition le o grafo publicado.
 func (r *WorkflowRepo) Definition(ctx context.Context, slug string) (wf.Workflow, error) {
-	var bruto []byte
+	var raw []byte
 	if err := r.pool.QueryRow(ctx,
-		`SELECT definicao FROM workflows WHERE slug = $1`, slug).Scan(&bruto); err != nil {
+		`SELECT definicao FROM workflows WHERE slug = $1`, slug).Scan(&raw); err != nil {
 		return wf.Workflow{}, fmt.Errorf("workflow %q: %w", slug, err)
 	}
 	var w wf.Workflow
-	return w, json.Unmarshal(bruto, &w)
+	return w, json.Unmarshal(raw, &w)
 }
 
 // Definitions is every published workflow's current definition, by slug, in
@@ -128,12 +128,12 @@ func (r *WorkflowRepo) Definitions(ctx context.Context) (map[string]wf.Workflow,
 	out := map[string]wf.Workflow{}
 	for rows.Next() {
 		var slug string
-		var bruto []byte
-		if err := rows.Scan(&slug, &bruto); err != nil {
+		var raw []byte
+		if err := rows.Scan(&slug, &raw); err != nil {
 			return nil, err
 		}
 		var w wf.Workflow
-		if err := json.Unmarshal(bruto, &w); err != nil {
+		if err := json.Unmarshal(raw, &w); err != nil {
 			return nil, fmt.Errorf("workflow %q: %w", slug, err)
 		}
 		out[slug] = w
@@ -150,14 +150,14 @@ func (r *WorkflowRepo) Definitions(ctx context.Context) (map[string]wf.Workflow,
 // publishing a folder one file at a time is a way around it (#32). Left out:
 // the workflows this publish replaces, and with `prune` every other workflow
 // of the project, which the prune removes. Other projects' stay members.
-func (r *WorkflowRepo) PublishedGroupMembers(ctx context.Context, projeto uuid.UUID,
+func (r *WorkflowRepo) PublishedGroupMembers(ctx context.Context, project uuid.UUID,
 	publishing []string, prune bool) ([]wf.Workflow, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT slug, definicao->>'Group', COALESCE((definicao->>'MaxActive')::int, 0)
 		FROM workflows
 		WHERE COALESCE(definicao->>'Group', '') <> ''
 		  AND NOT (project_id = $1 AND ($3 OR slug = ANY($2)))
-		ORDER BY slug`, projeto, publishing, prune)
+		ORDER BY slug`, project, publishing, prune)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func (r *WorkflowRepo) PublishedGroupMembers(ctx context.Context, projeto uuid.U
 	return out, rows.Err()
 }
 
-// Podar removes from the project the workflows that are NOT in the list, along
+// Prune removes from the project the workflows that are NOT in the list, along
 // with their
 // agendas. Devolve os slugs removidos.
 //
@@ -190,7 +190,7 @@ func (r *WorkflowRepo) PublishedGroupMembers(ctx context.Context, projeto uuid.U
 //
 // Each removal is in the events feed, written by the same statement that
 // deletes, with actor as who did it.
-func (r *WorkflowRepo) Podar(ctx context.Context, projeto uuid.UUID, manter []string, actor string) ([]string, error) {
+func (r *WorkflowRepo) Prune(ctx context.Context, project uuid.UUID, manter []string, actor string) ([]string, error) {
 	rows, err := r.pool.Query(ctx, `
 		WITH gone AS (
 		    DELETE FROM workflows
@@ -201,7 +201,7 @@ func (r *WorkflowRepo) Podar(ctx context.Context, projeto uuid.UUID, manter []st
 		    SELECT $3, slug, $4, jsonb_build_object('project', (SELECT slug FROM projects WHERE id = $1))
 		    FROM gone
 		)
-		SELECT slug FROM gone`, projeto, manter, events.WorkflowRemoved, actor)
+		SELECT slug FROM gone`, project, manter, events.WorkflowRemoved, actor)
 	if err != nil {
 		return nil, err
 	}

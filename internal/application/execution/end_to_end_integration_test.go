@@ -58,9 +58,9 @@ func TestIntegrationStagesReachTheDatabaseThroughARealBinary(t *testing.T) {
 	}
 
 	r := app.Runner{
-		RunID:    runID,
-		Persist:  repo,
-		Processo: localExecutor(t),
+		RunID:   runID,
+		Persist: repo,
+		Process: localExecutor(t),
 	}
 	w := wf.Workflow{
 		Slug:  "e2e",

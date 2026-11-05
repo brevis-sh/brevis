@@ -151,7 +151,7 @@ func (s *Scheduler) enqueueLanded(ctx context.Context, slug string, window time.
 	if err != nil {
 		return false, err
 	}
-	bruto, err := json.Marshal(def)
+	raw, err := json.Marshal(def)
 	if err != nil {
 		return false, err
 	}
@@ -166,7 +166,7 @@ func (s *Scheduler) enqueueLanded(ctx context.Context, slug string, window time.
 	// `slug:landed:window` is the NORMAL outcome here -- it is how ten
 	// landings in a window become one run -- and asking the database first
 	// would be a second round trip for an answer the insert already gives.
-	return s.createAndEnqueue(ctx, slug, bruto, window,
+	return s.createAndEnqueue(ctx, slug, raw, window,
 		sch.TriggerLanded, 0, defaults, def.MaxActive, def.Group, targets...)
 }
 

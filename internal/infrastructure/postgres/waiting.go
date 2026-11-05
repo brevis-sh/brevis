@@ -40,8 +40,8 @@ type Holder struct {
 // what is ahead of it leaves no slot. A change to the claim is a change here.
 func (r *RunRepo) WaitingOn(ctx context.Context, runID uuid.UUID) (*Wait, error) {
 	var (
-		w     Wait
-		chave string
+		w   Wait
+		key string
 	)
 	err := r.pool.QueryRow(ctx, `
 		WITH eu AS (
@@ -66,7 +66,7 @@ func (r *RunRepo) WaitingOn(ctx context.Context, runID uuid.UUID) (*Wait, error)
 		          AND (q.prioridade > eu.prioridade
 		               OR (q.prioridade = eu.prioridade
 		                   AND (q.disponivel_em, q.id) < (eu.disponivel_em, eu.id))))
-		FROM eu`, runID).Scan(&w.Limit, &w.Group, &chave, &w.Ahead)
+		FROM eu`, runID).Scan(&w.Limit, &w.Group, &key, &w.Ahead)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -80,7 +80,7 @@ func (r *RunRepo) WaitingOn(ctx context.Context, runID uuid.UUID) (*Wait, error)
 		JOIN runs r ON r.id = q.run_id
 		WHERE q.reivindicado_em IS NOT NULL
 		  AND COALESCE('g:' || r.grupo_concorrencia, 'w:' || r.workflow_slug) = $1
-		ORDER BY q.reivindicado_em, r.id`, chave)
+		ORDER BY q.reivindicado_em, r.id`, key)
 	if err != nil {
 		return nil, err
 	}

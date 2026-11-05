@@ -46,15 +46,15 @@ func aged(t *testing.T, pool *postgres.Pool, slug string, age time.Duration, sta
 }
 
 // bulk reads back what the step still carries.
-func bulk(t *testing.T, pool *postgres.Pool, runID uuid.UUID) (log string, stages string, saida *string, found bool) {
+func bulk(t *testing.T, pool *postgres.Pool, runID uuid.UUID) (log string, stages string, output *string, found bool) {
 	t.Helper()
 	err := pool.QueryRow(context.Background(),
 		`SELECT log, etapas::text, saida::text FROM task_runs WHERE run_id = $1`, runID).
-		Scan(&log, &stages, &saida)
+		Scan(&log, &stages, &output)
 	if err != nil {
 		return "", "", nil, false
 	}
-	return log, stages, saida, true
+	return log, stages, output, true
 }
 
 func runExists(t *testing.T, pool *postgres.Pool, runID uuid.UUID) bool {
@@ -109,14 +109,14 @@ func TestPruneWithNothingConfigured(t *testing.T) {
 	}
 
 	// Yesterday's run is untouched: its log is what somebody is reading now.
-	if log, stages, saida, ok := bulk(t, pool, yesterday); !ok ||
-		log == "" || stages == "[]" || saida == nil {
+	if log, stages, output, ok := bulk(t, pool, yesterday); !ok ||
+		log == "" || stages == "[]" || output == nil {
 		t.Errorf("yesterday's run was trimmed: log=%q stages=%q", log, stages)
 	}
 	// Last quarter's is trimmed but still there.
-	if log, stages, saida, ok := bulk(t, pool, lastQuarter); !ok ||
-		log != "" || stages != "[]" || saida != nil {
-		t.Errorf("a 60-day-old run kept its bulk: log=%q stages=%q saida=%v", log, stages, saida)
+	if log, stages, output, ok := bulk(t, pool, lastQuarter); !ok ||
+		log != "" || stages != "[]" || output != nil {
+		t.Errorf("a 60-day-old run kept its bulk: log=%q stages=%q saida=%v", log, stages, output)
 	}
 	if !runExists(t, pool, lastQuarter) {
 		t.Error("a 60-day-old run was deleted; the default only trims until a year")
@@ -149,16 +149,16 @@ func TestATrimmedRunKeepsEverythingButTheBulk(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var status, erro string
+	var status, errText string
 	var exit int
 	var started, finished *time.Time
 	if err := pool.QueryRow(ctx,
 		`SELECT status, erro, exit_code, iniciado_em, terminado_em FROM task_runs WHERE run_id = $1`, id).
-		Scan(&status, &erro, &exit, &started, &finished); err != nil {
+		Scan(&status, &errText, &exit, &started, &finished); err != nil {
 		t.Fatal(err)
 	}
-	if status != "failed" || erro != "connection refused" || exit != 3 {
-		t.Errorf("the trim took the diagnosis with the log: status=%q erro=%q exit=%d", status, erro, exit)
+	if status != "failed" || errText != "connection refused" || exit != 3 {
+		t.Errorf("the trim took the diagnosis with the log: status=%q erro=%q exit=%d", status, errText, exit)
 	}
 	if started == nil || finished == nil {
 		t.Error("the trim took the timings")

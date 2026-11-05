@@ -21,16 +21,16 @@ func triggered(t *testing.T, tr wf.Trigger) (*scheduler.Scheduler, *postgres.Poo
 	pool := testDB(t)
 	ctx := context.Background()
 
-	projeto := uuid.New()
+	project := uuid.New()
 	if _, err := pool.Exec(ctx,
-		`INSERT INTO projects (id, slug, name) VALUES ($1, 'p', 'Projeto')`, projeto); err != nil {
+		`INSERT INTO projects (id, slug, name) VALUES ($1, 'p', 'Projeto')`, project); err != nil {
 		t.Fatal(err)
 	}
 	wRepo := postgres.NewWorkflowRepo(pool)
-	if err := wRepo.Publicar(ctx, wf.Workflow{
+	if err := wRepo.Publish(ctx, wf.Workflow{
 		Slug: "silver", Name: "silver", Kind: wf.KindChain,
 		Nodes: []wf.Node{{ID: "a", Run: "brevis-sql build"}}, Trigger: tr,
-	}, projeto, "test"); err != nil {
+	}, project, "test"); err != nil {
 		t.Fatal(err)
 	}
 	s := scheduler.NewScheduler(postgres.NewScheduleRepo(pool), wRepo,

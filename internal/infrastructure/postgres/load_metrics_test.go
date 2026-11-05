@@ -386,7 +386,7 @@ func runnerReading(t *testing.T, stages string) *app.LoadNumbers {
 //
 // So the case is not "a scalar is skipped". It is "a scalar does not take the
 // rows beside it down with it".
-func TestAScalarInEtapasDoesNotAbortTheBackfill(t *testing.T) {
+func TestAScalarInStagesDoesNotAbortTheBackfill(t *testing.T) {
 	pool := loadDB(t)
 	ctx := context.Background()
 
@@ -408,7 +408,7 @@ func TestAScalarInEtapasDoesNotAbortTheBackfill(t *testing.T) {
 	//
 	// SQL NULL is absent on purpose -- the column is NOT NULL, so the hazard is
 	// only ever a jsonb scalar, and a case that cannot exist is not a case.
-	for _, row := range []struct{ node, etapas string }{
+	for _, row := range []struct{ node, stages string }{
 		{"scalar_null", `'null'::jsonb`},
 		{"scalar_number", `'7'::jsonb`},
 		{"scalar_string", `'"done"'::jsonb`},
@@ -418,7 +418,7 @@ func TestAScalarInEtapasDoesNotAbortTheBackfill(t *testing.T) {
 	} {
 		if _, err := pool.Exec(ctx, `
 			INSERT INTO task_runs (id, run_id, node_id, status, attempt, map_index, etapas)
-			VALUES ($1, $2, $3, 'done', 1, -1, `+row.etapas+`)`,
+			VALUES ($1, $2, $3, 'done', 1, -1, `+row.stages+`)`,
 			uuid.New(), runID, row.node); err != nil {
 			t.Fatalf("seeding %s: %v", row.node, err)
 		}
@@ -447,12 +447,12 @@ func TestAScalarInEtapasDoesNotAbortTheBackfill(t *testing.T) {
 		t.Errorf("backfilled %v; only the row with a real load stage belongs there", nodes)
 	}
 
-	var linhas int64
+	var rowCount int64
 	if err := pool.QueryRow(ctx,
-		`SELECT linhas FROM load_metrics WHERE node_id = 'good'`).Scan(&linhas); err != nil {
+		`SELECT linhas FROM load_metrics WHERE node_id = 'good'`).Scan(&rowCount); err != nil {
 		t.Fatal(err)
 	}
-	if linhas != 48213 {
-		t.Errorf("the surviving row reads %d rows, so the guard ate its numbers", linhas)
+	if rowCount != 48213 {
+		t.Errorf("the surviving row reads %d rows, so the guard ate its numbers", rowCount)
 	}
 }

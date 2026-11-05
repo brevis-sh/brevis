@@ -84,7 +84,7 @@ func TestIntegrationBrevisSQLModelsReachTheCatalog(t *testing.T) {
 		t.Fatalf("creating the run: %v", err)
 	}
 
-	r := app.Runner{RunID: runID, Persist: repo, Processo: localExecutor(t)}
+	r := app.Runner{RunID: runID, Persist: repo, Process: localExecutor(t)}
 	w := wf.Workflow{
 		Slug: "e2e",
 		Nodes: []wf.Node{{

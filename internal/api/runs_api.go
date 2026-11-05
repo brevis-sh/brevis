@@ -91,7 +91,7 @@ func (u *UI) runsAPI(w http.ResponseWriter, r *http.Request) {
 	}
 	query := postgres.RunFilter{
 		State: f.State, Workflow: f.Workflow, De: de, Ate: ate,
-		Limite: f.PerPage, Offset: (f.Page - 1) * f.PerPage,
+		Limit: f.PerPage, Offset: (f.Page - 1) * f.PerPage,
 	}
 	if f.State == "running" {
 		query.State, query.States = "", pages.InFlight

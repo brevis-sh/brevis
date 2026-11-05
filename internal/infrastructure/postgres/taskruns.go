@@ -19,12 +19,12 @@ import (
 // in the schema but was never populated, so retries were per Run and there was
 // no per-step state. The DAG view needs exactly that.
 
-// IniciarTask records a step's start.
+// StartTask records a step's start.
 //
 // `ON CONFLICT DO UPDATE` on the (run, node, attempt) key: re-running the same
 // step on the same attempt is idempotent, which matters when the dispatcher
 // recovers an item from a dead worker and redoes it.
-func (r *RunRepo) IniciarTask(ctx context.Context, runID uuid.UUID, step dom.StepKey, attempt int) error {
+func (r *RunRepo) StartTask(ctx context.Context, runID uuid.UUID, step dom.StepKey, attempt int) error {
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO task_runs (id, run_id, node_id, map_index, status, attempt, iniciado_em)
 		VALUES ($1, $2, $3, $4, $5, $6, now())
@@ -37,7 +37,7 @@ func (r *RunRepo) IniciarTask(ctx context.Context, runID uuid.UUID, step dom.Ste
 
 // MarkSkipped records a step whose trigger rule was not satisfied.
 //
-// Not IniciarTask followed by TerminarTask, and the difference is the point:
+// Not StartTask followed by FinishTask, and the difference is the point:
 // `iniciado_em` stays NULL. A skipped step never started, and stamping a start
 // time would make it look like something that ran in zero seconds -- which is
 // also what a step killed instantly looks like.
@@ -159,7 +159,7 @@ func (r *RunRepo) PublishedContext(ctx context.Context, runID uuid.UUID) (map[st
 	return out, rows.Err()
 }
 
-// TerminarTask records the outcome.
+// FinishTask records the outcome.
 // RecordHandover writes where a handed-over step goes on running (#125). The
 // row stays as it is -- `running` -- because the step is.
 func (r *RunRepo) RecordHandover(ctx context.Context, runID uuid.UUID, step dom.StepKey,
@@ -184,7 +184,7 @@ func (r *RunRepo) RecordHandover(ctx context.Context, runID uuid.UUID, step dom.
 	return nil
 }
 
-func (r *RunRepo) TerminarTask(ctx context.Context, runID uuid.UUID, step dom.StepKey,
+func (r *RunRepo) FinishTask(ctx context.Context, runID uuid.UUID, step dom.StepKey,
 	attempt int, status dom.Status, exit *int, failure string, log string) error {
 
 	_, err := r.pool.Exec(ctx, `
@@ -211,8 +211,8 @@ func (r *RunRepo) TerminarTask(ctx context.Context, runID uuid.UUID, step dom.St
 //
 // `exceto` is the current run, excluded so the attempt in progress does not
 // count as an earlier success.
-func (r *RunRepo) StepHasSucceeded(ctx context.Context, workflowSlug, nodeID string, exceto uuid.UUID) (bool, error) {
-	var existe bool
+func (r *RunRepo) StepHasSucceeded(ctx context.Context, workflowSlug, nodeID string, except uuid.UUID) (bool, error) {
+	var exists bool
 	err := r.pool.QueryRow(ctx, `
 		SELECT EXISTS (
 			SELECT 1
@@ -222,8 +222,8 @@ func (r *RunRepo) StepHasSucceeded(ctx context.Context, workflowSlug, nodeID str
 			  AND t.node_id = $2
 			  AND t.run_id <> $3
 			  AND t.status = $4
-		)`, workflowSlug, nodeID, exceto, dom.StatusSuccess).Scan(&existe)
-	return existe, err
+		)`, workflowSlug, nodeID, except, dom.StatusSuccess).Scan(&exists)
+	return exists, err
 }
 
 // AlreadySucceeded returns the steps of THIS run that have already finished
@@ -242,7 +242,7 @@ func (r *RunRepo) StepHasSucceeded(ctx context.Context, workflowSlug, nodeID str
 // Handovers returns what a stopped scheduler left running in this run (#125):
 // the rows with a handover beside them. No status filter, and not by
 // omission: a row its reattach or a later attempt ended has no handover --
-// TerminarTask and IniciarTask clear it -- so a handover IS a row still
+// FinishTask and StartTask clear it -- so a handover IS a row still
 // running, and asking twice would be a second rule to keep in agreement.
 //
 // The row's own attempt is the one used: it is what the next scheduler
@@ -346,10 +346,10 @@ func (r *RunRepo) NodeStates(ctx context.Context, runID uuid.UUID) (map[string]N
 	for rows.Next() {
 		var e NodeState
 		var ini, end *time.Time
-		var stages, saida []byte
+		var stages, output []byte
 		var lowest int
 		if err := rows.Scan(&e.NodeID, &e.Status, &e.Attempt, &e.ExitCode,
-			&e.Err, &ini, &end, &stages, &e.SdkVersion, &saida,
+			&e.Err, &ini, &end, &stages, &e.SdkVersion, &output,
 			&e.Instances, &e.Done, &lowest); err != nil {
 			return nil, err
 		}
@@ -358,8 +358,8 @@ func (r *RunRepo) NodeStates(ctx context.Context, runID uuid.UUID) (map[string]N
 			// every workflow that has ever run is byte for byte what it was.
 			e.Instances, e.Done = 0, 0
 		}
-		if len(saida) > 0 {
-			e.Published = json.RawMessage(saida)
+		if len(output) > 0 {
+			e.Published = json.RawMessage(output)
 		}
 		e.Stages = stepStages(stages, e.Status)
 		if ini != nil && end != nil {

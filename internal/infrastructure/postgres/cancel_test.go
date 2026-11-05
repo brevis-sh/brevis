@@ -27,7 +27,7 @@ func runAt(t *testing.T, repo *postgres.RunRepo, to dom.Status) uuid.UUID {
 		dom.StatusRetrying: {dom.StatusQueued, dom.StatusRunning, dom.StatusFailed, dom.StatusRetrying},
 	}[to]
 	for _, s := range path {
-		if err := repo.Transicionar(context.Background(), id, s); err != nil {
+		if err := repo.Transition(context.Background(), id, s); err != nil {
 			t.Fatal(err)
 		}
 	}

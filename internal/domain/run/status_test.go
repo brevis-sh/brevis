@@ -52,7 +52,7 @@ func TestRequeueingClearsTheStamps(t *testing.T) {
 // Section 7 requires an invalid transition to return an error -- not to be
 // ignored.
 func TestInvalidTransitionsAreRefused(t *testing.T) {
-	casos := []struct{ de, para Status }{
+	cases := []struct{ de, para Status }{
 		{StatusSuccess, StatusRunning},  // terminal does not come back
 		{StatusCanceled, StatusQueued},  // terminal does not come back
 		{StatusCreated, StatusRunning},  // does not skip the queue
@@ -61,7 +61,7 @@ func TestInvalidTransitionsAreRefused(t *testing.T) {
 		{StatusRunning, StatusRetrying}, // only a failure goes to retry
 		{StatusFailed, StatusRunning},   // a retry goes through the queue
 	}
-	for _, c := range casos {
+	for _, c := range cases {
 		err := Validate(c.de, c.para)
 		if err == nil {
 			t.Errorf("%s -> %s should have been refused", c.de, c.para)

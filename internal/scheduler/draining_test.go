@@ -157,7 +157,7 @@ func TestARunDeferredThenRunHasOneRowPerStep(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if err := repo.IniciarTask(ctx, runID, dom.StepKey{Node: "load", MapIndex: dom.Unmapped},
+		if err := repo.StartTask(ctx, runID, dom.StepKey{Node: "load", MapIndex: dom.Unmapped},
 			r.Attempt+1); err != nil {
 			return err
 		}

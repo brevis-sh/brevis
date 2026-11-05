@@ -93,7 +93,7 @@ type projectView struct {
 // projects is the Projects screen's data. The list is always an array, empty
 // included, so the app does not have to tell null from none.
 func (u *UI) projects(w http.ResponseWriter, r *http.Request) {
-	ps, err := u.leitura.Projects(r.Context())
+	ps, err := u.reads.Projects(r.Context())
 	if err != nil {
 		u.log.Error("listing the projects", "error", err)
 		fail(w, http.StatusInternalServerError, codeUnavailable)

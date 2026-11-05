@@ -52,9 +52,9 @@ print(uuid.uuid5(ns, chave))`
 	if err != nil {
 		t.Fatalf("python3: %v", err)
 	}
-	quero := strings.TrimSpace(string(b))
-	if got != quero {
-		t.Errorf("IngestionIDWith(pycompat.Text) = %s, and Python gives %s", got, quero)
+	want := strings.TrimSpace(string(b))
+	if got != want {
+		t.Errorf("IngestionIDWith(pycompat.Text) = %s, and Python gives %s", got, want)
 	}
 
 	// And the default does NOT match. That is the divergence that motivated all
@@ -64,7 +64,7 @@ print(uuid.uuid5(ns, chave))`
 	if err != nil {
 		t.Fatal(err)
 	}
-	if fallback := defaultOutput.(map[string]any)[sdk.ColumnIngestionID].(string); fallback == quero {
+	if fallback := defaultOutput.(map[string]any)[sdk.ColumnIngestionID].(string); fallback == want {
 		t.Error("the pattern now matches Python; if that was intentional, the decision " +
 			"documented in asText changed and this test has to be rewritten")
 	}
@@ -128,7 +128,7 @@ func TestTextOrEmptyIsPythonsIdiom(t *testing.T) {
 		t.Skip("no python3")
 	}
 
-	casos := []struct {
+	cases := []struct {
 		value   any
 		literal string
 	}{
@@ -137,27 +137,27 @@ func TestTextOrEmptyIsPythonsIdiom(t *testing.T) {
 		{"ola", "'ola'"}, {json.Number("19.0"), "19.0"}, {true, "True"},
 	}
 
-	var literais []string
-	for _, c := range casos {
-		literais = append(literais, c.literal)
+	var literals []string
+	for _, c := range cases {
+		literals = append(literals, c.literal)
 	}
-	script := "import sys\nfor v in [" + strings.Join(literais, ", ") +
+	script := "import sys\nfor v in [" + strings.Join(literals, ", ") +
 		"]:\n    sys.stdout.write(str(v or '') + '\\x00')\n"
 	b, err := exec.Command("python3", "-c", script).Output()
 	if err != nil {
 		t.Fatalf("python3: %v", err)
 	}
-	quero := strings.Split(strings.TrimSuffix(string(b), "\x00"), "\x00")
+	want := strings.Split(strings.TrimSuffix(string(b), "\x00"), "\x00")
 
-	for i, c := range casos {
+	for i, c := range cases {
 		got, err := pycompat.TextOrEmpty(c.value)
 		if err != nil {
 			t.Errorf("TextOrEmpty(%#v): %v", c.value, err)
 			continue
 		}
-		if got != quero[i] {
+		if got != want[i] {
 			t.Errorf("TextOrEmpty(%#v) = %q, e str(%s or '') = %q",
-				c.value, got, c.literal, quero[i])
+				c.value, got, c.literal, want[i])
 		}
 	}
 }
@@ -170,7 +170,7 @@ func TestTextOrEmptyIsPythonsIdiom(t *testing.T) {
 // reason in writing: changing the default would change the ingestion_id of every
 // row Go has already written.
 func TestTheDivergenceBetweenTheDefaultAndPython(t *testing.T) {
-	casos := []struct {
+	cases := []struct {
 		input    any
 		fallback string
 		python   string
@@ -185,7 +185,7 @@ func TestTheDivergenceBetweenTheDefaultAndPython(t *testing.T) {
 		{json.Number("-20.04"), "-20.04", "-20.04"},
 	}
 
-	for _, c := range casos {
+	for _, c := range cases {
 		// The default is exercised through the front door, with a single-field
 		// key: asText is private, and a test that reached it from inside would
 		// stop proving what the consumer sees.
@@ -257,28 +257,28 @@ func TestResponsePreserveNumbersReachesObject(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	tipos := map[bool]string{}
-	for _, preservar := range []bool{false, true} {
+	kinds := map[bool]string{}
+	for _, preserve := range []bool{false, true} {
 		drain(t, sdk.Source{From: from.HTTP{
 			URL:             srv.URL,
-			PreserveNumbers: preservar,
+			PreserveNumbers: preserve,
 			Records: func(r sdk.Response) ([]any, error) {
 				doc, err := r.Object()
 				if err != nil {
 					return nil, err
 				}
 				lines := doc["results"].([]any)
-				tipos[preservar] = fmt.Sprintf("%T", lines[0].(map[string]any)["id"])
+				kinds[preserve] = fmt.Sprintf("%T", lines[0].(map[string]any)["id"])
 				return lines, nil
 			},
 		}})
 	}
 
-	if tipos[false] != "float64" {
-		t.Errorf("without PreserveNumbers, the type is %s; want float64", tipos[false])
+	if kinds[false] != "float64" {
+		t.Errorf("without PreserveNumbers, the type is %s; want float64", kinds[false])
 	}
-	if tipos[true] != "json.Number" {
-		t.Errorf("with PreserveNumbers, the type is %s; the Object should honor the Source", tipos[true])
+	if kinds[true] != "json.Number" {
+		t.Errorf("with PreserveNumbers, the type is %s; the Object should honor the Source", kinds[true])
 	}
 }
 

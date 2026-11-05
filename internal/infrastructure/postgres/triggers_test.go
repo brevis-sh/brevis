@@ -154,17 +154,17 @@ func publishWith(t *testing.T, pool *postgres.Pool, slug string, tr wf.Trigger) 
 		t.Fatal(err)
 	}
 	ctx := context.Background()
-	var projeto string
+	var project string
 	if err := pool.QueryRow(ctx, `
 		INSERT INTO projects (id, slug, name) VALUES (gen_random_uuid(), 'it', 'it')
-		ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name RETURNING id`).Scan(&projeto); err != nil {
+		ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name RETURNING id`).Scan(&project); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := pool.Exec(ctx, `
 		INSERT INTO workflows (id, project_id, slug, name, definicao)
 		VALUES (gen_random_uuid(), $1, $2, $2, $3)
 		ON CONFLICT (project_id, slug) DO UPDATE SET definicao = EXCLUDED.definicao`,
-		projeto, slug, doc); err != nil {
+		project, slug, doc); err != nil {
 		t.Fatal(err)
 	}
 }

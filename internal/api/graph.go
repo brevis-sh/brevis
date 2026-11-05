@@ -105,7 +105,7 @@ const (
 	stagesFoot  = 12 // so the last phase does not touch the card's bottom
 
 	// Between two cards in the same column, and around a group's contents.
-	folgaVertical = 34
+	verticalSlack = 34
 	groupPadding  = 22
 	groupHeader   = 34
 	// Between two lanes. Bigger than the gap between cards, because it is what
@@ -173,14 +173,14 @@ func (u *UI) workflowGraph(w http.ResponseWriter, r *http.Request) {
 // the definition alone.
 func (u *UI) workflowGraphOf(ctx context.Context, def wf.Workflow) (graphResponse, error) {
 	resp, err := buildGraph(def, nil, "", "")
-	if err != nil || u.leitura == nil {
+	if err != nil || u.reads == nil {
 		return resp, err
 	}
-	last, err := u.leitura.LastStepRuns(ctx, def.Slug)
+	last, err := u.reads.LastStepRuns(ctx, def.Slug)
 	if err != nil {
 		u.log.Warn("the steps' last runs are unavailable", "workflow", def.Slug, "error", err)
 	}
-	wrote, err := u.leitura.StepConnects(ctx, def.Slug, time.Now().Add(-connectsWindow))
+	wrote, err := u.reads.StepConnects(ctx, def.Slug, time.Now().Add(-connectsWindow))
 	if err != nil {
 		u.log.Warn("what the steps wrote is unavailable", "workflow", def.Slug, "error", err)
 	}
@@ -589,11 +589,11 @@ func layout(levels [][]string, built map[string]map[string]any,
 				groupOrder = append(groupOrder, g)
 			}
 			spans[g].last = level
-			perGroup[g] += height(id) + folgaVertical
+			perGroup[g] += height(id) + verticalSlack
 		}
 		for g, stack := range perGroup {
-			if stack-folgaVertical > spans[g].tallest {
-				spans[g].tallest = stack - folgaVertical
+			if stack-verticalSlack > spans[g].tallest {
+				spans[g].tallest = stack - verticalSlack
 			}
 		}
 	}
@@ -660,11 +660,11 @@ func layout(levels [][]string, built map[string]map[string]any,
 		stack := 0
 		for _, id := range ids {
 			if laneFor(level, id) == len(laneEnd) {
-				stack += height(id) + folgaVertical
+				stack += height(id) + verticalSlack
 			}
 		}
-		if stack-folgaVertical > loose {
-			loose = stack - folgaVertical
+		if stack-verticalSlack > loose {
+			loose = stack - verticalSlack
 		}
 	}
 	if loose > 0 {
@@ -676,11 +676,11 @@ func layout(levels [][]string, built map[string]map[string]any,
 		stack := 0
 		for _, id := range ids {
 			if laneFor(level, id) == 0 {
-				stack += height(id) + folgaVertical
+				stack += height(id) + verticalSlack
 			}
 		}
-		if stack-folgaVertical > laneHeight[0] {
-			laneHeight[0] = stack - folgaVertical
+		if stack-verticalSlack > laneHeight[0] {
+			laneHeight[0] = stack - verticalSlack
 		}
 	}
 
@@ -705,20 +705,20 @@ func layout(levels [][]string, built map[string]map[string]any,
 		next := map[int]int{}
 		stacks := map[int]int{}
 		for _, id := range ids {
-			stacks[laneFor(level, id)] += height(id) + folgaVertical
+			stacks[laneFor(level, id)] += height(id) + verticalSlack
 		}
 		for lane, stack := range stacks {
 			if lane >= len(laneHeight) {
 				continue // a loose lane that ended up with nothing in it
 			}
-			next[lane] = laneTop[lane] + (laneHeight[lane]-(stack-folgaVertical))/2
+			next[lane] = laneTop[lane] + (laneHeight[lane]-(stack-verticalSlack))/2
 		}
 
 		for _, id := range ids {
 			lane := laneFor(level, id)
 			h := height(id)
 			out[id] = spot{x: level * levelWidth, y: next[lane], h: h}
-			next[lane] += h + folgaVertical
+			next[lane] += h + verticalSlack
 		}
 	}
 	return out

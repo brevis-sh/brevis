@@ -18,14 +18,14 @@ type RunRepo struct{ pool *Pool }
 
 func NewRunRepo(p *Pool) *RunRepo { return &RunRepo{pool: p} }
 
-// ErrJaExiste signals an idempotency-key collision. Typed so the caller can tell
+// ErrAlreadyExists signals an idempotency-key collision. Typed so the caller can tell
 // "I already created this" from a real error — the difference between a benign
 // scheduler retry and a database failure.
-var ErrJaExiste = errors.New("a run with this idempotency key already exists")
+var ErrAlreadyExists = errors.New("a run with this idempotency key already exists")
 
 // Criar inserts the Run in CREATED.
 //
-// A collision on the idempotency_key unique becomes ErrJaExiste, not a generic
+// A collision on the idempotency_key unique becomes ErrAlreadyExists, not a generic
 // error: it is section 29's case — the scheduler died after creating and tries
 // again on the way back up.
 func (r *RunRepo) Create(ctx context.Context, run dom.Run) (dom.Run, error) {
@@ -61,19 +61,19 @@ func (r *RunRepo) Create(ctx context.Context, run dom.Run) (dom.Run, error) {
 
 	if err != nil {
 		if isUniqueViolation(err) {
-			return dom.Run{}, ErrJaExiste
+			return dom.Run{}, ErrAlreadyExists
 		}
 		return dom.Run{}, fmt.Errorf("creating run: %w", err)
 	}
 	return run, nil
 }
 
-// Transicionar applies the state change, validating BEFORE writing.
+// Transition applies the state change, validating BEFORE writing.
 //
 // The validation happens against the state read inside the transaction, with FOR
 // UPDATE: reading outside it would let two dispatchers both read "queued" and
 // both write "running".
-func (r *RunRepo) Transicionar(ctx context.Context, id uuid.UUID, para dom.Status) error {
+func (r *RunRepo) Transition(ctx context.Context, id uuid.UUID, para dom.Status) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -92,13 +92,13 @@ func (r *RunRepo) Transicionar(ctx context.Context, id uuid.UUID, para dom.Statu
 	}
 
 	now := time.Now()
-	var iniciado, terminado any
+	var started, finished any
 	switch para {
 	case dom.StatusRunning:
-		iniciado = now
+		started = now
 	case dom.StatusSuccess, dom.StatusFailed, dom.StatusCanceled:
 		// A retry takes a failed run back to the queue, and queued clears it.
-		terminado = now
+		finished = now
 	}
 
 	_, err = tx.Exec(ctx, `
@@ -108,7 +108,7 @@ func (r *RunRepo) Transicionar(ctx context.Context, id uuid.UUID, para dom.Statu
 			terminado_em   = COALESCE($4, CASE WHEN $2 = 'queued' THEN NULL ELSE terminado_em END),
 			draining_since = CASE WHEN $2 = 'success' THEN NULL ELSE draining_since END
 		WHERE id = $1`,
-		id, para, iniciado, terminado)
+		id, para, started, finished)
 	if err != nil {
 		return err
 	}
@@ -208,7 +208,7 @@ type CancelResult struct {
 // RequestCancel cancels a run that is still waiting, or asks the dispatcher
 // that holds it to.
 //
-// The run's row is locked first, the lock Transicionar takes, so a cancel and
+// The run's row is locked first, the lock Transition takes, so a cancel and
 // a dispatcher starting the run are serialized: whichever comes second sees
 // the other. A run is waiting when its item is unclaimed, or when it has none
 // yet (`created`); its item is deleted in this same transaction, because an
@@ -287,7 +287,7 @@ func (r *RunRepo) RecordError(ctx context.Context, id uuid.UUID, msg string) err
 // Stranded finds the run behind an idempotency key that never reached the
 // queue: still `created` or `queued` and with no queue_items row.
 //
-// Create, Transicionar and Enqueue are three statements, so a process that dies
+// Create, Transition and Enqueue are three statements, so a process that dies
 // between them leaves exactly this run -- and the queue's orphan sweep only
 // looks at CLAIMED items, so nothing else would ever see it. A run that is
 // running, finished or already queued is not stranded; found is false for it.

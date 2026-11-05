@@ -35,7 +35,7 @@ func TestFailingRecordsWhenTheRunEnded(t *testing.T) {
 	ctx := context.Background()
 	id := newRun(t, repo)
 	for _, to := range []dom.Status{dom.StatusQueued, dom.StatusRunning, dom.StatusFailed} {
-		if err := repo.Transicionar(ctx, id, to); err != nil {
+		if err := repo.Transition(ctx, id, to); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -45,7 +45,7 @@ func TestFailingRecordsWhenTheRunEnded(t *testing.T) {
 
 	// A retry is the run going again: back in the queue it has not ended.
 	for _, to := range []dom.Status{dom.StatusRetrying, dom.StatusQueued} {
-		if err := repo.Transicionar(ctx, id, to); err != nil {
+		if err := repo.Transition(ctx, id, to); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -61,7 +61,7 @@ func TestAFailedRunIsInTheFeed(t *testing.T) {
 	ctx := context.Background()
 	id := newRun(t, repo)
 	for _, to := range []dom.Status{dom.StatusQueued, dom.StatusRunning, dom.StatusFailed} {
-		if err := repo.Transicionar(ctx, id, to); err != nil {
+		if err := repo.Transition(ctx, id, to); err != nil {
 			t.Fatal(err)
 		}
 	}

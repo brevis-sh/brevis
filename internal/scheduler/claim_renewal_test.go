@@ -271,7 +271,7 @@ func queuedRun(t *testing.T, pool *postgres.Pool, q *queue.Queue, key string) uu
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := repo.Transicionar(ctx, r.ID, dom.StatusQueued); err != nil {
+	if err := repo.Transition(ctx, r.ID, dom.StatusQueued); err != nil {
 		t.Fatal(err)
 	}
 	if err := q.Enqueue(ctx, r.ID, 0, time.Time{}); err != nil {

@@ -295,7 +295,7 @@ func (w Workflow) Resolver(given map[string]string) (map[string]string, error) {
 	}
 
 	for name := range given {
-		if _, existe := declared[name]; !existe {
+		if _, exists := declared[name]; !exists {
 			return nil, fmt.Errorf("workflow %q does not declare the param %q (declared: %s)",
 				w.Slug, name, namesOf(w.Params))
 		}

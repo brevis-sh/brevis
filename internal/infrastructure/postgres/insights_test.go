@@ -44,7 +44,7 @@ func finished(t *testing.T, pool *postgres.Pool, slug string, status dom.Status,
 	if err != nil {
 		t.Fatal(err)
 	}
-	// The timestamps are set directly: Transicionar writes now(), and a test
+	// The timestamps are set directly: Transition writes now(), and a test
 	// about durations needs to choose them.
 	if _, err := pool.Exec(ctx, `
 		UPDATE runs SET status = $2, criado_em = now() - $3::interval, terminado_em = now()

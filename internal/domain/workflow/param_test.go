@@ -49,7 +49,7 @@ func TestAnUnknownParamIsRefused(t *testing.T) {
 }
 
 func TestTheTypesAreValidated(t *testing.T) {
-	casos := []struct {
+	cases := []struct {
 		param wf.Param
 		value string
 		ok    bool
@@ -64,7 +64,7 @@ func TestTheTypesAreValidated(t *testing.T) {
 		{wf.Param{Name: "t", Type: wf.ParamString, Pattern: `^\d{4}-\d{2}-\d{2}$`}, "2026-09-01", true},
 		{wf.Param{Name: "t", Type: wf.ParamString, Pattern: `^\d{4}-\d{2}-\d{2}$`}, "ontem", false},
 	}
-	for _, c := range casos {
+	for _, c := range cases {
 		err := c.param.Accepts(c.value)
 		if c.ok && err != nil {
 			t.Errorf("%s=%q refused: %v", c.param.Type, c.value, err)
@@ -82,7 +82,7 @@ func TestTheTypesAreValidated(t *testing.T) {
 func TestTextRefusesAShellCharacter(t *testing.T) {
 	p := wf.Param{Name: "data", Type: wf.ParamString}
 
-	for _, veneno := range []string{
+	for _, poison := range []string{
 		"; rm -rf /",
 		"$(whoami)",
 		"`id`",
@@ -91,8 +91,8 @@ func TestTextRefusesAShellCharacter(t *testing.T) {
 		"a > /tmp/x",
 		"'; DROP TABLE runs; --",
 	} {
-		if err := p.Accepts(veneno); err == nil {
-			t.Errorf("accepted %q", veneno)
+		if err := p.Accepts(poison); err == nil {
+			t.Errorf("accepted %q", poison)
 		}
 	}
 
@@ -125,14 +125,14 @@ func TestAnInvalidPatternFailsAtPublishTime(t *testing.T) {
 }
 
 func TestAnInvalidDeclarationIsRefused(t *testing.T) {
-	casos := []wf.Param{
+	cases := []wf.Param{
 		{Name: "Load_Full", Type: wf.ParamBool},           // maiuscula
 		{Name: "2days", Type: wf.ParamInteger},            // starts with a digit
 		{Name: "ok", Type: "float"},                       // tipo inexistente
 		{Name: "ok"},                                      // no type
 		{Name: "ok", Type: wf.ParamString, Pattern: "[("}, // regex quebrada
 	}
-	for _, p := range casos {
+	for _, p := range cases {
 		if err := p.Validate(); err == nil {
 			t.Errorf("an invalid declaration was accepted: %+v", p)
 		}
@@ -198,37 +198,37 @@ func TestTheParamKeysAreTheOnDiskFormat(t *testing.T) {
 // A list param carries many values through a map[string]string, because that is
 // what every param is from the form to the step's environment.
 func TestAListParamValidatesEachItem(t *testing.T) {
-	tabelas := wf.Param{Name: "tables", Type: "list|string"}
+	tables := wf.Param{Name: "tables", Type: "list|string"}
 	numeros := wf.Param{Name: "days", Type: "list|integer"}
 
-	aceita := []struct {
+	accepted := []struct {
 		p     wf.Param
 		value string
 		why   string
 	}{
-		{tabelas, "users,orders", "the ordinary case"},
-		{tabelas, "users", "one item is still a list"},
-		{tabelas, "", "nobody filled it in"},
-		{tabelas, "users, orders", "the space after a comma is the form's, not the value's"},
+		{tables, "users,orders", "the ordinary case"},
+		{tables, "users", "one item is still a list"},
+		{tables, "", "nobody filled it in"},
+		{tables, "users, orders", "the space after a comma is the form's, not the value's"},
 		{numeros, "1,7,30", "integers"},
 	}
-	for _, c := range aceita {
+	for _, c := range accepted {
 		if err := c.p.Accepts(c.value); err != nil {
 			t.Errorf("%s: Accepts(%q) = %v, want nil", c.why, c.value, err)
 		}
 	}
 
-	recusa := []struct {
+	refused := []struct {
 		p     wf.Param
 		value string
 		why   string
 	}{
 		{numeros, "1,x,30", "an item that is not an integer"},
-		{tabelas, "users,,orders", "an empty item"},
-		{tabelas, "users,users", "the same item twice"},
-		{tabelas, "users;rm -rf /", "a character the shell interprets"},
+		{tables, "users,,orders", "an empty item"},
+		{tables, "users,users", "the same item twice"},
+		{tables, "users;rm -rf /", "a character the shell interprets"},
 	}
-	for _, c := range recusa {
+	for _, c := range refused {
 		if err := c.p.Accepts(c.value); err == nil {
 			t.Errorf("%s: Accepts(%q) = nil, want an error", c.why, c.value)
 		}
@@ -272,14 +272,14 @@ func TestItemsSplitsAndTrims(t *testing.T) {
 	}
 	// A scalar is never split, however many commas it holds -- a `--select`
 	// value legitimately has them.
-	escalar := wf.Param{Name: "select", Type: wf.ParamString}
-	if got := escalar.Items("a,b"); got != nil {
+	scalar := wf.Param{Name: "select", Type: wf.ParamString}
+	if got := scalar.Items("a,b"); got != nil {
 		t.Errorf("a scalar param was split: %#v", got)
 	}
 }
 
 func TestTheListDeclarationIsChecked(t *testing.T) {
-	recusa := []struct {
+	refused := []struct {
 		p   wf.Param
 		why string
 	}{
@@ -293,7 +293,7 @@ func TestTheListDeclarationIsChecked(t *testing.T) {
 		// only surface on the first scheduled run.
 		{wf.Param{Name: "x", Type: "list|integer", Default: "1,x"}, "a default that is not valid"},
 	}
-	for _, c := range recusa {
+	for _, c := range refused {
 		if err := c.p.Validate(); err == nil {
 			t.Errorf("%s: Validate() = nil, want an error", c.why)
 		}

@@ -142,23 +142,23 @@ func (r *ReadRepo) CountByStatus(ctx context.Context) (map[string]int, error) {
 }
 
 // LatestRuns lists the most recent runs.
-func (r *ReadRepo) LatestRuns(ctx context.Context, limite int) ([]RunSummary, error) {
+func (r *ReadRepo) LatestRuns(ctx context.Context, limit int) ([]RunSummary, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id::text, workflow_slug, status, trigger_type, attempt,
 		       logical_date, criado_em, iniciado_em, terminado_em, erro
 		FROM runs
 		ORDER BY criado_em DESC
-		LIMIT $1`, limite)
+		LIMIT $1`, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	return varrerRuns(rows)
+	return scanRuns(rows)
 }
 
-// varrerRuns reads the columns LatestRuns and InFlight select, in the same
+// scanRuns reads the columns LatestRuns and InFlight select, in the same
 // order. Two identical scans would diverge on the first new column.
-func varrerRuns(rows pgx.Rows) ([]RunSummary, error) {
+func scanRuns(rows pgx.Rows) ([]RunSummary, error) {
 	var out []RunSummary
 	for rows.Next() {
 		var r RunSummary
@@ -470,19 +470,19 @@ func (r *ReadRepo) RunsPer(ctx context.Context, g Grain, n int) ([]Bucket, error
 //
 // The order is ascending on purpose: whatever has been in the queue longest is
 // what deserves attention, and sorting by most recent would hide exactly that.
-func (r *ReadRepo) InFlight(ctx context.Context, limite int) ([]RunSummary, error) {
+func (r *ReadRepo) InFlight(ctx context.Context, limit int) ([]RunSummary, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id::text, workflow_slug, status, trigger_type, attempt,
 		       logical_date, criado_em, iniciado_em, terminado_em, erro
 		FROM runs
 		WHERE status IN ('queued', 'running', 'retrying')
 		ORDER BY criado_em
-		LIMIT $1`, limite)
+		LIMIT $1`, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	return varrerRuns(rows)
+	return scanRuns(rows)
 }
 
 // Schedules returns every schedule, active or not. The DAG list shows the paused
@@ -517,7 +517,7 @@ type RunFilter struct {
 	Workflow string
 	De       *time.Time
 	Ate      *time.Time
-	Limite   int
+	Limit    int
 	Offset   int
 }
 
@@ -556,11 +556,11 @@ func likeLiteral(s string) string {
 
 // Runs lists runs with filtering and pagination.
 func (r *ReadRepo) Runs(ctx context.Context, f RunFilter) ([]RunSummary, error) {
-	if f.Limite <= 0 {
-		f.Limite = 50
+	if f.Limit <= 0 {
+		f.Limit = 50
 	}
-	predicado, args := f.where()
-	args = append(args, f.Limite, f.Offset)
+	predicate, args := f.where()
+	args = append(args, f.Limit, f.Offset)
 
 	rows, err := r.pool.Query(ctx, fmt.Sprintf(`
 		SELECT id::text, workflow_slug, status, trigger_type, attempt,
@@ -568,21 +568,21 @@ func (r *ReadRepo) Runs(ctx context.Context, f RunFilter) ([]RunSummary, error) 
 		FROM runs
 		WHERE %s
 		ORDER BY criado_em DESC
-		LIMIT $%d OFFSET $%d`, predicado, len(args)-1, len(args)), args...)
+		LIMIT $%d OFFSET $%d`, predicate, len(args)-1, len(args)), args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	return varrerRuns(rows)
+	return scanRuns(rows)
 }
 
 // CountRuns returns the total for the SAME filter, so the pagination knows how
 // many pages there are.
 func (r *ReadRepo) CountRuns(ctx context.Context, f RunFilter) (int, error) {
-	predicado, args := f.where()
+	predicate, args := f.where()
 	var n int
 	err := r.pool.QueryRow(ctx,
-		fmt.Sprintf(`SELECT count(*) FROM runs WHERE %s`, predicado), args...).Scan(&n)
+		fmt.Sprintf(`SELECT count(*) FROM runs WHERE %s`, predicate), args...).Scan(&n)
 	return n, err
 }
 
@@ -603,9 +603,9 @@ func (r *ReadRepo) CountRunsInFlight(ctx context.Context) (int, error) {
 // predicate the list uses.
 func (r *ReadRepo) CountRunsByState(ctx context.Context, f RunFilter) (map[string]int, error) {
 	f.State = ""
-	predicado, args := f.where()
+	predicate, args := f.where()
 	rows, err := r.pool.Query(ctx,
-		fmt.Sprintf(`SELECT status, count(*) FROM runs WHERE %s GROUP BY status`, predicado), args...)
+		fmt.Sprintf(`SELECT status, count(*) FROM runs WHERE %s GROUP BY status`, predicate), args...)
 	if err != nil {
 		return nil, err
 	}

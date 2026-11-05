@@ -109,12 +109,12 @@ func (r *ReadRepo) volume(ctx context.Context, from, to time.Time,
 
 	for rows.Next() {
 		var slug string
-		var linhas, bytes int64
-		if err := rows.Scan(&slug, &linhas, &bytes); err != nil {
+		var rowCount, bytes int64
+		if err := rows.Scan(&slug, &rowCount, &bytes); err != nil {
 			return err
 		}
 		if w, ok := into[slug]; ok {
-			w.Rows, w.Bytes = linhas, bytes
+			w.Rows, w.Bytes = rowCount, bytes
 		}
 	}
 	return rows.Err()
