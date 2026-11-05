@@ -5,7 +5,7 @@ import { expect, test } from "./support";
 const place = (kind: string, where: string, what: string) => ({ uri: where + what, kind, kindTitle: "", where, what, note: "" });
 const row = (i: number, dead: boolean) => ({
   gateway: "events_gateway", path: `/v1/stream_${i}`, href: `/ingest/streams/${i}`, note: "Clicks go to a topic. And a second sentence.",
-  sink: place("postgres", "postgres://warehouse/sales.", `events_${i}`), batch: "1 second or 500", batchEvery: "1s", batchRecords: 500,
+  sink: place("postgres", "postgres://warehouse/sales.", `events_${i}`), batch: { $: "cat", v: ["1 second or 500"] }, batchEvery: "1s", batchRecords: 500,
   deadLetter: dead ? place("file", "file:///var/dead-letter/", String(i)) : null,
 });
 const answer = { rows: [row(0, true), row(1, false), row(2, true)], total: 3, gateways: 1, withDeadLetter: 2, kinds: [{ key: "postgres", label: "PostgreSQL" }], filter: { kind: "", q: "" } };

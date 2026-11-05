@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getJSON } from "../api/client";
 import { useFallbackInterval, useLive } from "../live/hooks";
 import { useScheduleToggle, type Logo as LogoRef, type WorkflowRow, type WorkflowsList } from "../api/workflows";
-import { useFormat, useT } from "../i18n";
+import { useFormat, useMsg, useT } from "../i18n";
 import { useAgo } from "../ui/format";
 import { buttonClass } from "../ui/button";
 import { FilterBar, SearchField, Segmented, ResultCount, useUrlSearch, type Chip, type FilterDef } from "../ui/filters";
@@ -103,6 +103,7 @@ const Tag = ({ tag, to }: { tag: string; to: string }) => (
 
 function Row({ w, links, busy, onToggle, onRun }: { w: WorkflowRow; links: Links; busy: boolean; onToggle: () => void; onRun: (slug: string, opener: HTMLElement) => void }) {
   const { t, n } = useT();
+  const msg = useMsg();
   const { dateTime } = useFormat();
   const since = useAgo();
   const navigate = useNavigate();
@@ -162,10 +163,10 @@ function Row({ w, links, busy, onToggle, onRun }: { w: WorkflowRow; links: Links
             {paused ? (
               <p className="text-xs text-muted">
                 {t("workflows.paused")}
-                {w.schedule && <> · {t("workflows.was", { schedule: w.schedule })}</>}
+                {w.schedule && <> · {t("workflows.was", { schedule: msg(w.schedule) })}</>}
               </p>
             ) : (
-              w.schedule && <p className="text-xs text-ink">{w.schedule}{zoneSuffix(w.timezone)}</p>
+              w.schedule && <p className="text-xs text-ink">{msg(w.schedule)}{zoneSuffix(w.timezone)}</p>
             )}
             <p className="mt-0.5 font-mono text-[0.7rem] text-faint">
               {w.cron}
@@ -212,7 +213,7 @@ function Row({ w, links, busy, onToggle, onRun }: { w: WorkflowRow; links: Links
 const GHOST: WorkflowRow = {
   slug: "workflow_name", project: "default", steps: 3, failing: false, inFlight: false, hasParams: false,
   runsIn: [{ key: "python", name: "Python" }], connects: [{ key: "postgres", name: "PostgreSQL" }], hasSchedule: true, active: true,
-  cron: "0 * * * *", schedule: "Every hour", timezone: "UTC", catchup: false, nextRun: "2026-01-01T00:00:00Z", lastRunAt: null, totalRuns: 10,
+  cron: "0 * * * *", schedule: { k: "cron.hourly", a: { m: "00" } }, timezone: "UTC", catchup: false, nextRun: "2026-01-01T00:00:00Z", lastRunAt: null, totalRuns: 10,
   recent: Array.from({ length: 5 }, (_, i) => ({ id: `ghost-${i}`, status: "success", at: "2026-01-01T00:00:00Z" })), tags: ["tag"],
 };
 // 25 is the server's page size: what a first visit draws before it has seen the list.

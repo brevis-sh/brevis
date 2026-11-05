@@ -113,7 +113,11 @@ export type MsgArg =
   | Msg
   | { $: "num"; v: number }
   | { $: "dur"; ms: number }
-  | { $: "at"; v: string; layout: string; zone: string };
+  | { $: "at"; v: string; layout: string; zone: string }
+  | Cat;
+
+/** Words put together by the app: messages and plain strings (data, a separator), said one after the other. */
+export type Cat = { $: "cat"; v: (string | Msg)[] };
 
 type Say = {
   t: (key: string, vars?: Vars) => string;
@@ -122,6 +126,14 @@ type Say = {
 };
 
 const isMsg = (v: MsgArg): v is Msg => typeof v === "object" && v !== null && "k" in v;
+
+/** A Cat of plain strings: placeholder data for a screen drawn before its data arrives. */
+export const cat = (...v: (string | Msg)[]): Cat => ({ $: "cat", v });
+
+/** Says a Cat: each message in turn, each string as it is. */
+export function renderCat(c: Cat, say: Say): string {
+  return c.v.map((p) => (typeof p === "string" ? p : renderMsg(p, say))).join("");
+}
 
 /** Says a message: pure, so the rule is tested without a component. */
 export function renderMsg(m: Msg, say: Say): string {
@@ -134,6 +146,7 @@ export function renderMsg(m: Msg, say: Say): string {
     else if (v.$ === "num") vars[name] = say.fmt.number(v.v);
     else if (v.$ === "dur") vars[name] = say.fmt.duration(v.ms);
     else if (v.$ === "at") vars[name] = say.fmt.stamp(v.v, v.layout, v.zone);
+    else if (v.$ === "cat") vars[name] = renderCat(v, say);
   }
   return m.n === undefined ? say.t(m.k, vars) : say.n(m.k, m.n, vars);
 }
@@ -142,5 +155,8 @@ export function renderMsg(m: Msg, say: Say): string {
 export function useMsg() {
   const { t, n } = useT();
   const fmt = useFormat();
-  return (m: Msg | null | undefined): string => (m ? renderMsg(m, { t, n, fmt }) : "");
+  return (m: Msg | Cat | null | undefined): string => {
+    if (!m) return "";
+    return "$" in m ? renderCat(m, { t, n, fmt }) : renderMsg(m, { t, n, fmt });
+  };
 }

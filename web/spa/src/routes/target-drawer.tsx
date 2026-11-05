@@ -1,7 +1,7 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
-import { useT } from "../i18n";
+import { useMsg, useT, type Msg } from "../i18n";
 import { CopyButton } from "../ui/copy";
 import { Icon } from "../ui/icon";
 import { ButtonLink } from "../ui/kit";
@@ -19,7 +19,7 @@ type Writer = {
   workflow: string;
   node: string;
   status: string;
-  cron: string;
+  cron: Msg | null;
   runInFlight: string | null;
   reason: string;
   href: string;
@@ -39,6 +39,7 @@ const h3 = "mb-2 text-[12.5px] font-semibold text-ink";
 /** The writers, the loads, what reads it, how each writer is configured: what comes from the data, under headings that do not. */
 function Body({ d, u }: { d: TargetDetail | undefined; u: string }) {
   const { t } = useT();
+  const msg = useMsg();
   return (
     <div className="dialog-body space-y-4">
       {d
@@ -49,7 +50,7 @@ function Body({ d, u }: { d: TargetDetail | undefined; u: string }) {
                 <Link to={w.href} className="font-mono text-[12.5px] font-medium text-ink hover:underline">
                   {w.name}
                 </Link>
-                {w.cron && <span className="text-[12px] text-muted">{w.cron}</span>}
+                {w.cron && <span className="text-[12px] text-muted">{msg(w.cron)}</span>}
                 {w.runInFlight && (
                   <Link to={`/runs/${w.runInFlight}`} className="ml-auto rounded-card border border-line px-2 py-0.5 text-[12px] text-ink hover:bg-hover">
                     {t("catalog.drawer.queued")} &rarr;

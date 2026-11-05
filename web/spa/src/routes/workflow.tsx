@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-quer
 import { ApiError, getJSON } from "../api/client";
 import { useFallbackInterval, useLive } from "../live/hooks";
 import { useScheduleToggle, type WorkflowDetail, type WorkflowsList } from "../api/workflows";
-import { useFormat, useT } from "../i18n";
+import { useFormat, useMsg, useT } from "../i18n";
 import { useCrumb } from "../shell/nav";
 import { buttonClass } from "../ui/button";
 import { linkClass } from "../ui/card";
@@ -51,7 +51,7 @@ const META_MIN = { minHeight: 23 };
 // What the line holds for a typical workflow, drawn hidden while the real one loads: it wraps the way the loaded
 // line does at this width. Only the fields Meta reads are filled in.
 const META_PLACEHOLDER = {
-  hasSchedule: true, active: true, project: "project", cron: "0 0 * * *", schedule: "every day at 00:00", timezone: "UTC",
+  hasSchedule: true, active: true, project: "project", cron: "0 0 * * *", schedule: { k: "cron.daily", a: { at: "00:00" } }, timezone: "UTC",
   steps: [0, 1], edges: 1, langs: [{ key: "go", name: "Go" }], tags: ["example", "tag"],
 } as unknown as WorkflowDetail;
 
@@ -59,6 +59,7 @@ const META_PLACEHOLDER = {
 
 function Meta({ d }: { d?: WorkflowDetail }) {
   const { t, n } = useT();
+  const msg = useMsg();
   // The line is as tall as one that carries a tag chip or a language logo (the usual case), with or without them:
   // a workflow with neither would otherwise sit 4px higher than the skeleton and shift everything below.
   if (!d) return <div aria-hidden="true" className={`mb-3 ${SK_REAL}`}><Meta d={META_PLACEHOLDER} /></div>;
@@ -85,7 +86,7 @@ function Meta({ d }: { d?: WorkflowDetail }) {
         <span>{t("workflows.manual_only")}</span>
       ) : (
         <>
-          {d.schedule && <span className="text-ink">{d.schedule}{zone}</span>}
+          {d.schedule && <span className="text-ink">{msg(d.schedule)}{zone}</span>}
           <span className="font-mono text-[12px] text-faint">{d.cron}</span>
         </>
       )}

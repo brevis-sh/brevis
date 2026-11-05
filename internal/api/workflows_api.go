@@ -57,7 +57,7 @@ type workflowRowView struct {
 	HasSchedule bool         `json:"hasSchedule"`
 	Active      bool         `json:"active"`
 	Cron        string       `json:"cron"`
-	Schedule    string       `json:"schedule"` // the cron in words, in the reader's language
+	Schedule    *i18n.Msg    `json:"schedule"` // the cron in words, for the app to say
 	Timezone    string       `json:"timezone"`
 	Catchup     bool         `json:"catchup"`
 	NextRun     *time.Time   `json:"nextRun"`
@@ -162,7 +162,7 @@ func (u *UI) workflowsJSON(w http.ResponseWriter, r *http.Request) {
 		row := workflowRowView{
 			Slug: s.Slug, Project: s.Project, Failing: screen.Failing[s.Slug], InFlight: inFlightStatus(s.LastStatus),
 			HasParams: screen.Params[s.Slug], RunsIn: logosOf(r, screen.RunsIn[s.Slug]), Connects: logosOf(r, screen.Connects[s.Slug]),
-			HasSchedule: s.HasSchedule, Active: s.Active, Cron: s.Cron, Schedule: pages.CronTextIn(ctx, s.Cron),
+			HasSchedule: s.HasSchedule, Active: s.Active, Cron: s.Cron, Schedule: pages.CronMsg(s.Cron),
 			Timezone: s.Timezone, Catchup: s.Catchup, NextRun: s.NextRun, LastRunAt: s.LastRunAt, TotalRuns: s.TotalRuns,
 			Recent: []recentView{}, Tags: nonNil(s.Tags),
 		}

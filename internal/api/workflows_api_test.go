@@ -60,7 +60,7 @@ func TestTheWorkflowsListIsFilteredCountedAndPagedOnTheServer(t *testing.T) {
 		t.Errorf("filter = %v", f)
 	}
 	first := rows[0].(map[string]any)
-	if first["steps"] != float64(1) || len(first["recent"].([]any)) != 1 || first["schedule"] != "every day at 04:00" {
+	if first["steps"] != float64(1) || len(first["recent"].([]any)) != 1 || keyOf(first["schedule"]) != "cron.daily" {
 		t.Errorf("row = %v", first)
 	}
 	if langs := first["runsIn"].([]any); len(langs) != 1 || langs[0].(map[string]any)["key"] != "dbt" {

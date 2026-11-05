@@ -47,7 +47,7 @@ type bucketView struct {
 type nextRunView struct {
 	Workflow string    `json:"workflow"`
 	Cron     string    `json:"cron"`
-	CronText string    `json:"cronText"`
+	CronText *i18n.Msg `json:"cronText"`
 	Timezone string    `json:"timezone"`
 	When     time.Time `json:"when"`
 	Logos    []string  `json:"logos"`
@@ -139,7 +139,7 @@ func (u *UI) overviewAPI(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, n := range u.withLogos(ctx, nextRuns(schedules, now, 8, u.log)) {
 		out.Next = append(out.Next, nextRunView{
-			Workflow: n.Workflow, Cron: n.Cron, CronText: pages.CronTextIn(ctx, n.Cron),
+			Workflow: n.Workflow, Cron: n.Cron, CronText: pages.CronMsg(n.Cron),
 			Timezone: n.Timezone, When: n.When, Logos: orEmpty(n.Logos),
 		})
 	}

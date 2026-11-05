@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getJSON } from "../api/client";
 import { useSession } from "../api/session";
-import { useFormat, useT } from "../i18n";
+import { useFormat, useMsg, useT, type Msg } from "../i18n";
 import { FilterBar, Segmented } from "../ui/filters";
 import { Empty, Panel, linkClass } from "../ui/card";
 import { until, useNumbers } from "../ui/format";
@@ -23,7 +23,7 @@ import { RunsChart, type Bucket } from "./overview-chart";
 const WINDOWS = ["24h", "7d", "30d"] as const;
 type WindowKey = (typeof WINDOWS)[number];
 
-type NextRun = { workflow: string; cron: string; cronText: string; timezone: string; when: string; logos: string[] };
+type NextRun = { workflow: string; cron: string; cronText: Msg | null; timezone: string; when: string; logos: string[] };
 type EventRow = { at: string; source: string; before: string; subject: string; after: string; actor: string; href: string; state: string };
 type Overview = {
   window: WindowKey;
@@ -115,6 +115,7 @@ function Kpis({ window, o }: { window: WindowKey; o?: Overview }) {
 
 function NextTriggers({ o }: { o?: Overview }) {
   const { t } = useT();
+  const msg = useMsg();
   return (
     <section data-next-triggers>
       <Panel title={t("overview.next.title")} action={<Link to="/workflows" className={linkClass}>{t("overview.next.all")} →</Link>}>
@@ -155,7 +156,7 @@ function NextTriggers({ o }: { o?: Overview }) {
                     </span>
                   </div>
                   <div className="mt-0.5 flex items-baseline justify-between gap-3 text-[12px]">
-                    <span className="min-w-0 truncate text-muted">{p.cronText}</span>
+                    <span className="min-w-0 truncate text-muted">{msg(p.cronText)}</span>
                     <span className="shrink-0 font-mono text-[11.5px] text-faint">{p.cron}</span>
                   </div>
                 </li>

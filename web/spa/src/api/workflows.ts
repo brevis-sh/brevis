@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { postJSON } from "./client";
+import type { Msg } from "../i18n";
 
 export type Logo = { key: string; name: string };
 export type Recent = { id: string; status: string; at: string };
@@ -17,7 +18,7 @@ export type WorkflowRow = {
   hasSchedule: boolean;
   active: boolean;
   cron: string;
-  schedule: string;
+  schedule: Msg | null;
   timezone: string;
   catchup: boolean;
   nextRun: string | null;
@@ -65,7 +66,7 @@ export type WorkflowDetail = {
   hasSchedule: boolean;
   active: boolean;
   cron: string;
-  schedule: string;
+  schedule: Msg | null;
   timezone: string;
   nextRun: string | null;
   tags: string[];

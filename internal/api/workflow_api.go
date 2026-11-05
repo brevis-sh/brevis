@@ -89,7 +89,7 @@ type workflowDetailView struct {
 	HasSchedule bool              `json:"hasSchedule"`
 	Active      bool              `json:"active"`
 	Cron        string            `json:"cron"`
-	Schedule    string            `json:"schedule"`
+	Schedule    *i18n.Msg         `json:"schedule"`
 	Timezone    string            `json:"timezone"`
 	NextRun     *time.Time        `json:"nextRun"`
 	Tags        []string          `json:"tags"`
@@ -135,7 +135,7 @@ func (u *UI) workflowJSON(w http.ResponseWriter, r *http.Request) {
 
 	out := workflowDetailView{
 		Slug: def.Slug, Description: def.Description, Cron: def.Schedule, Tags: nonNil(def.Tags),
-		Schedule: pages.CronTextIn(ctx, def.Schedule), Langs: logosOf(r, runsIn(def, 0)),
+		Schedule: pages.CronMsg(def.Schedule), Langs: logosOf(r, runsIn(def, 0)),
 		Edges: len(def.Edges), Steps: []stepView{}, Runs: []workflowRunView{}, Params: []paramView{},
 		Calendar: calendarView{Days: []calendarDayView{}}, Day: dayString(day), Now: now, Slots: []slotView{},
 	}
