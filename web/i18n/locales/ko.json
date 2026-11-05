@@ -458,6 +458,7 @@
   "loads.workflows": "workflows 보기",
   "login.failed": "로그인에 실패했습니다. 다시 시도하세요.",
   "login.hide": "비밀번호 숨기기",
+  "login.invalid": "사용자 이름 또는 비밀번호가 올바르지 않습니다.",
   "login.locked": "시도 횟수가 너무 많습니다.",
   "login.password": "비밀번호",
   "login.show": "비밀번호 표시",

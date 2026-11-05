@@ -389,6 +389,7 @@
   "loads.workflows": "Ver workflows",
   "login.failed": "Falha ao entrar. Tente de novo.",
   "login.hide": "Ocultar senha",
+  "login.invalid": "Usuário ou senha inválidos.",
   "login.locked": "Muitas tentativas.",
   "login.password": "Senha",
   "login.show": "Mostrar senha",

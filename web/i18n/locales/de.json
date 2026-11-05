@@ -458,6 +458,7 @@
   "loads.workflows": "Workflows ansehen",
   "login.failed": "Anmeldung fehlgeschlagen. Versuchen Sie es erneut.",
   "login.hide": "Passwort verbergen",
+  "login.invalid": "Benutzername oder Passwort ungültig.",
   "login.locked": "Zu viele Versuche.",
   "login.password": "Passwort",
   "login.show": "Passwort anzeigen",

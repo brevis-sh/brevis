@@ -458,6 +458,7 @@
   "loads.workflows": "Workflows を見る",
   "login.failed": "サインインに失敗しました。もう一度お試しください。",
   "login.hide": "パスワードを隠す",
+  "login.invalid": "ユーザー名またはパスワードが正しくありません。",
   "login.locked": "試行回数が多すぎます。",
   "login.password": "パスワード",
   "login.show": "パスワードを表示",

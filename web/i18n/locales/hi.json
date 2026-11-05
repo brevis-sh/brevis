@@ -458,6 +458,7 @@
   "loads.workflows": "Workflows देखें",
   "login.failed": "साइन इन नहीं हो सका। फिर से कोशिश करें।",
   "login.hide": "पासवर्ड छिपाएँ",
+  "login.invalid": "उपयोगकर्ता नाम या पासवर्ड अमान्य है।",
   "login.locked": "बहुत ज़्यादा प्रयास हो चुके हैं।",
   "login.password": "पासवर्ड",
   "login.show": "पासवर्ड दिखाएँ",

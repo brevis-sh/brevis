@@ -389,6 +389,7 @@
   "loads.workflows": "Ver workflows",
   "login.failed": "No se pudo iniciar sesión. Inténtalo de nuevo.",
   "login.hide": "Ocultar contraseña",
+  "login.invalid": "Usuario o contraseña no válidos.",
   "login.locked": "Demasiados intentos.",
   "login.password": "Contraseña",
   "login.show": "Mostrar contraseña",

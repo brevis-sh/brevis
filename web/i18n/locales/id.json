@@ -458,6 +458,7 @@
   "loads.workflows": "Lihat workflows",
   "login.failed": "Gagal masuk. Coba lagi.",
   "login.hide": "Sembunyikan kata sandi",
+  "login.invalid": "Nama pengguna atau kata sandi tidak valid.",
   "login.locked": "Terlalu banyak percobaan.",
   "login.password": "Kata sandi",
   "login.show": "Tampilkan kata sandi",

@@ -458,6 +458,7 @@
   "loads.workflows": "查看 workflows",
   "login.failed": "登录失败，请重试。",
   "login.hide": "隐藏密码",
+  "login.invalid": "用户名或密码无效。",
   "login.locked": "尝试次数过多。",
   "login.password": "密码",
   "login.show": "显示密码",

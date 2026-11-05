@@ -428,6 +428,7 @@
   "loads.workflows": "Открыть Workflows",
   "login.failed": "Не удалось войти. Повторите попытку.",
   "login.hide": "Скрыть пароль",
+  "login.invalid": "Неверное имя пользователя или пароль.",
   "login.locked": "Слишком много попыток.",
   "login.password": "Пароль",
   "login.show": "Показать пароль",

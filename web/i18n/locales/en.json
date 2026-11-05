@@ -388,6 +388,7 @@
   "loads.workflows": "See workflows",
   "login.failed": "Sign-in failed. Try again.",
   "login.hide": "Hide password",
+  "login.invalid": "Invalid username or password.",
   "login.locked": "Too many attempts.",
   "login.password": "Password",
   "login.show": "Show password",

@@ -458,6 +458,7 @@
   "loads.workflows": "Voir les workflows",
   "login.failed": "Échec de la connexion. Réessayez.",
   "login.hide": "Masquer le mot de passe",
+  "login.invalid": "Identifiant ou mot de passe incorrect.",
   "login.locked": "Trop de tentatives.",
   "login.password": "Mot de passe",
   "login.show": "Afficher le mot de passe",
