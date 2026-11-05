@@ -36,7 +36,7 @@ func twoLandable() countedSource {
 
 func TestASuccessfulLoadLandsOnceAfterTheLoadCloses(t *testing.T) {
 	var box []Envelope
-	p := pipelineDeTeste(twoLandable(), &box)
+	p := testPipeline(twoLandable(), &box)
 	p.Target.To = locatingTarget{keepingTarget{received: &box}, "postgres://analytics/public/orders"}
 
 	events, err := stagesOf(t, p)
@@ -79,7 +79,7 @@ func TestASuccessfulLoadLandsOnceAfterTheLoadCloses(t *testing.T) {
 // and the writer is on time; leaving `rows` out would read as "did not say".
 func TestALoadOfNothingStillLandsAndSaysZero(t *testing.T) {
 	var box []Envelope
-	p := pipelineDeTeste(countedSource{reads: new(int)}, &box)
+	p := testPipeline(countedSource{reads: new(int)}, &box)
 	p.Target.To = locatingTarget{keepingTarget{received: &box}, "postgres://analytics/public/orders"}
 
 	events, err := stagesOf(t, p)
@@ -94,7 +94,7 @@ func TestALoadOfNothingStillLandsAndSaysZero(t *testing.T) {
 
 func TestAFailedLoadLandsNothing(t *testing.T) {
 	var box []Envelope
-	p := pipelineDeTeste(twoLandable(), &box)
+	p := testPipeline(twoLandable(), &box)
 	p.Target.To = locatingTarget{keepingTarget{received: &box, fail: true}, "postgres://analytics/public/orders"}
 
 	events, _ := stagesOf(t, p)
@@ -107,7 +107,7 @@ func TestAFailedLoadLandsNothing(t *testing.T) {
 // nothing: Locator is optional.
 func TestAWriterThatCannotNameItsDestinationLandsNothing(t *testing.T) {
 	var box []Envelope
-	events, err := stagesOf(t, pipelineDeTeste(twoLandable(), &box))
+	events, err := stagesOf(t, testPipeline(twoLandable(), &box))
 	if err != nil {
 		t.Fatalf("pipeline: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestAWriterThatCannotNameItsDestinationLandsNothing(t *testing.T) {
 // An empty answer from Locate() is "cannot say", not a target.
 func TestAnEmptyLocateLandsNothing(t *testing.T) {
 	var box []Envelope
-	p := pipelineDeTeste(twoLandable(), &box)
+	p := testPipeline(twoLandable(), &box)
 	p.Target.To = locatingTarget{keepingTarget{received: &box}, ""}
 
 	events, _ := stagesOf(t, p)

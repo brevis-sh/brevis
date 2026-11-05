@@ -170,8 +170,8 @@ func (c *Client) CreatePod(ctx context.Context, p Pod) (Pod, error) {
 	return created, nil
 }
 
-// LerPod devolve o estado atual.
-func (c *Client) LerPod(ctx context.Context, name string) (Pod, error) {
+// GetPod returns the pod's current state.
+func (c *Client) GetPod(ctx context.Context, name string) (Pod, error) {
 	res, err := c.request(ctx, http.MethodGet,
 		"/api/v1/namespaces/"+c.namespace+"/pods/"+name, nil)
 	if err != nil {

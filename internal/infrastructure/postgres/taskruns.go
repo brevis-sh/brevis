@@ -377,35 +377,84 @@ type NodeState struct {
 	Status     string `json:"status"`
 	Attempt    int    `json:"attempt"`
 	ExitCode   *int   `json:"exit_code,omitempty"`
-	Err        string `json:"erro,omitempty"`
-	DurationMs int64  `json:"duracao_ms"`
+	Err        string `json:"error,omitempty"`
+	DurationMs int64  `json:"duration_ms"`
 
 	// Etapas are the phases announced by an SDK step. Empty for a step that is
 	// not an SDK one -- and that step's screen stays exactly as it was.
-	Stages []Stage `json:"etapas,omitempty"`
+	Stages []Stage `json:"stages,omitempty"`
 
 	// SdkVersao is the version the step announced, empty when it is not an SDK step.
-	SdkVersion string `json:"sdk_versao,omitempty"`
+	SdkVersion string `json:"sdk_version,omitempty"`
 
 	// Published is what this step told the steps below it. Absent when it
 	// published nothing, which is most steps.
-	Published json.RawMessage `json:"saida,omitempty"`
+	Published json.RawMessage `json:"output,omitempty"`
 
 	// Instances and Done are a MAPPED step's counts: how many instances there
 	// are and how many finished well. Both zero for an unmapped step, which is
 	// most of them, and the payload then carries neither field.
-	Instances int `json:"instancias,omitempty"`
-	Done      int `json:"instancias_ok,omitempty"`
+	Instances int `json:"instances,omitempty"`
+	Done      int `json:"instances_ok,omitempty"`
 }
 
-// Etapa is one phase of an SDK step, for the screen.
+// Stage is one phase of an SDK step, for the screen.
 type Stage struct {
-	Index   int            `json:"indice"`
-	Name    string         `json:"nome"`
-	State   string         `json:"estado"`
+	Index   int            `json:"index"`
+	Name    string         `json:"name"`
+	State   string         `json:"state"`
 	Ms      *int64         `json:"ms,omitempty"`
-	At      string         `json:"em"`
-	Numbers map[string]any `json:"numeros,omitempty"`
+	At      string         `json:"at"`
+	Numbers map[string]any `json:"numbers,omitempty"`
+}
+
+// UnmarshalJSON reads both spellings of a recorded phase. Rows written by an
+// engine before the keys went English carry indice, nome, estado, em and
+// numeros, and a pod of that engine may still write them during a rolling
+// update; new rows carry index, name, state, at and numbers.
+//
+// shortcut: the Portuguese spelling stays readable for as long as such rows can
+// exist (task_runs are trimmed after the retention window), so it can go once
+// every engine writes the English keys and the retention has passed.
+func (s *Stage) UnmarshalJSON(b []byte) error {
+	var v struct {
+		Index      *int           `json:"index"`
+		IndexOld   *int           `json:"indice"`
+		Name       *string        `json:"name"`
+		NameOld    *string        `json:"nome"`
+		State      *string        `json:"state"`
+		StateOld   *string        `json:"estado"`
+		Ms         *int64         `json:"ms"`
+		At         *string        `json:"at"`
+		AtOld      *string        `json:"em"`
+		Numbers    map[string]any `json:"numbers"`
+		NumbersOld map[string]any `json:"numeros"`
+	}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	*s = Stage{Ms: v.Ms, Numbers: v.Numbers}
+	if v.Numbers == nil {
+		s.Numbers = v.NumbersOld
+	}
+	for _, p := range []struct {
+		dst      *string
+		now, old *string
+	}{{&s.Name, v.Name, v.NameOld}, {&s.State, v.State, v.StateOld}, {&s.At, v.At, v.AtOld}} {
+		switch {
+		case p.now != nil:
+			*p.dst = *p.now
+		case p.old != nil:
+			*p.dst = *p.old
+		}
+	}
+	switch {
+	case v.Index != nil:
+		s.Index = *v.Index
+	case v.IndexOld != nil:
+		s.Index = *v.IndexOld
+	}
+	return nil
 }
 
 // stepStages reads the recorded phases and closes the ones left open.
@@ -455,13 +504,13 @@ type StepLog struct {
 	Output json.RawMessage
 }
 
-// LogsDaRun returns the output of every attempt of every step, in execution
+// RunLogs returns the output of every attempt of every step, in execution
 // order.
 //
 // EVERY attempt, not only the last: when a step passes on the second, what
 // explains the first failure is precisely in the attempt the screen would
 // discard.
-func (r *RunRepo) LogsDaRun(ctx context.Context, runID uuid.UUID) ([]StepLog, error) {
+func (r *RunRepo) RunLogs(ctx context.Context, runID uuid.UUID) ([]StepLog, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT node_id, map_index, attempt, status, exit_code, error, log,
 		       COALESCE(EXTRACT(EPOCH FROM (finished_at - started_at)) * 1000, 0)::bigint,

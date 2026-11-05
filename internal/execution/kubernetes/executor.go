@@ -18,7 +18,7 @@ import (
 // server.
 type API interface {
 	CreatePod(ctx context.Context, p Pod) (Pod, error)
-	LerPod(ctx context.Context, name string) (Pod, error)
+	GetPod(ctx context.Context, name string) (Pod, error)
 	Logs(ctx context.Context, name string, follow bool) (io.ReadCloser, error)
 	DeletePod(ctx context.Context, name string) error
 }
@@ -179,7 +179,7 @@ func (e *Executor) waitExit(ctx context.Context, name string, t execution.TaskEx
 	started := time.Now()
 
 	for {
-		pod, err := e.api.LerPod(ctx, name)
+		pod, err := e.api.GetPod(ctx, name)
 		if err != nil {
 			return Pod{}, fmt.Errorf("reading pod %s: %w", name, err)
 		}
@@ -237,7 +237,7 @@ func (e *Executor) waitExit(ctx context.Context, name string, t execution.TaskEx
 // scheduler explains "Insufficient cpu" or "didn't match node affinity".
 // Without it the message would say only "Pending", which helps nobody.
 func (e *Executor) whyNotScheduled(ctx context.Context, name string) string {
-	pod, err := e.api.LerPod(ctx, name)
+	pod, err := e.api.GetPod(ctx, name)
 	if err != nil || pod.Status == nil {
 		return ""
 	}

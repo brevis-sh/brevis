@@ -121,6 +121,56 @@ func TestOnTheSecondAttemptTheCheckpointDoesNotTouchTheSource(t *testing.T) {
 	}
 }
 
+// A depot written by an SDK before the names went English (`_completo`,
+// `parte-NNNNN.ndjson` and Portuguese manifest keys) still resumes: reading it
+// has to spend none of the vendor's quota again.
+func TestADepotWrittenBeforeTheRenameStillResumes(t *testing.T) {
+	dir := t.TempDir()
+	var reads int
+	src := countedSource{records: twoRecords(), reads: &reads}
+
+	var box []Envelope
+	p := func(attempt int) *Pipeline {
+		return &Pipeline{
+			Name: "fetcher", Source: Source{From: src},
+			Checkpoint: Checkpoint{At: dir},
+			Target:     Target{To: keepingTarget{received: &box}},
+			Run:        RunContext{ID: "run-legacy", Attempt: attempt},
+		}
+	}
+	if _, err := runIt(t, p(0)); err != nil {
+		t.Fatalf("first attempt: %v", err)
+	}
+
+	// Turn the depot into what the earlier SDK wrote.
+	part := find(t, dir, "part-00000.ndjson")
+	legacyPart := filepath.Join(filepath.Dir(part), "parte-00000.ndjson")
+	if err := os.Rename(part, legacyPart); err != nil {
+		t.Fatal(err)
+	}
+	manifest := find(t, dir, "_complete")
+	var m map[string]any
+	readJSON(t, manifest, &m)
+	writeJSON(t, filepath.Join(filepath.Dir(manifest), "_completo"), map[string]any{
+		"versao": m["version"], "registros": m["records"], "partes": []string{"parte-00000.ndjson"},
+		"numeros": m["numbers"], "pipeline": m["pipeline"], "run": m["run"], "gravado_em": m["written_at"],
+	})
+	if err := os.Remove(manifest); err != nil {
+		t.Fatal(err)
+	}
+
+	log, err := runIt(t, p(1))
+	if err != nil {
+		t.Fatalf("second attempt: %v\n%s", err, log)
+	}
+	if reads != 1 {
+		t.Errorf("the source was read %d times; an old depot has to resume", reads)
+	}
+	if !strings.Contains(log, "checkpoint=reused") {
+		t.Errorf("the log does not say it reused the checkpoint:\n%s", log)
+	}
+}
+
 // PHASE 2 (I1) -- with no manifest there is no resume.
 func TestACheckpointWithNoManifestRedoesTheExtract(t *testing.T) {
 	dir := t.TempDir()
@@ -144,7 +194,7 @@ func TestACheckpointWithNoManifestRedoesTheExtract(t *testing.T) {
 	// extract
 	// interrupted, and resuming from there would load half the data in
 	// silence.
-	remove(t, dir, "_completo")
+	remove(t, dir, "_complete")
 
 	log, err := runIt(t, p(1))
 	if err != nil {
@@ -173,7 +223,7 @@ func TestACheckpointWithAMissingPartRedoesTheExtract(t *testing.T) {
 	if _, err := runIt(t, p(0)); err != nil {
 		t.Fatalf("first attempt: %v", err)
 	}
-	remove(t, dir, "parte-00000.ndjson")
+	remove(t, dir, "part-00000.ndjson")
 
 	log, err := runIt(t, p(1))
 	if err != nil {
@@ -215,10 +265,10 @@ func TestACheckpointWithAWrongCountFailsLoudly(t *testing.T) {
 		t.Fatalf("first attempt: %v", err)
 	}
 
-	path := find(t, dir, "_completo")
+	path := find(t, dir, "_complete")
 	var m map[string]any
-	lerJSON(t, path, &m)
-	m["registros"] = 99
+	readJSON(t, path, &m)
+	m["records"] = 99
 	writeJSON(t, path, m)
 
 	_, err := runIt(t, p(1))
@@ -343,7 +393,7 @@ func TestACheckpointThatCannotWriteDoesNotFailTheRun(t *testing.T) {
 // PHASE 4 (I5) -- failing MIDWAY does not fail the run either, and does not
 // re-read the source.
 //
-// Here `_inicio` writes and the parts do not. The stream degrades: it yields
+// Here `_start` writes and the parts do not. The stream degrades: it yields
 // what already became
 // object, what stayed in the buffer, and carries on straight from the source --
 // without redoing the extract, which is precisely what was being spared.
@@ -434,7 +484,7 @@ func (refusingStore) Create(context.Context, string, string, io.Reader) error {
 type storeRefusingParts struct{ refusingStore }
 
 func (storeRefusingParts) Create(_ context.Context, _, key string, _ io.Reader) error {
-	if strings.Contains(key, "parte-") {
+	if strings.Contains(key, "part-") {
 		return fmt.Errorf("balde cheio")
 	}
 	return nil
@@ -464,7 +514,7 @@ func remove(t *testing.T, root, name string) {
 	}
 }
 
-func lerJSON(t *testing.T, path string, v any) {
+func readJSON(t *testing.T, path string, v any) {
 	t.Helper()
 	data, err := os.ReadFile(path) //nolint:gosec // caminho de teste
 	if err != nil {

@@ -40,12 +40,12 @@ func TestEnvIsInheritedFromTheWorkflowAndTheStepOverrides(t *testing.T) {
 	}
 
 	fetch := w.Nodes[byID["fetch_occurrences"]]
-	if got := w.EnvDe(fetch)["BREVIS_LOG_LEVEL"]; got != "debug" {
+	if got := w.EnvOf(fetch)["BREVIS_LOG_LEVEL"]; got != "debug" {
 		t.Errorf("the step declared debug and ended up %q", got)
 	}
 
 	dbt := w.Nodes[byID["dbt_build"]]
-	if got := w.EnvDe(dbt)["BREVIS_LOG_LEVEL"]; got != "info" {
+	if got := w.EnvOf(dbt)["BREVIS_LOG_LEVEL"]; got != "info" {
 		t.Errorf("the step with no env should inherit info, it ended up %q", got)
 	}
 }
@@ -59,7 +59,7 @@ func TestASecretOnlyGoesToTheStepThatDeclaredIt(t *testing.T) {
 		t.Fatalf("Parse: %v", err)
 	}
 	for _, n := range w.Nodes {
-		_, has := w.SecretsDe(n)["GABRIEL_SESSION_COOKIE"]
+		_, has := w.SecretsOf(n)["GABRIEL_SESSION_COOKIE"]
 		if n.ID == "fetch_occurrences" && !has {
 			t.Error("the step that declared the secret did not get it")
 		}
@@ -125,8 +125,8 @@ func TestASpaceInTheVariablesNameDoesNotGetThrough(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
-	if _, ok := w.EnvDe(w.Nodes[0])["TOKEN"]; !ok {
-		t.Errorf("the name was not trimmed: %v", w.EnvDe(w.Nodes[0]))
+	if _, ok := w.EnvOf(w.Nodes[0])["TOKEN"]; !ok {
+		t.Errorf("the name was not trimmed: %v", w.EnvOf(w.Nodes[0]))
 	}
 }
 

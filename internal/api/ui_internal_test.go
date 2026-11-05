@@ -78,13 +78,13 @@ func TestFilter(t *testing.T) {
 // another.
 func TestTheTagsDoNotShrinkWithTheFilter(t *testing.T) {
 	all := list()
-	equal(t, tagsDe(all), []string{"acme", "id", "platform", "vendors"})
+	equal(t, allTags(all), []string{"acme", "id", "platform", "vendors"})
 
 	so := filter(all, pages.Filter{Tags: []string{"vendors"}}, listFacts{})
 	if len(so) != 1 {
 		t.Fatalf("expected 1 filtered row, got %d", len(so))
 	}
-	equal(t, tagsDe(all), []string{"acme", "id", "platform", "vendors"})
+	equal(t, allTags(all), []string{"acme", "id", "platform", "vendors"})
 }
 
 func TestTheWorkflowsNextRun(t *testing.T) {

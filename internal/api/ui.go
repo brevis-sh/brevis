@@ -92,7 +92,7 @@ type Definitions interface {
 type RunsChart interface {
 	Get(ctx context.Context, id uuid.UUID) (run.Run, error)
 	NodeStates(ctx context.Context, id uuid.UUID) (map[string]postgres.NodeState, error)
-	LogsDaRun(ctx context.Context, id uuid.UUID) ([]postgres.StepLog, error)
+	RunLogs(ctx context.Context, id uuid.UUID) ([]postgres.StepLog, error)
 	// WaitingOn says what concurrency limit holds a queued run, if one does.
 	WaitingOn(ctx context.Context, id uuid.UUID) (*postgres.Wait, error)
 }
@@ -819,9 +819,9 @@ func tagsOf(values []string) []string {
 	return out
 }
 
-// tagsDe gathers the tags of ALL workflows, not of the filtered rows: the filter
+// allTags gathers the tags of ALL workflows, not of the filtered rows: the filter
 // bar must not shrink as you filter, or there is no way back.
-func tagsDe(ws []postgres.WorkflowSummary) []string {
+func allTags(ws []postgres.WorkflowSummary) []string {
 	seen := map[string]struct{}{}
 	var out []string
 	for _, w := range ws {
@@ -855,7 +855,7 @@ func (u *UI) runLog(w http.ResponseWriter, r *http.Request) {
 		u.failure(w, r, err)
 		return
 	}
-	logs, err := u.execs.LogsDaRun(r.Context(), id)
+	logs, err := u.execs.RunLogs(r.Context(), id)
 	if err != nil {
 		u.failure(w, r, err)
 		return
@@ -918,7 +918,7 @@ func (u *UI) runPage(ctx context.Context, current run.Run) pages.RunPage {
 		}
 		p.Step = stepLineOf(def, states)
 	}
-	if p.Logs, err = u.execs.LogsDaRun(ctx, current.ID); err != nil {
+	if p.Logs, err = u.execs.RunLogs(ctx, current.ID); err != nil {
 		u.log.Warn("the run's logs are unavailable", "run", current.ID, "error", err)
 	}
 	if u.alerts != nil {

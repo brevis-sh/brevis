@@ -40,7 +40,7 @@ func (a *fakeAPI) CreatePod(_ context.Context, p k8s.Pod) (k8s.Pod, error) {
 	return p, nil
 }
 
-func (a *fakeAPI) LerPod(_ context.Context, _ string) (k8s.Pod, error) {
+func (a *fakeAPI) GetPod(_ context.Context, _ string) (k8s.Pod, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	i := a.read

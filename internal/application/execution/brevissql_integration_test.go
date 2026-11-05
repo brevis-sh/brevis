@@ -137,7 +137,7 @@ func TestIntegrationBrevisSQLModelsReachTheCatalog(t *testing.T) {
 	}
 
 	// And the marker is not in the step's log; it is a message, not output.
-	logs, err := repo.LogsDaRun(ctx, runID)
+	logs, err := repo.RunLogs(ctx, runID)
 	if err != nil {
 		t.Fatalf("logs: %v", err)
 	}

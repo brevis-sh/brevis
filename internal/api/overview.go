@@ -67,7 +67,7 @@ func (u *UI) failingItems(ctx context.Context, failing []postgres.FailingWorkflo
 		it := pages.AttentionItem{Workflow: f.Slug, RunID: f.RunID, FailedAt: f.FailedAt, Streak: f.Streak}
 		if u.execs != nil {
 			if r, err := u.execs.Get(ctx, f.RunID); err == nil {
-				if logs, err := u.execs.LogsDaRun(ctx, f.RunID); err == nil {
+				if logs, err := u.execs.RunLogs(ctx, f.RunID); err == nil {
 					it.Cause = causeOf(logs, r.Err)
 				}
 				it.Params, it.Rerunnable = u.rerunValues(ctx, r.WorkflowSlug, r.Params)

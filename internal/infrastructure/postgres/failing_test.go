@@ -126,7 +126,7 @@ func TestLogsDaRunCarriesWhenEachAttemptStarted(t *testing.T) {
 		  (gen_random_uuid(), $1, 'report', 'pending', 0, NULL)`, id, at); err != nil {
 		t.Fatal(err)
 	}
-	logs, err := postgres.NewRunRepo(pool).LogsDaRun(ctx, id)
+	logs, err := postgres.NewRunRepo(pool).RunLogs(ctx, id)
 	if err != nil || len(logs) != 2 {
 		t.Fatalf("LogsDaRun = %+v, %v", logs, err)
 	}

@@ -178,8 +178,8 @@ func inline(host domain.Node, child domain.Workflow) ([]domain.Node, []domain.Ed
 	for _, n := range child.Nodes {
 		n.Image = child.ImageFor(n)
 		n.Resources = child.ResourcesFor(n)
-		n.Env = child.EnvDe(n)
-		n.Secrets = child.SecretsDe(n)
+		n.Env = child.EnvOf(n)
+		n.Secrets = child.SecretsOf(n)
 
 		// The group is the host step's id, so the child arrives as one
 		// collapsible box on the graph -- which is what somebody writing

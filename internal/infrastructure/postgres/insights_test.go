@@ -60,7 +60,7 @@ func withStages(t *testing.T, pool *postgres.Pool, runID uuid.UUID, node string,
 	t.Helper()
 	ctx := context.Background()
 	stages, err := json.Marshal([]map[string]any{{
-		"indice": 0, "nome": "load", "estado": "done", "numeros": numbers,
+		"index": 0, "name": "load", "state": "done", "numbers": numbers,
 	}})
 	if err != nil {
 		t.Fatal(err)
@@ -191,6 +191,8 @@ func TestOnlyASucceedingAttemptsRowsAreCounted(t *testing.T) {
 // The JSON is written literally. The first version of this test passed a Go
 // float64 and did not bite: encoding/json writes 1234.0 as `1234`, so the case
 // it meant to cover never reached the database.
+// The Portuguese spelling is what rows written by an older engine carry; it
+// is read exactly as the English one.
 func TestACounterThatArrivedAsAFloatStillSums(t *testing.T) {
 	pool := insightsDB(t)
 	ctx := context.Background()

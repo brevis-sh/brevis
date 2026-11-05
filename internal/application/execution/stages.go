@@ -33,12 +33,48 @@ const stageCeiling = 60
 // with: it is what a test outside this package needs to check what was
 // recorded.
 type Stage struct {
-	Index    int            `json:"indice"`
-	TaskName string         `json:"nome"`
-	State    string         `json:"estado"`
+	Index    int            `json:"index"`
+	TaskName string         `json:"name"`
+	State    string         `json:"state"`
 	Ms       *int64         `json:"ms,omitempty"`
-	At       string         `json:"em"`
-	Numbers  map[string]any `json:"numeros,omitempty"`
+	At       string         `json:"at"`
+	Numbers  map[string]any `json:"numbers,omitempty"`
+}
+
+// UnmarshalJSON reads both spellings of a recorded phase: rows written before
+// the keys went English carry indice, nome, estado, em and numeros.
+//
+// shortcut: it goes with postgres.Stage's reader, once no task_runs row can
+// hold the Portuguese keys.
+func (s *Stage) UnmarshalJSON(b []byte) error {
+	type plain Stage
+	aux := struct {
+		*plain
+		IndexOld   *int           `json:"indice"`
+		NameOld    *string        `json:"nome"`
+		StateOld   *string        `json:"estado"`
+		AtOld      *string        `json:"em"`
+		NumbersOld map[string]any `json:"numeros"`
+	}{plain: (*plain)(s)}
+	if err := json.Unmarshal(b, &aux); err != nil {
+		return err
+	}
+	if aux.IndexOld != nil && s.Index == 0 {
+		s.Index = *aux.IndexOld
+	}
+	if aux.NameOld != nil && s.TaskName == "" {
+		s.TaskName = *aux.NameOld
+	}
+	if aux.StateOld != nil && s.State == "" {
+		s.State = *aux.StateOld
+	}
+	if aux.AtOld != nil && s.At == "" {
+		s.At = *aux.AtOld
+	}
+	if s.Numbers == nil {
+		s.Numbers = aux.NumbersOld
+	}
+	return nil
 }
 
 // knownStages is a closed list on purpose: a phase this engine does not

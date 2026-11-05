@@ -343,12 +343,12 @@ func (w Workflow) ResourcesFor(n Node) Resources {
 	return n.Resources.WithDefaults(w.Resources)
 }
 
-// EnvDe resolves a step's effective literal variables: the workflow's, with
+// EnvOf resolves a step's effective literal variables: the workflow's, with
 // the step's on top.
-func (w Workflow) EnvDe(n Node) map[string]string { return overlay(w.Env, n.Env) }
+func (w Workflow) EnvOf(n Node) map[string]string { return overlay(w.Env, n.Env) }
 
-// SecretsDe resolves a step's effective secrets, by the same rule.
-func (w Workflow) SecretsDe(n Node) map[string]string { return overlay(w.Secrets, n.Secrets) }
+// SecretsOf resolves a step's effective secrets, by the same rule.
+func (w Workflow) SecretsOf(n Node) map[string]string { return overlay(w.Secrets, n.Secrets) }
 
 // sobrepor returns base with cima on top, mutating neither: the maps come from
 // the published workflow and are read by every step at the same time.
@@ -734,7 +734,7 @@ func (w Workflow) Validate() error {
 		// Against the effective view, not the declared one: an `env:` on the
 		// workflow and a `secrets:` of the same name on the step collide just
 		// the same, and only the inherited view sees it.
-		if err := validateEnvironment(w.Slug, "step "+n.ID, w.EnvDe(n), w.SecretsDe(n)); err != nil {
+		if err := validateEnvironment(w.Slug, "step "+n.ID, w.EnvOf(n), w.SecretsOf(n)); err != nil {
 			return err
 		}
 	}

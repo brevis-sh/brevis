@@ -54,7 +54,7 @@ func stagesOf(t *testing.T, p *Pipeline) ([]map[string]any, error) {
 	return events, err
 }
 
-func pipelineDeTeste(src Reader, box *[]Envelope) *Pipeline {
+func testPipeline(src Reader, box *[]Envelope) *Pipeline {
 	return &Pipeline{
 		Name:      "fetcher",
 		Source:    Source{From: src},
@@ -66,7 +66,7 @@ func pipelineDeTeste(src Reader, box *[]Envelope) *Pipeline {
 
 func TestPhasesFollowThePipelineShape(t *testing.T) {
 	var box []Envelope
-	events, err := stagesOf(t, pipelineDeTeste(countedSource{
+	events, err := stagesOf(t, testPipeline(countedSource{
 		records: []any{map[string]any{"id": 1}, map[string]any{"id": 2}},
 		reads:   new(int),
 	}, &box))
@@ -103,7 +103,7 @@ func TestPhasesFollowThePipelineShape(t *testing.T) {
 // differently from its neighbour" without anybody opening the Dockerfile.
 func TestTheAnnouncementCarriesTheVersion(t *testing.T) {
 	var box []Envelope
-	events, err := stagesOf(t, pipelineDeTeste(countedSource{
+	events, err := stagesOf(t, testPipeline(countedSource{
 		records: []any{map[string]any{"id": 1}}, reads: new(int),
 	}, &box))
 	if err != nil {
@@ -127,7 +127,7 @@ func TestTheAnnouncementCarriesTheVersion(t *testing.T) {
 // extraction, and the screen would lie about precisely the longest stage.
 func TestTheSourceDurationMeasuresTheRealExtraction(t *testing.T) {
 	var box []Envelope
-	p := pipelineDeTeste(slowSource{
+	p := testPipeline(slowSource{
 		records: []any{map[string]any{"id": 1}, map[string]any{"id": 2}, map[string]any{"id": 3}},
 		pause:   20 * time.Millisecond,
 	}, &box)
@@ -148,7 +148,7 @@ func TestTheSourceDurationMeasuresTheRealExtraction(t *testing.T) {
 // else.
 func TestAMapStageInventsNoDuration(t *testing.T) {
 	var box []Envelope
-	events, err := stagesOf(t, pipelineDeTeste(slowSource{
+	events, err := stagesOf(t, testPipeline(slowSource{
 		records: []any{map[string]any{"id": 1}}, pause: 20 * time.Millisecond,
 	}, &box))
 	if err != nil {
@@ -165,7 +165,7 @@ func TestAMapStageInventsNoDuration(t *testing.T) {
 // pulados.
 func TestAMapStageSaysHowManyItDropped(t *testing.T) {
 	var box []Envelope
-	events, err := stagesOf(t, pipelineDeTeste(countedSource{
+	events, err := stagesOf(t, testPipeline(countedSource{
 		records: []any{
 			map[string]any{"id": 1},
 			map[string]any{"sem_id": true},
@@ -186,7 +186,7 @@ func TestAMapStageSaysHowManyItDropped(t *testing.T) {
 // terminal of whoever is debugging a fetcher would be cost with no return.
 func TestOutsideTheEngineNothingIsAnnounced(t *testing.T) {
 	var box []Envelope
-	p := pipelineDeTeste(countedSource{
+	p := testPipeline(countedSource{
 		records: []any{map[string]any{"id": 1}}, reads: new(int),
 	}, &box)
 	p.Run = RunContext{} // rodando a mao
@@ -303,7 +303,7 @@ func TestEachStageGetsItsOwnBox(t *testing.T) {
 // The card is half a card without saying WHICH source and WHICH destination.
 func TestTheSourceAndTargetSayWhichTheyAre(t *testing.T) {
 	var box []Envelope
-	events, err := stagesOf(t, pipelineDeTeste(countedSource{
+	events, err := stagesOf(t, testPipeline(countedSource{
 		records: twoRecords(), reads: new(int),
 	}, &box))
 	if err != nil {

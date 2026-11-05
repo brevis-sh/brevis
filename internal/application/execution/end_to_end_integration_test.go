@@ -139,7 +139,7 @@ func TestIntegrationStagesReachTheDatabaseThroughARealBinary(t *testing.T) {
 	}
 
 	// The marker must NOT have become the step's log.
-	logs, err := repo.LogsDaRun(ctx, runID)
+	logs, err := repo.RunLogs(ctx, runID)
 	if err != nil {
 		t.Fatalf("logs: %v", err)
 	}

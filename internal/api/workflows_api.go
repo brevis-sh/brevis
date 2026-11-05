@@ -147,7 +147,7 @@ func (u *UI) workflowsJSON(w http.ResponseWriter, r *http.Request) {
 			Project: f.Project, Sort: f.Sort, Dir: dirOf(f.Desc), Page: f.Page, PerPage: f.PerPage},
 		Rows:     make([]workflowRowView, 0, len(rows)),
 		Counts:   count(all, f, facts).State,
-		Tags:     nonNil(tagsDe(all)),
+		Tags:     nonNil(allTags(all)),
 		Langs:    []langCountView{},
 		Total:    len(all),
 		Filtered: len(filtered),

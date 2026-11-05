@@ -27,7 +27,7 @@ func TestTheEnvironmentsPrecedence(t *testing.T) {
 
 	cases := map[string]string{"com_env": "passo", "sem_env": "workflow"}
 	for _, n := range w.Nodes {
-		env := mergeEnv(r.Env, r.runContext(instance{key: run.Step(n.ID)}, false, 0), w.EnvDe(n))
+		env := mergeEnv(r.Env, r.runContext(instance{key: run.Step(n.ID)}, false, 0), w.EnvOf(n))
 
 		if got := env["NIVEL"]; got != cases[n.ID] {
 			t.Errorf("%s: LEVEL = %q, expected %q", n.ID, got, cases[n.ID])
@@ -53,11 +53,11 @@ func TestSecretsDoNotEnterTheTasksEnv(t *testing.T) {
 	}
 	n := w.Nodes[0]
 
-	env := mergeEnv(nil, nil, w.EnvDe(n))
+	env := mergeEnv(nil, nil, w.EnvOf(n))
 	if _, has := env["TOKEN"]; has {
 		t.Error("the secret went into the task's Env")
 	}
-	if w.SecretsDe(n)["TOKEN"] != "cofre/token" {
+	if w.SecretsOf(n)["TOKEN"] != "cofre/token" {
 		t.Error("the secret did not arrive as a coordinate")
 	}
 }

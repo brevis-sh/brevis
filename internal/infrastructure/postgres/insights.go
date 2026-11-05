@@ -95,8 +95,8 @@ func (r *ReadRepo) volume(ctx context.Context, from, to time.Time,
 	rows, err := r.pool.Query(ctx, `
 		SELECT
 			r.workflow_slug,
-			COALESCE(sum((e->'numeros'->>'rows')::numeric), 0)::bigint  AS rows,
-			COALESCE(sum((e->'numeros'->>'bytes')::numeric), 0)::bigint AS bytes
+			COALESCE(sum((COALESCE(e->'numbers', e->'numeros')->>'rows')::numeric), 0)::bigint  AS rows,
+			COALESCE(sum((COALESCE(e->'numbers', e->'numeros')->>'bytes')::numeric), 0)::bigint AS bytes
 		FROM runs r
 		JOIN task_runs t ON t.run_id = r.id AND t.status = 'success'
 		CROSS JOIN LATERAL jsonb_array_elements(t.stages) AS e

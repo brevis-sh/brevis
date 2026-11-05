@@ -1749,8 +1749,8 @@ func (r Runner) build(w wf.Workflow, n wf.Node, inst instance, attempt int, firs
 		// beats the global on purpose -- the other way round, a variable
 		// declared in the file would lose in silence to a BREVIS_TASK_ENV
 		// somebody configured months ago.
-		Env:     mergeEnv(r.Env, r.runContext(inst, first, attempt), w.EnvDe(n)),
-		Secrets: w.SecretsDe(n),
+		Env:     mergeEnv(r.Env, r.runContext(inst, first, attempt), w.EnvOf(n)),
+		Secrets: w.SecretsOf(n),
 		Timeout: r.Timeout,
 	}
 

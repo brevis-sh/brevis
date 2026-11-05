@@ -151,13 +151,10 @@ func TestADuplicateParamIsRefused(t *testing.T) {
 
 // TestTheParamKeysAreTheOnDiskFormat pins the JSON a published workflow holds.
 //
-// A Workflow goes into `workflows.definition` and `runs.definition` as JSON with
-// no tags of its own, so the Go field NAME used to be the key. Every workflow
-// published before the fields were renamed holds `Nome`, `Tipo` and
-// `Descricao`, and json.Unmarshal ignores a key it does not recognise: drop
-// these tags and a stored param comes back with no name, no type and no
-// description -- no error, no log, and a trigger form rendering an empty field
-// while the validation refuses a value the author declared as valid.
+// A Workflow goes into `workflows.definition` and `runs.definition` as JSON, so
+// the keys of a Param are a stored format: the engine writes the English ones
+// and TestAParamStoredWithPortugueseKeysStillReads keeps the older spelling
+// (`Nome`, `Tipo`, `Descricao`) readable.
 //
 // The count is asserted too. A field added without a tag is a key this test
 // cannot see, and it would be one more thing that reads back empty.
@@ -177,8 +174,8 @@ func TestTheParamKeysAreTheOnDiskFormat(t *testing.T) {
 		t.Fatal(err)
 	}
 	for key, want := range map[string]any{
-		"Nome": "load_full", "Tipo": "boolean", "Default": "false",
-		"Descricao": "reprocesses everything", "Pattern": "^(true|false)$",
+		"Name": "load_full", "Type": "boolean", "Default": "false",
+		"Description": "reprocesses everything", "Pattern": "^(true|false)$",
 	} {
 		if got[key] != want {
 			t.Errorf("key %q = %v, want %v -- this is the on-disk format, and a "+
@@ -192,6 +189,29 @@ func TestTheParamKeysAreTheOnDiskFormat(t *testing.T) {
 	if len(got) != 6 {
 		t.Errorf("the document has %d keys, want 6: %v -- a field with no tag is a "+
 			"key this test cannot see", len(got), got)
+	}
+}
+
+// Every workflow published before the keys went English holds `Nome`, `Tipo`
+// and `Descricao`; reading one must not give an empty param.
+func TestAParamStoredWithPortugueseKeysStillReads(t *testing.T) {
+	stored := `{"Nome":"load_full","Tipo":"boolean","Default":"false","Descricao":"reprocesses everything","Enum":["true","false"],"Pattern":"^(true|false)$"}`
+	var p wf.Param
+	if err := json.Unmarshal([]byte(stored), &p); err != nil {
+		t.Fatal(err)
+	}
+	if p.Name != "load_full" || p.Type != wf.ParamBool || p.Description != "reprocesses everything" || p.Default != "false" {
+		t.Errorf("read %+v", p)
+	}
+	if err := p.Validate(); err != nil {
+		t.Errorf("a stored param no longer validates: %v", err)
+	}
+
+	// The same param written by this engine reads back the same.
+	raw, _ := json.Marshal(p)
+	var again wf.Param
+	if err := json.Unmarshal(raw, &again); err != nil || again.Name != p.Name || again.Type != p.Type {
+		t.Errorf("round trip: %+v, %v", again, err)
 	}
 }
 
