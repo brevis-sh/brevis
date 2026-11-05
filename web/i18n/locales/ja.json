@@ -207,7 +207,7 @@
   "drawer.default": "デフォルト {value}",
   "drawer.dropped": "現在の定義にないため送信しません",
   "drawer.lead": "これらの値で手動実行を作成します。スケジュールとデフォルトは変わりません。",
-  "drawer.list.placeholder": "one, two, three",
+  "drawer.list.placeholder": "一、二、三",
   "drawer.pattern": "一致が必要なパターン",
   "drawer.payload": "送信するペイロード",
   "drawer.rerun.note": "これらの値で今すぐ実行します。auto パラメータはスロット {slot} ではなく現在時刻に従います。",
