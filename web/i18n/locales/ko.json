@@ -612,6 +612,7 @@
   "overview.open_catalog": "카탈로그에서 열기",
   "overview.stream.failing": "{stream} 실패 중",
   "overview.stream.open": "stream 열기",
+  "overview.stream.since": "{when}부터",
   "overview.stream.more": {"one": "외 {count}개 stream 실패", "other": "외 {count}개 stream 실패"},
   "overview.recent": "최근 실행",
   "overview.rerun": "재실행",

@@ -612,6 +612,7 @@
   "overview.open_catalog": "在目录中打开",
   "overview.stream.failing": "{stream} 失败中",
   "overview.stream.open": "打开 stream",
+  "overview.stream.since": "自 {when} 起",
   "overview.stream.more": {"one": "另有 {count} 个 stream 失败中", "other": "另有 {count} 个 stream 失败中"},
   "overview.recent": "最近运行",
   "overview.rerun": "重新运行",

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useFallbackInterval, useLive } from "../live/hooks";
 import { Link } from "react-router";
 import { getJSON } from "../api/client";
-import { useT } from "../i18n";
+import { useFormat, useT } from "../i18n";
 import { useAgo } from "../ui/format";
 import { buttonClass } from "../ui/button";
 import { Icon } from "../ui/icon";
@@ -134,14 +134,19 @@ function TargetRow({ tg }: { tg: Target }) {
 
 function StreamRow({ st }: { st: StreamItem }) {
   const { t } = useT();
-  const ago = useAgo();
+  const { clock } = useFormat();
+  // The path is code and the rest is a sentence in the reader's language, with the path wherever that
+  // language puts it: the catalog's {stream} is filled with a marker and the text is cut around it.
+  const [before = "", after = ""] = t("overview.stream.failing", { stream: "\u0001" }).split("\u0001");
   return (
     <li data-attention-stream={`${st.gateway}${st.path}`} className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-state-failed/15 px-4 py-3 last:border-b-0">
       <StatusMark kind="failed" />
       <div className="min-w-0 flex-1 max-[640px]:basis-[calc(100%-2rem)]">
-        <p className="text-[13px]">
-          <span className="font-mono break-all text-ink">{t("overview.stream.failing", { stream: st.path })}</span>
-          {st.since && <span className="ml-1 text-[12.5px] text-muted">{ago(st.since)}</span>}
+        <p className="text-[13px] text-ink">
+          {before}
+          <span className="font-mono break-all">{st.path}</span>
+          {after}
+          {st.since && <span className="ml-1 text-[12.5px] text-muted">{t("overview.stream.since", { when: clock(st.since) })}</span>}
         </p>
         <p className="mt-0.5 font-mono text-[12px] text-muted">{st.gateway}</p>
       </div>

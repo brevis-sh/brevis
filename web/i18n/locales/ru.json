@@ -582,6 +582,7 @@
   "overview.open_catalog": "Открыть в каталоге",
   "overview.stream.failing": "{stream} падает",
   "overview.stream.open": "Открыть stream",
+  "overview.stream.since": "с {when}",
   "overview.stream.more": {"one": "и ещё {count} stream со сбоем", "other": "и ещё streams со сбоями: {count}"},
   "overview.recent": "Недавние запуски",
   "overview.rerun": "Перезапуск",

@@ -612,6 +612,7 @@
   "overview.open_catalog": "カタログで開く",
   "overview.stream.failing": "{stream} が失敗しています",
   "overview.stream.open": "stream を開く",
+  "overview.stream.since": "{when}から",
   "overview.stream.more": {"one": "ほか {count} 件の stream が失敗", "other": "ほか {count} 件の stream が失敗"},
   "overview.recent": "直近の実行",
   "overview.rerun": "再実行",

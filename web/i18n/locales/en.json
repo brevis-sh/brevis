@@ -521,6 +521,7 @@
   "overview.open_catalog": "Open in catalog",
   "overview.stream.failing": "{stream} is failing",
   "overview.stream.open": "Open stream",
+  "overview.stream.since": "since {when}",
   "overview.stream.more": {"one": "and {count} more failing stream", "other": "and {count} more failing streams"},
   "overview.recent": "Recent runs",
   "overview.rerun": "Rerun",

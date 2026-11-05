@@ -612,6 +612,7 @@
   "overview.open_catalog": "Im Katalog öffnen",
   "overview.stream.failing": "{stream} schlägt fehl",
   "overview.stream.open": "Stream öffnen",
+  "overview.stream.since": "seit {when}",
   "overview.stream.more": {"one": "und {count} weiterer fehlschlagender Stream", "other": "und {count} weitere fehlschlagende Streams"},
   "overview.recent": "Letzte Runs",
   "overview.rerun": "Neu starten",

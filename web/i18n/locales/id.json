@@ -612,6 +612,7 @@
   "overview.open_catalog": "Buka di katalog",
   "overview.stream.failing": "{stream} gagal",
   "overview.stream.open": "Buka stream",
+  "overview.stream.since": "sejak {when}",
   "overview.stream.more": {"one": "dan {count} stream lain yang gagal", "other": "dan {count} stream lain yang gagal"},
   "overview.recent": "Run terbaru",
   "overview.rerun": "Jalankan ulang",

@@ -612,6 +612,7 @@
   "overview.open_catalog": "कैटलॉग में खोलें",
   "overview.stream.failing": "{stream} विफल हो रहा है",
   "overview.stream.open": "stream खोलें",
+  "overview.stream.since": "{when} से",
   "overview.stream.more": {"one": "और {count} stream विफल", "other": "और {count} stream विफल"},
   "overview.recent": "हाल के run",
   "overview.rerun": "फिर चलाएँ",
