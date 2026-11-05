@@ -69,6 +69,8 @@ export function useFormat() {
       if (ms < 3_600_000) return `${Math.floor(s / 60)}m ${two(s % 60)}s`;
       return `${Math.floor(s / 3600)}h ${two(Math.floor(s / 60) % 60)}m`;
     },
+    /** An instant in one of the console's shapes, 24-hour: short "Oct 02 09:05", brief "Oct 2 09:05", day, month, weekday. */
+    stamp: (iso: string, layout: string, zone = "UTC") => stamp(lang, iso, layout, zone),
     since: (iso: string, now = Date.now()) => {
       const s = Math.round((new Date(iso).getTime() - now) / 1000);
       const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
@@ -79,4 +81,66 @@ export function useFormat() {
       return rtf.format(Math.round(s / 86400), "day");
     },
   };
+}
+
+const STAMPS: Record<string, Intl.DateTimeFormatOptions> = {
+  short: { month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" },
+  brief: { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" },
+  day: { weekday: "short", month: "short", day: "numeric", year: "numeric" },
+  month: { month: "short" },
+  weekday: { weekday: "short" },
+};
+
+function stamp(lang: string, iso: string, layout: string, zone: string): string {
+  const opts = STAMPS[layout];
+  if (!opts) return iso;
+  try {
+    return new Intl.DateTimeFormat(lang, { ...opts, timeZone: zone }).format(new Date(iso));
+  } catch {
+    return new Intl.DateTimeFormat(lang, { ...opts, timeZone: "UTC" }).format(new Date(iso));
+  }
+}
+
+// A MESSAGE FROM THE SERVER. The server has no language (web/i18n/msg.go): it sends the catalog key of a sentence and
+// the data that fills it, and the app says it. A value is a string, a number, another message, or a typed value the
+// app formats the way it formats everything else (number, duration, instant).
+export type Msg = { k: string; n?: number; a?: Record<string, MsgArg> };
+export type MsgArg =
+  | string
+  | number
+  | boolean
+  | null
+  | Msg
+  | { $: "num"; v: number }
+  | { $: "dur"; ms: number }
+  | { $: "at"; v: string; layout: string; zone: string };
+
+type Say = {
+  t: (key: string, vars?: Vars) => string;
+  n: (key: string, count: number, vars?: Vars) => string;
+  fmt: Pick<ReturnType<typeof useFormat>, "number" | "duration" | "stamp">;
+};
+
+const isMsg = (v: MsgArg): v is Msg => typeof v === "object" && v !== null && "k" in v;
+
+/** Says a message: pure, so the rule is tested without a component. */
+export function renderMsg(m: Msg, say: Say): string {
+  const vars: Vars = {};
+  for (const [name, v] of Object.entries(m.a ?? {})) {
+    if (v === null || v === undefined) vars[name] = "";
+    else if (typeof v === "string" || typeof v === "number") vars[name] = v;
+    else if (typeof v === "boolean") vars[name] = String(v);
+    else if (isMsg(v)) vars[name] = renderMsg(v, say);
+    else if (v.$ === "num") vars[name] = say.fmt.number(v.v);
+    else if (v.$ === "dur") vars[name] = say.fmt.duration(v.ms);
+    else if (v.$ === "at") vars[name] = say.fmt.stamp(v.v, v.layout, v.zone);
+  }
+  return m.n === undefined ? say.t(m.k, vars) : say.n(m.k, m.n, vars);
+}
+
+/** useMsg()(m): a message from the server, said in the reader's language ("" for none). */
+export function useMsg() {
+  const { t, n } = useT();
+  const fmt = useFormat();
+  return (m: Msg | null | undefined): string => (m ? renderMsg(m, { t, n, fmt }) : "");
 }
