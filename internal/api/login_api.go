@@ -12,29 +12,6 @@ import (
 	"brevis.sh/brevis/internal/auth"
 )
 
-// loginError is the code a session endpoint answers in {"error": ...}. The server
-// speaks codes and never sentences: the sentence is the screen's, in the reader's
-// language (web/spa/src/routes/login.tsx maps each code to a catalog key). Add a
-// code here and there together; an unknown one reads as "sign-in failed".
-type loginError string
-
-const (
-	codeInvalidCredentials loginError = "invalid_credentials" // a wrong user and a wrong password alike
-	codeTooManyAttempts    loginError = "too_many_attempts"   // locked, with retryAfter
-	codeMalformedRequest   loginError = "malformed_request"
-	codeCrossSiteRefused   loginError = "cross_site_refused"
-	codeJSONRequired       loginError = "json_required"
-)
-
-// refuseSession answers a session endpoint's failure as its code.
-func refuseSession(w http.ResponseWriter, status int, code loginError, extra ...any) {
-	body := map[string]any{"error": string(code)}
-	for i := 0; i+1 < len(extra); i += 2 {
-		body[extra[i].(string)] = extra[i+1]
-	}
-	writeJSON(w, status, body)
-}
-
 // maxLoginBody bounds what /api/login reads. A user, a password and a path fit
 // in a few hundred bytes; the cap keeps a flood of large bodies from being
 // buffered before the Limiter ever sees the attempt.
@@ -88,11 +65,11 @@ func sameOrigin(r *http.Request) bool {
 func guardSession(w http.ResponseWriter, r *http.Request) bool {
 	w.Header().Set("Cache-Control", "no-store")
 	if !sameOrigin(r) {
-		refuseSession(w, http.StatusForbidden, codeCrossSiteRefused)
+		fail(w, http.StatusForbidden, codeCrossSiteRefused)
 		return false
 	}
 	if !jsonOnly(r) {
-		refuseSession(w, http.StatusUnsupportedMediaType, codeJSONRequired)
+		fail(w, http.StatusUnsupportedMediaType, codeJSONRequired)
 		return false
 	}
 	return true
@@ -115,13 +92,13 @@ func (u *UI) RegistrarLoginAPI(mux *http.ServeMux, gate *auth.Gate) {
 		dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxLoginBody))
 		dec.DisallowUnknownFields()
 		if err := dec.Decode(&req); err != nil {
-			refuseSession(w, http.StatusBadRequest, codeMalformedRequest)
+			fail(w, http.StatusBadRequest, codeMalformedRequest)
 			return
 		}
 		// Exactly one JSON value: trailing bytes are a malformed body, not
 		// something to ignore.
 		if _, err := dec.Token(); !errors.Is(err, io.EOF) {
-			refuseSession(w, http.StatusBadRequest, codeMalformedRequest)
+			fail(w, http.StatusBadRequest, codeMalformedRequest)
 			return
 		}
 
@@ -143,7 +120,7 @@ func (u *UI) RegistrarLoginAPI(mux *http.ServeMux, gate *auth.Gate) {
 			secs := int(retry.Seconds()) + 1
 			u.log.Warn("login throttled", "origin", origin)
 			w.Header().Set("Retry-After", strconv.Itoa(secs))
-			refuseSession(w, http.StatusTooManyRequests, codeTooManyAttempts, "retryAfter", secs)
+			fail(w, http.StatusTooManyRequests, codeTooManyAttempts, "retryAfter", secs)
 		case auth.Signed:
 			u.log.Info("login", "user", req.User)
 			writeJSON(w, http.StatusOK, map[string]string{"next": next})
@@ -152,7 +129,7 @@ func (u *UI) RegistrarLoginAPI(mux *http.ServeMux, gate *auth.Gate) {
 			// the username nor the password enters the log (a password typed
 			// in the wrong box would land there).
 			u.log.Warn("login refused", "origin", origin)
-			refuseSession(w, http.StatusUnauthorized, codeInvalidCredentials)
+			fail(w, http.StatusUnauthorized, codeInvalidCredentials)
 		}
 	})
 
