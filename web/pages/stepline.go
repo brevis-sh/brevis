@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"strings"
 )
 
 // StepLine is a one-step run's step, drawn as a line instead of a canvas
@@ -38,7 +37,10 @@ type StageCell struct {
 }
 
 // StageNumber is one magnitude a stage produced: "3 in", "1 pages".
-type StageNumber struct{ Key, Value string }
+type StageNumber struct {
+	Key   string
+	Value any
+}
 
 // StageHighlight is the order the numbers worth showing come in, and dag.js's
 // HIGHLIGHT is the same list (TestTheStageRulesMatchDagJs). Two of them fit a
@@ -49,9 +51,9 @@ var StageHighlight = []string{"in", "out", "groups", "rows", "pages", "objects"}
 // dag.js's STAGE_STATE_COLOURS does. Anything else is pending.
 var StageStates = map[string]string{"done": "success", "running": "running", "failed": "failed", "aborted": "canceled"}
 
-// StageNumbers picks a stage's two numbers, in StageHighlight's order. A
-// number reads with thousands separators, as the island's toLocaleString
-// writes it; a string is shown as it came.
+// StageNumbers picks a stage's two numbers, in StageHighlight's order. A whole
+// number is a number, which the app writes with the reader's separators, as
+// the island's toLocaleString writes it; anything else is shown as it came.
 func StageNumbers(numbers map[string]any) []StageNumber {
 	var out []StageNumber
 	for _, k := range StageHighlight {
@@ -62,12 +64,12 @@ func StageNumbers(numbers map[string]any) []StageNumber {
 		if !ok || v == nil || v == "" {
 			continue
 		}
-		out = append(out, StageNumber{Key: k, Value: numberText(v)})
+		out = append(out, StageNumber{Key: k, Value: numberValue(v)})
 	}
 	return out
 }
 
-func numberText(v any) string {
+func numberValue(v any) any {
 	f, ok := v.(float64)
 	if !ok {
 		if i, isInt := v.(int); isInt {
@@ -80,18 +82,7 @@ func numberText(v any) string {
 	if f != math.Trunc(f) {
 		return strconv.FormatFloat(f, 'f', -1, 64)
 	}
-	s := strconv.FormatInt(int64(math.Abs(f)), 10)
-	var b strings.Builder
-	if f < 0 {
-		b.WriteByte('-')
-	}
-	for i, c := range s {
-		if i > 0 && (len(s)-i)%3 == 0 {
-			b.WriteByte(',')
-		}
-		b.WriteRune(c)
-	}
-	return b.String()
+	return int64(f)
 }
 
 // stageTone is the state a stage's dot is drawn in.
