@@ -78,7 +78,7 @@ CREATE INDEX alertas_pendentes_idx
 CREATE INDEX alertas_por_run_idx ON alertas (run_id);
 
 COMMENT ON TABLE alertas IS
-  'Caixa de saida de alertas. A linha e escrita na MESMA transacao da falha que a justifica.';
+  'Alert outbox. The row is written in the SAME transaction as the failure that justifies it.';
 
 -- +goose Down
 DROP TABLE alertas;

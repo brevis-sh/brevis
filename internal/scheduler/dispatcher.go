@@ -37,7 +37,7 @@ type Execute func(ctx context.Context, runID uuid.UUID) error
 // declared here in the consumer rather than in the package that implements
 // it.
 type Repo interface {
-	Transition(ctx context.Context, id uuid.UUID, para dom.Status) error
+	Transition(ctx context.Context, id uuid.UUID, to dom.Status) error
 	RecordError(ctx context.Context, id uuid.UUID, msg string) error
 	Get(ctx context.Context, id uuid.UUID) (dom.Run, error)
 
@@ -349,12 +349,12 @@ func (d *Dispatcher) claimCycle(ctx context.Context) error {
 
 	for _, it := range items {
 		// Enqueued to claimed, which is the dispatcher's own SLA. It is
-		// measured from disponivel_em and not from the row's creation on
+		// measured from available_at and not from the row's creation on
 		// purpose: an item waiting out its retry backoff is not the scheduler
 		// being slow, and counting it would make a healthy backoff look like
 		// saturation.
 		//
-		// Clamped at zero because the two clocks are different. disponivel_em
+		// Clamped at zero because the two clocks are different. available_at
 		// is the DATABASE's now(); time.Now() here is the process's, and a few
 		// milliseconds of skew would otherwise land negative observations in
 		// the first bucket.

@@ -76,7 +76,7 @@ CREATE TABLE load_metrics (
 CREATE INDEX load_metrics_workflow_idx ON load_metrics (workflow_slug, em DESC);
 
 COMMENT ON TABLE load_metrics IS
-  'Numeros que cada carga do SDK ja produzia, guardados para leitura de tendencia. Derivado de task_runs.etapas.';
+  'The numbers every SDK load already produced, kept for trend reads. Derived from task_runs.etapas.';
 
 -- Backfill from the history that is already there.
 --

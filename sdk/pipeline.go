@@ -438,8 +438,8 @@ func checkDestination(ctx context.Context, t Target) error {
 	if err := t.validate(); err != nil {
 		return err
 	}
-	checker, sabe := t.To.(core.DestinationChecker)
-	if !sabe {
+	checker, knows := t.To.(core.DestinationChecker)
+	if !knows {
 		return nil
 	}
 	return checker.CheckDestination(ctx, t.declaredColumns())

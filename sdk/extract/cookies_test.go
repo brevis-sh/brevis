@@ -159,9 +159,9 @@ func drain(t *testing.T, s core.Source) {
 // The stdlib's jar does not apply the prefix rule. This test exists for the day
 // that changes.
 func TestASecurePrefixedCookieDoesNotVanishSilently(t *testing.T) {
-	var visto string
+	var seen string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		visto = r.Header.Get("Cookie")
+		seen = r.Header.Get("Cookie")
 		_, _ = fmt.Fprint(w, `{"ok":1}`)
 	}))
 	defer srv.Close()
@@ -173,7 +173,7 @@ func TestASecurePrefixedCookieDoesNotVanishSilently(t *testing.T) {
 		Apply: core.AsCookie,
 	}})
 
-	if visto == "" {
+	if seen == "" {
 		t.Fatal("the __Secure- cookie vanished before reaching the server")
 	}
 }

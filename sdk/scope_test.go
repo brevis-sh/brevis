@@ -80,17 +80,17 @@ func TestTheSnapshotRefusesToOverwriteWhatTheSourceSent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var visto error
+	var seen error
 	for _, err := range data.Records {
 		if err != nil {
-			visto = err
+			seen = err
 		}
 	}
-	if visto == nil {
+	if seen == nil {
 		t.Fatal("wrote the snapshot over a field of the source")
 	}
-	if !strings.Contains(visto.Error(), "payload") {
-		t.Errorf("the error does not name the field: %v", visto)
+	if !strings.Contains(seen.Error(), "payload") {
+		t.Errorf("the error does not name the field: %v", seen)
 	}
 }
 

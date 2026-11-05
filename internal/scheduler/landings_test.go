@@ -76,7 +76,7 @@ func TestTenLandingsInAMinuteStartOneRun(t *testing.T) {
 
 	// The first cycle PLANTS the cursor and starts nothing: a trigger that
 	// fired for the whole history of the table on its first turn is the
-	// mistake `schedules.ultimo_slot` already made once.
+	// mistake `schedules.last_slot` already made once.
 	if n, err := s.Cycle(ctx, t0); err != nil || n != 0 {
 		t.Fatalf("the planting cycle created %d runs (%v)", n, err)
 	}

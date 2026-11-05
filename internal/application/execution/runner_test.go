@@ -41,7 +41,7 @@ func TestAcceptanceCriterion_GoDAGWithParallelism(t *testing.T) {
 		picoBC   atomic.Int32
 	)
 
-	registrar := func(name string, dura time.Duration) {
+	registrar := func(name string, dur time.Duration) {
 		reg.MustRegister(execution.FuncTask{TaskName: name, Fn: func(ctx context.Context, _ execution.Input) error {
 			n := inFlight.Add(1)
 			for {
@@ -57,7 +57,7 @@ func TestAcceptanceCriterion_GoDAGWithParallelism(t *testing.T) {
 			mu.Unlock()
 
 			select {
-			case <-time.After(dura):
+			case <-time.After(dur):
 			case <-ctx.Done():
 				return ctx.Err()
 			}
@@ -365,13 +365,13 @@ func TestStderrTakesPrecedenceOverStdout(t *testing.T) {
 func TestSlotsLimitSimultaneousSteps(t *testing.T) {
 	const steps, ceiling = 10, 5
 
-	var inFlight, pico int64
+	var inFlight, peak int64
 	reg := execution.NewRegistry()
 	reg.MustRegister(execution.FuncTask{TaskName: "ocupa", Fn: func(ctx context.Context, in execution.Input) error {
 		current := atomic.AddInt64(&inFlight, 1)
 		for {
-			previous := atomic.LoadInt64(&pico)
-			if current <= previous || atomic.CompareAndSwapInt64(&pico, previous, current) {
+			previous := atomic.LoadInt64(&peak)
+			if current <= previous || atomic.CompareAndSwapInt64(&peak, previous, current) {
 				break
 			}
 		}
@@ -396,7 +396,7 @@ func TestSlotsLimitSimultaneousSteps(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if p := atomic.LoadInt64(&pico); p > ceiling {
+	if p := atomic.LoadInt64(&peak); p > ceiling {
 		t.Errorf("peak of %d simultaneous steps, the ceiling is %d", p, ceiling)
 	} else if p < ceiling {
 		t.Errorf("a peak of %d: the slots went unused, the limit became serialization", p)
@@ -408,13 +408,13 @@ func TestSlotsLimitSimultaneousSteps(t *testing.T) {
 func TestSlotsAreSharedBetweenRuns(t *testing.T) {
 	const ceiling = 3
 
-	var inFlight, pico int64
+	var inFlight, peak int64
 	reg := execution.NewRegistry()
 	reg.MustRegister(execution.FuncTask{TaskName: "ocupa", Fn: func(ctx context.Context, in execution.Input) error {
 		current := atomic.AddInt64(&inFlight, 1)
 		for {
-			previous := atomic.LoadInt64(&pico)
-			if current <= previous || atomic.CompareAndSwapInt64(&pico, previous, current) {
+			previous := atomic.LoadInt64(&peak)
+			if current <= previous || atomic.CompareAndSwapInt64(&peak, previous, current) {
 				break
 			}
 		}
@@ -445,7 +445,7 @@ func TestSlotsAreSharedBetweenRuns(t *testing.T) {
 	}
 	wg.Wait()
 
-	if p := atomic.LoadInt64(&pico); p > ceiling {
+	if p := atomic.LoadInt64(&peak); p > ceiling {
 		t.Errorf("a peak of %d with two runs; the process ceiling is %d", p, ceiling)
 	}
 }

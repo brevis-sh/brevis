@@ -18,7 +18,7 @@ DROP INDEX CONCURRENTLY IF EXISTS runs_workflow_criado_idx;
 CREATE INDEX CONCURRENTLY runs_workflow_criado_idx ON runs (workflow_slug, criado_em DESC);
 
 COMMENT ON INDEX runs_workflow_criado_idx IS
-  'Leituras do console por workflow: ultimo run, runs recentes, a pagina do workflow.';
+  'Console reads per workflow: the latest run, recent runs, the workflow page.';
 
 -- +goose Down
 DROP INDEX CONCURRENTLY IF EXISTS runs_workflow_criado_idx;

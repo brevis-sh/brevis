@@ -343,7 +343,7 @@ func translateOldType(pt string) string {
 // the phases so it can be stored as a row and read as a trend.
 //
 // Every field here already crossed the `@brevis:` pipe and is already in
-// `task_runs.etapas`. This does not measure anything new; it makes the numbers
+// `task_runs.stages`. This does not measure anything new; it makes the numbers
 // answerable without reading a year of JSONB.
 //
 // A table rather than a query over the JSONB, because it was measured: on a
@@ -382,7 +382,7 @@ func (c *stageCollector) LoadNumbers() (LoadNumbers, bool) {
 //
 // It takes the recorded shape rather than the collector because that is the
 // shape the other implementation of this rule works on: migration 00012
-// backfills the same numbers out of `task_runs.etapas`, in SQL, for history
+// backfills the same numbers out of `task_runs.stages`, in SQL, for history
 // this code never saw. Two implementations of one rule is the shape that
 // drifts, and having the Go one answerable from the stored shape is what lets a
 // test put the same phases through both and compare.

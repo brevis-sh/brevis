@@ -49,7 +49,7 @@ func (s *Scheduler) landingCycle(ctx context.Context, now time.Time) (int, error
 	}
 	if !planted {
 		// PLANTED AT now(), NEVER AT THE EPOCH. The same rule
-		// `schedules.ultimo_slot` learned the hard way -- a marker left unset
+		// `schedules.last_slot` learned the hard way -- a marker left unset
 		// makes the first cycle materialise from the beginning of time. Here
 		// that would be one run per debounce window for the whole history of
 		// the landings table.

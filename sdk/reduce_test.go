@@ -275,7 +275,7 @@ func generateGroups(n, g int) iter.Seq2[Envelope, error] {
 	}
 }
 
-// picoDeHeap mede o maior heap vivo DURANTE o fold.
+// heapPeak mede o maior heap vivo DURANTE o fold.
 //
 // Measuring afterwards does not work, and that cost one version of this test:
 // by the time the first row comes out, the groups' state is already dead -- the
@@ -285,10 +285,10 @@ func generateGroups(n, g int) iter.Seq2[Envelope, error] {
 //
 // The probe goes in as one more aggregator: its `Add` runs once per
 // record, while ALL of the groups' state is alive.
-func picoDeHeap(t *testing.T, n, groups int, agg map[string]Aggregator) uint64 {
+func heapPeak(t *testing.T, n, groups int, agg map[string]Aggregator) uint64 {
 	t.Helper()
 
-	var pico uint64
+	var peak uint64
 	var i int
 	interval := n / 20
 	if interval < 1 {
@@ -312,8 +312,8 @@ func picoDeHeap(t *testing.T, n, groups int, agg map[string]Aggregator) uint64 {
 			runtime.GC()
 			var m runtime.MemStats
 			runtime.ReadMemStats(&m)
-			if m.HeapAlloc > pico {
-				pico = m.HeapAlloc
+			if m.HeapAlloc > peak {
+				peak = m.HeapAlloc
 			}
 			return nil
 		},
@@ -331,7 +331,7 @@ func picoDeHeap(t *testing.T, n, groups int, agg map[string]Aggregator) uint64 {
 	if lines != groups {
 		t.Fatalf("came out with %d groups, want %d", lines, groups)
 	}
-	return pico
+	return peak
 }
 
 // Reduce's promise is not "the sum is right": it is that MEMORY does not grow
@@ -350,8 +350,8 @@ func TestMemoryDoesNotGrowWithTheInput(t *testing.T) {
 		"maior": Max("valor"), "dp": StdDev("valor"), "nome": MaxBy("nome", "valor"),
 	}
 
-	small := picoDeHeap(t, 10_000, groups, agg)
-	big := picoDeHeap(t, 1_000_000, groups, agg)
+	small := heapPeak(t, 10_000, groups, agg)
+	big := heapPeak(t, 1_000_000, groups, agg)
 
 	// A fixed allowance, not a proportional one: if the input were retained, 1M
 	// records would weigh hundreds of MB and blow past any reasonable
@@ -384,8 +384,8 @@ func TestTheMeasurementCatchesAnAggregatorThatKeepsRows(t *testing.T) {
 		}),
 	}
 
-	small := picoDeHeap(t, 10_000, groups, guardedAgg)
-	big := picoDeHeap(t, 200_000, groups, guardedAgg)
+	small := heapPeak(t, 10_000, groups, guardedAgg)
+	big := heapPeak(t, 200_000, groups, guardedAgg)
 
 	const slack = 4 << 20
 	if big <= small+slack {

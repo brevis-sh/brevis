@@ -151,8 +151,8 @@ func (u *UI) workflowJSON(w http.ResponseWriter, r *http.Request) {
 		out.Runs = append(out.Runs, rv)
 	}
 
-	if ind, err := u.reads.IndicatorsFor(ctx, workflowWindow, slug); err == nil {
-		out.Stats.MeanMs, out.Stats.Running, out.Stats.Queued = ind.MeanDuration.Milliseconds(), ind.Running, ind.Pending
+	if indicators, err := u.reads.IndicatorsFor(ctx, workflowWindow, slug); err == nil {
+		out.Stats.MeanMs, out.Stats.Running, out.Stats.Queued = indicators.MeanDuration.Milliseconds(), indicators.Running, indicators.Pending
 	} else {
 		u.log.Warn("the workflow's indicators are unavailable", "workflow", slug, "error", err)
 	}

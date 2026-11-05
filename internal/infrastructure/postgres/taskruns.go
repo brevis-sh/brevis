@@ -26,10 +26,10 @@ import (
 // recovers an item from a dead worker and redoes it.
 func (r *RunRepo) StartTask(ctx context.Context, runID uuid.UUID, step dom.StepKey, attempt int) error {
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO task_runs (id, run_id, node_id, map_index, status, attempt, iniciado_em)
+		INSERT INTO task_runs (id, run_id, node_id, map_index, status, attempt, started_at)
 		VALUES ($1, $2, $3, $4, $5, $6, now())
 		ON CONFLICT (run_id, node_id, attempt, map_index) DO UPDATE
-		SET status = EXCLUDED.status, iniciado_em = now(), terminado_em = NULL, erro = '',
+		SET status = EXCLUDED.status, started_at = now(), finished_at = NULL, error = '',
 		    handover = NULL`,
 		uuid.New(), runID, step.Node, step.MapIndex, dom.StatusRunning, attempt)
 	return err
@@ -38,11 +38,11 @@ func (r *RunRepo) StartTask(ctx context.Context, runID uuid.UUID, step dom.StepK
 // MarkSkipped records a step whose trigger rule was not satisfied.
 //
 // Not StartTask followed by FinishTask, and the difference is the point:
-// `iniciado_em` stays NULL. A skipped step never started, and stamping a start
+// `started_at` stays NULL. A skipped step never started, and stamping a start
 // time would make it look like something that ran in zero seconds -- which is
 // also what a step killed instantly looks like.
 //
-// `erro` carries WHY. A skipped step with no explanation sends whoever is
+// `error` carries WHY. A skipped step with no explanation sends whoever is
 // looking at the graph to trace edges by hand, and that column is where the
 // screen already shows a step's last word.
 //
@@ -53,11 +53,11 @@ func (r *RunRepo) MarkSkipped(ctx context.Context, runID uuid.UUID, step dom.Ste
 	attempt int, reason string) error {
 
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO task_runs (id, run_id, node_id, map_index, status, attempt, erro, terminado_em)
+		INSERT INTO task_runs (id, run_id, node_id, map_index, status, attempt, error, finished_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, now())
 		ON CONFLICT (run_id, node_id, attempt, map_index) DO UPDATE
-		SET status = EXCLUDED.status, erro = EXCLUDED.erro,
-		    iniciado_em = NULL, terminado_em = now(),
+		SET status = EXCLUDED.status, error = EXCLUDED.error,
+		    started_at = NULL, finished_at = now(),
 		    exit_code = NULL, log = ''`,
 		uuid.New(), runID, step.Node, step.MapIndex, dom.StatusSkipped, attempt, reason)
 	return err
@@ -73,7 +73,7 @@ func (r *RunRepo) RecordStages(ctx context.Context, runID uuid.UUID, step dom.St
 
 	_, err := r.pool.Exec(ctx, `
 		UPDATE task_runs
-		SET etapas = $5, sdk_versao = COALESCE(NULLIF($6, ''), sdk_versao)
+		SET stages = $5, sdk_version = COALESCE(NULLIF($6, ''), sdk_version)
 		WHERE run_id = $1 AND node_id = $2 AND attempt = $3 AND map_index = $4`,
 		runID, step.Node, attempt, step.MapIndex, stages, sdkVersion)
 	return err
@@ -97,17 +97,17 @@ func (r *RunRepo) RecordLoad(ctx context.Context, runID uuid.UUID, step dom.Step
 	// one the calendar heatmap groups by.
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO load_metrics (
-			run_id, node_id, map_index, workflow_slug, em,
-			linhas, registros, ignorados, bytes_saida, load_ms,
-			bytes_entrada, paginas, tentativas, extract_ms)
-		SELECT $1, $2, $3, $4, r.criado_em,
+			run_id, node_id, map_index, workflow_slug, run_created_at,
+			rows, records, ignored, bytes_out, load_ms,
+			bytes_in, pages, attempts, extract_ms)
+		SELECT $1, $2, $3, $4, r.created_at,
 		       $5, $6, $7, $8, $9, $10, $11, $12, $13
 		FROM runs r WHERE r.id = $1
 		ON CONFLICT (run_id, node_id, map_index) DO UPDATE SET
-			linhas = EXCLUDED.linhas, registros = EXCLUDED.registros,
-			ignorados = EXCLUDED.ignorados, bytes_saida = EXCLUDED.bytes_saida,
-			load_ms = EXCLUDED.load_ms, bytes_entrada = EXCLUDED.bytes_entrada,
-			paginas = EXCLUDED.paginas, tentativas = EXCLUDED.tentativas,
+			rows = EXCLUDED.rows, records = EXCLUDED.records,
+			ignored = EXCLUDED.ignored, bytes_out = EXCLUDED.bytes_out,
+			load_ms = EXCLUDED.load_ms, bytes_in = EXCLUDED.bytes_in,
+			pages = EXCLUDED.pages, attempts = EXCLUDED.attempts,
 			extract_ms = EXCLUDED.extract_ms`,
 		runID, step.Node, step.MapIndex, workflow,
 		n.Rows, n.Records, n.Ignored, n.BytesOut, n.LoadMs,
@@ -125,7 +125,7 @@ func (r *RunRepo) RecordContext(ctx context.Context, runID uuid.UUID, step dom.S
 
 	_, err := r.pool.Exec(ctx, `
 		UPDATE task_runs
-		SET saida = $5
+		SET output = $5
 		WHERE run_id = $1 AND node_id = $2 AND attempt = $3 AND map_index = $4`,
 		runID, step.Node, attempt, step.MapIndex, published)
 	return err
@@ -138,9 +138,9 @@ func (r *RunRepo) RecordContext(ctx context.Context, runID uuid.UUID, step dom.S
 // the step below must not read it.
 func (r *RunRepo) PublishedContext(ctx context.Context, runID uuid.UUID) (map[string]json.RawMessage, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT DISTINCT ON (node_id) node_id, saida
+		SELECT DISTINCT ON (node_id) node_id, output
 		FROM task_runs
-		WHERE run_id = $1 AND saida IS NOT NULL
+		WHERE run_id = $1 AND output IS NOT NULL
 		ORDER BY node_id, attempt DESC`, runID)
 	if err != nil {
 		return nil, err
@@ -189,7 +189,7 @@ func (r *RunRepo) FinishTask(ctx context.Context, runID uuid.UUID, step dom.Step
 
 	_, err := r.pool.Exec(ctx, `
 		UPDATE task_runs
-		SET status = $5, exit_code = $6, erro = $7, log = $8, terminado_em = now(),
+		SET status = $5, exit_code = $6, error = $7, log = $8, finished_at = now(),
 		    handover = NULL
 		WHERE run_id = $1 AND node_id = $2 AND attempt = $3 AND map_index = $4`,
 		runID, step.Node, attempt, step.MapIndex, status, exit, failure, log)
@@ -305,8 +305,8 @@ func (r *RunRepo) NodeStates(ctx context.Context, runID uuid.UUID) (map[string]N
 	rows, err := r.pool.Query(ctx, `
 		WITH latest AS (
 			SELECT DISTINCT ON (node_id, map_index)
-			       node_id, map_index, status, attempt, exit_code, erro,
-			       iniciado_em, terminado_em, etapas, sdk_versao, saida
+			       node_id, map_index, status, attempt, exit_code, error,
+			       started_at, finished_at, stages, sdk_version, output
 			FROM task_runs
 			WHERE run_id = $1
 			ORDER BY node_id, map_index, attempt DESC
@@ -322,14 +322,14 @@ func (r *RunRepo) NodeStates(ctx context.Context, runID uuid.UUID) (map[string]N
 				            WHEN 'skipped' THEN 2 WHEN 'success' THEN 3 ELSE 4 END,
 				map_index))[1],
 			max(attempt), min(exit_code),
-			(array_agg(erro ORDER BY (erro = '') , map_index))[1],
-			min(iniciado_em), max(terminado_em),
+			(array_agg(error ORDER BY (error = '') , map_index))[1],
+			min(started_at), max(finished_at),
 			-- The stages and the output belong to ONE instance, and showing a
 			-- mapped step's phases would mean showing one of four arbitrarily.
 			-- The unmapped case is every step that has ever had them.
-			(array_agg(etapas ORDER BY map_index))[1],
-			(array_agg(sdk_versao ORDER BY map_index))[1],
-			(array_agg(saida ORDER BY map_index))[1],
+			(array_agg(stages ORDER BY map_index))[1],
+			(array_agg(sdk_version ORDER BY map_index))[1],
+			(array_agg(output ORDER BY map_index))[1],
 			-- How many instances, and how many of them finished well. The [4]
 			-- on the card is counted here rather than stored: nothing has to
 			-- be kept in sync, and a wrong count cannot outlive a fixed query.
@@ -345,11 +345,11 @@ func (r *RunRepo) NodeStates(ctx context.Context, runID uuid.UUID) (map[string]N
 	out := map[string]NodeState{}
 	for rows.Next() {
 		var e NodeState
-		var ini, end *time.Time
+		var started, end *time.Time
 		var stages, output []byte
 		var lowest int
 		if err := rows.Scan(&e.NodeID, &e.Status, &e.Attempt, &e.ExitCode,
-			&e.Err, &ini, &end, &stages, &e.SdkVersion, &output,
+			&e.Err, &started, &end, &stages, &e.SdkVersion, &output,
 			&e.Instances, &e.Done, &lowest); err != nil {
 			return nil, err
 		}
@@ -362,8 +362,8 @@ func (r *RunRepo) NodeStates(ctx context.Context, runID uuid.UUID) (map[string]N
 			e.Published = json.RawMessage(output)
 		}
 		e.Stages = stepStages(stages, e.Status)
-		if ini != nil && end != nil {
-			d := end.Sub(*ini)
+		if started != nil && end != nil {
+			d := end.Sub(*started)
 			e.DurationMs = d.Milliseconds()
 		}
 		out[e.NodeID] = e
@@ -463,12 +463,12 @@ type StepLog struct {
 // discard.
 func (r *RunRepo) LogsDaRun(ctx context.Context, runID uuid.UUID) ([]StepLog, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT node_id, map_index, attempt, status, exit_code, erro, log,
-		       COALESCE(EXTRACT(EPOCH FROM (terminado_em - iniciado_em)) * 1000, 0)::bigint,
-		       saida, iniciado_em
+		SELECT node_id, map_index, attempt, status, exit_code, error, log,
+		       COALESCE(EXTRACT(EPOCH FROM (finished_at - started_at)) * 1000, 0)::bigint,
+		       output, started_at
 		FROM task_runs
 		WHERE run_id = $1
-		ORDER BY iniciado_em NULLS LAST, node_id, map_index, attempt`, runID)
+		ORDER BY started_at NULLS LAST, node_id, map_index, attempt`, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -493,7 +493,7 @@ func (r *RunRepo) LogsDaRun(ctx context.Context, runID uuid.UUID) ([]StepLog, er
 // FailedStep returns the node and the output of the last attempt that
 // failed.
 //
-// `ORDER BY iniciado_em DESC` and not `attempt DESC`: in a graph with several
+// `ORDER BY started_at DESC` and not `attempt DESC`: in a graph with several
 // steps, the highest attempt may belong to a step that had already failed and
 // been superseded — what matters is what failed LAST, which is where the run
 // stopped.
@@ -539,7 +539,7 @@ func (r *RunRepo) FailedStep(ctx context.Context, runID uuid.UUID) (string, stri
 		SELECT node_id, log
 		FROM task_runs
 		WHERE run_id = $1 AND status = $2
-		ORDER BY iniciado_em DESC NULLS LAST, attempt DESC
+		ORDER BY started_at DESC NULLS LAST, attempt DESC
 		LIMIT 1`, runID, dom.StatusFailed).Scan(&step, &log)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", "", nil

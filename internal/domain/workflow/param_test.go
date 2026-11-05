@@ -97,12 +97,12 @@ func TestTextRefusesAShellCharacter(t *testing.T) {
 	}
 
 	// And it still serves what the real params need.
-	for _, legitimo := range []string{
+	for _, legit := range []string{
 		"2026-09-01", "bronze_id_verification+", "true", "path/to/file.csv",
 		"a,b,c", "chave=valor", "50", "us-central1",
 	} {
-		if err := p.Accepts(legitimo); err != nil {
-			t.Errorf("it refused the legitimate value %q: %v", legitimo, err)
+		if err := p.Accepts(legit); err != nil {
+			t.Errorf("it refused the legitimate value %q: %v", legit, err)
 		}
 	}
 }
@@ -151,7 +151,7 @@ func TestADuplicateParamIsRefused(t *testing.T) {
 
 // TestTheParamKeysAreTheOnDiskFormat pins the JSON a published workflow holds.
 //
-// A Workflow goes into `workflows.definicao` and `runs.definicao` as JSON with
+// A Workflow goes into `workflows.definition` and `runs.definition` as JSON with
 // no tags of its own, so the Go field NAME used to be the key. Every workflow
 // published before the fields were renamed holds `Nome`, `Tipo` and
 // `Descricao`, and json.Unmarshal ignores a key it does not recognise: drop

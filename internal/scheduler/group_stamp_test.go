@@ -97,7 +97,7 @@ func TestARunWithoutAGroupStoresNull(t *testing.T) {
 		t.Fatal(err)
 	}
 	var isNull bool
-	if err := pool.QueryRow(ctx, `SELECT grupo_concorrencia IS NULL FROM runs WHERE id = $1`, id).Scan(&isNull); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT concurrency_group IS NULL FROM runs WHERE id = $1`, id).Scan(&isNull); err != nil {
 		t.Fatal(err)
 	}
 	if !isNull {

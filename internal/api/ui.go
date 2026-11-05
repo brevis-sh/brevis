@@ -721,15 +721,15 @@ func compareTime(a, b *time.Time) int {
 // rather than overflowing the slice -- which happens when filtering while on a
 // high page.
 func clip(ws []postgres.WorkflowSummary, f pages.Filter) []postgres.WorkflowSummary {
-	de := (f.Page - 1) * f.PerPage
-	if de >= len(ws) {
+	from := (f.Page - 1) * f.PerPage
+	if from >= len(ws) {
 		return nil
 	}
-	ate := de + f.PerPage
-	if ate > len(ws) {
-		ate = len(ws)
+	until := from + f.PerPage
+	if until > len(ws) {
+		until = len(ws)
 	}
-	return ws[de:ate]
+	return ws[from:until]
 }
 
 func nextOfWorkflow(w postgres.WorkflowSummary, now time.Time) *time.Time {
@@ -826,7 +826,7 @@ func tagsDe(ws []postgres.WorkflowSummary) []string {
 	var out []string
 	for _, w := range ws {
 		for _, t := range w.Tags {
-			if _, ja := seen[t]; ja {
+			if _, already := seen[t]; already {
 				continue
 			}
 			seen[t] = struct{}{}

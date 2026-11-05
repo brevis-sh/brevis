@@ -14,7 +14,7 @@ import (
 
 // A SUBSCRIPTION IS READ FROM THE PUBLISHED DOCUMENT, and only from there.
 //
-// `definicao` is what `publish` stored, so the trigger the scheduler acts on
+// `definition` is what `publish` stored, so the trigger the scheduler acts on
 // is the trigger in the file that was published -- not a column somebody
 // could update out from under it. A workflow with no trigger is not returned
 // at all; the poll must not walk every workflow to find the two that have one.
@@ -95,7 +95,7 @@ func TestLandingsSinceReadsTheEnginesClock(t *testing.T) {
 }
 
 // THE CURSOR IS PLANTED, NEVER ASSUMED. A first read with no row returns
-// "not set", and the caller plants now() -- the rule schedules.ultimo_slot
+// "not set", and the caller plants now() -- the rule schedules.last_slot
 // learned by leaving eighteen workflows without an automatic run.
 func TestTheCursorStartsUnsetAndIsPlanted(t *testing.T) {
 	pool := landingsDB(t)
@@ -161,9 +161,9 @@ func publishWith(t *testing.T, pool *postgres.Pool, slug string, tr wf.Trigger) 
 		t.Fatal(err)
 	}
 	if _, err := pool.Exec(ctx, `
-		INSERT INTO workflows (id, project_id, slug, name, definicao)
+		INSERT INTO workflows (id, project_id, slug, name, definition)
 		VALUES (gen_random_uuid(), $1, $2, $2, $3)
-		ON CONFLICT (project_id, slug) DO UPDATE SET definicao = EXCLUDED.definicao`,
+		ON CONFLICT (project_id, slug) DO UPDATE SET definition = EXCLUDED.definition`,
 		project, slug, doc); err != nil {
 		t.Fatal(err)
 	}

@@ -492,7 +492,7 @@ func normalizeTags(brutas []string) []string {
 		if t == "" {
 			continue
 		}
-		if _, ja := seen[t]; ja {
+		if _, already := seen[t]; already {
 			continue
 		}
 		seen[t] = struct{}{}

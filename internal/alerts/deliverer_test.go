@@ -31,7 +31,7 @@ func testDB(t *testing.T) *postgres.Pool {
 	}
 	t.Cleanup(p.Close)
 	if _, err := p.Exec(context.Background(),
-		`TRUNCATE alertas, queue_items, task_runs, runs, schedules, workflows, projects CASCADE`); err != nil {
+		`TRUNCATE alerts, queue_items, task_runs, runs, schedules, workflows, projects CASCADE`); err != nil {
 		t.Fatal(err)
 	}
 	return p

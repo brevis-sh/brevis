@@ -194,7 +194,7 @@ func TestAnOrphanAskedToStopIsCanceled(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := pool.Exec(ctx, `
-		UPDATE queue_items SET reivindicado_em = now() - interval '1 hour', reivindicado_por = 'dead'
+		UPDATE queue_items SET claimed_at = now() - interval '1 hour', claimed_by = 'dead'
 		WHERE run_id = $1`, id); err != nil {
 		t.Fatal(err)
 	}

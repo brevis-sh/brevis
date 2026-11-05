@@ -21,7 +21,7 @@ func endedAt(t *testing.T, pool *postgres.Pool, id uuid.UUID) *time.Time {
 	t.Helper()
 	var ended *time.Time
 	if err := pool.QueryRow(context.Background(),
-		`SELECT terminado_em FROM runs WHERE id = $1`, id).Scan(&ended); err != nil {
+		`SELECT finished_at FROM runs WHERE id = $1`, id).Scan(&ended); err != nil {
 		t.Fatal(err)
 	}
 	return ended
@@ -40,7 +40,7 @@ func TestFailingRecordsWhenTheRunEnded(t *testing.T) {
 		}
 	}
 	if endedAt(t, pool, id) == nil {
-		t.Fatal("terminado_em is NULL after failed")
+		t.Fatal("finished_at is NULL after failed")
 	}
 
 	// A retry is the run going again: back in the queue it has not ended.
@@ -50,7 +50,7 @@ func TestFailingRecordsWhenTheRunEnded(t *testing.T) {
 		}
 	}
 	if ended := endedAt(t, pool, id); ended != nil {
-		t.Errorf("terminado_em = %v back in the queue, wanted NULL", ended)
+		t.Errorf("finished_at = %v back in the queue, wanted NULL", ended)
 	}
 }
 
@@ -109,7 +109,7 @@ func TestTheRunsThatHadFailedGetAnEnd(t *testing.T) {
 	migrate(t, "up")
 	for id, want := range map[uuid.UUID]time.Time{withSteps: stepEnded, noSteps: created} {
 		if got := endedAt(t, pool, id); got == nil || !got.Equal(want) {
-			t.Errorf("run %s: terminado_em = %v, wanted %v", id, got, want)
+			t.Errorf("run %s: finished_at = %v, wanted %v", id, got, want)
 		}
 	}
 }

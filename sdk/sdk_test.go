@@ -653,11 +653,11 @@ func TestEvery2xxReachesRecords(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			visto := 0
+			seen := 0
 			data, err := Extract(context.Background(), Source{From: from.HTTP{
 				URL: srv.URL,
 				Records: func(r Response) ([]any, error) {
-					visto = r.Status
+					seen = r.Status
 					if len(r.Bytes()) == 0 {
 						return nil, nil // janela vazia
 					}
@@ -668,8 +668,8 @@ func TestEvery2xxReachesRecords(t *testing.T) {
 			if err != nil {
 				t.Fatalf("http %d brought the run down: %v", c.status, err)
 			}
-			if visto != c.status {
-				t.Errorf("Records saw status %d, want %d", visto, c.status)
+			if seen != c.status {
+				t.Errorf("Records saw status %d, want %d", seen, c.status)
 			}
 
 			n := 0

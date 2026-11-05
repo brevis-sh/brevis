@@ -26,7 +26,7 @@ func insightsDB(t testing.TB) *postgres.Pool {
 	}
 	t.Cleanup(p.Close)
 	if _, err := p.Exec(context.Background(),
-		`TRUNCATE alertas, queue_items, task_runs, runs, schedules, workflows, projects, events CASCADE`); err != nil {
+		`TRUNCATE alerts, queue_items, task_runs, runs, schedules, workflows, projects, events CASCADE`); err != nil {
 		t.Fatal(err)
 	}
 	return p
@@ -47,7 +47,7 @@ func finished(t *testing.T, pool *postgres.Pool, slug string, status dom.Status,
 	// The timestamps are set directly: Transition writes now(), and a test
 	// about durations needs to choose them.
 	if _, err := pool.Exec(ctx, `
-		UPDATE runs SET status = $2, criado_em = now() - $3::interval, terminado_em = now()
+		UPDATE runs SET status = $2, created_at = now() - $3::interval, finished_at = now()
 		WHERE id = $1`, r.ID, status, took.String()); err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func withStages(t *testing.T, pool *postgres.Pool, runID uuid.UUID, node string,
 		t.Fatal(err)
 	}
 	if _, err := pool.Exec(ctx, `
-		INSERT INTO task_runs (id, run_id, node_id, status, attempt, etapas)
+		INSERT INTO task_runs (id, run_id, node_id, status, attempt, stages)
 		VALUES ($1, $2, $3, $4, 0, $5)`,
 		uuid.New(), runID, node, status, stages); err != nil {
 		t.Fatal(err)
@@ -126,7 +126,7 @@ func TestARunOutsideTheWindowIsNotCounted(t *testing.T) {
 	pool := insightsDB(t)
 	old := finished(t, pool, "daily_sales", dom.StatusSuccess, time.Minute)
 	if _, err := pool.Exec(context.Background(),
-		`UPDATE runs SET criado_em = now() - interval '40 days' WHERE id = $1`, old); err != nil {
+		`UPDATE runs SET created_at = now() - interval '40 days' WHERE id = $1`, old); err != nil {
 		t.Fatal(err)
 	}
 	finished(t, pool, "daily_sales", dom.StatusSuccess, time.Minute)
@@ -150,7 +150,7 @@ func TestARunStillGoingDoesNotEnterTheAverage(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := pool.Exec(context.Background(),
-		`UPDATE runs SET status = 'running', terminado_em = NULL WHERE id = $1`, stuck.ID); err != nil {
+		`UPDATE runs SET status = 'running', finished_at = NULL WHERE id = $1`, stuck.ID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -198,7 +198,7 @@ func TestACounterThatArrivedAsAFloatStillSums(t *testing.T) {
 
 	const stages = `[{"indice":0,"nome":"load","estado":"done","numeros":{"rows":1234.0,"bytes":2048.0}}]`
 	if _, err := pool.Exec(ctx, `
-		INSERT INTO task_runs (id, run_id, node_id, status, attempt, etapas)
+		INSERT INTO task_runs (id, run_id, node_id, status, attempt, stages)
 		VALUES ($1, $2, 'load', 'success', 0, $3)`,
 		uuid.New(), id, stages); err != nil {
 		t.Fatal(err)

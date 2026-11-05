@@ -17,7 +17,7 @@
 ALTER TABLE queue_items ADD COLUMN renovado_em TIMESTAMPTZ;
 
 COMMENT ON COLUMN queue_items.renovado_em IS
-  'Ultima renovacao do claim pelo seu dono; NULL = nenhuma desde o claim.';
+  'Last renewal of the claim by its owner; NULL = none since the claim.';
 
 -- +goose Down
 ALTER TABLE queue_items DROP COLUMN renovado_em;

@@ -17,7 +17,7 @@
 ALTER TABLE runs ADD COLUMN grupo_concorrencia TEXT;
 
 COMMENT ON COLUMN runs.grupo_concorrencia IS
-  'Grupo de concorrencia do run; NULL = o workflow contende so consigo mesmo.';
+  'The run''s concurrency group; NULL = the workflow contends only with itself.';
 
 -- +goose Down
 ALTER TABLE runs DROP COLUMN grupo_concorrencia;

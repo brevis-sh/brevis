@@ -95,7 +95,7 @@ func contains(s, sub string) bool {
 
 // A definition published BEFORE these fields existed has to keep working.
 //
-// A Workflow is stored whole as JSON in workflows.definicao and runs.definicao
+// A Workflow is stored whole as JSON in workflows.definition and runs.definition
 // with no tags, so the Go field name is the key. Adding fields is additive in
 // both directions, and this is what says so rather than assuming it: a document
 // with no Runtime and no Tools reads back with both empty, which means "not

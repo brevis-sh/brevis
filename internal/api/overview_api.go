@@ -95,7 +95,7 @@ func (u *UI) overviewAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ind, err := u.reads.Indicators(ctx, window.Span)
+	indicators, err := u.reads.Indicators(ctx, window.Span)
 	if err != nil {
 		fail("indicators", err)
 		return
@@ -125,8 +125,8 @@ func (u *UI) overviewAPI(w http.ResponseWriter, r *http.Request) {
 	out := overviewView{
 		Window: window.Key, Grain: "hour", Now: now, Queued: pending,
 		Indicators: indicatorsView{
-			Total: ind.Total, Succeeded: ind.Succeeded, Failed: ind.Failed, Running: ind.Running,
-			Pending: ind.Pending, Retried: ind.Retried, MeanDurationMs: ind.MeanDuration.Milliseconds(),
+			Total: indicators.Total, Succeeded: indicators.Succeeded, Failed: indicators.Failed, Running: indicators.Running,
+			Pending: indicators.Pending, Retried: indicators.Retried, MeanDurationMs: indicators.MeanDuration.Milliseconds(),
 		},
 		Buckets: make([]bucketView, 0, len(buckets)),
 		Next:    []nextRunView{},

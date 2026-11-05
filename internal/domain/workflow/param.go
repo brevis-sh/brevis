@@ -19,8 +19,8 @@ import (
 // The tags below are the ON-DISK FORMAT, and they keep the Portuguese field
 // names the Go struct used to have.
 //
-// A Workflow is stored whole as JSON in `workflows.definicao` and
-// `runs.definicao`, with no tags of its own -- so the Go field NAME was the
+// A Workflow is stored whole as JSON in `workflows.definition` and
+// `runs.definition`, with no tags of its own -- so the Go field NAME was the
 // key. Every workflow published before this rename holds `{"Nome":"date",
 // "Tipo":"string","Descricao":"..."}`, and json.Unmarshal ignores a key it
 // does not know: reading one with the fields renamed and untagged gives a param

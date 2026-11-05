@@ -133,7 +133,7 @@ func TestTheBootLineSaysWhenTheAttemptsLand(t *testing.T) {
 	}
 }
 
-// Every replica claimed as "local", so reivindicado_por could not tell two
+// Every replica claimed as "local", so claimed_by could not tell two
 // schedulers apart and no log line said which one held a run (#121). The name
 // is the host's -- the pod's, in Kubernetes -- and the process's.
 func TestEachSchedulerClaimsUnderItsOwnName(t *testing.T) {

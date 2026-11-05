@@ -83,13 +83,13 @@ func TestAcceptanceCriterion_100Runs_Concurrency5(t *testing.T) {
 	// It holds every run until we release, so the steady state is observable.
 	hold := make(chan struct{})
 	var running atomic.Int32
-	var pico atomic.Int32
+	var peak atomic.Int32
 
 	execute := func(ctx context.Context, _ uuid.UUID) error {
 		n := running.Add(1)
 		for {
-			p := pico.Load()
-			if n <= p || pico.CompareAndSwap(p, n) {
+			p := peak.Load()
+			if n <= p || peak.CompareAndSwap(p, n) {
 				break
 			}
 		}
@@ -136,7 +136,7 @@ func TestAcceptanceCriterion_100Runs_Concurrency5(t *testing.T) {
 	if got := count[dom.StatusQueued]; got != total-maxConc {
 		t.Errorf("QUEUED = %d, wanted %d", got, total-maxConc)
 	}
-	if p := pico.Load(); p > maxConc {
+	if p := peak.Load(); p > maxConc {
 		t.Errorf("concurrency peak = %d, exceeded the maximum of %d", p, maxConc)
 	}
 	if pending+claimed != total {
@@ -167,7 +167,7 @@ func TestAcceptanceCriterion_100Runs_Concurrency5(t *testing.T) {
 	if pending+claimed != 0 {
 		t.Errorf("the queue should be empty, it holds %d pending and %d claimed", pending, claimed)
 	}
-	if p := pico.Load(); p > maxConc {
+	if p := peak.Load(); p > maxConc {
 		t.Errorf("concurrency peak = %d for the whole race", p)
 	}
 }

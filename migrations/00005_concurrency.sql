@@ -12,7 +12,7 @@
 ALTER TABLE runs ADD COLUMN max_ativos INT NOT NULL DEFAULT 0;
 
 COMMENT ON COLUMN runs.max_ativos IS
-  'Execucoes simultaneas permitidas para este workflow. 0 = sem limite.';
+  'Simultaneous runs allowed for this workflow. 0 = no limit.';
 
 -- The claim starts grouping claimed items by workflow.
 CREATE INDEX queue_items_reivindicados_idx ON queue_items (run_id)

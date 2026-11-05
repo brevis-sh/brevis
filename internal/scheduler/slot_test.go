@@ -113,7 +113,7 @@ func TestASlotOfAWorkflowWithNoScheduleIsRefused(t *testing.T) {
 func TestAPausedScheduleStillTakesAPastSlot(t *testing.T) {
 	s, _, _, pool := build(t, "0 4 * * *", false)
 	if _, err := pool.Exec(context.Background(),
-		`UPDATE schedules SET ativo = false WHERE workflow_slug = 'diario'`); err != nil {
+		`UPDATE schedules SET active = false WHERE workflow_slug = 'diario'`); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := s.Trigger(context.Background(), "diario", inUTC("2026-10-29T15:00:00Z"), nil,

@@ -46,8 +46,8 @@ func (t Table) remove(ctx context.Context, bucket, key string) error {
 	type remover interface {
 		Delete(ctx context.Context, bucket, key string) error
 	}
-	d, sabe := t.Store.(remover)
-	if !sabe {
+	d, knows := t.Store.(remover)
+	if !knows {
 		return fmt.Errorf("this store does not delete; set KeepStagedFile to silence this")
 	}
 	return d.Delete(ctx, bucket, key)

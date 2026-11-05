@@ -396,7 +396,7 @@ type Backfilled struct {
 // Existing is how many slots already had a run.
 func (b Backfilled) Existing() int { return b.Slots - b.Created }
 
-func (s *Scheduler) Backfill(ctx context.Context, slug string, de, ate time.Time,
+func (s *Scheduler) Backfill(ctx context.Context, slug string, from, until time.Time,
 	params map[string]string) (Backfilled, error) {
 	schedules, err := s.schedules.Active(ctx)
 	if err != nil {
@@ -439,9 +439,9 @@ func (s *Scheduler) Backfill(ctx context.Context, slug string, de, ate time.Time
 	// returns the next one strictly after `t`, so starting at `de` would exclude
 	// the 00:00 slot in a full-day backfill.
 	var out Backfilled
-	for cursor := de.In(loc).Add(-time.Nanosecond); ; {
+	for cursor := from.In(loc).Add(-time.Nanosecond); ; {
 		next := cronSched.Next(cursor)
-		if next.After(ate) {
+		if next.After(until) {
 			break
 		}
 		// COUNTED BEFORE IT IS CREATED. A slot the cron fired is a slot
@@ -459,7 +459,7 @@ func (s *Scheduler) Backfill(ctx context.Context, slug string, de, ate time.Time
 		cursor = next
 	}
 
-	// A backfill does NOT touch ultimo_slot: it fills the past, and advancing
+	// A backfill does NOT touch last_slot: it fills the past, and advancing
 	// the marker would make the scheduler skip future slots that have not
 	// happened yet.
 	return out, nil

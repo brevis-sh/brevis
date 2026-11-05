@@ -100,9 +100,9 @@ func (s Schedule) Slots(now time.Time, limit int) (slots []time.Time, truncated 
 	// when
 	// the schedule never ran. Starting from zero would create the cron's entire
 	// history.
-	de := now.In(loc)
+	from := now.In(loc)
 	if s.LastSlot != nil {
-		de = s.LastSlot.In(loc)
+		from = s.LastSlot.In(loc)
 	}
 
 	// Without catchup, only the MOST RECENT slot matters — the gap is discarded
@@ -110,16 +110,16 @@ func (s Schedule) Slots(now time.Time, limit int) (slots []time.Time, truncated 
 	// there is nothing to truncate when only one slot will be materialized.
 	//
 	// The iteration ceiling protects against a schedule with a very old
-	// ultimo_slot, which would make the loop walk years of cron every cycle.
+	// last_slot, which would make the loop walk years of cron every cycle.
 	if !s.Catchup {
 		const maxIter = 500_000
 		var last time.Time
 		for i := 0; i < maxIter; i++ {
-			next := sched.Next(de)
+			next := sched.Next(from)
 			if next.After(now) {
 				break
 			}
-			last, de = next, next
+			last, from = next, next
 		}
 		if last.IsZero() {
 			return nil, false, nil
@@ -128,12 +128,12 @@ func (s Schedule) Slots(now time.Time, limit int) (slots []time.Time, truncated 
 	}
 
 	for {
-		next := sched.Next(de)
+		next := sched.Next(from)
 		if next.After(now) {
 			break
 		}
 		slots = append(slots, next)
-		de = next
+		from = next
 
 		// It truncates and SIGNALS. The rest goes into the following cycles,
 		// because the marker advances on every materialized slot.

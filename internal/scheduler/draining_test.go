@@ -78,7 +78,7 @@ func TestARunNotStartedForADrainIsDeferredForFree(t *testing.T) {
 	}
 	var later bool
 	if err := pool.QueryRow(context.Background(), `
-		SELECT reivindicado_em IS NULL AND disponivel_em > now() + interval '50 minutes'
+		SELECT claimed_at IS NULL AND available_at > now() + interval '50 minutes'
 		FROM queue_items WHERE run_id = $1`, id).Scan(&later); err != nil {
 		t.Fatalf("the run has no queue item: %v", err)
 	}

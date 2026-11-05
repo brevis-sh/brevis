@@ -194,7 +194,7 @@ func nonNil(s []string) []string {
 // toggleJSON pauses or resumes a schedule: handler `toggle`'s effect, as JSON.
 func (u *UI) toggleJSON(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
-	active, err := u.actions.Toggle(r.Context(), slug, auth.De(r.Context()))
+	active, err := u.actions.Toggle(r.Context(), slug, auth.OperatorOf(r.Context()))
 	if errors.Is(err, pgx.ErrNoRows) {
 		fail(w, http.StatusNotFound, codeNoSchedule)
 		return

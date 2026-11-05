@@ -262,19 +262,19 @@ func Rename(names map[string]string) (tr Transformer) {
 		// stop at `b`, depending on the order the map was walked in. Reading
 		// everything before writing gives the same result as building a new map
 		// -- which was the previous behaviour.
-		type troca struct {
-			para  string
+		type swap struct {
+			to    string
 			value any
 		}
-		var trocas []troca
-		for de, para := range names {
-			if v, present := obj[de]; present {
-				trocas = append(trocas, troca{para, v})
-				delete(obj, de)
+		var trocas []swap
+		for from, to := range names {
+			if v, present := obj[from]; present {
+				trocas = append(trocas, swap{to, v})
+				delete(obj, from)
 			}
 		}
 		for _, t := range trocas {
-			obj[t.para] = t.value
+			obj[t.to] = t.value
 		}
 		return obj, nil
 	}

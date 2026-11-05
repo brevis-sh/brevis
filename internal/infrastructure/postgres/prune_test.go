@@ -26,12 +26,12 @@ func aged(t *testing.T, pool *postgres.Pool, slug string, age time.Duration, sta
 		t.Fatal(err)
 	}
 	if _, err := pool.Exec(ctx,
-		`UPDATE runs SET status = $2, criado_em = now() - $3::interval WHERE id = $1`,
+		`UPDATE runs SET status = $2, created_at = now() - $3::interval WHERE id = $1`,
 		r.ID, string(status), age.String()); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := pool.Exec(ctx, `
-		INSERT INTO task_runs (id, run_id, node_id, status, attempt, map_index, etapas, log, saida)
+		INSERT INTO task_runs (id, run_id, node_id, status, attempt, map_index, stages, log, output)
 		VALUES ($1, $2, 'carga', 'success', 0, -1,
 		        '[{"indice":0,"nome":"load","estado":"done","em":"x","ms":900,"numeros":{"rows":10}}]',
 		        'fetched page 1 of 300', '{"rows":10}')`,
@@ -49,7 +49,7 @@ func aged(t *testing.T, pool *postgres.Pool, slug string, age time.Duration, sta
 func bulk(t *testing.T, pool *postgres.Pool, runID uuid.UUID) (log string, stages string, output *string, found bool) {
 	t.Helper()
 	err := pool.QueryRow(context.Background(),
-		`SELECT log, etapas::text, saida::text FROM task_runs WHERE run_id = $1`, runID).
+		`SELECT log, stages::text, output::text FROM task_runs WHERE run_id = $1`, runID).
 		Scan(&log, &stages, &output)
 	if err != nil {
 		return "", "", nil, false
@@ -138,8 +138,8 @@ func TestATrimmedRunKeepsEverythingButTheBulk(t *testing.T) {
 	ctx := context.Background()
 	id := aged(t, pool, "vendas", 60*24*time.Hour, dom.StatusFailed)
 	if _, err := pool.Exec(ctx,
-		`UPDATE task_runs SET status = 'failed', exit_code = 3, erro = 'connection refused',
-		 iniciado_em = now() - interval '60 days', terminado_em = now() - interval '60 days' + interval '4 minutes'
+		`UPDATE task_runs SET status = 'failed', exit_code = 3, error = 'connection refused',
+		 started_at = now() - interval '60 days', finished_at = now() - interval '60 days' + interval '4 minutes'
 		 WHERE run_id = $1`, id); err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +153,7 @@ func TestATrimmedRunKeepsEverythingButTheBulk(t *testing.T) {
 	var exit int
 	var started, finished *time.Time
 	if err := pool.QueryRow(ctx,
-		`SELECT status, erro, exit_code, iniciado_em, terminado_em FROM task_runs WHERE run_id = $1`, id).
+		`SELECT status, error, exit_code, started_at, finished_at FROM task_runs WHERE run_id = $1`, id).
 		Scan(&status, &errText, &exit, &started, &finished); err != nil {
 		t.Fatal(err)
 	}

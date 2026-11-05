@@ -130,7 +130,7 @@ type Node struct {
 	// DECLARED lands here.
 	//
 	// They are additive in the stored document. A Workflow is written whole as
-	// JSON into workflows.definicao and runs.definicao with no tags, so the Go
+	// JSON into workflows.definition and runs.definition with no tags, so the Go
 	// field name is the key -- an older engine ignores what it does not know,
 	// and this one reading an older document gets the zero value, which means
 	// "not declared" and falls through to the inference. Nothing to migrate.
@@ -703,7 +703,7 @@ func (w Workflow) Validate() error {
 		if err := p.Validate(); err != nil {
 			return fmt.Errorf("workflow %q: %w", w.Slug, err)
 		}
-		if _, ja := seenParams[p.Name]; ja {
+		if _, already := seenParams[p.Name]; already {
 			return fmt.Errorf("workflow %q: duplicate param: %q", w.Slug, p.Name)
 		}
 		seenParams[p.Name] = struct{}{}

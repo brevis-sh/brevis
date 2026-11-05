@@ -721,7 +721,7 @@ func (f schedulerFlags) dispatcher() scheduler.Config {
 // workerName is what this process claims queue items as, and what its log
 // lines say.
 //
-// Every replica claimed as "local" until #121, so reivindicado_por could not
+// Every replica claimed as "local" until #121, so claimed_by could not
 // tell two schedulers apart. The hostname is the pod's name in Kubernetes, and
 // the pid separates two processes on one machine -- or a container restarted
 // under the same name, whose predecessor's claims are still in the table.
@@ -1189,14 +1189,14 @@ func printReport(r notify.Report) {
 
 func cmdBackfill() *cobra.Command {
 	var rawParams []string
-	var de, until string
+	var from, until string
 	c := &cobra.Command{
 		Use:   "backfill <workflow>",
 		Short: "Materialize a workflow's past slots",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			start, err := time.Parse("2006-01-02", de)
+			start, err := time.Parse("2006-01-02", from)
 			if err != nil {
 				return fmt.Errorf("--from: %w (use YYYY-MM-DD)", err)
 			}
@@ -1226,11 +1226,11 @@ func cmdBackfill() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Print(backfillReport(did, args[0], cronOf(ctx, pool, args[0]), de, until))
+			fmt.Print(backfillReport(did, args[0], cronOf(ctx, pool, args[0]), from, until))
 			return nil
 		},
 	}
-	c.Flags().StringVar(&de, "from", "", "start date (YYYY-MM-DD)")
+	c.Flags().StringVar(&from, "from", "", "start date (YYYY-MM-DD)")
 	c.Flags().StringVar(&until, "to", "", "end date (YYYY-MM-DD)")
 	// The backfill's central use case: "reprocess the whole of January with
 	// load_full=true". The values apply to every slot in the range.

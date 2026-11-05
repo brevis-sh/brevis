@@ -65,16 +65,16 @@ const CookieName = "brevis_sessao"
 // change: when we double the cost a few years from now, old hashes have to keep
 // verifying. A format that stores only the digest forces invalidating everyone.
 func GenerateHash(password string) (string, error) {
-	sal := make([]byte, 16)
-	if _, err := rand.Read(sal); err != nil {
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
 		return "", err
 	}
-	key, err := pbkdf2.Key(sha256.New, password, sal, iterations, keySize)
+	key, err := pbkdf2.Key(sha256.New, password, salt, iterations, keySize)
 	if err != nil {
 		return "", err
 	}
 	return fmt.Sprintf("pbkdf2-sha256$%d$%s$%s", iterations,
-		base64.RawStdEncoding.EncodeToString(sal),
+		base64.RawStdEncoding.EncodeToString(salt),
 		base64.RawStdEncoding.EncodeToString(key)), nil
 }
 
@@ -92,7 +92,7 @@ func CheckPassword(hash, password string) bool {
 	if err != nil || iter <= 0 {
 		return false
 	}
-	sal, err := base64.RawStdEncoding.DecodeString(partes[2])
+	salt, err := base64.RawStdEncoding.DecodeString(partes[2])
 	if err != nil {
 		return false
 	}
@@ -100,7 +100,7 @@ func CheckPassword(hash, password string) bool {
 	if err != nil {
 		return false
 	}
-	got, err := pbkdf2.Key(sha256.New, password, sal, iter, len(expected))
+	got, err := pbkdf2.Key(sha256.New, password, salt, iter, len(expected))
 	if err != nil {
 		return false
 	}
@@ -184,13 +184,13 @@ func (c Credential) checkSession(value string, now time.Time) bool {
 	}
 	body, signature := value[:i], value[i+1:]
 
-	bruta, err := base64.RawURLEncoding.DecodeString(signature)
+	decoded, err := base64.RawURLEncoding.DecodeString(signature)
 	if err != nil {
 		return false
 	}
 	// The signature is checked BEFORE the deadline, and in constant time:
 	// reading a field of an unsigned cookie is already trusting it.
-	if !hmac.Equal(bruta, c.sign(body)) {
+	if !hmac.Equal(decoded, c.sign(body)) {
 		return false
 	}
 
@@ -461,8 +461,8 @@ func Anonymous(ctx context.Context) bool {
 	return v
 }
 
-// De returns the request's operator, or empty when there is no session.
-func De(ctx context.Context) string {
+// OperatorOf returns the request's operator, or empty when there is no session.
+func OperatorOf(ctx context.Context) string {
 	u, _ := ctx.Value(key{}).(string)
 	return u
 }

@@ -31,9 +31,9 @@ func TestAuthAppliesTheSecret(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			var visto string
+			var seen string
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				visto = r.Header.Get(c.header)
+				seen = r.Header.Get(c.header)
 				_, _ = fmt.Fprint(w, `{"ok":1}`)
 			}))
 			defer srv.Close()
@@ -44,8 +44,8 @@ func TestAuthAppliesTheSecret(t *testing.T) {
 				Apply: c.applyTo,
 			}})
 
-			if visto != c.expected {
-				t.Errorf("%s = %q, want %q", c.header, visto, c.expected)
+			if seen != c.expected {
+				t.Errorf("%s = %q, want %q", c.header, seen, c.expected)
 			}
 		})
 	}

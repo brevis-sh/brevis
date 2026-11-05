@@ -211,29 +211,29 @@ func TestTheDivergenceBetweenTheDefaultAndPython(t *testing.T) {
 // Go's default UA, and that shows up as an intermittent 403 -- the kind of
 // failure that costs half a morning to diagnose.
 func TestTheUserAgentIsOursAndNotGos(t *testing.T) {
-	var visto string
+	var seen string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		visto = r.Header.Get("User-Agent")
+		seen = r.Header.Get("User-Agent")
 		_, _ = fmt.Fprint(w, `{"ok":1}`)
 	}))
 	defer srv.Close()
 
 	drain(t, sdk.Source{From: from.HTTP{URL: srv.URL}})
 
-	if strings.Contains(visto, "Go-http-client") {
-		t.Errorf("the UA is Go's default: %q", visto)
+	if strings.Contains(seen, "Go-http-client") {
+		t.Errorf("the UA is Go's default: %q", seen)
 	}
-	if !strings.Contains(visto, "brevis") {
-		t.Errorf("the UA does not identify the SDK: %q", visto)
+	if !strings.Contains(seen, "brevis") {
+		t.Errorf("the UA does not identify the SDK: %q", seen)
 	}
 }
 
 // TestTheCallersUserAgentWins: whoever needs to present as something else
 // continua podendo.
 func TestTheCallersUserAgentWins(t *testing.T) {
-	var visto string
+	var seen string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		visto = r.Header.Get("User-Agent")
+		seen = r.Header.Get("User-Agent")
 		_, _ = fmt.Fprint(w, `{"ok":1}`)
 	}))
 	defer srv.Close()
@@ -243,8 +243,8 @@ func TestTheCallersUserAgentWins(t *testing.T) {
 		Header: map[string][]string{"User-Agent": {"meu-fetcher/2.0"}},
 	}})
 
-	if visto != "meu-fetcher/2.0" {
-		t.Errorf("UA = %q; the caller's should win", visto)
+	if seen != "meu-fetcher/2.0" {
+		t.Errorf("UA = %q; the caller's should win", seen)
 	}
 }
 

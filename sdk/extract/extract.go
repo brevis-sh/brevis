@@ -371,12 +371,12 @@ func isGzip(resp *http.Response, url string) bool {
 // so o de cima deixaria a conexao presa ate o timeout.
 type gzipReader struct {
 	*gzip.Reader
-	sob io.Closer
+	under io.Closer
 }
 
 func (l gzipReader) Close() error {
 	err := l.Reader.Close()
-	if e := l.sob.Close(); err == nil {
+	if e := l.under.Close(); err == nil {
 		err = e
 	}
 	return err
@@ -779,7 +779,7 @@ func fetchPage(ctxTotal context.Context, client *http.Client, source core.Source
 			release()
 			return nil, fmt.Errorf("the response announces gzip and is not: %w", err)
 		}
-		body = gzipReader{Reader: gz, sob: resp.Body}
+		body = gzipReader{Reader: gz, under: resp.Body}
 	}
 	p := &page{body: body, release: release}
 

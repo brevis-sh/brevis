@@ -41,11 +41,11 @@ func (r *RunRepo) Create(ctx context.Context, run dom.Run) (dom.Run, error) {
 	}
 
 	err := r.pool.QueryRow(ctx, `
-		INSERT INTO runs (id, workflow_slug, idempotency_key, status, attempt, definicao,
-		                  trigger_type, logical_date, params, max_ativos, trigger_targets,
-		                  grupo_concorrencia)
+		INSERT INTO runs (id, workflow_slug, idempotency_key, status, attempt, definition,
+		                  trigger_type, logical_date, params, max_active, trigger_targets,
+		                  concurrency_group)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NULLIF($12, ''))
-		RETURNING criado_em`,
+		RETURNING created_at`,
 		run.ID, run.WorkflowSlug, run.IdempotencyKey, run.Status, run.Attempt, run.Definition,
 		run.TriggerType, run.LogicalDate, paramsOrEmpty(run.Params), run.MaxActive,
 		// pgx writes a nil slice as NULL and an EMPTY one as `{}` -- measured,
@@ -73,7 +73,7 @@ func (r *RunRepo) Create(ctx context.Context, run dom.Run) (dom.Run, error) {
 // The validation happens against the state read inside the transaction, with FOR
 // UPDATE: reading outside it would let two dispatchers both read "queued" and
 // both write "running".
-func (r *RunRepo) Transition(ctx context.Context, id uuid.UUID, para dom.Status) error {
+func (r *RunRepo) Transition(ctx context.Context, id uuid.UUID, to dom.Status) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -87,13 +87,13 @@ func (r *RunRepo) Transition(ctx context.Context, id uuid.UUID, para dom.Status)
 		}
 		return err
 	}
-	if err := dom.Validate(current, para); err != nil {
+	if err := dom.Validate(current, to); err != nil {
 		return fmt.Errorf("run %s: %w", id, err)
 	}
 
 	now := time.Now()
 	var started, finished any
-	switch para {
+	switch to {
 	case dom.StatusRunning:
 		started = now
 	case dom.StatusSuccess, dom.StatusFailed, dom.StatusCanceled:
@@ -104,11 +104,11 @@ func (r *RunRepo) Transition(ctx context.Context, id uuid.UUID, para dom.Status)
 	_, err = tx.Exec(ctx, `
 		UPDATE runs SET
 			status         = $2,
-			iniciado_em    = COALESCE($3, CASE WHEN $2 = 'queued' THEN NULL ELSE iniciado_em END),
-			terminado_em   = COALESCE($4, CASE WHEN $2 = 'queued' THEN NULL ELSE terminado_em END),
+			started_at    = COALESCE($3, CASE WHEN $2 = 'queued' THEN NULL ELSE started_at END),
+			finished_at   = COALESCE($4, CASE WHEN $2 = 'queued' THEN NULL ELSE finished_at END),
 			draining_since = CASE WHEN $2 = 'success' THEN NULL ELSE draining_since END
 		WHERE id = $1`,
-		id, para, started, finished)
+		id, to, started, finished)
 	if err != nil {
 		return err
 	}
@@ -227,7 +227,7 @@ func (r *RunRepo) RequestCancel(ctx context.Context, id uuid.UUID, actor string)
 	var status dom.Status
 	var claimed *bool
 	if err := tx.QueryRow(ctx, `
-		SELECT status, (SELECT reivindicado_em IS NOT NULL FROM queue_items WHERE run_id = $1)
+		SELECT status, (SELECT claimed_at IS NOT NULL FROM queue_items WHERE run_id = $1)
 		FROM runs WHERE id = $1 FOR UPDATE`, id).Scan(&status, &claimed); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return CancelResult{}, fmt.Errorf("run %s: %w", id, ErrRunNotFound)
@@ -247,7 +247,7 @@ func (r *RunRepo) RequestCancel(ctx context.Context, id uuid.UUID, actor string)
 			return CancelResult{}, err
 		}
 		if _, err := tx.Exec(ctx, `
-			UPDATE runs SET status = 'canceled', terminado_em = now(),
+			UPDATE runs SET status = 'canceled', finished_at = now(),
 			                cancel_requested_at = now(), canceled_by = $2
 			WHERE id = $1`, id, actor); err != nil {
 			return CancelResult{}, err
@@ -280,7 +280,7 @@ func (r *RunRepo) CancelRequested(ctx context.Context, ids []uuid.UUID) ([]uuid.
 
 // RecordError stores the cause of the failure.
 func (r *RunRepo) RecordError(ctx context.Context, id uuid.UUID, msg string) error {
-	_, err := r.pool.Exec(ctx, `UPDATE runs SET erro = $2 WHERE id = $1`, id, msg)
+	_, err := r.pool.Exec(ctx, `UPDATE runs SET error = $2 WHERE id = $1`, id, msg)
 	return err
 }
 
@@ -307,9 +307,9 @@ func (r *RunRepo) Stranded(ctx context.Context, key string) (id uuid.UUID, statu
 func (r *RunRepo) Get(ctx context.Context, id uuid.UUID) (dom.Run, error) {
 	var run dom.Run
 	err := r.pool.QueryRow(ctx, `
-		SELECT id, workflow_slug, idempotency_key, status, attempt, definicao,
-		       trigger_type, logical_date, params, max_ativos, erro, criado_em, iniciado_em, terminado_em,
-		       auto_params, trigger_targets, COALESCE(grupo_concorrencia, ''),
+		SELECT id, workflow_slug, idempotency_key, status, attempt, definition,
+		       trigger_type, logical_date, params, max_active, error, created_at, started_at, finished_at,
+		       auto_params, trigger_targets, COALESCE(concurrency_group, ''),
 		       cancel_requested_at, canceled_by
 		FROM runs WHERE id = $1`, id).
 		Scan(&run.ID, &run.WorkflowSlug, &run.IdempotencyKey, &run.Status, &run.Attempt,
@@ -343,7 +343,7 @@ func (r *RunRepo) RecordAuto(ctx context.Context, id uuid.UUID,
 
 	var run dom.Run
 	if err := tx.QueryRow(ctx, `
-		SELECT workflow_slug, trigger_type, logical_date, iniciado_em, trigger_targets
+		SELECT workflow_slug, trigger_type, logical_date, started_at, trigger_targets
 		FROM runs WHERE id = $1`, id).
 		Scan(&run.WorkflowSlug, &run.TriggerType, &run.LogicalDate, &run.StartedAt,
 			&run.TriggerTargets); err != nil {
@@ -361,12 +361,12 @@ func (r *RunRepo) RecordAuto(ctx context.Context, id uuid.UUID,
 		SELECT
 			(SELECT status <> 'success' FROM runs p
 			  WHERE p.workflow_slug = $1 AND p.id <> $2
-			    AND COALESCE(p.logical_date, p.criado_em) < COALESCE($3::timestamptz, now())
-			  ORDER BY COALESCE(p.logical_date, p.criado_em) DESC LIMIT 1),
-			(SELECT COALESCE(p.logical_date, p.criado_em) FROM runs p
+			    AND COALESCE(p.logical_date, p.created_at) < COALESCE($3::timestamptz, now())
+			  ORDER BY COALESCE(p.logical_date, p.created_at) DESC LIMIT 1),
+			(SELECT COALESCE(p.logical_date, p.created_at) FROM runs p
 			  WHERE p.workflow_slug = $1 AND p.id <> $2 AND p.status = 'success'
-			    AND COALESCE(p.logical_date, p.criado_em) < COALESCE($3::timestamptz, now())
-			  ORDER BY COALESCE(p.logical_date, p.criado_em) DESC LIMIT 1)`,
+			    AND COALESCE(p.logical_date, p.created_at) < COALESCE($3::timestamptz, now())
+			  ORDER BY COALESCE(p.logical_date, p.created_at) DESC LIMIT 1)`,
 		run.WorkflowSlug, id, run.LogicalDate).Scan(&failed, &prev.SuccessAt)
 	if err != nil {
 		return dom.AutoParams{}, err

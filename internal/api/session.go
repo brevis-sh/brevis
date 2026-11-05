@@ -22,7 +22,7 @@ type sessionView struct {
 func (u *UI) session(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, sessionView{
-		Operator: auth.De(r.Context()),
+		Operator: auth.OperatorOf(r.Context()),
 		Lang:     i18n.Negotiate(r),
 	})
 }

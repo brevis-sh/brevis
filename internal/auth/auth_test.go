@@ -147,11 +147,11 @@ func TestProbesAndAssetsPassWithNoSession(t *testing.T) {
 
 func TestAValidSessionPassesAndCarriesTheUser(t *testing.T) {
 	cred := credential(t, "operador", "senha-de-teste-longa")
-	var visto string
+	var seen string
 	gate := &auth.Gate{
 		Cred: cred,
 		Next: http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-			visto = auth.De(r.Context())
+			seen = auth.OperatorOf(r.Context())
 		}),
 	}
 
@@ -166,8 +166,8 @@ func TestAValidSessionPassesAndCarriesTheUser(t *testing.T) {
 	rec := httptest.NewRecorder()
 	gate.ServeHTTP(rec, req)
 
-	if visto != "operador" {
-		t.Errorf("operator in the context = %q; want %q", visto, "operador")
+	if seen != "operador" {
+		t.Errorf("operator in the context = %q; want %q", seen, "operador")
 	}
 	if rec.Code == http.StatusSeeOther {
 		t.Error("the valid session was sent to the login")
