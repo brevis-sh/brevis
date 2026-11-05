@@ -1,3 +1,5 @@
+import { errorKey } from "./errors";
+
 // The sign-in and sign-out calls. They do NOT use client.ts's getJSON/postJSON:
 // those turn a 401 into "go to the login", and here a 401 is the answer to a
 // wrong password, which the login screen shows in place.
@@ -25,11 +27,10 @@ export async function signIn(user: string, password: string, next: string): Prom
   }
 }
 
-/** The catalog key that says a server error code to the reader; a code this app does not know reads as a plain failure. */
-export function loginMessageKey(code: string): "login.invalid" | "login.locked" | "login.failed" {
-  if (code === "invalid_credentials") return "login.invalid";
-  if (code === "too_many_attempts") return "login.locked";
-  return "login.failed";
+/** The catalog key that says a server error code on the login screen; a code the app does not know reads as "sign-in failed". */
+export function loginMessageKey(code: string): string {
+  const key = errorKey(code);
+  return key === "error.generic" ? "login.failed" : key;
 }
 
 /** Where a post-login destination may go: a same-origin path, never `//host` or a backslash (the server's guard, again). */

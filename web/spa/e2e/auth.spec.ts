@@ -26,7 +26,7 @@ test("a signed-out page goes to the login with where it was going, and the API a
   await expect(page.locator("form").getByRole("button", { name: "Sign in" })).toBeVisible();
   const res = await request.get("/api/session");
   expect(res.status()).toBe(401);
-  expect(await res.json()).toEqual({ error: "sign in" });
+  expect(await res.json()).toEqual({ error: "sign_in_required" });
 });
 
 test("a wrong password says so and stays on the login", async ({ page }) => {

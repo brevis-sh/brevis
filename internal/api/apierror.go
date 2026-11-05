@@ -1,6 +1,10 @@
 package api
 
-import "net/http"
+import (
+	"net/http"
+
+	"brevis.sh/brevis/internal/auth"
+)
 
 // apiCode is the machine-readable reason of an API failure, answered as {"error": "<code>", ...}.
 //
@@ -20,11 +24,11 @@ const (
 	codeJSONRequired       apiCode = "json_required"
 
 	// Any endpoint.
-	codeSignInRequired apiCode = "sign_in_required" // the gate's 401 (internal/auth), the SPA's cue to go to the login
-	codeUnavailable    apiCode = "unavailable"      // a read failed; trying again may work
-	codeNotFound       apiCode = "not_found"        // what the path names does not exist
-	codeNotEnabled     apiCode = "not_enabled"      // the console runs without that service
-	codeInvalidRequest apiCode = "invalid_request"  // a body, a parameter or a content type the endpoint refuses
+	codeSignInRequired apiCode = auth.CodeSignInRequired // the gate's 401 (internal/auth), the SPA's cue to go to the login
+	codeUnavailable    apiCode = "unavailable"           // a read failed; trying again may work
+	codeNotFound       apiCode = "not_found"             // what the path names does not exist
+	codeNotEnabled     apiCode = "not_enabled"           // the console runs without that service
+	codeInvalidRequest apiCode = "invalid_request"       // a body, a parameter or a content type the endpoint refuses
 	codeForbidden      apiCode = "forbidden"
 
 	// Particular to one action.
@@ -43,6 +47,15 @@ const (
 	codeRunFailed          apiCode = "run_failed"     // the warehouse or the endpoint failed; `detail` is its message
 	codeInvalidTopics      apiCode = "invalid_topics" // GET /api/events
 	codeBusy               apiCode = "busy"           // GET /api/events: no room for another stream
+
+	// Try it on an endpoint (POST .../call): why a call brought nothing back. A failure of none of
+	// these kinds is codeRunFailed with the error's own text as `detail`.
+	codeEndpointNotConfigured apiCode = "endpoint_not_configured"
+	codeEndpointUnbuilt       apiCode = "endpoint_unbuilt"
+	codeEndpointUnreachable   apiCode = "endpoint_unreachable"
+	codeEndpointUnreadable    apiCode = "endpoint_unreadable"
+	codeEndpointTooLarge      apiCode = "endpoint_too_large"
+	codeEndpointNotAnswer     apiCode = "endpoint_not_answer"
 )
 
 // fail answers an API failure as its code. extra is name, value pairs of data to carry beside it.

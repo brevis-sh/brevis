@@ -25,5 +25,6 @@ describe("loginMessageKey", () => {
     expect(loginMessageKey("invalid_credentials")).toBe("login.invalid");
     expect(loginMessageKey("too_many_attempts")).toBe("login.locked");
     for (const other of ["malformed_request", "cross_site_refused", "json_required", "", "something_new"]) expect(loginMessageKey(other)).toBe("login.failed");
+    expect(loginMessageKey("unavailable")).toBe("loaderror.text");
   });
 });
