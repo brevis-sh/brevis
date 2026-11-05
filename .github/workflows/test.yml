@@ -413,7 +413,7 @@ jobs:
       - name: The interface is in English
         run: ./.github/scripts/ui-language-check.sh
 
-      - name: Comments and messages are in English
+      - name: Comments, messages, names, SQL and file names are in English
         run: ./.github/scripts/repo-language-check.sh
 
       - name: The Helm chart renders and refuses what it should
