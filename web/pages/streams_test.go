@@ -1,7 +1,6 @@
 package pages
 
 import (
-	"context"
 	"testing"
 )
 
@@ -24,12 +23,11 @@ func TestAStreamsBatchIsInWords(t *testing.T) {
 
 // THE COMPACT BATCH is the declared values, not words: the app writes "2m · 2,000" from them in any language.
 func TestAStreamRowCarriesTheDeclaredBatch(t *testing.T) {
-	ctx := context.Background()
-	row := streamRowJSON(ctx, Stream{Config: sourceConfig(field("buffer.flush.every", "2m"), field("buffer.flush.records", 2000.0))}, StreamHealth{})
+	row := streamRowJSON(Stream{Config: sourceConfig(field("buffer.flush.every", "2m"), field("buffer.flush.records", 2000.0))}, StreamHealth{})
 	if row.BatchEvery != "2m" || row.BatchRecords == nil || *row.BatchRecords != 2000 {
 		t.Errorf("batch = %q, %v", row.BatchEvery, row.BatchRecords)
 	}
-	if none := streamRowJSON(ctx, Stream{}, StreamHealth{}); none.BatchEvery != "" || none.BatchRecords != nil {
+	if none := streamRowJSON(Stream{}, StreamHealth{}); none.BatchEvery != "" || none.BatchRecords != nil {
 		t.Error("no buffer declared says a batch")
 	}
 }

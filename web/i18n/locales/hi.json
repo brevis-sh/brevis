@@ -81,6 +81,7 @@
   "catalog.tip.attention": "Stale और late मिलाकर: जिन्हें किसी व्यक्ति को देखना चाहिए।",
   "catalog.tip.on_time": "अब तक हर slot अपनी छूट के भीतर पूरा हुआ है।",
   "catalog.title": "डेटा कैटलॉग",
+  "catalog.why.at": "{at} {zone}",
   "catalog.why.gateway": "Gateway {gateway}, stream {stream} ({role}) से {at} को प्रकाशित। यह इवेंट आने के साथ लिखता है; इसका ट्रैफ़िक gateway के /metrics पर है।",
   "catalog.why.manual": "यह हाथ से चलता है, इसलिए देरी मापने के लिए कुछ नहीं है।",
   "catalog.why.missed": "{workflow} ने अपना {slot} का run चूक दिया। इसे {by} तक अपेक्षित था: {grace} की छूट, इस बात से कि यह आमतौर पर कितनी देर से पहुँचता है, कभी 10 मिनट से कम नहीं।",
@@ -382,6 +383,7 @@
   "graph.list.needs": "निर्भर है",
   "graph.list.step": "Step",
   "graph.list.uses": "उपयोग करता है",
+  "graph.marker": "मार्कर",
   "graph.panel.none": "कोई step चुना नहीं गया। ग्राफ़ या सूची में किसी step पर क्लिक करें।",
   "graph.published": {
     "one": "{count} मान प्रकाशित",
@@ -389,6 +391,8 @@
   },
   "graph.retry": "retry {n}",
   "graph.stage": "Stage",
+  "graph.stage.source": "स्रोत",
+  "graph.stage.target": "लक्ष्य",
   "graph.stages": {
     "one": "{count} stage",
     "other": "{count} stage"
@@ -678,6 +682,8 @@
   "palette.open_run": "run {id} खोलें…",
   "palette.placeholder": "Workflows, गंतव्य, Endpoints खोजें…",
   "palette.results": "नतीजे",
+  "palette.theme": "थीम बदलें",
+  "palette.theme.hint": "डार्क या लाइट",
   "projects.empty": "अभी कोई प्रोजेक्ट नहीं।",
   "projects.lead": "प्रोजेक्ट अपने workflows को अलग नेमस्पेस देता है: दो प्रोजेक्ट में हर एक के पास {example} हो सकता है, बिना टकराव के। कोई workflow {flag} से किसी प्रोजेक्ट में शामिल होता है।",
   "projects.open": "workflows देखें",

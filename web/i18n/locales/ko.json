@@ -81,6 +81,7 @@
   "catalog.tip.attention": "오래됨과 지연을 합친 것: 사람이 살펴봐야 할 대상.",
   "catalog.tip.on_time": "지금까지 모든 slot이 유예 시간 안에 도착했습니다.",
   "catalog.title": "데이터 카탈로그",
+  "catalog.why.at": "{at} {zone}",
   "catalog.why.gateway": "Gateway {gateway}, stream {stream}({role})에서 {at}에 게시됨. 이벤트가 도착하는 대로 기록하며, 트래픽은 Gateway의 /metrics에 있습니다.",
   "catalog.why.manual": "수동으로 실행되므로 지연을 따질 기준이 없습니다.",
   "catalog.why.missed": "{workflow}이(가) {slot} 실행을 놓쳤습니다. {by}까지 도착해야 했습니다: 유예 {grace}, 평소 도착 지연을 기준으로 하며 최소 10분.",
@@ -382,6 +383,7 @@
   "graph.list.needs": "의존 대상",
   "graph.list.step": "Step",
   "graph.list.uses": "사용",
+  "graph.marker": "마커",
   "graph.panel.none": "선택된 step이 없습니다. 그래프나 목록에서 step을 클릭하세요.",
   "graph.published": {
     "one": "값 {count}개 게시됨",
@@ -389,6 +391,8 @@
   },
   "graph.retry": "재시도 {n}",
   "graph.stage": "스테이지",
+  "graph.stage.source": "소스",
+  "graph.stage.target": "대상",
   "graph.stages": {
     "one": "스테이지 {count}개",
     "other": "스테이지 {count}개"
@@ -678,6 +682,8 @@
   "palette.open_run": "실행 {id} 열기…",
   "palette.placeholder": "workflows, 목적지, endpoints 검색…",
   "palette.results": "결과",
+  "palette.theme": "테마 전환",
+  "palette.theme.hint": "다크 또는 라이트",
   "projects.empty": "아직 프로젝트가 없습니다.",
   "projects.lead": "프로젝트는 workflows에 별도의 네임스페이스를 부여합니다. 두 프로젝트에 각각 {example}이(가) 있어도 충돌하지 않습니다. workflow는 {flag}로 프로젝트에 속합니다.",
   "projects.open": "workflows 보기",

@@ -36,7 +36,7 @@ const GHOST: Stream = {
   deadLetter: { ...GHOST_PLACE, kind: "file", uri: "file:///var/dead-letter/stream/" },
   publishedAt: "2000-01-01T00:00:00Z",
   format: "json",
-  lede: "Takes json events over HTTP, batches them and writes them to PostgreSQL. What the destination refuses goes to the dead letter.",
+  lede: cat("Takes json events over HTTP, batches them and writes them to PostgreSQL. What the destination refuses goes to the dead letter."),
   summary: cat("JSON events posted to the path land in a Postgres table, merged by ingestion id so a redelivery is ignored, in batches of 100 events; batches the destination refuses go to files."),
   flow: {
     nodes: [
@@ -248,7 +248,7 @@ function Config({ v, ghost }: { v: Stream; ghost: boolean }) {
               {v.changes.map((c, i) => (
                 <span key={c.at}>
                   {i > 0 && <span className="text-faint"> · </span>}
-                  {brief(c.at)} UTC — {c.text}
+                  {brief(c.at)} UTC — {msg(c.text)}
                 </span>
               ))}
             </p>
@@ -356,6 +356,7 @@ function TestEvent({ path, v, ghost }: { path: string; v: Stream; ghost: boolean
 
 export default function StreamRoute() {
   const { t } = useT();
+  const msg = useMsg();
   // The stream's path is the tail of the address: /ingest/streams/<gateway>/<path...>.
   const { gateway = "", "*": rest = "" } = useParams();
   const path = `/${rest}`;
@@ -407,7 +408,7 @@ export default function StreamRoute() {
           <ErrorText error={q.error} />
         </p>
       )}
-      <div aria-hidden={ghost || undefined} className={`mb-4 max-w-3xl text-[13.5px] text-muted ${gh(ghost)}`}>{v.lede}</div>
+      <div aria-hidden={ghost || undefined} className={`mb-4 max-w-3xl text-[13.5px] text-muted ${gh(ghost)}`}>{msg(v.lede)}</div>
       <Strip gateway={gateway} v={v} ghost={ghost} />
       <div className="mb-4">
         <StreamPanel gateway={gateway} path={path} />

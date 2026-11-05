@@ -24,7 +24,7 @@ const dt = "text-muted";
 // Before the first answer the page draws the last load it showed (or this typical one) through the same
 // markup, as a ghost (.sk-ghost): the labels are the page's own, the values are bars, and the heights are the
 // loaded heights. Only the data-bound parts are ghosted; titles, labels, tabs and buttons are never.
-const GHOST_PLACE: Place = { uri: "postgres://warehouse/schema/table_name", kind: "postgres", kindTitle: "PostgreSQL", where: "postgres://warehouse/schema/", what: "table_name", note: "" };
+const GHOST_PLACE: Place = { uri: "postgres://warehouse/schema/table_name", kind: "postgres", where: "postgres://warehouse/schema/", what: "table_name", note: "" };
 const GHOST: Load = {
   workflow: "",
   step: "",
@@ -32,7 +32,7 @@ const GHOST: Load = {
   choosing: false,
   detail: {
     status: "on_time",
-    reason: "",
+    reason: null,
     source: { kind: "http", driver: "", label: "Source label", labelMsg: null, where: "https://api.example.com/path" },
     target: GHOST_PLACE,
     hasSchedule: true,
@@ -49,7 +49,7 @@ const GHOST: Load = {
     bars: Array.from({ length: 12 }, (_, i) => ({ runId: `${i}`, rows: 1, title: "" })),
     missed: 0,
     loads: Array.from({ length: 5 }, (_, i) => ({ loadedAt: "2000-01-01T00:00:00Z", rows: 1000, bytes: 1000, runId: `run${i}` })),
-    loadsCount: "5",
+    loadsCount: { k: "loads.drawer.recent.count", n: 5 },
     described: false,
     config: null,
     changes: [],
@@ -168,11 +168,12 @@ function Facts({ step, d, ghost }: { step: string; d: LoadDetail; ghost: boolean
 function Body({ workflow, step, d, ghost }: { workflow: string; step: string; d: LoadDetail; ghost: boolean }) {
   const { t } = useT();
   const { number } = useFormat();
+  const msg = useMsg();
   return (
     <div className="space-y-3">
-      {d.reason !== "" && (
+      {d.reason && (
         <p aria-hidden={ghost || undefined} className={`rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-ink-2 ${gh(ghost)}`}>
-          {d.reason}
+          {msg(d.reason)}
         </p>
       )}
       <Facts step={step} d={d} ghost={ghost} />
@@ -208,7 +209,7 @@ function Body({ workflow, step, d, ghost }: { workflow: string; step: string; d:
 
       {d.changes.length > 0 && <Changes changes={d.changes} ghost={ghost} />}
 
-      <Card title={t("loads.drawer.recent")} count={ghost ? undefined : d.loadsCount}>
+      <Card title={t("loads.drawer.recent")} count={ghost ? undefined : msg(d.loadsCount)}>
         <div className="max-h-[28rem] overflow-auto">
           <table className="ct w-full text-[12.5px]">
             <thead className="sticky top-0 bg-surface">

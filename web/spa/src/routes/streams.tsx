@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useData } from "../api/live";
-import type { Choice, Place, Streams, StreamRow } from "../api/ingest";
+import type { Place, Streams, StreamRow } from "../api/ingest";
 import { cat, useFormat, useMsg, useT } from "../i18n";
 import { useDrawer } from "../ui/drawer";
 import { HowDrawer, HowSteps } from "../ui/how";
@@ -176,7 +176,7 @@ const ghostOf = (s: Shape): Streams => ({
   total: s.total,
   gateways: s.gateways,
   withDeadLetter: s.withDeadLetter,
-  kinds: Array.from({ length: s.kinds }, (_, i): Choice => ({ key: `kind${i}`, label: "Kind" })),
+  kinds: Array.from({ length: s.kinds }, (_, i) => `kind${i}`),
   filter: { kind: "", q: "" },
 });
 
@@ -213,8 +213,11 @@ function useOrdered(rows: StreamRow[]) {
 }
 
 // The bar (see ui/filters): a search and the destination kinds, drawn at once from the last shape seen.
+const kindLogo = (kind: string) => (kind === "gs" ? "gcs" : kind); // the logo a destination's kind is drawn with
+
 function StreamsBar({ filter, v, ghost }: { filter: Filter; v: Streams; ghost: boolean }) {
   const { t, n } = useT();
+  const kindName = useLogoTitle();
   const { number } = useFormat();
   const navigate = useNavigate();
   const [text, setText] = useUrlSearch("q");
@@ -224,11 +227,11 @@ function StreamsBar({ filter, v, ghost }: { filter: Filter; v: Streams; ghost: b
   const filters: FilterDef[] = v.kinds.length > 1
     ? [{
         id: "kind", label: t("streams.kind"), allLabel: t("streams.kind.all"), pending: ghost,
-        options: v.kinds.map((k) => ({ key: k.key, label: k.label, icon: <Logo k={k.key} /> })),
+        options: v.kinds.map((k) => ({ key: k, label: kindName(kindLogo(k)), icon: <Logo k={k} /> })),
         value: kind ? [kind] : [], onChange: (x) => go({ kind: x[0] ?? "" }),
       }]
     : [];
-  const chips: Chip[] = kind ? [{ id: "kind", group: t("streams.kind"), value: v.kinds.find((k) => k.key === kind)?.label ?? kind, onRemove: () => go({ kind: "" }) }] : [];
+  const chips: Chip[] = kind ? [{ id: "kind", group: t("streams.kind"), value: v.kinds.includes(kind) ? kindName(kindLogo(kind)) : kind, onRemove: () => go({ kind: "" }) }] : [];
   return (
     <FilterBar
       search={<SearchField value={text} onChange={setText} label={t("streams.search")} />}

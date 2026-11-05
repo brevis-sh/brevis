@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Msg } from "../i18n";
+import type { Cat, Msg } from "../i18n";
 import { postJSON } from "./client";
 
 /** A language, tool or connector by its logo key; the app names it (useLogoTitle). */
@@ -53,7 +53,7 @@ export type WorkflowsList = {
 
 export type Step = {
   id: string;
-  command: string;
+  command: Cat | null;
   langs: Logo[];
   uses: Logo[];
   needs: string[];

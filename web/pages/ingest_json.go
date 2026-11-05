@@ -2,12 +2,9 @@ package pages
 
 import (
 	"brevis.sh/brevis/web/i18n"
-	"context"
 	"strconv"
 	"strings"
 	"time"
-
-	"brevis.sh/brevis/web/components"
 )
 
 // The Ingest screens as JSON, for the React app. Everything that is a
@@ -25,19 +22,15 @@ func ptrTime(t time.Time) *time.Time {
 // PlaceJSON is a destination: where it is, split for a row, and the name of
 // its kind.
 type PlaceJSON struct {
-	URI       string `json:"uri"`
-	Kind      string `json:"kind"`
-	KindTitle string `json:"kindTitle"`
-	Where     string `json:"where"`
-	What      string `json:"what"`
-	Note      string `json:"note"`
+	URI   string `json:"uri"`
+	Kind  string `json:"kind"`
+	Where string `json:"where"`
+	What  string `json:"what"`
+	Note  string `json:"note"`
 }
 
-func placeJSON(ctx context.Context, p Place) PlaceJSON {
+func placeJSON(p Place) PlaceJSON {
 	out := PlaceJSON{URI: p.URI, Kind: p.Kind, Note: p.Note}
-	if p.Kind != "" {
-		out.KindTitle = components.LogoTitle(ctx, kindLogo(p.Kind))
-	}
 	if p.URI != "" {
 		out.Where, out.What = splitDestination(p.URI)
 	}
@@ -113,27 +106,27 @@ type LoadsJSON struct {
 	Filter    LoadsFilterJSON    `json:"filter"`
 }
 
-func loadRowJSON(ctx context.Context, t LoadTarget) LoadRowJSON {
+func loadRowJSON(t LoadTarget) LoadRowJSON {
 	recent := t.Recent
 	if recent == nil {
 		recent = []*int64{}
 	}
 	return LoadRowJSON{
-		Workflow: t.Workflow, Step: t.Step, Href: t.Href(), Target: placeJSON(ctx, t.Place),
+		Workflow: t.Workflow, Step: t.Step, Href: t.Href(), Target: placeJSON(t.Place),
 		Legacy: t.Legacy, Status: string(t.Status), LastLoaded: ptrTime(t.LastLoaded), Rows: t.Rows,
 		Schedule: loadSchedule(t), Source: sourceJSON(t.Source), Recent: recent, Fixing: t.Fixing(),
 	}
 }
 
 // LoadsAsJSON lays the loads list out for the app.
-func LoadsAsJSON(ctx context.Context, v LoadsView) LoadsJSON {
+func LoadsAsJSON(v LoadsView) LoadsJSON {
 	out := LoadsJSON{
 		Rows: make([]LoadRowJSON, 0, len(v.Rows)), Total: v.Total, Workflows: v.Workflows,
 		Summary: map[string]int{}, Counts: map[string]int{}, Sources: []SourceChoiceJSON{}, HasLegacy: v.HasLegacy,
 		Filter: LoadsFilterJSON{Status: v.Filter.Status, Source: v.Filter.Source, Q: v.Filter.Q, Legacy: v.Filter.Legacy},
 	}
 	for _, r := range v.Rows {
-		out.Rows = append(out.Rows, loadRowJSON(ctx, r))
+		out.Rows = append(out.Rows, loadRowJSON(r))
 	}
 	for s, n := range v.Summary {
 		out.Summary[string(s)] = n
@@ -225,7 +218,7 @@ type ChangeLineJSON struct {
 	Text i18n.Cat `json:"text"`
 }
 
-func changesJSON(ctx context.Context, cs []ConfigChange) []ChangeJSON {
+func changesJSON(cs []ConfigChange) []ChangeJSON {
 	out := make([]ChangeJSON, 0, len(cs))
 	for _, c := range cs {
 		o := ChangeJSON{At: c.At, RunID: c.RunID, First: c.First, Earlier: !c.First && len(c.Lines) == 0, Lines: []ChangeLineJSON{}}
@@ -307,7 +300,7 @@ type SchemaColJSON struct {
 }
 
 // StepConfigAsJSON is the described configuration of a step.
-func StepConfigAsJSON(ctx context.Context, c WriterConfigView, target TargetView) StepConfigJSON {
+func StepConfigAsJSON(c WriterConfigView, target TargetView) StepConfigJSON {
 	t := LoadConfigTabs(c.Config)
 	out := StepConfigJSON{
 		Summary: c.Config.SummaryOf(), Note: c.Config.Note, Flow: flowJSON(c.Flow),
@@ -389,7 +382,7 @@ type LoadChoiceJSON struct {
 // LoadDetailJSON is the open load.
 type LoadDetailJSON struct {
 	Status      string           `json:"status"`
-	Reason      string           `json:"reason"`
+	Reason      i18n.Cat         `json:"reason"`
 	Source      SourceJSON       `json:"source"`
 	Target      PlaceJSON        `json:"target"`
 	HasSchedule bool             `json:"hasSchedule"`
@@ -406,7 +399,7 @@ type LoadDetailJSON struct {
 	Bars        []BarJSON        `json:"bars"`
 	Missed      int              `json:"missed"`
 	Loads       []LoadRecordJSON `json:"loads"`
-	LoadsCount  string           `json:"loadsCount"`
+	LoadsCount  i18n.Msg         `json:"loadsCount"`
 	Described   bool             `json:"described"`
 	Config      *StepConfigJSON  `json:"config"`
 	Changes     []ChangeJSON     `json:"changes"`
@@ -426,7 +419,7 @@ type LoadJSON struct {
 }
 
 // LoadAsJSON lays one load out for the app.
-func LoadAsJSON(ctx context.Context, l LoadView) LoadJSON {
+func LoadAsJSON(l LoadView) LoadJSON {
 	out := LoadJSON{Workflow: l.Workflow, Step: l.Step, Choices: []LoadChoiceJSON{}, Choosing: l.Choosing()}
 	for _, c := range l.Choices {
 		out.Choices = append(out.Choices, LoadChoiceJSON{URI: c.URI, Current: c.Current})
@@ -435,14 +428,14 @@ func LoadAsJSON(ctx context.Context, l LoadView) LoadJSON {
 		return out
 	}
 	d := &LoadDetailJSON{
-		Status: string(l.Row.Status), Source: sourceJSON(l.Source), Target: placeJSON(ctx, Place{URI: l.Row.Target, Kind: l.Row.Kind}),
+		Status: string(l.Row.Status), Source: sourceJSON(l.Source), Target: placeJSON(Place{URI: l.Row.Target, Kind: l.Row.Kind}),
 		LastLoaded: l.Row.LastWhen, LastRows: l.Row.LastRows, Read: l.Read, ReadNothing: l.ReadNothing(),
 		Bars: make([]BarJSON, 0, len(l.Bars)), Missed: l.Missed, Loads: make([]LoadRecordJSON, 0, len(l.Loads)),
-		LoadsCount: loadsCount(ctx, len(l.Loads)), Changes: []ChangeJSON{}, ReadBy: readersJSON(l.ReadBy),
+		LoadsCount: loadsCount(len(l.Loads)), Changes: []ChangeJSON{}, ReadBy: readersJSON(l.ReadBy),
 		Run: l.Run, Legacy: l.Row.Legacy,
 	}
 	if w := l.Writer(); w != nil {
-		d.Reason, d.Fixing = w.Reason(ctx), w.RunInFlight
+		d.Reason, d.Fixing = w.Reason(), w.RunInFlight
 		d.HasSchedule, d.Cron, d.Timezone = w.HasSchedule, w.Cron, w.Timezone
 		if w.HasSchedule {
 			d.When = loadWhen(w)
@@ -461,9 +454,9 @@ func LoadAsJSON(ctx context.Context, l LoadView) LoadJSON {
 	if c, ok := l.StepConfig(); ok {
 		d.Described = c.Described
 		if c.Described {
-			cfg := StepConfigAsJSON(ctx, c, l.TargetView)
+			cfg := StepConfigAsJSON(c, l.TargetView)
 			d.Config = &cfg
-			d.Changes = changesJSON(ctx, c.Config.Changes)
+			d.Changes = changesJSON(c.Config.Changes)
 		}
 	}
 	out.Detail = d
@@ -495,40 +488,37 @@ type StreamsJSON struct {
 	WithDeadLetter int             `json:"withDeadLetter"`
 	// HealthCounts is every stream's health state, whatever the filter keeps.
 	HealthCounts map[string]int `json:"healthCounts"`
-	Kinds        []ChoiceJSON   `json:"kinds"`
+	Kinds        []string       `json:"kinds"`
 	Filter       struct {
 		Kind string `json:"kind"`
 		Q    string `json:"q"`
 	} `json:"filter"`
 }
 
-func streamRowJSON(ctx context.Context, s Stream, h StreamHealth) StreamRowJSON {
+func streamRowJSON(s Stream, h StreamHealth) StreamRowJSON {
 	out := StreamRowJSON{Gateway: s.Gateway, Path: s.Path, Href: s.Href(), Note: s.Note(),
-		Sink: placeJSON(ctx, s.Sink), Batch: s.BatchIn(), BatchEvery: s.Field("buffer.flush.every"), Health: h}
+		Sink: placeJSON(s.Sink), Batch: s.BatchIn(), BatchEvery: s.Field("buffer.flush.every"), Health: h}
 	if n, err := strconv.ParseInt(s.Field("buffer.flush.records"), 10, 64); err == nil {
 		out.BatchRecords = &n
 	}
 	if dl := s.DeadLetterShown(); dl != nil {
-		p := placeJSON(ctx, *dl)
+		p := placeJSON(*dl)
 		out.DeadLetter = &p
 	}
 	return out
 }
 
 // StreamsAsJSON lays the streams list out for the app.
-func StreamsAsJSON(ctx context.Context, v StreamsView) StreamsJSON {
+func StreamsAsJSON(v StreamsView) StreamsJSON {
 	out := StreamsJSON{Rows: make([]StreamRowJSON, 0, len(v.Rows)), Total: v.Total, Gateways: v.Gateways,
-		WithDeadLetter: v.WithDeadLetter, HealthCounts: v.HealthCounts, Kinds: []ChoiceJSON{}}
+		WithDeadLetter: v.WithDeadLetter, HealthCounts: v.HealthCounts, Kinds: append([]string{}, v.Kinds...)}
 	out.Filter.Kind, out.Filter.Q = v.Filter.Kind, v.Filter.Q
 	for _, s := range v.Rows {
 		h, ok := v.Healths[s.Key()]
 		if !ok {
 			h = s.Health()
 		}
-		out.Rows = append(out.Rows, streamRowJSON(ctx, s, h))
-	}
-	for _, k := range v.Kinds {
-		out.Kinds = append(out.Kinds, ChoiceJSON{Key: k, Label: components.LogoTitle(ctx, kindLogo(k))})
+		out.Rows = append(out.Rows, streamRowJSON(s, h))
 	}
 	return out
 }
@@ -569,10 +559,10 @@ type TestEventJSON struct {
 	Dataset string   `json:"dataset"`
 }
 
-// StreamChangeJSON is one publish in a stream's history line, said in words.
+// StreamChangeJSON is one publish in a stream's history line: the first, or what it changed.
 type StreamChangeJSON struct {
 	At   time.Time `json:"at"`
-	Text string    `json:"text"`
+	Text i18n.Msg  `json:"text"`
 }
 
 // StreamJSON is /api/ingest/streams/{gateway}/{path...}.
@@ -584,7 +574,7 @@ type StreamJSON struct {
 	PublishedAt  *time.Time         `json:"publishedAt"`
 	Format       string             `json:"format"`
 	Health       StreamHealth       `json:"health"`
-	Lede         string             `json:"lede"`
+	Lede         i18n.Cat           `json:"lede"`
 	Summary      i18n.Cat           `json:"summary"`
 	Flow         *FlowJSON          `json:"flow"`
 	Tables       []string           `json:"tables"`
@@ -601,17 +591,17 @@ type StreamJSON struct {
 }
 
 // StreamAsJSON lays one stream's page out for the app.
-func StreamAsJSON(ctx context.Context, v StreamView) StreamJSON {
+func StreamAsJSON(v StreamView) StreamJSON {
 	out := StreamJSON{
-		Gateway: v.Gateway, Path: v.Path, Sink: placeJSON(ctx, v.Sink), PublishedAt: ptrTime(v.PublishedAt),
-		Format: v.Field("format"), Health: v.healthNow(), Lede: v.Lede(ctx), Summary: v.Summary(), Flow: flowJSON(streamFlow(v.Stream)),
+		Gateway: v.Gateway, Path: v.Path, Sink: placeJSON(v.Sink), PublishedAt: ptrTime(v.PublishedAt),
+		Format: v.Field("format"), Health: v.healthNow(), Lede: v.Lede(), Summary: v.Summary(), Flow: flowJSON(streamFlow(v.Stream)),
 		Tables: append([]string{}, v.Tables()...), ReadBy: readersJSON(v.ReadBy), HasConfig: v.Config != nil,
 		Cards: []CardJSON{}, Changes: []StreamChangeJSON{}, BuriedMetric: v.BuriedMetric(),
 		TestEvent: TestEventJSON{Format: v.TestFormat(), Body: v.TestBody(), CurlHead: v.TestCurlHead(),
 			Lands: v.TestLands(), Table: v.TestTable(), Allow: splitList(v.TestAllow()), Dataset: v.TestDataset()},
 	}
 	if dl := v.DeadLetterShown(); dl != nil {
-		p := placeJSON(ctx, *dl)
+		p := placeJSON(*dl)
 		out.DeadLetter = &p
 	}
 	if v.Sink.URI != "" {
@@ -632,7 +622,7 @@ func StreamAsJSON(ctx context.Context, v StreamView) StreamJSON {
 	}
 	if v.Configured != nil {
 		for _, ch := range v.Configured.Config.Changes {
-			out.Changes = append(out.Changes, StreamChangeJSON{At: ch.At, Text: changeSaid(ctx, ch)})
+			out.Changes = append(out.Changes, StreamChangeJSON{At: ch.At, Text: changeSaid(ch)})
 		}
 	}
 	if p := v.DeadLetterPanel(); p != nil {

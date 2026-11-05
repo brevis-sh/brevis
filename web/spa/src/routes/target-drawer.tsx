@@ -1,7 +1,7 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
-import { useMsg, useT, type Msg } from "../i18n";
+import { useMsg, useT, type Cat, type Msg } from "../i18n";
 import { CopyButton } from "../ui/copy";
 import { Icon } from "../ui/icon";
 import { ButtonLink } from "../ui/kit";
@@ -21,7 +21,7 @@ type Writer = {
   status: string;
   cron: Msg | null;
   runInFlight: string | null;
-  reason: string;
+  reason: Cat | null;
   href: string;
 };
 export type TargetDetail = {
@@ -57,7 +57,7 @@ function Body({ d, u }: { d: TargetDetail | undefined; u: string }) {
                   </Link>
                 )}
               </div>
-              {w.reason && <p className="px-3.5 py-2.5 text-[12.5px] text-ink-2">{w.reason}</p>}
+              {w.reason && <p className="px-3.5 py-2.5 text-[12.5px] text-ink-2">{msg(w.reason)}</p>}
             </section>
           ))
         : [0, 1].map((i) => <Skeleton key={i} h="4.5rem" className="rounded-card" />)}

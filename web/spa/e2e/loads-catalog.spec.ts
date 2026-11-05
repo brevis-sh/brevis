@@ -3,7 +3,7 @@ import { expect, test } from "./support";
 // The Loads and Catalog lists answer a few questions per row (which load or destination, where it goes, is it
 // healthy), the whole row is one link, and on a phone each row is a card. Both answers are mocked: the demo stack
 // has few loads and destinations.
-const place = (kind: string, where: string, what: string) => ({ uri: where + what, kind, kindTitle: "", where, what, note: "" });
+const place = (kind: string, where: string, what: string) => ({ uri: where + what, kind, where, what, note: "" });
 const load = (i: number, fixing: boolean) => ({
   workflow: "orders", step: `load_${i}`, href: `/ingest/loads/orders/load_${i}`, target: place("postgres", "postgres://warehouse/public.", `orders_${i}`), legacy: false,
   status: "on_time", lastLoaded: "2026-11-01T10:00:00Z", rows: 1200, schedule: { $: "cat", v: ["every hour"] },

@@ -136,7 +136,8 @@ func slotLabel(s Slot, zone string) i18n.Msg {
 
 // StepItem is one step of the Steps card's list.
 type StepItem struct {
-	ID, Command string
+	ID      string
+	Command i18n.Cat
 	// Langs is what it runs, language first; Uses what it wrote, as logo keys;
 	// Needs the steps it depends on.
 	Langs, Uses, Needs []string

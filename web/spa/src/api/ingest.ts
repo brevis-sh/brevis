@@ -4,7 +4,7 @@
 // says them with useMsg().
 import type { Cat, Msg } from "../i18n";
 
-export type Place = { uri: string; kind: string; kindTitle: string; where: string; what: string; note: string };
+export type Place = { uri: string; kind: string; where: string; what: string; note: string };
 /** `label` is the origin's own name (a database, a driver); `labelMsg` says it where the console has words (http, files). */
 export type Source = { kind: string; driver: string; label: string; labelMsg: Msg | null; where: string };
 export type Choice = { key: string; label: string };
@@ -87,7 +87,8 @@ export type Reader = { api: string; name: string; path: string; href: string };
 
 export type LoadDetail = {
   status: string;
-  reason: string;
+  /** Why the writer stands where it does (null when it is where it should be). */
+  reason: Cat | null;
   source: Source;
   target: Place;
   hasSchedule: boolean;
@@ -104,7 +105,7 @@ export type LoadDetail = {
   bars: { runId: string; rows: number | null; title: string }[];
   missed: number;
   loads: { loadedAt: string; rows: number | null; bytes: number | null; runId: string }[];
-  loadsCount: string;
+  loadsCount: Msg;
   described: boolean;
   config: StepConfig | null;
   changes: Change[];
@@ -165,7 +166,7 @@ export type Streams = {
   gateways: number;
   withDeadLetter: number;
   healthCounts?: Record<string, number>;
-  kinds: Choice[];
+  kinds: string[];
   filter: { kind: string; q: string };
 };
 
@@ -177,7 +178,7 @@ export type Stream = {
   deadLetter: Place | null;
   publishedAt: string | null;
   format: string;
-  lede: string;
+  lede: Cat | null;
   summary: Cat | null;
   flow: Flow | null;
   tables: string[];
@@ -187,7 +188,7 @@ export type Stream = {
   hasConfig: boolean;
   cards: { key: string; title: Msg; rows: { path: string; label: Msg | null; value: string; default: boolean; note: string }[] }[];
   yaml: string;
-  changes: { at: string; text: string }[];
+  changes: { at: string; text: Msg }[];
   deadLetterPanel: { where: Cat | null; commands: string; readable: boolean; write: string } | null;
   buriedMetric: string;
   testEvent: { format: string; body: string; curlHead: string; lands: string; table: string; allow: string[]; dataset: string };

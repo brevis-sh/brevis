@@ -274,7 +274,7 @@ func TestAOneStepWorkflowIsOneStepInTheList(t *testing.T) {
 	def := wf.Workflow{Slug: "solo", Nodes: []wf.Node{{ID: "only", Run: "python x.py"}}}
 	_, body := getJSON(t, detailUI(def, nil), "/api/workflows/solo", nil)
 	steps := body["steps"].([]any)
-	if len(steps) != 1 || steps[0].(map[string]any)["command"] != "python x.py" {
+	if len(steps) != 1 || steps[0].(map[string]any)["command"].(map[string]any)["v"].([]any)[0] != "python x.py" {
 		t.Errorf("steps = %v", steps)
 	}
 }

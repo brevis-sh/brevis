@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"net/http"
 	"net/url"
 	"strings"
@@ -27,10 +26,10 @@ type targetWriterView struct {
 	Status      string      `json:"status"`
 	Cron        *i18n.Msg   `json:"cron"` // the schedule in words, for the app to say
 	RunInFlight *string     `json:"runInFlight"`
-	// Reason is why the writer stands where it does, in the reader's language
-	// and in the writer's own timezone.
-	Reason string `json:"reason"`
-	Href   string `json:"href"`
+	// Reason is why the writer stands where it does, in the writer's own
+	// timezone: sentences for the app to say, read as one passage.
+	Reason i18n.Cat `json:"reason"`
+	Href   string   `json:"href"`
 }
 
 type loadBarView struct {
@@ -86,16 +85,15 @@ func (u *UI) apiCatalogTarget(w http.ResponseWriter, r *http.Request) {
 		dataFail(w, http.StatusInternalServerError, codeUnavailable)
 		return
 	}
-	ctx := i18n.WithLang(r.Context(), i18n.Negotiate(r))
 	v := targetDetailView{
 		Row: catalogRowOf(t.Row), Writers: make([]targetWriterView, 0, len(t.Row.Writers)),
 		Bars: make([]loadBarView, 0, len(t.Bars)), Missed: t.Missed, ReadBy: make([]readerView, 0, len(t.ReadBy)),
-		Configs: targetConfigs(ctx, t.Configs), SQL: t.Tabs,
+		Configs: targetConfigs(t.Configs), SQL: t.Tabs,
 	}
 	for _, wr := range t.Row.Writers {
 		tw := targetWriterView{
 			Name: catWriterName(wr.CatalogWriter), Workflow: wr.Workflow, Node: wr.Node,
-			Status: string(wr.Verdict.Status), RunInFlight: wr.RunInFlight, Reason: wr.Reason(ctx),
+			Status: string(wr.Verdict.Status), RunInFlight: wr.RunInFlight, Reason: wr.Reason(),
 		}
 		if g := wr.Gateway; g != nil {
 			tw.Gateway = &gatewayRef{Name: g.Name, Stream: g.Stream}
@@ -209,7 +207,7 @@ type writerConfigView struct {
 	Changes     []configChangeView  `json:"changes"`
 }
 
-func targetConfigs(ctx context.Context, in []pages.WriterConfigView) []writerConfigView {
+func targetConfigs(in []pages.WriterConfigView) []writerConfigView {
 	out := make([]writerConfigView, 0, len(in))
 	for _, c := range in {
 		v := writerConfigView{

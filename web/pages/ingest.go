@@ -1,7 +1,6 @@
 package pages
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"sort"
@@ -691,36 +690,46 @@ func (v StreamView) Summary() i18n.Cat {
 
 // changeSaid is one publish in the history line: the first, or what it
 // changed.
-func changeSaid(ctx context.Context, ch ConfigChange) string {
+func changeSaid(ch ConfigChange) i18n.Msg {
 	switch {
 	case ch.First:
-		return i18n.T(ctx, "streamcfg.history.first")
+		return i18n.M("streamcfg.history.first")
 	case len(ch.Lines) == 0:
-		return i18n.T(ctx, "config.earlier")
+		return i18n.M("config.earlier")
 	}
 	paths := make([]string, len(ch.Lines))
 	for i, l := range ch.Lines {
 		paths[i] = l.Path
 	}
-	return i18n.T(ctx, "streamcfg.history.changed", "paths", strings.Join(paths, ", "))
+	return i18n.M("streamcfg.history.changed", "paths", strings.Join(paths, ", "))
 }
 
 // Lede is the page's one sentence under its name: what comes in, where it
 // goes, and that refusals are kept -- three pieces, so it does not repeat the
 // overview's sentence.
-func (v StreamView) Lede(ctx context.Context) string {
-	dest := components.LogoTitle(ctx, kindLogo(v.Sink.Kind))
-	if v.Sink.Kind == "" {
-		dest = i18n.T(ctx, "streams.page.dest_unknown")
+func (v StreamView) Lede() i18n.Cat {
+	var dest any = i18n.M("streams.page.dest_unknown")
+	if v.Sink.Kind != "" {
+		dest = kindName(v.Sink.Kind)
 	}
-	lede := i18n.T(ctx, "streams.page.lede", "dest", dest)
+	lede := i18n.Cat{i18n.M("streams.page.lede", "dest", dest)}
 	if f := v.Field("format"); f != "" {
-		lede = i18n.T(ctx, "streams.page.lede.format", "format", f, "dest", dest)
+		lede[0] = i18n.M("streams.page.lede.format", "format", f, "dest", dest)
 	}
 	if v.DeadLetter != nil {
-		lede += " " + i18n.T(ctx, "streams.page.lede.dead_letter")
+		lede = append(lede, " ", i18n.M("streams.page.lede.dead_letter"))
 	}
 	return lede
+}
+
+// kindName is a destination kind's name, as its logo is read: a brand is its
+// own name in every language; the two that are words are sentences the app says.
+func kindName(kind string) any {
+	key := kindLogo(kind)
+	if key == "file" || key == "gateway" {
+		return i18n.M("logo." + key)
+	}
+	return components.LogoTitle(key)
 }
 
 // Tables are the sink's tables for an auto_table, by the prefixes it
@@ -891,11 +900,11 @@ func wholeNumber(v any) (int64, bool) {
 
 // loadsCount says how many loads the bars draw, and that it is the last
 // loadsShown when the read was cut there: a count at the LIMIT is a floor.
-func loadsCount(ctx context.Context, n int) string {
+func loadsCount(n int) i18n.Msg {
 	if n >= loadsShown {
-		return i18n.T(ctx, "loads.drawer.recent.last", "n", fmt.Sprint(loadsShown))
+		return i18n.M("loads.drawer.recent.last", "n", fmt.Sprint(loadsShown))
 	}
-	return i18n.N(ctx, "loads.drawer.recent.count", n)
+	return i18n.MN("loads.drawer.recent.count", n)
 }
 
 // loadWhen is when a step runs, in words where they are sure and the

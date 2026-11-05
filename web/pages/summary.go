@@ -168,6 +168,14 @@ func orList(items []string) i18n.Cat {
 
 // durationWords is a duration a person says: "1 minute", "500 milliseconds" (a
 // Msg). Anything that is not one whole unit stays as written (a string).
+// DurationCat is durationWords for the API: the duration said, or the raw string, as a Cat (null for none).
+func DurationCat(s string) i18n.Cat {
+	if s == "" {
+		return nil
+	}
+	return i18n.Cat{durationWords(s)}
+}
+
 func durationWords(s string) any {
 	d, err := time.ParseDuration(s)
 	if err != nil || d <= 0 {

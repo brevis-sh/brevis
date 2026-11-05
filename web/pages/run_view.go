@@ -96,7 +96,7 @@ type StepLineV struct {
 }
 
 type StageView struct {
-	Label   string       `json:"label"`
+	Label   i18n.Cat     `json:"label"`
 	State   string       `json:"state"`
 	Detail  string       `json:"detail"`
 	Ms      *int64       `json:"ms"`
@@ -116,19 +116,19 @@ type StepGroupV struct {
 	Status  string        `json:"status"`
 	Ok      int           `json:"ok"`
 	Total   int           `json:"total"`
-	Command string        `json:"command"`
+	Command i18n.Cat      `json:"command"`
 	Rows    []StepRowView `json:"rows"`
 }
 
 type StepRowView struct {
-	Node       string `json:"node"`
-	Item       string `json:"item"`
-	Status     string `json:"status"`
-	Attempt    int    `json:"attempt"`
-	ExitCode   *int   `json:"exitCode"`
-	DurationMs int64  `json:"durationMs"`
-	Command    string `json:"command"`
-	Err        string `json:"err"`
+	Node       string   `json:"node"`
+	Item       string   `json:"item"`
+	Status     string   `json:"status"`
+	Attempt    int      `json:"attempt"`
+	ExitCode   *int     `json:"exitCode"`
+	DurationMs int64    `json:"durationMs"`
+	Command    i18n.Cat `json:"command"`
+	Err        string   `json:"err"`
 }
 
 type AlertView struct {

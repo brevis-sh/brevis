@@ -1,6 +1,7 @@
 package pages
 
 import (
+	"brevis.sh/brevis/web/i18n"
 	"fmt"
 	"math"
 	"strconv"
@@ -31,9 +32,10 @@ type StepLine struct {
 // (source and target, not the wire's extract and load), its state, the
 // identity it worked on, its duration and up to two numbers.
 type StageCell struct {
-	Label, State, Detail string
-	Ms                   *int64
-	Numbers              []StageNumber
+	Label         i18n.Cat
+	State, Detail string
+	Ms            *int64
+	Numbers       []StageNumber
 }
 
 // StageNumber is one magnitude a stage produced: "3 in", "1 pages".

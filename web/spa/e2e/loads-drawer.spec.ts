@@ -3,7 +3,7 @@ import { expect, loaded, test } from "./support";
 
 // A load's address draws the loads list with the load in a drawer over it, as the old console did. The demo
 // stack has few loads, so the API is answered here (only /api/ingest/loads*); everything else is the real one.
-const place = (uri: string) => ({ uri, kind: "postgres", kindTitle: "PostgreSQL", where: "postgres://warehouse/", what: uri.split("/").pop()!, note: "" });
+const place = (uri: string) => ({ uri, kind: "postgres", where: "postgres://warehouse/", what: uri.split("/").pop()!, note: "" });
 const row = (workflow: string, step: string, uri: string, many = false) => ({
   workflow, step, href: `/ingest/loads/${workflow}/${step}${many ? `?target=${encodeURIComponent(uri)}` : ""}`, target: place(uri), legacy: false,
   status: "on_time", lastLoaded: "2026-11-01T10:00:00Z", rows: 1200, schedule: { $: "cat", v: ["every hour"] },
@@ -11,9 +11,9 @@ const row = (workflow: string, step: string, uri: string, many = false) => ({
 });
 const ROWS = [row("orders", "load_orders", "postgres://warehouse/public/orders"), row("users", "load_users", "postgres://warehouse/public/users"), row("fx", "load_fx", "postgres://warehouse/public/fx_a", true), row("fx", "load_fx", "postgres://warehouse/public/fx_b", true)];
 const detail = (uri: string) => ({
-  status: "on_time", reason: "", source: { kind: "http", driver: "", label: "HTTP API", labelMsg: null, where: "https://api.example.com/x" }, target: place(uri),
+  status: "on_time", reason: null, source: { kind: "http", driver: "", label: "HTTP API", labelMsg: null, where: "https://api.example.com/x" }, target: place(uri),
   hasSchedule: true, when: { $: "cat", v: ["every hour"] }, cron: "0 * * * *", timezone: "UTC", manual: false, legacy: false, lastLoaded: "2026-11-01T10:00:00Z", lastRows: 1200, read: null,
-  readNothing: false, fixing: null, bars: [{ runId: "r1", rows: 5, title: "" }], missed: 0, loads: [{ loadedAt: "2026-11-01T10:00:00Z", rows: 5, bytes: 10, runId: "r1aaaaaaaa" }], loadsCount: "1",
+  readNothing: false, fixing: null, bars: [{ runId: "r1", rows: 5, title: "" }], missed: 0, loads: [{ loadedAt: "2026-11-01T10:00:00Z", rows: 5, bytes: 10, runId: "r1aaaaaaaa" }], loadsCount: { k: "loads.drawer.recent.count", n: 1 },
   described: false, config: null, changes: [], readBy: [], query: "", run: "",
 });
 

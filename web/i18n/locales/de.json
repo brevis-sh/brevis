@@ -81,6 +81,7 @@
   "catalog.tip.attention": "Veraltet und verspätet zusammen: was sich eine Person ansehen sollte.",
   "catalog.tip.on_time": "Jeder bisherige Slot ist innerhalb seiner Toleranz angekommen.",
   "catalog.title": "Datenkatalog",
+  "catalog.why.at": "{at} {zone}",
   "catalog.why.gateway": "Veröffentlicht von Gateway {gateway}, Stream {stream} ({role}), am {at}. Es schreibt, sobald Events eintreffen; sein Traffic steht unter /metrics des Gateways.",
   "catalog.why.manual": "Es läuft manuell, daher gibt es nichts, wogegen es verspätet sein könnte.",
   "catalog.why.missed": "{workflow} hat seinen Run für {slot} verpasst. Erwartet bis {by}: {grace} Toleranz, abgeleitet aus seiner üblichen Verzögerung, nie unter 10 min.",
@@ -382,6 +383,7 @@
   "graph.list.needs": "Hängt ab von",
   "graph.list.step": "Step",
   "graph.list.uses": "Nutzt",
+  "graph.marker": "Marker",
   "graph.panel.none": "Kein Step ausgewählt. Klicken Sie auf einen Step im Graph oder in der Liste.",
   "graph.published": {
     "one": "{count} Wert veröffentlicht",
@@ -389,6 +391,8 @@
   },
   "graph.retry": "Retry {n}",
   "graph.stage": "Stufe",
+  "graph.stage.source": "Quelle",
+  "graph.stage.target": "Ziel",
   "graph.stages": {
     "one": "{count} Stufe",
     "other": "{count} Stufen"
@@ -678,6 +682,8 @@
   "palette.open_run": "Run {id} öffnen…",
   "palette.placeholder": "Workflows, Ziele, Endpoints suchen…",
   "palette.results": "Ergebnisse",
+  "palette.theme": "Design wechseln",
+  "palette.theme.hint": "dunkel oder hell",
   "projects.empty": "Noch kein Projekt.",
   "projects.lead": "Ein Projekt gibt seinen Workflows einen eigenen Namensraum: Zwei Projekte können jeweils einen {example} haben, ohne zu kollidieren. Ein Workflow wird einem Projekt mit {flag} zugeordnet.",
   "projects.open": "Workflows ansehen",

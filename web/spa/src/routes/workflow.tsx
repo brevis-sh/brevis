@@ -172,6 +172,7 @@ function WorkflowStats({ d }: { d?: WorkflowDetail }) {
 
 function StepsList({ d, ghostRows = 4 }: { d?: WorkflowDetail; ghostRows?: number }) {
   const { t } = useT();
+  const say = useMsg();
   const logoTitle = useLogoTitle();
   const { elapsed } = useNumbers();
   return (
@@ -204,7 +205,7 @@ function StepsList({ d, ghostRows = 4 }: { d?: WorkflowDetail; ghostRows?: numbe
                 </td>
                 <td className={cell}><span className="inline-flex items-center gap-1">{s.uses.map((l) => <Logo key={l.key} k={l.key} />)}</span></td>
                 <td className={`${cell} font-mono text-xs text-muted`}>{s.needs.join(", ")}</td>
-                <td className={`${cell} max-w-[22rem] truncate font-mono text-xs text-muted`} title={s.command}>{s.command}</td>
+                <td className={`${cell} max-w-[22rem] truncate font-mono text-xs text-muted`} title={say(s.command)}>{say(s.command)}</td>
                 <td className={`${cell} pr-4 text-right text-xs text-muted tabular-nums`}>{s.lastStatus ? elapsed(s.lastMs) : "—"}</td>
               </tr>
             ))

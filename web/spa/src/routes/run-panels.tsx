@@ -20,6 +20,7 @@ const chev = (g: string) => <Icon name="chevron-right" className={`h-3 w-3 text-
 
 function Cells({ r, opens }: { r: StepRow; opens: boolean }) {
   const { duration } = useFormat();
+  const msg = useMsg();
   return (
     <>
       <span role="cell" className="flex min-w-0 items-center gap-1.5">
@@ -36,8 +37,8 @@ function Cells({ r, opens }: { r: StepRow; opens: boolean }) {
       <span role="cell" className="text-right font-mono text-[12px] text-muted tabular-nums">
         {r.durationMs > 0 ? duration(r.durationMs) : ""}
       </span>
-      <span role="cell" title={r.command} className="min-w-0 truncate font-mono text-[12px] text-muted">
-        {r.command}
+      <span role="cell" title={msg(r.command)} className="min-w-0 truncate font-mono text-[12px] text-muted">
+        {msg(r.command)}
       </span>
     </>
   );
@@ -131,11 +132,12 @@ const STAGE_TONE: Record<string, string> = { done: "success", running: "running"
 
 function StageItem({ st }: { st: Stage }) {
   const { duration, number } = useFormat();
+  const msg = useMsg();
   return (
     <li className="min-w-0 bg-surface px-3.5 py-2">
       <div className="flex items-center gap-1.5 text-[12.5px]">
         <StatusMark kind={STAGE_TONE[st.state] ?? "pending"} />
-        <span className="font-medium text-ink">{st.label}</span>
+        <span className="font-medium text-ink">{msg(st.label)}</span>
         <span className="ml-auto font-mono text-[11.5px] text-faint">{st.ms !== null ? duration(st.ms) : "—"}</span>
       </div>
       <div className="mt-0.5 flex min-w-0 items-baseline gap-2 text-[11.5px] text-muted">
@@ -194,7 +196,7 @@ function StepLine({ run }: { run: Run }) {
         {s.stages.length > 0 && (
           <ol className="grid grid-cols-1 gap-px border-t border-line-soft bg-line-soft min-[640px]:grid-cols-2 min-[1100px]:auto-cols-fr min-[1100px]:grid-flow-col min-[1100px]:grid-cols-none">
             {s.stages.map((st) => (
-              <StageItem key={st.label} st={st} />
+              <StageItem key={JSON.stringify(st.label)} st={st} />
             ))}
           </ol>
         )}

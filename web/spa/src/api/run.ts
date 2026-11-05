@@ -1,4 +1,4 @@
-import type { Msg } from "../i18n";
+import type { Cat, Msg } from "../i18n";
 import { postJSON } from "./client";
 
 // The shapes of GET /api/runs/{id} (web/pages/run_view.go).
@@ -18,13 +18,13 @@ export type PhaseDetail = {
 };
 export type StepRow = {
   node: string; item: string; status: string; attempt: number; exitCode: number | null;
-  durationMs: number; command: string; err: string;
+  durationMs: number; command: Cat | null; err: string;
 };
 export type StepGroup = {
-  node: string; mapped: boolean; status: string; ok: number; total: number; command: string; rows: StepRow[];
+  node: string; mapped: boolean; status: string; ok: number; total: number; command: Cat | null; rows: StepRow[];
 };
 export type Stage = {
-  label: string; state: string; detail: string; ms: number | null; numbers: { key: string; value: number | string }[];
+  label: Cat | null; state: string; detail: string; ms: number | null; numbers: { key: string; value: number | string }[];
 };
 export type Run = {
   id: string; workflow: string; logos: string[];

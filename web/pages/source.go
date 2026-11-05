@@ -1,8 +1,6 @@
 package pages
 
 import (
-	"context"
-
 	"brevis.sh/brevis/internal/infrastructure/postgres"
 	"brevis.sh/brevis/web/components"
 	"brevis.sh/brevis/web/i18n"
@@ -87,7 +85,7 @@ func originLabel(s Source) (*i18n.Msg, string) {
 		return ptrMsg(i18n.M("loads.source.file")), ""
 	case "database":
 		// A brand is its own name in every language.
-		return nil, components.LogoTitle(context.Background(), s.Logo)
+		return nil, components.LogoTitle(s.Logo)
 	}
 	return nil, s.Driver
 }

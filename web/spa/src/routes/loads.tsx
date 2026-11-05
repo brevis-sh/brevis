@@ -163,7 +163,7 @@ const GHOST_ROW: LoadRow = {
   workflow: "workflow_name",
   step: "load_step_name",
   href: "",
-  target: { uri: "", kind: "postgres", kindTitle: "", where: "postgres://warehouse/", what: "table_name", note: "" },
+  target: { uri: "", kind: "postgres", where: "postgres://warehouse/", what: "table_name", note: "" },
   legacy: false,
   status: "on_time",
   lastLoaded: "2000-01-01T00:00:00Z",

@@ -40,7 +40,7 @@ type calendarView struct {
 
 type stepView struct {
 	ID         string     `json:"id"`
-	Command    string     `json:"command"`
+	Command    i18n.Cat   `json:"command"`
 	Langs      []logoView `json:"langs"`
 	Uses       []logoView `json:"uses"`
 	Needs      []string   `json:"needs"`
@@ -196,7 +196,7 @@ func (u *UI) workflowJSON(w http.ResponseWriter, r *http.Request) {
 
 	if oneStep(def) {
 		if line := stepLineOf(def, nil); line != nil {
-			out.Steps = append(out.Steps, stepView{ID: line.Name, Command: line.Action, Langs: logosOf(runsIn(def, 0)),
+			out.Steps = append(out.Steps, stepView{ID: line.Name, Command: i18n.Cat{line.Action}, Langs: logosOf(runsIn(def, 0)),
 				Uses: []logoView{}, Needs: []string{}})
 		}
 		out.Stages = 1

@@ -81,6 +81,7 @@
   "catalog.tip.attention": "Basi dan terlambat sekaligus: yang perlu dilihat orang.",
   "catalog.tip.on_time": "Setiap slot sejauh ini sudah mendarat, dalam batas toleransinya.",
   "catalog.title": "Katalog data",
+  "catalog.why.at": "{at} {zone}",
   "catalog.why.gateway": "Dipublikasikan dari gateway {gateway}, stream {stream} ({role}), pada {at}. Menulis saat event tiba; trafiknya ada di /metrics gateway.",
   "catalog.why.manual": "Berjalan manual, jadi tidak ada jadwal yang bisa dilewati.",
   "catalog.why.missed": "{workflow} melewatkan run {slot}. Seharusnya tiba pada {by}: toleransi {grace}, dari seberapa terlambat biasanya, tidak pernah kurang dari 10 mnt.",
@@ -382,6 +383,7 @@
   "graph.list.needs": "Bergantung pada",
   "graph.list.step": "Step",
   "graph.list.uses": "Memakai",
+  "graph.marker": "penanda",
   "graph.panel.none": "Belum ada step dipilih. Klik sebuah step di graf atau di daftar.",
   "graph.published": {
     "one": "{count} nilai dipublikasikan",
@@ -389,6 +391,8 @@
   },
   "graph.retry": "retry {n}",
   "graph.stage": "Tahap",
+  "graph.stage.source": "sumber",
+  "graph.stage.target": "target",
   "graph.stages": {
     "one": "{count} tahap",
     "other": "{count} tahap"
@@ -678,6 +682,8 @@
   "palette.open_run": "Buka run {id}…",
   "palette.placeholder": "Cari workflows, tujuan, endpoints…",
   "palette.results": "Hasil",
+  "palette.theme": "Ganti tema",
+  "palette.theme.hint": "gelap atau terang",
   "projects.empty": "Belum ada proyek.",
   "projects.lead": "Proyek memberi namespace tersendiri bagi workflows-nya: dua proyek dapat memiliki {example} masing-masing tanpa bentrok. Sebuah workflow bergabung ke proyek dengan {flag}.",
   "projects.open": "lihat workflows",
