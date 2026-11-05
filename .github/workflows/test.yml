@@ -321,6 +321,28 @@ jobs:
           cat serve.log
           exit 1
 
+      # A second engine, same database and no scheduler, with a credential: the sign-in spec
+      # (e2e/auth.spec.ts) needs a console that asks for one, and the open console above does not.
+      # The password is a throwaway; it exists for this job only.
+      - name: Start an engine that asks for a sign-in
+        run: |
+          pass="e2e-throwaway-$(openssl rand -hex 6)"
+          echo "E2E_AUTH_PASSWORD=$pass" >> "$GITHUB_ENV"
+          hash=$(printf '%s\n' "$pass" | bin/brevis hash 2>/dev/null | grep '^pbkdf2-sha256')
+          BREVIS_AUTH_USER=operator BREVIS_AUTH_PASSWORD_HASH="$hash" BREVIS_AUTH_SECRET="$(openssl rand -base64 48)" \
+            BREVIS_HTTP_ADDR=":8099" nohup bin/brevis serve > serve-auth.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fs -o /dev/null http://localhost:8099/health; then
+              echo "E2E_AUTH_URL=http://localhost:8099" >> "$GITHUB_ENV"
+              echo "E2E_AUTH_USER=operator" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::the engine with a credential did not answer"
+          cat serve-auth.log
+          exit 1
+
       - name: Install the app's dependencies
         working-directory: web/spa
         run: npm ci
@@ -356,6 +378,7 @@ jobs:
             web/spa/playwright-report
             web/spa/test-results
             serve.log
+            serve-auth.log
             scheduler.log
           retention-days: 14
 
