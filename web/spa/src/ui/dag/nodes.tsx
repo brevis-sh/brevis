@@ -21,6 +21,11 @@ export const useWords = () => {
   const msg = useMsg();
   return (v: string | Msg | null | undefined) => (typeof v === "string" ? v : msg(v));
 };
+/** Where a step's runtime came from, in words ("declared" by the step, "inferred" from its command); a source this version does not know is shown as written. */
+export const useSourceWord = () => {
+  const { t } = useT();
+  return (src: unknown) => (src === "declared" ? t("graph.source.declared") : src === "inferred" ? t("graph.source.inferred") : String(src ?? "?"));
+};
 export const stageTone = (s: string | undefined) => STAGE_TONE[s ?? ""] ?? "pending";
 // A language's own token; the chip falls back to the muted ink where the sheet has none.
 const tint = (id: string) => ({ "--t": `var(--color-lang-${id}, var(--muted))` }) as CSSProperties;
@@ -34,6 +39,7 @@ const HIGHLIGHT = ["in", "out", "groups", "rows", "pages", "objects"];
 export function StepCard({ data: d }: P) {
   const { t, n } = useT();
   const words = useWords();
+  const sourceWord = useSourceWord();
   const { duration, number } = useFormat();
   // A workflow's graph draws no run: its cards are pending and say how the step went last time.
   const last = d.status === "pending" && d.last_status;
@@ -77,7 +83,7 @@ export function StepCard({ data: d }: P) {
       {(d.runtime || tools.length > 0) && (
         <div className="dag-chips">
           {d.runtime && (
-            <span className={`dag-chip strong${inferred ? " inferred" : ""}`} style={tint(d.runtime)} title={`${langLabel(d.runtime)} — ${inferred ? t("graph.inferred") : d.runtime_source}`}>
+            <span className={`dag-chip strong${inferred ? " inferred" : ""}`} style={tint(d.runtime)} title={`${langLabel(d.runtime)} — ${inferred ? t("graph.inferred") : sourceWord(d.runtime_source)}`}>
               {langLabel(d.runtime)}
             </span>
           )}
