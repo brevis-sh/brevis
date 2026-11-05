@@ -393,7 +393,7 @@ func TestTheTTLTakesTheSpellingTheDocsUse(t *testing.T) {
 		{yaml: "2h", want: 2 * time.Hour},
 		{yaml: "60", bad: "NANOSECONDS"},
 		{yaml: "-1", bad: "NANOSECONDS"},
-		{yaml: "tarde", bad: "not a duration"},
+		{yaml: "late", bad: "not a duration"},
 		{yaml: "true", bad: "a duration is text"},
 	} {
 		t.Run(c.yaml, func(t *testing.T) {

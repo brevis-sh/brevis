@@ -7,10 +7,10 @@ import (
 
 func TestTheWindowKeepsEverythingWhenItFits(t *testing.T) {
 	var j window
-	for _, l := range []string{"first", "segunda", "terceira"} {
+	for _, l := range []string{"first", "second", "third"} {
 		j.Write(l)
 	}
-	if got := j.String(); got != "first\nsegunda\nterceira\n" {
+	if got := j.String(); got != "first\nsecond\nthird\n" {
 		t.Errorf("output = %q", got)
 	}
 }
@@ -33,18 +33,18 @@ func TestTheWindowRespectsTheCeiling(t *testing.T) {
 // half the diagnosis.
 func TestTheWindowKeepsBothEnds(t *testing.T) {
 	var j window
-	j.Write("COMECO-DA-SAIDA")
+	j.Write("START-OF-OUTPUT")
 	filler := strings.Repeat("y", 500)
 	for i := 0; i < 3000; i++ {
 		j.Write(filler)
 	}
-	j.Write("ERRO-NO-FIM")
+	j.Write("ERROR-AT-END")
 
 	got := j.String()
-	if !strings.Contains(got, "COMECO-DA-SAIDA") {
+	if !strings.Contains(got, "START-OF-OUTPUT") {
 		t.Error("it lost the beginning -- the command that ran disappears")
 	}
-	if !strings.Contains(got, "ERRO-NO-FIM") {
+	if !strings.Contains(got, "ERROR-AT-END") {
 		t.Error("lost the end -- the reason for the failure is gone")
 	}
 }

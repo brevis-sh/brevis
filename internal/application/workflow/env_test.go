@@ -75,10 +75,10 @@ func TestASecretOnlyGoesToTheStepThatDeclaredIt(t *testing.T) {
 func TestSecretsRefusesWhatIsNotACoordinate(t *testing.T) {
 	cases := map[string]string{
 		"no slash":          "GABRIEL_SESSION_COOKIE: eyJhbGciOiJkaXIi==",
-		"secret vazio":      "GABRIEL_SESSION_COOKIE: /cookie",
+		"empty secret":      "GABRIEL_SESSION_COOKIE: /cookie",
 		"empty key":         "GABRIEL_SESSION_COOKIE: gabriel-session/",
 		"barra demais":      "GABRIEL_SESSION_COOKIE: ns/gabriel-session/cookie",
-		"nome invalido":     "GABRIEL-SESSION-COOKIE: gabriel-session/cookie",
+		"invalid name":      "GABRIEL-SESSION-COOKIE: gabriel-session/cookie",
 		"name with a space": "'GABRIEL COOKIE': gabriel-session/cookie",
 	}
 	for name, line := range cases {
@@ -104,7 +104,7 @@ steps:
   - id: a
     run: echo
     secrets:
-      TOKEN: cofre/token
+      TOKEN: vault/token
 `
 	_, err := Parse("x.yaml", []byte(yaml))
 	if err == nil {

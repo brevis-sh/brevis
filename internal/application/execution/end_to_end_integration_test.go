@@ -44,7 +44,7 @@ func TestIntegrationStagesReachTheDatabaseThroughARealBinary(t *testing.T) {
 
 	dir := t.TempDir()
 	binary := buildFetcher(t, dir)
-	input := filepath.Join(dir, "entrada.ndjson")
+	input := filepath.Join(dir, "input.ndjson")
 	if err := os.WriteFile(input, []byte(
 		`{"id":1,"ts":"2026-09-05T00:00:00Z"}`+"\n"+
 			`{"id":2,"ts":"2026-09-05T01:00:00Z"}`+"\n"), 0o600); err != nil {

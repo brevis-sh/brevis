@@ -17,7 +17,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: brevis-publish
-  namespace: dados
+  namespace: data
   annotations:
     argocd.argoproj.io/hook: PostSync
     # Deleted before the next one is created, which is what makes a second

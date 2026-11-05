@@ -89,7 +89,7 @@ func withOutput(f string, code int) k8s.Pod {
 
 func runStep(t *testing.T, api *fakeAPI, tk execution.TaskExec) []execution.Event {
 	t.Helper()
-	e := k8s.NewExecutor(api, k8s.Options{Namespace: "dados"})
+	e := k8s.NewExecutor(api, k8s.Options{Namespace: "data"})
 	e.Interval = time.Millisecond
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -299,7 +299,7 @@ func TestTheNameChangesWithTheRunsAttempt(t *testing.T) {
 // whose run was canceled has not finished -- it is still running its step --
 // and keeping it keeps that step running beside the run's next attempt, which
 // is the duplicate execution #121 exists to end. It is deleted.
-func TestACancelledPodIsDeletedEvenWhenFailedOnesAreKept(t *testing.T) {
+func TestACanceledPodIsDeletedEvenWhenFailedOnesAreKept(t *testing.T) {
 	api := &fakeAPI{phases: []k8s.Pod{phase("Running")}}
 	e := k8s.NewExecutor(api, k8s.Options{KeepFailedPod: true})
 	e.Interval = time.Millisecond

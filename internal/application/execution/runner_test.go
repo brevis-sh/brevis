@@ -110,7 +110,7 @@ func TestAcceptanceCriterion_GoDAGWithParallelism(t *testing.T) {
 	if order[len(order)-1] != "task_d" {
 		t.Errorf("last = %q, wanted task_d", order[len(order)-1])
 	}
-	t.Logf("ordem: %v | duracao: %s | pico: %d", order, duration.Round(time.Millisecond), picoBC.Load())
+	t.Logf("order: %v | duration: %s | peak: %d", order, duration.Round(time.Millisecond), picoBC.Load())
 }
 
 // The retry is PER NODE: redoing the whole workflow because the last step failed
@@ -119,14 +119,14 @@ func TestRetryIsPerNode(t *testing.T) {
 	reg := execution.NewRegistry()
 	var attempts atomic.Int32
 
-	reg.MustRegister(execution.FuncTask{TaskName: "instavel", Fn: func(context.Context, execution.Input) error {
+	reg.MustRegister(execution.FuncTask{TaskName: "flaky", Fn: func(context.Context, execution.Input) error {
 		if attempts.Add(1) < 3 {
-			return fmt.Errorf("falha transitoria")
+			return fmt.Errorf("transient failure")
 		}
 		return nil
 	}})
 
-	w := wf.Workflow{Slug: "w", Nodes: []wf.Node{{ID: "n", Action: "instavel"}}}
+	w := wf.Workflow{Slug: "w", Nodes: []wf.Node{{ID: "n", Action: "flaky"}}}
 	r := app.Runner{
 		Go: local.NewGoExecutor(reg), Report: &collector{},
 		MaxAttempts: 3, BackoffBase: time.Millisecond,
@@ -142,12 +142,12 @@ func TestRetryIsPerNode(t *testing.T) {
 func TestRetryGivesUpAfterTheLimit(t *testing.T) {
 	reg := execution.NewRegistry()
 	var attempts atomic.Int32
-	reg.MustRegister(execution.FuncTask{TaskName: "sempre_falha", Fn: func(context.Context, execution.Input) error {
+	reg.MustRegister(execution.FuncTask{TaskName: "always_fails", Fn: func(context.Context, execution.Input) error {
 		attempts.Add(1)
-		return fmt.Errorf("falha permanente")
+		return fmt.Errorf("permanent failure")
 	}})
 
-	w := wf.Workflow{Slug: "w", Nodes: []wf.Node{{ID: "n", Action: "sempre_falha"}}}
+	w := wf.Workflow{Slug: "w", Nodes: []wf.Node{{ID: "n", Action: "always_fails"}}}
 	r := app.Runner{
 		Go: local.NewGoExecutor(reg), Report: &collector{},
 		MaxAttempts: 2, BackoffBase: time.Millisecond,
@@ -162,16 +162,16 @@ func TestRetryGivesUpAfterTheLimit(t *testing.T) {
 
 // Canceling the context stops the DAG and fires no retry -- retrying against a
 // cancellation is waste.
-func TestCancellingFiresNoRetry(t *testing.T) {
+func TestCancelingFiresNoRetry(t *testing.T) {
 	reg := execution.NewRegistry()
 	var attempts atomic.Int32
-	reg.MustRegister(execution.FuncTask{TaskName: "lenta", Fn: func(ctx context.Context, _ execution.Input) error {
+	reg.MustRegister(execution.FuncTask{TaskName: "slow", Fn: func(ctx context.Context, _ execution.Input) error {
 		attempts.Add(1)
 		<-ctx.Done()
 		return ctx.Err()
 	}})
 
-	w := wf.Workflow{Slug: "w", Nodes: []wf.Node{{ID: "n", Action: "lenta"}}}
+	w := wf.Workflow{Slug: "w", Nodes: []wf.Node{{ID: "n", Action: "slow"}}}
 	r := app.Runner{
 		Go: local.NewGoExecutor(reg), Report: &collector{},
 		MaxAttempts: 5, BackoffBase: time.Millisecond,
@@ -204,7 +204,7 @@ func TestAStepsErrorCarriesTheExitCode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	w := wf.Workflow{Slug: "sai", Nodes: []wf.Node{{ID: "falha", Run: "sh -c 'exit 3'"}}}
+	w := wf.Workflow{Slug: "sai", Nodes: []wf.Node{{ID: "fail", Run: "sh -c 'exit 3'"}}}
 
 	failure := app.Runner{
 		Process: exec, Report: &collector{},
@@ -218,7 +218,7 @@ func TestAStepsErrorCarriesTheExitCode(t *testing.T) {
 	if !errors.As(failure, &step) {
 		t.Fatalf("error %T does not carry the exit code", failure)
 	}
-	if step.ExitCode != 3 || step.NodeID != "falha" {
+	if step.ExitCode != 3 || step.NodeID != "fail" {
 		t.Errorf("node=%q exit=%d, want a failure and 3", step.NodeID, step.ExitCode)
 	}
 }
@@ -231,8 +231,8 @@ func TestTheErrorCarriesStderrAndTheCodesHint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	w := wf.Workflow{Slug: "ausente", Nodes: []wf.Node{
-		{ID: "fetch_data", Run: "sh -c 'comando_que_nao_existe_abc'"},
+	w := wf.Workflow{Slug: "missing", Nodes: []wf.Node{
+		{ID: "fetch_data", Run: "sh -c 'command_that_does_not_exist_abc'"},
 	}}
 
 	failure := app.Runner{
@@ -250,7 +250,7 @@ func TestTheErrorCarriesStderrAndTheCodesHint(t *testing.T) {
 	if !strings.Contains(msg, "command not found") {
 		t.Errorf("the message has no translation of the code: %q", msg)
 	}
-	if !strings.Contains(msg, "comando_que_nao_existe_abc") {
+	if !strings.Contains(msg, "command_that_does_not_exist_abc") {
 		t.Errorf("the message has no stderr line explaining the failure: %q", msg)
 	}
 
@@ -267,7 +267,7 @@ func TestStderrIsKeptAsTheLastLines(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	w := wf.Workflow{Slug: "verboso", Nodes: []wf.Node{
+	w := wf.Workflow{Slug: "verbose", Nodes: []wf.Node{
 		{ID: "ruido", Run: "sh -c 'for i in 1 2 3 4 5 6 7 8 9 10; do echo line $i >&2; done; exit 9'"},
 	}}
 
@@ -367,7 +367,7 @@ func TestSlotsLimitSimultaneousSteps(t *testing.T) {
 
 	var inFlight, peak int64
 	reg := execution.NewRegistry()
-	reg.MustRegister(execution.FuncTask{TaskName: "ocupa", Fn: func(ctx context.Context, in execution.Input) error {
+	reg.MustRegister(execution.FuncTask{TaskName: "busy", Fn: func(ctx context.Context, in execution.Input) error {
 		current := atomic.AddInt64(&inFlight, 1)
 		for {
 			previous := atomic.LoadInt64(&peak)
@@ -384,7 +384,7 @@ func TestSlotsLimitSimultaneousSteps(t *testing.T) {
 	// ten at once if nothing holds it back.
 	w := wf.Workflow{Slug: "paralelo"}
 	for i := 0; i < steps; i++ {
-		w.Nodes = append(w.Nodes, wf.Node{ID: fmt.Sprintf("p%d", i), Action: "ocupa"})
+		w.Nodes = append(w.Nodes, wf.Node{ID: fmt.Sprintf("p%d", i), Action: "busy"})
 	}
 
 	r := app.Runner{
@@ -410,7 +410,7 @@ func TestSlotsAreSharedBetweenRuns(t *testing.T) {
 
 	var inFlight, peak int64
 	reg := execution.NewRegistry()
-	reg.MustRegister(execution.FuncTask{TaskName: "ocupa", Fn: func(ctx context.Context, in execution.Input) error {
+	reg.MustRegister(execution.FuncTask{TaskName: "busy", Fn: func(ctx context.Context, in execution.Input) error {
 		current := atomic.AddInt64(&inFlight, 1)
 		for {
 			previous := atomic.LoadInt64(&peak)
@@ -427,7 +427,7 @@ func TestSlotsAreSharedBetweenRuns(t *testing.T) {
 	build := func(slug string) wf.Workflow {
 		w := wf.Workflow{Slug: slug}
 		for i := 0; i < 5; i++ {
-			w.Nodes = append(w.Nodes, wf.Node{ID: fmt.Sprintf("p%d", i), Action: "ocupa"})
+			w.Nodes = append(w.Nodes, wf.Node{ID: fmt.Sprintf("p%d", i), Action: "busy"})
 		}
 		return w
 	}
@@ -482,7 +482,7 @@ func TestTheAttemptReachesTheTask(t *testing.T) {
 	}.Run(context.Background(), w)
 
 	if len(seen) != 3 {
-		t.Fatalf("attempts observadas: %v", seen)
+		t.Fatalf("attempts observed: %v", seen)
 	}
 	for i, n := range seen {
 		if n != i {
@@ -494,11 +494,11 @@ func TestTheAttemptReachesTheTask(t *testing.T) {
 // spyExecutor records what it received and always fails, to exercise the retry.
 type spyExecutor struct{ onExecute func(execution.TaskExec) }
 
-func (e *spyExecutor) Name() string { return "espiao" }
+func (e *spyExecutor) Name() string { return "spy" }
 func (e *spyExecutor) Execute(_ context.Context, t execution.TaskExec) (<-chan execution.Event, error) {
 	e.onExecute(t)
 	ch := make(chan execution.Event, 1)
-	ch <- execution.Event{Kind: execution.EventFailed, NodeID: t.NodeID, Message: "falhou"}
+	ch <- execution.Event{Kind: execution.EventFailed, NodeID: t.NodeID, Message: "failed"}
 	close(ch)
 	return ch, nil
 }

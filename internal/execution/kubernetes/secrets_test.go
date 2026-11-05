@@ -10,7 +10,7 @@ import (
 
 // optionsAllowing is what an installation that authorized this Secret passes.
 func optionsAllowing() Options {
-	return Options{AllowedSecrets: []string{"gabriel-session", "cofre"}}.withDefaults()
+	return Options{AllowedSecrets: []string{"gabriel-session", "vault"}}.withDefaults()
 }
 
 func taskWithSecret() execution.TaskExec {
@@ -93,7 +93,7 @@ func TestThePodsEnvironmentIsDeterministic(t *testing.T) {
 	task := taskWithSecret()
 	task.Env["A"] = "1"
 	task.Env["Z"] = "2"
-	task.Secrets["OUTRO"] = "cofre/chave"
+	task.Secrets["OTHER"] = "vault/key"
 
 	var first string
 	for i := 0; i < 20; i++ {
@@ -120,7 +120,7 @@ func TestThePodsEnvironmentIsDeterministic(t *testing.T) {
 // and would run an arbitrary command with it in hand.
 func TestTheYAMLDoesNotChooseWhichSecretToMount(t *testing.T) {
 	task := taskWithSecret()
-	task.Secrets["ROUBADO"] = "brevis-database/url"
+	task.Secrets["STOLEN"] = "brevis-database/url"
 
 	_, err := BuildPod(task, optionsAllowing())
 	if err == nil {

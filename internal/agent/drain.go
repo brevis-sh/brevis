@@ -206,7 +206,7 @@ func (a *Agent) Serve(srv *http.Server, ln net.Listener, stop, force <-chan stru
 		}
 	}()
 
-	cancelled := 0
+	canceled := 0
 	if err := a.Wait(ctx); err != nil {
 		left := a.pending()
 		log.Warn("the drain did not finish; canceling what is left", "steps", left, "error", err)
@@ -226,7 +226,7 @@ func (a *Agent) Serve(srv *http.Server, ln net.Listener, stop, force <-chan stru
 				log.Warn("step ended but its exit was never read; it is lost", "execution", id)
 			}
 		}
-		cancelled = len(left)
+		canceled = len(left)
 		a.idle(cancelGrace)
 	}
 
@@ -237,8 +237,8 @@ func (a *Agent) Serve(srv *http.Server, ln net.Listener, stop, force <-chan stru
 		// anybody any more, so it is cut.
 		_ = srv.Close()
 	}
-	log.Info("drained", "canceled", cancelled)
-	return cancelled, nil
+	log.Info("drained", "canceled", canceled)
+	return canceled, nil
 }
 
 // idle waits, up to d, for no step to be running: the canceled ones to have

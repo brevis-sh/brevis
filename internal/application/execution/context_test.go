@@ -66,7 +66,7 @@ func (h *history) Handovers(context.Context, uuid.UUID) (map[dom.StepKey]executi
 
 func oneStepWorkflow() wf.Workflow {
 	return wf.Workflow{
-		Slug:  "clima",
+		Slug:  "weather",
 		Nodes: []wf.Node{{ID: "collectOutput", Run: "true"}},
 	}
 }
@@ -123,7 +123,7 @@ func TestTheFirstRunIsPerStepNotPerWorkflow(t *testing.T) {
 
 	runStep(t, app.Runner{RunID: id, History: h})
 
-	if h.slug != "clima" || h.nodeID != "collectOutput" {
+	if h.slug != "weather" || h.nodeID != "collectOutput" {
 		t.Errorf("the question has to be per (workflow, step): %q / %q", h.slug, h.nodeID)
 	}
 	// The current run itself must not count as a previous success.
@@ -164,13 +164,13 @@ func TestTheRunnersEnvironmentWinsACollision(t *testing.T) {
 	task := runStep(t, app.Runner{
 		RunID:   uuid.New(),
 		History: &history{alreadyHad: false},
-		Env:     map[string]string{"BREVIS_RUN_FIRST": "false", "OUTRA": "coisa"},
+		Env:     map[string]string{"BREVIS_RUN_FIRST": "false", "OTHER": "thing"},
 	})
 
 	if task.Env["BREVIS_RUN_FIRST"] != "false" {
 		t.Error("the runner's explicit configuration has to beat the computed value")
 	}
-	if task.Env["OUTRA"] != "coisa" {
+	if task.Env["OTHER"] != "thing" {
 		t.Error("the rest of the runner's environment has to survive")
 	}
 	if task.Env["BREVIS_RUN_ID"] == "" {

@@ -19,7 +19,7 @@ import (
 // per transition, in the middle of the normal output.
 type sdkSpeaker struct{ lines []string }
 
-func (sdkSpeaker) Name() string                         { return "falador" }
+func (sdkSpeaker) Name() string                         { return "talker" }
 func (sdkSpeaker) Cancel(context.Context, string) error { return nil }
 
 func (f sdkSpeaker) Execute(context.Context, execution.TaskExec) (<-chan execution.Event, error) {
@@ -227,10 +227,10 @@ func TestStagesArriveThroughTheStepsLog(t *testing.T) {
 		Persist: spy,
 		Report:  screen,
 		Process: sdkSpeaker{lines: []string{
-			`@brevis:{"tipo":"sdk","versao":"v0.44.1","pipeline":"clima"}`,
-			"buscando a pagina 1",
-			`@brevis:{"tipo":"etapa","nome":"extract","estado":"running","em":"agora"}`,
-			`@brevis:{"tipo":"etapa","nome":"extract","estado":"done","ms":2400,"paginas":300}`,
+			`@brevis:{"type":"sdk","version":"v0.44.1","pipeline":"clima"}`,
+			"fetching page 1",
+			`@brevis:{"type":"stage","name":"extract","state":"running","at":"now"}`,
+			`@brevis:{"type":"stage","name":"extract","state":"done","ms":2400,"pages":300}`,
 			"pronto",
 		}},
 	}
@@ -246,7 +246,7 @@ func TestStagesArriveThroughTheStepsLog(t *testing.T) {
 		t.Fatalf("unreadable stages: %v — %s", err, spy.stages)
 	}
 	if len(stages) != 1 || stages[0].TaskName != "extract" || stages[0].State != "done" {
-		t.Fatalf("etapas: %+v", stages)
+		t.Fatalf("stages: %+v", stages)
 	}
 
 	// The marker must NOT become a log line: whoever is watching wants the
@@ -262,7 +262,7 @@ func TestStagesArriveThroughTheStepsLog(t *testing.T) {
 		}
 	}
 	// And the real output is still intact.
-	for _, expected := range []string{"buscando a pagina 1", "pronto"} {
+	for _, expected := range []string{"fetching page 1", "pronto"} {
 		if !strings.Contains(spy.log, expected) {
 			t.Errorf("the program's output was lost with it: %q is missing from\n%s", expected, spy.log)
 		}
@@ -301,11 +301,11 @@ func TestTheLoadRowReachesTheDatabaseOnceThroughTheStepsLog(t *testing.T) {
 		Persist: spy,
 		Report:  &spyReporter{},
 		Process: sdkSpeaker{lines: []string{
-			`@brevis:{"type":"sdk","version":"v0.58.0","pipeline":"vendas"}`,
-			`@brevis:{"type":"stage","index":0,"name":"extract","state":"running","at":"agora"}`,
-			`@brevis:{"type":"stage","index":0,"name":"extract","state":"done","at":"agora","ms":31000,"pages":12,"bytes":5000000,"http_attempts":13}`,
-			`@brevis:{"type":"stage","index":1,"name":"load","state":"running","at":"agora"}`,
-			`@brevis:{"type":"stage","index":1,"name":"load","state":"done","at":"agora","ms":22000,"rows":48213,"records":48300,"load_bytes":900000}`,
+			`@brevis:{"type":"sdk","version":"v0.58.0","pipeline":"sales"}`,
+			`@brevis:{"type":"stage","index":0,"name":"extract","state":"running","at":"now"}`,
+			`@brevis:{"type":"stage","index":0,"name":"extract","state":"done","at":"now","ms":31000,"pages":12,"bytes":5000000,"http_attempts":13}`,
+			`@brevis:{"type":"stage","index":1,"name":"load","state":"running","at":"now"}`,
+			`@brevis:{"type":"stage","index":1,"name":"load","state":"done","at":"now","ms":22000,"rows":48213,"records":48300,"load_bytes":900000}`,
 		}},
 	}
 	if err := r.Run(context.Background(), oneStepWorkflow()); err != nil {
@@ -334,7 +334,7 @@ func TestTheLoadRowReachesTheDatabaseOnceThroughTheStepsLog(t *testing.T) {
 // the trend draws toward a floor that never happened.
 func TestAStepWithNoLoadWritesNoTrendRow(t *testing.T) {
 	for name, lines := range map[string][]string{
-		"a plain command": {"copiando arquivos", "pronto"},
+		"a plain command": {"copying files", "pronto"},
 		"an SDK step whose load failed": {
 			`@brevis:{"type":"stage","index":0,"name":"extract","state":"done","at":"x","ms":900}`,
 			`@brevis:{"type":"stage","index":1,"name":"load","state":"failed","at":"x","rows":40000}`,
@@ -367,7 +367,7 @@ type speakerWithReturn struct {
 	fromExec string // what the EXECUTOR delivers, empty for an executor with no road
 }
 
-func (speakerWithReturn) Name() string                         { return "falador" }
+func (speakerWithReturn) Name() string                         { return "talker" }
 func (speakerWithReturn) Cancel(context.Context, string) error { return nil }
 
 func (f speakerWithReturn) Execute(context.Context, execution.TaskExec) (<-chan execution.Event, error) {
@@ -569,7 +569,7 @@ func TestAStepWithAHostGoesToThatHost(t *testing.T) {
 		Pods:    pods,
 		Hosts:   map[string]execution.Executor{"dlt-runner-01": box, "gpu-01": other},
 	}
-	w := wf.Workflow{Slug: "vendas", Nodes: []wf.Node{
+	w := wf.Workflow{Slug: "sales", Nodes: []wf.Node{
 		{ID: "extract", Run: "python pipelines/orders.py", Host: "dlt-runner-01"},
 	}}
 	if err := r.Run(context.Background(), w); err != nil {
@@ -604,7 +604,7 @@ func TestAnUnknownHostIsRefusedAndNotRunLocally(t *testing.T) {
 		Process: process,
 		Hosts:   map[string]execution.Executor{"dlt-runner-01": &namedExecutor{name: "a"}},
 	}
-	w := wf.Workflow{Slug: "vendas", Nodes: []wf.Node{
+	w := wf.Workflow{Slug: "sales", Nodes: []wf.Node{
 		{ID: "extract", Run: "python x.py", Host: "typo-01"},
 	}}
 
@@ -628,7 +628,7 @@ func TestWithNoHostsTheMessageSaysWhereTheyComeFrom(t *testing.T) {
 		RunID: uuid.New(), Persist: &spyPersister{}, Report: &spyReporter{},
 		Process: &namedExecutor{name: "process"},
 	}
-	w := wf.Workflow{Slug: "vendas", Nodes: []wf.Node{
+	w := wf.Workflow{Slug: "sales", Nodes: []wf.Node{
 		{ID: "extract", Run: "python x.py", Host: "dlt-runner-01"},
 	}}
 	err := r.Run(context.Background(), w)

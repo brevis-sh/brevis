@@ -20,8 +20,8 @@ type served struct {
 }
 
 type result struct {
-	cancelled int
-	err       error
+	canceled int
+	err      error
 }
 
 func serve(t *testing.T, drainTimeout time.Duration) *served {
@@ -81,8 +81,8 @@ func TestServeReturnsOnlyAfterTheRunningStepIsRead(t *testing.T) {
 	if !ok {
 		t.Fatal("Serve did not return after the exit was read")
 	}
-	if r.err != nil || r.cancelled != 0 {
-		t.Errorf("Serve = (%d, %v), wanted (0, nil)", r.cancelled, r.err)
+	if r.err != nil || r.canceled != 0 {
+		t.Errorf("Serve = (%d, %v), wanted (0, nil)", r.canceled, r.err)
 	}
 	if _, err := http.Get(s.url + "/health"); err == nil { //nolint:noctx,bodyclose
 		t.Error("the listener is still up after Serve returned")
@@ -96,8 +96,8 @@ func TestServeWithNothingRunningStopsAtOnce(t *testing.T) {
 	if !ok {
 		t.Fatal("Serve did not return with nothing to drain")
 	}
-	if r.err != nil || r.cancelled != 0 {
-		t.Errorf("Serve = (%d, %v), wanted (0, nil)", r.cancelled, r.err)
+	if r.err != nil || r.canceled != 0 {
+		t.Errorf("Serve = (%d, %v), wanted (0, nil)", r.canceled, r.err)
 	}
 }
 
@@ -113,8 +113,8 @@ func TestADrainPastItsTimeoutCancelsTheWholeGroup(t *testing.T) {
 	if !ok {
 		t.Fatal("Serve did not return after its drain timed out")
 	}
-	if r.err != nil || r.cancelled != 1 {
-		t.Errorf("Serve = (%d, %v), wanted (1, nil)", r.cancelled, r.err)
+	if r.err != nil || r.canceled != 1 {
+		t.Errorf("Serve = (%d, %v), wanted (1, nil)", r.canceled, r.err)
 	}
 	time.Sleep(1500 * time.Millisecond)
 	if _, err := os.Stat(marker); err == nil {
@@ -137,7 +137,7 @@ func TestASecondSignalEndsADrainThatHasNoLimit(t *testing.T) {
 	if !ok {
 		t.Fatal("Serve did not return after the second signal")
 	}
-	if r.err != nil || r.cancelled != 1 {
-		t.Errorf("Serve = (%d, %v), wanted (1, nil)", r.cancelled, r.err)
+	if r.err != nil || r.canceled != 1 {
+		t.Errorf("Serve = (%d, %v), wanted (1, nil)", r.canceled, r.err)
 	}
 }

@@ -603,15 +603,15 @@ func (w Workflow) Validate() error {
 		return err
 	}
 
-	vistos := make(map[string]struct{}, len(w.Nodes))
+	seen := make(map[string]struct{}, len(w.Nodes))
 	for _, n := range w.Nodes {
 		if n.ID == "" {
 			return fmt.Errorf("workflow %q has a step with no id", w.Slug)
 		}
-		if _, dup := vistos[n.ID]; dup {
+		if _, dup := seen[n.ID]; dup {
 			return fmt.Errorf("workflow %q: duplicate step id: %q", w.Slug, n.ID)
 		}
-		vistos[n.ID] = struct{}{}
+		seen[n.ID] = struct{}{}
 
 		hasRun, hasAction := n.Run != "", n.Action != ""
 		switch {
@@ -687,10 +687,10 @@ func (w Workflow) Validate() error {
 	}
 
 	for _, e := range w.Edges {
-		if _, ok := vistos[e.From]; !ok {
+		if _, ok := seen[e.From]; !ok {
 			return fmt.Errorf("workflow %q: dependency %q does not exist", w.Slug, e.From)
 		}
-		if _, ok := vistos[e.To]; !ok {
+		if _, ok := seen[e.To]; !ok {
 			return fmt.Errorf("workflow %q: dependency %q does not exist", w.Slug, e.To)
 		}
 		if e.From == e.To {

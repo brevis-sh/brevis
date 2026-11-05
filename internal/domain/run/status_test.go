@@ -87,7 +87,7 @@ func TestFailedIsNotTerminal(t *testing.T) {
 
 // Canceling has to be possible from any active state -- and only from active
 // ones.
-func TestCancelling(t *testing.T) {
+func TestCanceling(t *testing.T) {
 	for _, from := range []Status{StatusCreated, StatusQueued, StatusRunning, StatusRetrying} {
 		if err := Validate(from, StatusCanceled); err != nil {
 			t.Errorf("it should be possible to cancel from %s: %v", from, err)

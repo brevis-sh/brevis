@@ -65,8 +65,8 @@ func TestAcceptanceCriterion_100Runs_Concurrency5(t *testing.T) {
 
 	for i := 0; i < total; i++ {
 		r, err := repo.Create(ctx, dom.Run{
-			WorkflowSlug:   "teste",
-			IdempotencyKey: fmt.Sprintf("aceite-%d", i),
+			WorkflowSlug:   "test",
+			IdempotencyKey: fmt.Sprintf("acceptance-%d", i),
 			Definition:     []byte(`{}`),
 		})
 		if err != nil {
@@ -180,15 +180,15 @@ func TestIdempotencyPreventsADuplicateRun(t *testing.T) {
 	ctx := context.Background()
 	repo := postgres.NewRunRepo(pool)
 
-	r := dom.Run{WorkflowSlug: "w", IdempotencyKey: "mesma-chave", Definition: []byte(`{}`)}
+	r := dom.Run{WorkflowSlug: "w", IdempotencyKey: "same-key", Definition: []byte(`{}`)}
 	if _, err := repo.Create(ctx, r); err != nil {
 		t.Fatal(err)
 	}
 	_, err := repo.Create(ctx, dom.Run{
-		WorkflowSlug: "w", IdempotencyKey: "mesma-chave", Definition: []byte(`{}`),
+		WorkflowSlug: "w", IdempotencyKey: "same-key", Definition: []byte(`{}`),
 	})
 	if !errors.Is(err, postgres.ErrAlreadyExists) {
-		t.Fatalf("error = %v, wanted ErrJaExiste", err)
+		t.Fatalf("error = %v, wanted ErrAlreadyExists", err)
 	}
 }
 
@@ -239,7 +239,7 @@ func TestClaimDoesNotHandOutTheSameItemTwice(t *testing.T) {
 	}
 
 	var mu sync.Mutex
-	vistos := map[uuid.UUID]int{}
+	seen := map[uuid.UUID]int{}
 	var wg sync.WaitGroup
 
 	for w := 0; w < 4; w++ {
@@ -253,17 +253,17 @@ func TestClaimDoesNotHandOutTheSameItemTwice(t *testing.T) {
 			}
 			mu.Lock()
 			for _, it := range items {
-				vistos[it.RunID]++
+				seen[it.RunID]++
 			}
 			mu.Unlock()
 		}(w)
 	}
 	wg.Wait()
 
-	if len(vistos) != n {
-		t.Errorf("%d runs claimed, wanted %d", len(vistos), n)
+	if len(seen) != n {
+		t.Errorf("%d runs claimed, wanted %d", len(seen), n)
 	}
-	for id, c := range vistos {
+	for id, c := range seen {
 		if c > 1 {
 			t.Errorf("run %s delivered %d times", id, c)
 		}
@@ -285,7 +285,7 @@ func TestRecoverReturnsADeadWorkersItem(t *testing.T) {
 	if err := queue.Enqueue(ctx, r.ID, 0, time.Time{}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := queue.Claim(ctx, "worker-que-vai-morrer", 1); err != nil {
+	if _, err := queue.Claim(ctx, "worker-about-to-die", 1); err != nil {
 		t.Fatal(err)
 	}
 
@@ -316,14 +316,14 @@ func TestRecoveringOrphansPutsTheRunBackInTheQueue(t *testing.T) {
 	repo := postgres.NewRunRepo(pool)
 	queue := queue.New(pool.Pool)
 
-	r, err := repo.Create(ctx, dom.Run{WorkflowSlug: "w", IdempotencyKey: "orfa", Definition: []byte(`{}`)})
+	r, err := repo.Create(ctx, dom.Run{WorkflowSlug: "w", IdempotencyKey: "orphan", Definition: []byte(`{}`)})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err := queue.Enqueue(ctx, r.ID, 0, time.Time{}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := queue.Claim(ctx, "worker-que-vai-morrer", 1); err != nil {
+	if _, err := queue.Claim(ctx, "worker-about-to-die", 1); err != nil {
 		t.Fatal(err)
 	}
 	// The worker did get as far as marking running before dying -- the exact
@@ -337,7 +337,7 @@ func TestRecoveringOrphansPutsTheRunBackInTheQueue(t *testing.T) {
 	}
 
 	d := scheduler.New(scheduler.Config{
-		Worker: "vivo", MaxAttempts: 3, Visibility: time.Nanosecond,
+		Worker: "alive", MaxAttempts: 3, Visibility: time.Nanosecond,
 	}, queue, repo, func(context.Context, uuid.UUID) error { return nil }, noLog())
 
 	n, err := d.RecoverOrphans(ctx)
@@ -374,7 +374,7 @@ func TestAnOrphanStopsComingBackWhenTheAttemptsRunOut(t *testing.T) {
 	repo := postgres.NewRunRepo(pool)
 	queue := queue.New(pool.Pool)
 
-	r, err := repo.Create(ctx, dom.Run{WorkflowSlug: "w", IdempotencyKey: "orfa2", Definition: []byte(`{}`)})
+	r, err := repo.Create(ctx, dom.Run{WorkflowSlug: "w", IdempotencyKey: "orphan2", Definition: []byte(`{}`)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -382,10 +382,10 @@ func TestAnOrphanStopsComingBackWhenTheAttemptsRunOut(t *testing.T) {
 		t.Fatal(err)
 	}
 	d := scheduler.New(scheduler.Config{
-		Worker: "vivo", MaxAttempts: 1, Visibility: time.Nanosecond,
+		Worker: "alive", MaxAttempts: 1, Visibility: time.Nanosecond,
 	}, queue, repo, func(context.Context, uuid.UUID) error { return nil }, noLog())
 
-	if _, err := queue.Claim(ctx, "morto", 1); err != nil {
+	if _, err := queue.Claim(ctx, "dead", 1); err != nil {
 		t.Fatal(err)
 	}
 	if err := repo.Transition(ctx, r.ID, dom.StatusQueued); err != nil {
@@ -433,7 +433,7 @@ func TestTheAlertGoesOutOnceWhenTheAttemptsRunOut(t *testing.T) {
 	queue := queue.New(pool.Pool)
 
 	r, err := repo.Create(ctx, dom.Run{
-		WorkflowSlug: "id_verification", IdempotencyKey: "falha",
+		WorkflowSlug: "id_verification", IdempotencyKey: "fail",
 		TriggerType: "schedule", Definition: []byte(`{"Tags":["acme","id","dbt"]}`),
 	})
 	if err != nil {
@@ -678,7 +678,7 @@ func TestAWorkflowAtItsLimitDoesNotBlockTheOthers(t *testing.T) {
 	repo := postgres.NewRunRepo(pool)
 	queue := queue.New(pool.Pool)
 
-	enqueue(t, repo, queue, "travado", 5, 1)
+	enqueue(t, repo, queue, "stuck", 5, 1)
 	enqueue(t, repo, queue, "livre_a", 2, 0)
 	enqueue(t, repo, queue, "livre_b", 2, 0)
 
@@ -699,7 +699,7 @@ func TestWithNoLimitItHandsOutEverythingThatFits(t *testing.T) {
 	repo := postgres.NewRunRepo(pool)
 	queue := queue.New(pool.Pool)
 
-	enqueue(t, repo, queue, "sem_limite", 6, 0)
+	enqueue(t, repo, queue, "no_limit", 6, 0)
 
 	items, err := queue.Claim(context.Background(), "w", 4)
 	if err != nil {
@@ -784,7 +784,7 @@ func TestTheAlertCarriesTheStepAndTheLog(t *testing.T) {
 	queue := queue.New(pool.Pool)
 
 	r, err := repo.Create(ctx, dom.Run{
-		WorkflowSlug: "vendors_inmet_observation", IdempotencyKey: "com-log",
+		WorkflowSlug: "vendors_inmet_observation", IdempotencyKey: "with-log",
 		TriggerType: "schedule", Definition: []byte(`{"Tags":["acme","vendors"]}`),
 	})
 	if err != nil {
@@ -805,7 +805,7 @@ func TestTheAlertCarriesTheStepAndTheLog(t *testing.T) {
 		if err := repo.StartTask(ctx, id, dom.Step("fetch_observations"), 0); err != nil {
 			return err
 		}
-		output := "conectando na api do inmet\nHTTP 503 Service Unavailable\ndesistindo after 3 attempts"
+		output := "connecting to the inmet api\nHTTP 503 Service Unavailable\ngiving up after 3 attempts"
 		code := 1
 		if err := repo.FinishTask(ctx, id, dom.Step("fetch_observations"), 0,
 			dom.StatusFailed, &code, "exited with code 1", output); err != nil {

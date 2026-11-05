@@ -167,18 +167,18 @@ func (m Brand) Validate() error {
 	if strings.TrimSpace(m.Title) == "" {
 		return fmt.Errorf("the title cannot be empty")
 	}
-	for name, colour := range m.Theme.colours() {
+	for name, color := range m.Theme.colors() {
 		// Empty keeps the product's color; anything else must be hex.
-		if colour != "" && !hex.MatchString(colour) {
-			return fmt.Errorf("color %s: %q is not a hex value (#rgb, #rrggbb or #rrggbbaa)", name, colour)
+		if color != "" && !hex.MatchString(color) {
+			return fmt.Errorf("color %s: %q is not a hex value (#rgb, #rrggbb or #rrggbbaa)", name, color)
 		}
 	}
 	if m.ThemeLight != nil {
-		for name, colour := range m.ThemeLight.colours() {
+		for name, color := range m.ThemeLight.colors() {
 			// Empty is allowed here and only here: it keeps the product's
 			// light value for that color.
-			if colour != "" && !hex.MatchString(colour) {
-				return fmt.Errorf("color theme_light.%s: %q is not a hex value (#rgb, #rrggbb or #rrggbbaa)", name, colour)
+			if color != "" && !hex.MatchString(color) {
+				return fmt.Errorf("color theme_light.%s: %q is not a hex value (#rgb, #rrggbb or #rrggbbaa)", name, color)
 			}
 		}
 	}
@@ -210,7 +210,7 @@ func validateLogo(logo string) error {
 		"starting with /", logo)
 }
 
-func (t Theme) colours() map[string]string {
+func (t Theme) colors() map[string]string {
 	return map[string]string{
 		// Keyed by the YAML NAME, not the Go field: the error this feeds names a
 		// color, and naming one the file does not contain sends whoever is
@@ -291,11 +291,11 @@ func writeTheme(b *strings.Builder, t Theme) {
 // withAlpha appends the alpha channel to a 6-digit color. Short formats, or ones
 // that already carry alpha, are returned untouched — mixing channels would give
 // a wrong color instead of a visible error.
-func withAlpha(colour, alpha string) string {
-	if len(colour) != 7 {
-		return colour
+func withAlpha(color, alpha string) string {
+	if len(color) != 7 {
+		return color
 	}
-	return colour + alpha
+	return color + alpha
 }
 
 // Lines splits the sentence for the template. The break is the author's, and

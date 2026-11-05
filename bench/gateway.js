@@ -78,7 +78,7 @@ function body() {
         id: `${seed}-${i}`,
         total: '1500.25',
         status: 'PAID',
-        customer: { id: 7741, uf: 'SP', nome: 'Fulano de Tal' },
+        customer: { id: 7741, uf: 'SP', name: 'John Doe' },
         items: [{ sku: 'X-1', qtd: 2 }, { sku: 'Y-9', qtd: 1 }],
       },
     });

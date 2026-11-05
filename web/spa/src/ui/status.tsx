@@ -5,7 +5,7 @@ import { useT } from "../i18n";
 // a ring is waiting, a spinning ring is working, a diamond needs a person. The
 // mark itself (.st, .st-<shape>) is the server stylesheet's; the color is the
 // token's text class, written out whole so it stays in the sheet.
-const LOOK: Record<string, [shape: string, colour: string]> = {
+const LOOK: Record<string, [shape: string, color: string]> = {
   success: ["dot", "text-state-success"],
   failed: ["diamond", "text-state-failed"],
   running: ["spin", "text-state-running"],
@@ -52,16 +52,16 @@ const look = (kind: string) => LOOK[kind] ?? ["ring", "text-muted"];
 /** The mark and the word. `label` replaces the word; "" leaves the mark alone, titled. */
 export function Status({ kind, label }: { kind: string; label?: string }) {
   const word = useStatusWord()(kind);
-  const [shape, colour] = look(kind);
+  const [shape, color] = look(kind);
   if (label === "") return <StatusMark kind={kind} />;
-  return <span className={`st st-${shape} ${colour}`}>{label ?? word}</span>;
+  return <span className={`st st-${shape} ${color}`}>{label ?? word}</span>;
 }
 
 /** The mark alone, for a dense column where the word is said elsewhere. */
 export function StatusMark({ kind }: { kind: string }) {
   const word = useStatusWord()(kind);
-  const [shape, colour] = look(kind);
-  return <span className={`st st-mark st-${shape} ${colour}`} title={word} role="img" aria-label={word} />;
+  const [shape, color] = look(kind);
+  return <span className={`st st-mark st-${shape} ${color}`} title={word} role="img" aria-label={word} />;
 }
 
 /** "↻2" on a run on its second attempt or later; attempt counts from 0, so nothing on a first try. */

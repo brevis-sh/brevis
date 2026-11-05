@@ -158,7 +158,7 @@ func TestWithNoStateDirARestartStillForgets(t *testing.T) {
 
 // Canceling what was restored is the honest no-op canceling a finished one
 // always was: what was asked for is already true.
-func TestCancellingARestoredExecutionIsANoOp(t *testing.T) {
+func TestCancelingARestoredExecutionIsANoOp(t *testing.T) {
 	dir := t.TempDir()
 	opt := agent.Options{Shell: []string{"/bin/sh", "-c"}, StateDir: dir}
 	_ = finish(t, agent.New(opt), "p6", `true`)

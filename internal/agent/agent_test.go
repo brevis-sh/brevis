@@ -52,7 +52,7 @@ func pair(t *testing.T, opt agent.Options) *remote.Executor {
 
 func task(id, command string) execution.TaskExec {
 	return execution.TaskExec{
-		ExecutionID: id, NodeID: "step", Workflow: "vendas",
+		ExecutionID: id, NodeID: "step", Workflow: "sales",
 		RunID: "run-1", Command: command,
 	}
 }

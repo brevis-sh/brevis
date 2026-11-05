@@ -7,7 +7,7 @@ import (
 )
 
 // THE MARKS ARE OTHER PEOPLE'S WORK, and their licenses travel with them.
-func TestTheLogosLicencesAreBesideThem(t *testing.T) {
+func TestTheLogosLicensesAreBesideThem(t *testing.T) {
 	for _, f := range []string{"LICENSE-devicon", "LICENSE-simple-icons"} {
 		raw, err := os.ReadFile(f)
 		if err != nil {

@@ -395,14 +395,14 @@ func TestARenewalErrorIsNotALostClaim(t *testing.T) {
 	q := queue.New(pool.Pool)
 	id := queuedRun(t, pool, q, "blip")
 
-	var executions, cancelled atomic.Int32
+	var executions, canceled atomic.Int32
 	d := scheduler.New(longRun, q, repo, func(ctx context.Context, _ uuid.UUID) error {
 		executions.Add(1)
 		select {
 		case <-time.After(threeWindows):
 			return nil
 		case <-ctx.Done():
-			cancelled.Add(1)
+			canceled.Add(1)
 			return ctx.Err()
 		}
 	}, noLog())
@@ -415,9 +415,9 @@ func TestARenewalErrorIsNotALostClaim(t *testing.T) {
 	}
 
 	r := dispatchUntilSettled(t, d, repo, id, nil)
-	if n := executions.Load(); n != 1 || cancelled.Load() != 0 {
+	if n := executions.Load(); n != 1 || canceled.Load() != 0 {
 		t.Errorf("executed %d times, canceled %d; one renewal error must change neither",
-			n, cancelled.Load())
+			n, canceled.Load())
 	}
 	if r.Status != dom.StatusSuccess {
 		t.Errorf("run = %s; wanted success", r.Status)
@@ -492,7 +492,7 @@ func TestALostClaimCancelsTheRunAndWritesNothing(t *testing.T) {
 	id := queuedRun(t, pool, q, "lost")
 
 	returned := make(chan struct{})
-	var cancelledAfter atomic.Int64
+	var canceledAfter atomic.Int64
 	d := scheduler.New(lostClaim, q, repo, func(ctx context.Context, _ uuid.UUID) error {
 		defer close(returned)
 		if _, err := pool.Exec(ctx, `
@@ -503,7 +503,7 @@ func TestALostClaimCancelsTheRunAndWritesNothing(t *testing.T) {
 		taken := time.Now()
 		select {
 		case <-ctx.Done():
-			cancelledAfter.Store(int64(time.Since(taken)))
+			canceledAfter.Store(int64(time.Since(taken)))
 			return ctx.Err()
 		case <-time.After(threeWindows):
 			return nil
@@ -512,7 +512,7 @@ func TestALostClaimCancelsTheRunAndWritesNothing(t *testing.T) {
 	d.Channel = alerts.ChannelSlack
 
 	untilExecuted(t, d, returned)
-	if after := time.Duration(cancelledAfter.Load()); after == 0 {
+	if after := time.Duration(canceledAfter.Load()); after == 0 {
 		t.Error("the run went on after its claim was taken; it has to be canceled")
 	} else if after > lostClaim.Visibility {
 		t.Errorf("the run was canceled %s after its claim was taken; the heartbeat is every %s",

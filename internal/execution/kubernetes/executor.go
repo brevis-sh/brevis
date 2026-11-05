@@ -216,7 +216,7 @@ func (e *Executor) waitExit(ctx context.Context, name string, t execution.TaskEx
 		if !following && time.Since(started) > e.opts.StartTimeout {
 			reason := pod.WaitReason()
 			if reason == "" {
-				reason = "fase " + pod.Phase()
+				reason = "phase " + pod.Phase()
 			}
 			if scheduling := e.whyNotScheduled(ctx, name); scheduling != "" {
 				reason = scheduling

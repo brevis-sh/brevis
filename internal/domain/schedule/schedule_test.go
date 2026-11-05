@@ -17,7 +17,7 @@ func ptr(t time.Time) *time.Time { return &t }
 
 // catchup=true fills the whole gap: every missed slot becomes a run, because
 // every day has a meaning of its own.
-func TestCatchupTruePreencheALacuna(t *testing.T) {
+func TestCatchupTrueFillsTheGap(t *testing.T) {
 	s := Schedule{
 		Cron: "0 2 * * *", Timezone: "UTC", Catchup: true, Active: true,
 		LastSlot: ptr(inUTC("2026-01-01T02:00:00Z")),
@@ -137,10 +137,10 @@ func TestAnInactiveScheduleProducesNoSlot(t *testing.T) {
 // schedules nothing, and the error would surface far from whoever wrote the
 // file.
 func TestValidation(t *testing.T) {
-	if _, _, err := (Schedule{Cron: "invalido", Timezone: "UTC"}).Parse(); err == nil {
+	if _, _, err := (Schedule{Cron: "invalid", Timezone: "UTC"}).Parse(); err == nil {
 		t.Error("expected an invalid-cron error")
 	}
-	if _, _, err := (Schedule{Cron: "0 2 * * *", Timezone: "Marte/Olimpo"}).Parse(); err == nil {
+	if _, _, err := (Schedule{Cron: "0 2 * * *", Timezone: "Mars/Olympus"}).Parse(); err == nil {
 		t.Error("expected an invalid-timezone error")
 	}
 	if _, _, err := (Schedule{Cron: "0 2 * * *"}).Parse(); err != nil {

@@ -188,13 +188,13 @@ func textRolesReadable(t *testing.T, tok map[string]string) {
 // THE STATE COLORS ARE TEXT TOO, which their own comment says: "they are
 // used as text on a pill and not only as a dot". A dot would need 3:1; a word
 // needs 4.5:1, and the word is what is there.
-func TestEveryStateColourIsReadableAsAWord(t *testing.T) {
+func TestEveryStateColorIsReadableAsAWord(t *testing.T) {
 	for _, theme := range themes {
-		t.Run(theme, func(t *testing.T) { stateColoursReadable(t, tokens(t, theme)) })
+		t.Run(theme, func(t *testing.T) { stateColorsReadable(t, tokens(t, theme)) })
 	}
 }
 
-func stateColoursReadable(t *testing.T, tok map[string]string) {
+func stateColorsReadable(t *testing.T, tok map[string]string) {
 	const aa = 4.5
 
 	states := []string{}

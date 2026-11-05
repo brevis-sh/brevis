@@ -239,17 +239,17 @@ func TestTheGraphRefusesInvalidInput(t *testing.T) {
 		path     string
 		expected int
 	}{
-		{"workflow inexistente", newUI(defsFake{err: errors.New("no rows")}, execsFake{}),
-			"/api/workflows/fantasma/graph", http.StatusNotFound},
-		{"uuid malformado", newUI(defsFake{}, execsFake{}),
+		{"unknown workflow", newUI(defsFake{err: errors.New("no rows")}, execsFake{}),
+			"/api/workflows/ghost/graph", http.StatusNotFound},
+		{"malformed uuid", newUI(defsFake{}, execsFake{}),
 			"/api/runs/nao-e-uuid/graph", http.StatusBadRequest},
-		{"run inexistente", newUI(defsFake{}, execsFake{err: errors.New("no rows")}),
+		{"unknown run", newUI(defsFake{}, execsFake{err: errors.New("no rows")}),
 			"/api/runs/" + uuid.New().String() + "/graph", http.StatusNotFound},
-		{"ciclo gravado no testDB", newUI(defsFake{w: wf.Workflow{
-			Slug:  "ciclo",
+		{"cycle stored in the testDB", newUI(defsFake{w: wf.Workflow{
+			Slug:  "cycle",
 			Nodes: []wf.Node{{ID: "a", Run: "x"}, {ID: "b", Run: "y"}},
 			Edges: []wf.Edge{{From: "a", To: "b"}, {From: "b", To: "a"}},
-		}}, execsFake{}), "/api/workflows/ciclo/graph", http.StatusUnprocessableEntity},
+		}}, execsFake{}), "/api/workflows/cycle/graph", http.StatusUnprocessableEntity},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -266,8 +266,8 @@ func fourStages() []postgres.Stage {
 	ms := int64(2400)
 	return []postgres.Stage{
 		{Name: "check", State: "done"},
-		{Name: "extract", State: "done", Ms: &ms, Numbers: map[string]any{"paginas": 300}},
-		{Name: "transform", State: "done", Numbers: map[string]any{"pulados": 13}},
+		{Name: "extract", State: "done", Ms: &ms, Numbers: map[string]any{"pages": 300}},
+		{Name: "transform", State: "done", Numbers: map[string]any{"skipped": 13}},
 		{Name: "load", State: "running"},
 	}
 }
@@ -642,7 +642,7 @@ func TestAnEdgeLabelReachesTheDrawing(t *testing.T) {
 // The first version of this test grepped the whole body for `"label"` and
 // failed: nodes have carried a `label` since the graph existed. Asserting on
 // the edges is the check it meant to be.
-func TestAnUnlabelledEdgeCarriesNoLabel(t *testing.T) {
+func TestAnUnlabeledEdgeCarriesNoLabel(t *testing.T) {
 	res, g := request(t, newUI(defsFake{w: diamond()}, execsFake{}), "/api/workflows/diamond/graph")
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d", res.StatusCode)
