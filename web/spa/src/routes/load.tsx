@@ -12,10 +12,9 @@ import { LoadBars } from "../ui/sparkline";
 import { Freshness } from "../ui/status";
 import { StepConfigPanel } from "./load-config";
 import { useRefreshRuns } from "./run-now";
-import { fieldErrors, triggerRun } from "../api/trigger";
+import { fieldErrors, fieldText, triggerRun } from "../api/trigger";
 import { toast } from "../shell/toast";
-import { ErrorText } from "../api/errors";
-import { useErrorText } from "../api/errors";
+import { ErrorText, useErrorText } from "../api/errors";
 
 const short = (id: string) => id.slice(0, 8);
 const th = "px-2.5 py-2 text-[11.5px] font-medium whitespace-nowrap text-faint";
@@ -273,7 +272,7 @@ function Actions({ workflow, d, ghost }: { workflow: string; d: LoadDetail | nul
       navigate(r.href);
     } catch (e) {
       const [first] = Object.entries(fieldErrors(e));
-      toast(first ? `${first[0]}: ${first[1]}` : errText(e), { kind: "fail" });
+      toast(first ? `${first[0]}: ${fieldText(t, first[1])}` : errText(e), { kind: "fail" });
     } finally {
       setPending(false);
     }

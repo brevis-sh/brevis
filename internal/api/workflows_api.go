@@ -22,11 +22,6 @@ func (u *UI) registerWorkflowsAPI(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/workflows/{slug}/toggle", u.toggleJSON)
 }
 
-// jsonError is the failure every JSON endpoint answers: never an HTML page.
-func jsonError(w http.ResponseWriter, status int, msg string) {
-	writeJSON(w, status, map[string]string{"error": msg})
-}
-
 // logoView is a language, tool or connector: the logo key and its name in the
 // reader's language.
 type logoView struct {
