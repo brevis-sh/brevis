@@ -97,7 +97,7 @@ func TestTheSnapshotRefusesToOverwriteWhatTheSourceSent(t *testing.T) {
 // TestSkipWithoutDropsInsteadOfFailing: a row without the field that composes
 // the key has no stable identity and cannot go in -- but it is also no reason
 // to
-// derrubar a janela inteira.
+// take the whole window down.
 func TestSkipWithoutDropsInsteadOfFailing(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = fmt.Fprint(w, `[{"id":"1"},{"id":null},{"outro":2},{"id":"4"}]`)
@@ -124,7 +124,7 @@ func TestSkipWithoutDropsInsteadOfFailing(t *testing.T) {
 
 // TestTheNamespaceChangesTheID is item 1: the namespace belongs to whoever uses
 // it, not to the
-// biblioteca.
+// library.
 func TestTheNamespaceChangesTheID(t *testing.T) {
 	record := func() map[string]any {
 		return map[string]any{

@@ -1053,7 +1053,7 @@ func TestIntegrationInlineLimitPicksTheStrategy(t *testing.T) {
 // It exists because of a regression: phase 0 stopped passing Provider and Entity
 // from the facade to the loader, and every table created since then came out
 // with no labels. Nothing broke, no count changed -- only BigQuery's bill
-// deixou de saber quem escreve ali.
+// stopped knowing who writes there.
 func TestIntegrationProvenanceLabelsTheTable(t *testing.T) {
 	env := requireIntegration(t)
 	ctx := context.Background()

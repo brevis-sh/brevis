@@ -98,7 +98,7 @@ func elide(s string) string {
 // `data_type` is the bare name -- `varchar`, not `varchar(255)` -- which is
 // what makes this a short list. A type it does not recognize returns false and
 // the diff leaves that column alone: proposing an ALTER on a type nobody
-// modelled is worse than doing nothing.
+// modeled is worse than doing nothing.
 func declaredType(my string) (core.ColumnType, bool) {
 	switch my {
 	case "char", "varchar", "text", "tinytext", "mediumtext", "longtext", "enum":

@@ -155,7 +155,7 @@ func elide(s string) string {
 // It answers "what does this column hold", not "what is it called": both
 // `character varying` and `text` are TypeString here, and a column this does
 // not recognize returns false rather than a guess -- the diff then leaves it
-// alone instead of proposing an ALTER on a type nobody modelled.
+// alone instead of proposing an ALTER on a type nobody modeled.
 func declaredType(pg string) (core.ColumnType, bool) {
 	switch pg {
 	case "text", "character varying", "character", "citext", "uuid":

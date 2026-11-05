@@ -208,7 +208,7 @@ func TestTheSDKsTransformersSayWhatTheyDo(t *testing.T) {
 	}
 }
 
-// Labelling is bounded: past the ceiling a transformer is named by its
+// Labeling is bounded: past the ceiling a transformer is named by its
 // function, the way one the SDK did not make always is.
 func TestLabelsStopAtTheirCeiling(t *testing.T) {
 	saved := labelCeiling

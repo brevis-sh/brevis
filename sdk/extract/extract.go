@@ -368,7 +368,7 @@ func isGzip(resp *http.Response, url string) bool {
 }
 
 // gzipReader closes both: the decompressor and the connection under it. Finish
-// so o de cima deixaria a conexao presa ate o timeout.
+// only the top one would leave the connection held until the timeout.
 type gzipReader struct {
 	*gzip.Reader
 	under io.Closer

@@ -78,7 +78,9 @@ const (
 //
 // The json tags are the on-disk format; UnmarshalJSON also reads the spelling
 // the format had before it went English (versao, registros, partes, numeros,
-// gravado_em).
+// gravado_em): a checkpoint written by an older release carries the
+// Portuguese keys and must still resume. The old spelling can go once no such
+// checkpoint can exist.
 type Manifest struct {
 	Version   int      `json:"version"`
 	Records   int64    `json:"records"`

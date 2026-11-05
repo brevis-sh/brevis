@@ -74,7 +74,7 @@ var _ core.Locator = Table{}
 
 // Locate satisfies sdk.Locator: postgres://database/schema/table.
 //
-// The database comes from the DSN, parsed and never dialled, or from Conn's
+// The database comes from the DSN, parsed and never dialed, or from Conn's
 // config; host, port and user are read past and dropped. An unqualified Name
 // takes the first schema of the DSN's search_path when it sets one, and
 // `public` otherwise -- the server's default. A search_path set on the role or

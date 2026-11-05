@@ -28,8 +28,7 @@ func TestRedactLetsNoSecretThrough(t *testing.T) {
 		"https://api.exemplo.com/v1?sessionId=SEGREDO",
 		"https://api.exemplo.com/v1?credentials=SEGREDO",
 		// The worst of them all: the password in the userinfo, which url.String
-		// prints
-		// inteira.
+		// prints whole.
 		"https://usuario:SEGREDO@api.exemplo.com/v1",
 		// And combined, so it does not pass by accident on a single one.
 		"https://usuario:SEGREDO@api.exemplo.com/v1?token=SEGREDO&latitude=-23.5",

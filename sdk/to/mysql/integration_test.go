@@ -547,7 +547,7 @@ func TestIntegrationCreateTableFromTheDeclaration(t *testing.T) {
 //
 // MySQL's half. The interesting part is the same one Postgres found: an
 // `ADD COLUMN ... DEFAULT` backfills the rows already there, so the two
-// statements have to stay apart. And MySQL needs the parenthesised form for a
+// statements have to stay apart. And MySQL needs the parenthesized form for a
 // TEXT default even in SET DEFAULT, which only this test can settle.
 func TestIntegrationEvolveAddsAColumnWithoutRewritingHistory(t *testing.T) {
 	db := open(t)

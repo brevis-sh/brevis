@@ -16,13 +16,12 @@ import (
 	"brevis.sh/brevis/sdk/internal/core"
 )
 
-// TestTheSecondRunUsesWhatCameFromTheVolume e a prova do §7.13 da spec: rodar
+// TestTheSecondRunUsesWhatCameFromTheVolume is the proof of §7.13 of the spec: run
 // twice with the seed REMOVED after the first, and the second authenticating
 // with what came out of the store.
 //
 // It is literally what the consumer asked for -- to stop re-pasting the cookie
-// once per
-// janela.
+// once per window.
 func TestTheSecondRunUsesWhatCameFromTheVolume(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.Chmod(dir, 0o700); err != nil {

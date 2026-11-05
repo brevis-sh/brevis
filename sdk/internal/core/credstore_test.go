@@ -225,7 +225,7 @@ func TestAKeyOfTheWrongLength(t *testing.T) {
 // TestWithNoDirectoryItTurnsOffInsteadOfFailing: with no Dir and no env var, the
 // behavior is exactly what it was before the feature -- and that is how it stays
 // a shortcut, not a
-// requisito.
+// requirement.
 func TestWithNoDirectoryItTurnsOffInsteadOfFailing(t *testing.T) {
 	t.Setenv(EnvCredentialDir, "")
 	t.Setenv(EnvCredentialKey, "")
@@ -344,7 +344,7 @@ func TestASwappedKeyDoesNotDecrypt(t *testing.T) {
 	}
 }
 
-// TestAdulteracaoEDetectada: GCM autentica. Um byte trocado no texto cifrado
+// TestTamperingIsDetected: GCM authenticates. A byte changed in the ciphertext
 // has to invalidate, and not produce garbage that becomes a credential.
 func TestTamperingIsDetected(t *testing.T) {
 	s, dir := readyStore(t)

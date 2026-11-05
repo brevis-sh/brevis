@@ -48,7 +48,7 @@ func TestInsertSQLEscapesQuotes(t *testing.T) {
 // TestInsertSQLConflictsOnIngestionID: the SDK's dedup is on ingestion_id, and
 // swapping that column for another would make the dedup match on the wrong
 // thing in
-// silencio.
+// silence.
 func TestInsertSQLConflictsOnIngestionID(t *testing.T) {
 	got := InsertSQL("t", "s", []string{"a"}, core.MetadataID)
 	if !strings.Contains(got, `ON CONFLICT ("`+core.MetadataID+`")`) {

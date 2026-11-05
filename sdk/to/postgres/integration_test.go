@@ -277,7 +277,7 @@ func TestIntegrationTheReadIsStreamed(t *testing.T) {
 	// The first row has to arrive without waiting for the 50 thousand. The limit
 	// is generous on purpose: what it catches is the difference between a stream
 	// and a buffer, not the
-	// velocidade do servidor.
+	// server's speed.
 	if d := time.Since(start); d > 2*time.Second {
 		t.Errorf("the first row took %s; the driver seems to buffer", d)
 	}

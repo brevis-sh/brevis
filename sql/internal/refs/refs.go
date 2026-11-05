@@ -68,7 +68,7 @@ func Of(dialect, sql string) ([]string, error) {
 				prev = toks[i-1].Lower
 			}
 			opener = append(opener, prev)
-			// A parenthesised join -- FROM (a JOIN b) or JOIN (TABLE x) --
+			// A parenthesized join -- FROM (a JOIN b) or JOIN (TABLE x) --
 			// opens with a relation and no FROM before it.
 			if prev == "from" || prev == "join" {
 				j := i + 1
@@ -211,7 +211,7 @@ func readCTEs(toks []sqltok.Token, i int, ctes map[string]bool) int {
 
 // readFromItems reads one FROM/JOIN/USING item -- or, after FROM, a comma
 // list of them -- recording table names and their aliases. Subqueries,
-// table functions and parenthesised column lists are left to the main scan.
+// table functions and parenthesized column lists are left to the main scan.
 func readFromItems(toks []sqltok.Token, i int, list bool, refs *[]string, aliases map[string]bool) int {
 	for i < len(toks) {
 		for i < len(toks) && (toks[i].LowerIs("lateral") || toks[i].LowerIs("only")) {

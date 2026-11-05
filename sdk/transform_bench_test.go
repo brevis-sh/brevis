@@ -64,7 +64,7 @@ func BenchmarkOneTransformerAlone(b *testing.B) {
 
 // BenchmarkIngestionID isolates the id's composition, which the profile pointed
 // at as the
-// maior bloco sozinho.
+// biggest block by itself.
 func BenchmarkIngestionID(b *testing.B) {
 	fns := []Transformer{IngestionID()}
 	r := map[string]any{

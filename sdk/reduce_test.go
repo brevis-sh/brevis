@@ -223,7 +223,7 @@ func TestFinishSeesTheGroups(t *testing.T) {
 
 // The refusals fail at ASSEMBLY time, before the extraction: finding them
 // afterwards
-// custaria a janela do fornecedor.
+// would cost the provider's window.
 func TestWhatDoesNotFitRefusesBeforeExtracting(t *testing.T) {
 	for name, a := range map[string]Aggregator{
 		"Median":   Median("v"),

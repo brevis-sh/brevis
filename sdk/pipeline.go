@@ -379,7 +379,7 @@ func runPipeline(ctx context.Context, p *Pipeline) error {
 	return err
 }
 
-// montar resolves the stages and refuses what cannot run.
+// assemble resolves the stages and refuses what cannot run.
 //
 // It is PURE: no I/O, so the -dry-run can call exactly the same thing the real
 // run calls. An aggregator that does not exist, a name that collides with a

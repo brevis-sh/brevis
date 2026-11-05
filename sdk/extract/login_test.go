@@ -223,7 +223,7 @@ func TestLoginRefusesConfigurationThatCannotWork(t *testing.T) {
 
 // TestAMissingJSONFieldIsAnError: an absent token would become an empty header
 // and a 401 further down, blaming the API for a path this side wrote
-// errado.
+// wrong.
 func TestAMissingJSONFieldIsAnError(t *testing.T) {
 	_, err := core.JSONToken("data.accessToken")([]byte(`{"data":{"outro":"x"}}`))
 	if err == nil {

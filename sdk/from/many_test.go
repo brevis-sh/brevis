@@ -55,7 +55,7 @@ func drain(t *testing.T, source sdk.Reader, stats *sdk.Stats) ([]map[string]any,
 	return lines, nil
 }
 
-// TestManyJoinsTheSources: o caso base.
+// TestManyJoinsTheSources: the base case.
 func TestManyJoinsTheSources(t *testing.T) {
 	lines, err := drain(t, from.Many{Sources: []sdk.Reader{
 		fakeSource{name: "a", lines: 2},
@@ -170,7 +170,7 @@ func TestAFailureMidwayThroughASourceCountsToo(t *testing.T) {
 
 // TestEveryySourceFailingIsNotZeroRows: zero records from N good sources is a
 // result; zero because all N failed is a broken run, and the two must not
-// podem parecer a mesma coisa.
+// look like the same thing.
 func TestEveryySourceFailingIsNotZeroRows(t *testing.T) {
 	_, err := drain(t, from.Many{
 		Sources: []sdk.Reader{

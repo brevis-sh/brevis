@@ -91,7 +91,7 @@ func TestKeyWithMatchesPython(t *testing.T) {
 	}
 }
 
-// TestKeyWithRefusesAFloat64NamingTheField: a recusa do item 11 chega ao
+// TestKeyWithRefusesAFloat64NamingTheField: the refusal of item 11 reaches the
 // consumer through the door they use, and names the field -- without the name,
 // whoever reads the error does not know which of the six it is.
 func TestKeyWithRefusesAFloat64NamingTheField(t *testing.T) {
@@ -229,7 +229,7 @@ func TestTheUserAgentIsOursAndNotGos(t *testing.T) {
 }
 
 // TestTheCallersUserAgentWins: whoever needs to present as something else
-// continua podendo.
+// still can.
 func TestTheCallersUserAgentWins(t *testing.T) {
 	var seen string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

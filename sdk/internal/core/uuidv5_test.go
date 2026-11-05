@@ -9,7 +9,7 @@ import (
 
 // TestUUIDv5AgreesWithThePackage is the net that allows reimplementing the
 // formula
-// congelada.
+// frozen.
 //
 // A one-bit divergence here would change every ingestion_id already written -- a
 // previous load would stop matching a new one, and nobody would notice until the

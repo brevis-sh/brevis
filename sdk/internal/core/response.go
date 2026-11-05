@@ -49,7 +49,7 @@ func NewResponse(status int, header http.Header, url string, body []byte, preser
 	}
 }
 
-// decode aplica a escolha da Source.
+// decode applies the Source's choice.
 func (r Response) decode(v any) error {
 	if !r.preserveNumbers {
 		return json.Unmarshal(r.body, v)

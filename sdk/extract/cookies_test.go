@@ -81,7 +81,7 @@ func TestARenewedCookieSurvivesIntoTheNextPage(t *testing.T) {
 
 // TestTheCookieDoesNotGoTwice: the caller's header and the jar are the same
 // thing. If both go, the server receives two values for the same name and
-// escolhe um deles -- silenciosamente o errado.
+// picks one of them -- silently the wrong one.
 func TestTheCookieDoesNotGoTwice(t *testing.T) {
 	var raw string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

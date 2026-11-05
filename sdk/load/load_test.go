@@ -676,8 +676,7 @@ func TestDedupMergeRequiresTheIngestionIDColumn(t *testing.T) {
 	}
 
 	// And with no declaration at all there is nothing to check here -- the row
-	// is
-	// conferida na carga.
+	// is checked at load.
 	if _, err := resolveConfig(&core.LoadConfig{
 		ProjectID: "p", Dataset: "d", Table: "t", Format: "ndjson",
 		Dedup: core.DedupMerge,

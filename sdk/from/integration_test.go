@@ -22,7 +22,7 @@ import (
 	"brevis.sh/brevis/sdk/to"
 )
 
-// Os testes de object storage rodam contra o MinIO do
+// The object storage tests run against the MinIO in
 // docker-compose.drivers.yml:
 //
 //	docker compose -f docker-compose.drivers.yml up -d minio

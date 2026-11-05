@@ -193,8 +193,7 @@ func TestTheRotationAppliesToThePagesEvenWhenExpiresAtFails(t *testing.T) {
 			Refresh: &core.Refresh{
 				URL: srv.URL + "/api/auth/session",
 				// Without ExpiresAt the run goes on, and that is where it becomes
-				// observable
-				// se a rotacao chegou as paginas.
+				// observable whether the rotation reached the pages.
 			},
 		},
 	}
@@ -245,7 +244,7 @@ func TestAStoreWithoutExpiresAtWarnsAtAssembly(t *testing.T) {
 
 // TestAStoreWithExpiresAtDoesNotWarn: a warning that appears on the right
 // configuration
-// ensina a ignorar avisos.
+// teaches people to ignore warnings.
 func TestAStoreWithExpiresAtDoesNotWarn(t *testing.T) {
 	var buf bytes.Buffer
 	previous := slog.Default()

@@ -68,7 +68,7 @@ func TestQualifyQuotesEachPart(t *testing.T) {
 
 // TestQuoteEscapesABacktick: a backtick inside the name would close the
 // identifier and the
-// resto viraria SQL.
+// rest would become SQL.
 func TestQuoteEscapesABacktick(t *testing.T) {
 	if got := quote("a`b"); got != "`a``b`" {
 		t.Errorf("quote = %s", got)

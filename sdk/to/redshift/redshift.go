@@ -89,7 +89,7 @@ var _ core.Locator = Table{}
 // Locate satisfies sdk.Locator: redshift://database/schema/table.
 //
 // Redshift speaks Postgres's dialect, and the rules are Postgres's: the
-// database from the DSN, parsed and never dialled; an unquoted name folded; an
+// database from the DSN, parsed and never dialed; an unquoted name folded; an
 // unqualified one in the DSN's search_path, else `public`. With only an
 // Executor and no DSN there is no database to name, and nothing lands.
 func (t Table) Locate() string {
@@ -336,7 +336,7 @@ func MergeSQL(target, source string, columns []string, key string) string {
 		strings.Join(names, ", "), strings.Join(values, ", "))
 }
 
-// DropSQL apaga a temporaria.
+// DropSQL drops the temporary table.
 func DropSQL(temp string) string { return "DROP TABLE IF EXISTS " + temp }
 
 func quote(s string) string { return `"` + strings.ReplaceAll(s, `"`, `""`) + `"` }

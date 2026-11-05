@@ -215,7 +215,7 @@ func TestFilesRefusesDedup(t *testing.T) {
 
 // The partitioning reads the column the chain composed, not one the
 // destination
-// acrescenta.
+// adds.
 func TestFilesPartitionsByTheRowsColumn(t *testing.T) {
 	dir := t.TempDir()
 	records := []core.Envelope{{Payload: map[string]any{

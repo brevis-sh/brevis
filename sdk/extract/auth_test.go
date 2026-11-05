@@ -51,7 +51,7 @@ func TestAuthAppliesTheSecret(t *testing.T) {
 	}
 }
 
-// TestRefreshRenewsTheCookieForThePages: o mecanismo inteiro. A renovacao
+// TestRefreshRenewsTheCookieForThePages: the whole mechanism. The renewal
 // reissues the cookie, the jar absorbs it, and the following pages go with the
 // new one -- with nothing written anywhere.
 func TestRefreshRenewsTheCookieForThePages(t *testing.T) {
@@ -216,7 +216,7 @@ func TestAuthRefusesConfigurationThatCannotWork(t *testing.T) {
 	}
 }
 
-// TestAMissingEnvVarSaysItsName: senao vira header vazio e 401 culpando a API.
+// TestAMissingEnvVarSaysItsName: otherwise it becomes an empty header and a 401 blaming the API.
 func TestAMissingEnvVarSaysItsName(t *testing.T) {
 	_, err := core.FromEnv("BREVIS_ENV_THAT_DOES_NOT_EXIST")(context.Background())
 	if err == nil || !strings.Contains(err.Error(), "BREVIS_ENV_THAT_DOES_NOT_EXIST") {
@@ -226,7 +226,7 @@ func TestAMissingEnvVarSaysItsName(t *testing.T) {
 
 // TestAuthDoesNotMutateTheCallersHeader: the map belongs to the consumer and
 // must not come back
-// carregando o segredo.
+// carrying the secret.
 func TestAuthDoesNotMutateTheCallersHeader(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprint(w, `{"ok":1}`)

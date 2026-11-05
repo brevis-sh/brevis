@@ -10,7 +10,7 @@ import (
 //
 // FormatError used to carry a Format field that was interpolated into the
 // message and never filled at any of the four sites that build the error, so
-// every format error read "formato  from ..." with a hole in it -- and no test
+// every format error read "format  from ..." with a hole in it -- and no test
 // noticed, because no test looked at the message. These do.
 func TestFormatErrorMessage(t *testing.T) {
 	cases := []struct {

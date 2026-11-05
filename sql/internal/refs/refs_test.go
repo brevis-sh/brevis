@@ -10,7 +10,7 @@ import (
 // The corpus, as files rather than as a list in Go.
 //
 // `testdata/<dialect>/NN.sql` with `NN.want` beside it, one reference per
-// line. The labelling rule is in testdata/README.md, because expectations
+// line. The labeling rule is in testdata/README.md, because expectations
 // nobody can read are expectations nobody can correct — and correcting one is
 // how this suite is supposed to grow when a model's inferred edge is wrong.
 func TestTheCorpus(t *testing.T) {

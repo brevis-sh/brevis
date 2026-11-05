@@ -126,8 +126,7 @@ func TestAnAbsentMoreKeyIsNotTheEndOfPagination(t *testing.T) {
 }
 
 // TestMoreKeyAtTheRoot: a path with no dot works too -- has_more is common at
-// the
-// raiz.
+// the root.
 func TestMoreKeyAtTheRoot(t *testing.T) {
 	var requested int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

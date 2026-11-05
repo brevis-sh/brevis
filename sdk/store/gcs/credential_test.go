@@ -18,8 +18,8 @@ import (
 )
 
 // fakeGCS is a pretend GCS with what matters here: a per-object generation,
-// and
-// ifGenerationMatch de verdade.
+// and a real
+// ifGenerationMatch.
 type fakeGCS struct {
 	mu         sync.Mutex
 	content    []byte
@@ -38,7 +38,7 @@ func (g *fakeGCS) server(t *testing.T) *storage.Client {
 		// (/bucket/object),
 		// and not through the JSON API -- that is how the first version of this
 		// fake
-		// errou.
+		// got it wrong.
 		if r.Method == http.MethodGet {
 			if !g.exists {
 				http.Error(w, `{"error":{"code":404}}`, http.StatusNotFound)
@@ -86,7 +86,7 @@ func (g *fakeGCS) server(t *testing.T) *storage.Client {
 	return cli
 }
 
-// extractMultipartBody pega a segunda parte do upload multipart do GCS.
+// extractMultipartBody takes the second part of the GCS multipart upload.
 func extractMultipartBody(b []byte) []byte {
 	partes := strings.Split(string(b), "\r\n\r\n")
 	if len(partes) < 3 {
@@ -106,7 +106,7 @@ func credential(t *testing.T, g *fakeGCS) Credential {
 	return Credential{Bucket: "b", Object: "obj", Client: g.server(t)}
 }
 
-// TestItStoresAndReturns: o caminho feliz.
+// TestItStoresAndReturns: the happy path.
 func TestItStoresAndReturns(t *testing.T) {
 	g := &fakeGCS{}
 	c := credential(t, g)
@@ -137,7 +137,7 @@ func TestTheConditionalWrite(t *testing.T) {
 	if err := c.Save("primeiro"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.Load(); err != nil { // lembra a geracao 1
+	if _, err := c.Load(); err != nil { // remembers generation 1
 		t.Fatal(err)
 	}
 
@@ -169,7 +169,7 @@ func TestTheFirstWriteUsesDoesNotExist(t *testing.T) {
 	g := &fakeGCS{}
 	c := credential(t, g)
 
-	if _, err := c.Load(); err != nil { // objeto ausente, geracao 0
+	if _, err := c.Load(); err != nil { // missing object, generation 0
 		t.Fatal(err)
 	}
 	// Another process creates the object first.

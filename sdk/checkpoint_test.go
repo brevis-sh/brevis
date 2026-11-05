@@ -245,8 +245,7 @@ func TestACheckpointWithAMissingPartRedoesTheExtract(t *testing.T) {
 //
 // This can only happen with the object tampered with after it was written.
 // Carrying on quietly would load fewer rows than the first attempt loaded,
-// and
-// ninguem saberia.
+// and nobody would know.
 func TestACheckpointWithAWrongCountFailsLoudly(t *testing.T) {
 	dir := t.TempDir()
 	var reads int
@@ -516,7 +515,7 @@ func remove(t *testing.T, root, name string) {
 
 func readJSON(t *testing.T, path string, v any) {
 	t.Helper()
-	data, err := os.ReadFile(path) //nolint:gosec // caminho de teste
+	data, err := os.ReadFile(path) //nolint:gosec // a test path
 	if err != nil {
 		t.Fatal(err)
 	}

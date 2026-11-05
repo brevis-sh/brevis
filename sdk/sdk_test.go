@@ -203,7 +203,7 @@ func TestRedactRemovesSecrets(t *testing.T) {
 	}
 }
 
-// --- Extract + Load ponta a ponta -----------------------------------------
+// --- Extract + Load end to end -----------------------------------------
 
 func openMeteoServer(t *testing.T) *httptest.Server {
 	t.Helper()
@@ -659,7 +659,7 @@ func TestEvery2xxReachesRecords(t *testing.T) {
 				Records: func(r Response) ([]any, error) {
 					seen = r.Status
 					if len(r.Bytes()) == 0 {
-						return nil, nil // janela vazia
+						return nil, nil // empty window
 					}
 					var docs []any
 					return docs, r.JSON(&docs)

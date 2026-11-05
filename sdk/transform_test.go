@@ -13,7 +13,7 @@ import (
 	"brevis.sh/brevis/sdk/from"
 )
 
-// perto compares floats. Writing 14.1*9/5+32 as a literal would be evaluated
+// near compares floats. Writing 14.1*9/5+32 as a literal would be evaluated
 // as an untyped constant at arbitrary precision and not equal the float64 the
 // code actually produces.
 func near(a, b float64) bool { return math.Abs(a-b) < 1e-9 }

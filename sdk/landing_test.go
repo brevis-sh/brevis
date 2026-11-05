@@ -9,7 +9,7 @@ import (
 
 // The landing id is FROZEN, and this is the only thing that says so.
 //
-// It is a characterisation test on purpose: the values below were read from
+// It is a characterization test on purpose: the values below were read from
 // the implementation, and that is the point. Every part of the formula --
 // the "auto_table" namespace, the field order, the "|" separator, the
 // canonical fingerprint -- is already written into rows that exist. The test
@@ -697,7 +697,7 @@ func TestLandingColumnsStillRefusesTheReservedPrefix(t *testing.T) {
 // Six lines of rule and no inference anywhere: the SHAPE decides, never the
 // value. That is the whole of what keeps this on the right side of I2 — a
 // type read off `21129` would be INT64 today and STRING the day the series
-// publishes "21129 (revisado)", and the column would change with nobody
+// publishes "21129 (revised)", and the column would change with nobody
 // writing anything.
 func TestLandingSchemaOf(t *testing.T) {
 	got, err := LandingSchemaOf(map[string]any{

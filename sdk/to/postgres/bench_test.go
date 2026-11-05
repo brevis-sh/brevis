@@ -10,7 +10,7 @@ import (
 	topg "brevis.sh/brevis/sdk/to/postgres"
 )
 
-// BenchmarkPostgresLoad mede a carga contra o servidor de verdade.
+// BenchmarkPostgresLoad measures the load against a real server.
 //
 // It exists because §5 of phase 5 asks for a number: without one the
 // documentation promises performance nobody measured, which is how

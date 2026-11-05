@@ -24,7 +24,7 @@ type Reader interface {
 	Read(ctx context.Context, opt ReadOptions) (iter.Seq2[Envelope, error], error)
 
 	// Describe names the origin for logs and errors, with any secret
-	// redacted. "http://api.example.com/v1/events", "postgres://host/db#pedidos".
+	// redacted. "http://api.example.com/v1/events", "postgres://host/db#orders".
 	Describe() string
 }
 

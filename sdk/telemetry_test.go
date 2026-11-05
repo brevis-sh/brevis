@@ -162,7 +162,7 @@ func TestAMapStageInventsNoDuration(t *testing.T) {
 
 // What only the transform knows: how many went in, how many came out, how many
 // were
-// pulados.
+// dropped.
 func TestAMapStageSaysHowManyItDropped(t *testing.T) {
 	var box []Envelope
 	events, err := stagesOf(t, testPipeline(countedSource{
@@ -189,7 +189,7 @@ func TestOutsideTheEngineNothingIsAnnounced(t *testing.T) {
 	p := testPipeline(countedSource{
 		records: []any{map[string]any{"id": 1}}, reads: new(int),
 	}, &box)
-	p.Run = RunContext{} // rodando a mao
+	p.Run = RunContext{} // running by hand
 
 	events, err := stagesOf(t, p)
 	if err != nil {
@@ -198,7 +198,7 @@ func TestOutsideTheEngineNothingIsAnnounced(t *testing.T) {
 	if len(events) != 0 {
 		t.Errorf("announced %d events when run by hand: %v", len(events), events)
 	}
-	// E o pipeline continua funcionando igual.
+	// And the pipeline keeps working the same.
 	if len(box) != 1 {
 		t.Errorf("loaded %d records, want 1", len(box))
 	}

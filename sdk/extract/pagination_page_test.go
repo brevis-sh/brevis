@@ -25,7 +25,7 @@ func numberedPage(t *testing.T, key string, seenValues *[]string) *httptest.Serv
 			http.Error(w, "sem numero de pagina: "+r.URL.RawQuery, http.StatusBadRequest)
 			return
 		}
-		if len(*seenValues) > 6 { // trava contra loop infinito no teste
+		if len(*seenValues) > 6 { // guard against an infinite loop in the test
 			http.Error(w, "paginou demais", http.StatusInternalServerError)
 			return
 		}
@@ -56,8 +56,8 @@ func TestPageKeyAdvancesOneAtATime(t *testing.T) {
 }
 
 // TestPageKeyNumbersTheFirstRequest: without it the server picks its own default
-// and the SDK guesses the next number -- guessing wrong skips a page
-// inteira em silencio.
+// and the SDK guesses the next number -- guessing wrong skips a whole page
+// in silence.
 func TestPageKeyNumbersTheFirstRequest(t *testing.T) {
 	cases := []struct {
 		name  string
