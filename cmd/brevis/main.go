@@ -346,8 +346,10 @@ func readPassword() (string, error) {
 // through the pod's log — far from whoever edited the file. The installation's
 // CI calls this and the error comes back in the pull request.
 //
-// `marca` is kept as an alias: it was the command's name in a released version,
-// and a script calling it must not start printing "unknown command".
+// `marca` is kept as a DEPRECATED alias: it was the command's name in a released
+// version, and a script calling it must not start printing "unknown command".
+//
+// shortcut: remove the alias in v1, when a breaking change is allowed.
 func cmdBrand() *cobra.Command {
 	return &cobra.Command{
 		Use:     "brand <brand.yaml>",
