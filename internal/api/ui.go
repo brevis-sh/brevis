@@ -36,7 +36,6 @@ import (
 	"brevis.sh/brevis/internal/updates"
 	"brevis.sh/brevis/web/assets"
 	"brevis.sh/brevis/web/i18n"
-	"brevis.sh/brevis/web/layouts"
 	"brevis.sh/brevis/web/pages"
 	"brevis.sh/brevis/web/spa"
 )
@@ -455,11 +454,10 @@ func paletteEntry(group, label, hint, href, icon string) paletteItem {
 // NO-STORE. It names everything this login can see, and it is fetched fresh
 // with each page that opens the palette.
 func (u *UI) palette(w http.ResponseWriter, r *http.Request) {
-	ctx := layouts.WithSQL(r.Context(), u.preview.Configured())
 	// In the reader's language, like the page that asked for it.
-	ctx = i18n.WithLang(ctx, i18n.Negotiate(r))
+	ctx := i18n.WithLang(r.Context(), i18n.Negotiate(r))
 	items := []paletteItem{}
-	for _, s := range layouts.Sections(ctx) {
+	for _, s := range sections(ctx, u.preview.Configured()) {
 		items = append(items, paletteEntry("Sections", s.Name, s.Group, s.Href, s.Icon))
 	}
 	// Actions do something here rather than go somewhere. The theme is the

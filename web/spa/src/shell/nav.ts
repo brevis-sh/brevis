@@ -1,5 +1,5 @@
 // THE SHELL'S MAP: what the sidebar lists and where the topbar's breadcrumb says
-// a page sits. Same list as web/layouts/nav.go (one list for two readers).
+// a page sits. Same list as internal/api/sections.go (one list for two readers).
 //
 // ROUTE-HANDLE CONVENTION. A screen declares where it sits with ONE LINE in
 // `routeMeta` below: `{ path: "/ingest/loads", section: "loads", title: "loads.title" }`.

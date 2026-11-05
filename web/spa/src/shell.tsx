@@ -13,7 +13,7 @@ import { Topbar } from "./shell/topbar";
 import { UpdateNotice, VersionModal } from "./shell/version";
 import "./shell/shell.css";
 
-// The console's frame (web/layouts/base.templ): sidebar, topbar, and beside
+// The console frame: sidebar, topbar, and beside
 // them the screen. Everything here is static or already known (the session, the
 // config and the catalog are read before the first render), so nothing in the
 // frame waits; only the screen below it may show a skeleton.
