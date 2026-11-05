@@ -62,8 +62,8 @@ func fieldsOf(t *testing.T, ev map[string]any) (map[string]any, []string) {
 // that fails at the source still says what it tried to do.
 func TestThePipelineDescribesItselfBeforeItsFirstPhase(t *testing.T) {
 	var box []Envelope
-	events, err := stagesOf(t, pipelineDeTeste(countedSource{
-		records: []any{map[string]any{"id": 1}}, leituras: new(int)}, &box))
+	events, err := stagesOf(t, testPipeline(countedSource{
+		records: []any{map[string]any{"id": 1}}, reads: new(int)}, &box))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +108,7 @@ func TestAnAggregationIsDescribedWhole(t *testing.T) {
 		Stages: []Stage{
 			Map(upperName),
 			Aggregate(Reduce{By: GroupBy("area", "year"), Agg: map[string]Aggregator{
-				"total": Sum("valor"), "n": Count(), "top": MaxBy("valor", "id")}}),
+				"total": Sum("value"), "n": Count(), "top": MaxBy("value", "id")}}),
 		},
 		Target: Target{To: keepingTarget{received: new([]Envelope)}},
 	}
@@ -118,8 +118,8 @@ func TestAnAggregationIsDescribedWhole(t *testing.T) {
 	}
 	for path, want := range map[string]string{
 		"transform.2.aggregate.n":     "count",
-		"transform.2.aggregate.total": "sum(valor)",
-		"transform.2.aggregate.top":   "max_by(valor, id)",
+		"transform.2.aggregate.total": "sum(value)",
+		"transform.2.aggregate.top":   "max_by(value, id)",
 	} {
 		if f[path] != want {
 			t.Errorf("%s = %v, want %q", path, f[path], want)
@@ -159,7 +159,7 @@ func TestTheTargetCarriesItsDeclarationAndTheWritersSettings(t *testing.T) {
 // log on lines, and half a description would be refused anyway. The run
 // itself goes on, and says so.
 func TestADescriptionTooLargeIsNotSent(t *testing.T) {
-	p := pipelineDeTeste(countedSource{records: []any{map[string]any{"id": 1}}, leituras: new(int)}, new([]Envelope))
+	p := testPipeline(countedSource{records: []any{map[string]any{"id": 1}}, reads: new(int)}, new([]Envelope))
 	p.Target.To = configuredTarget{
 		keepingTarget: keepingTarget{received: new([]Envelope)},
 		settings:      []Setting{{Key: "huge", Value: strings.Repeat("x", describeCeiling)}}}
@@ -177,7 +177,7 @@ func TestADescriptionTooLargeIsNotSent(t *testing.T) {
 
 // By hand, nothing is printed: the lines serve nobody outside the engine.
 func TestByHandThePipelineDoesNotDescribeItself(t *testing.T) {
-	p := pipelineDeTeste(countedSource{records: []any{map[string]any{"id": 1}}, leituras: new(int)}, new([]Envelope))
+	p := testPipeline(countedSource{records: []any{map[string]any{"id": 1}}, reads: new(int)}, new([]Envelope))
 	p.Run = RunContext{}
 	events, _ := stagesOf(t, p)
 	if pipelineEvent(t, events) != nil {
@@ -208,7 +208,7 @@ func TestTheSDKsTransformersSayWhatTheyDo(t *testing.T) {
 	}
 }
 
-// Labelling is bounded: past the ceiling a transformer is named by its
+// Labeling is bounded: past the ceiling a transformer is named by its
 // function, the way one the SDK did not make always is.
 func TestLabelsStopAtTheirCeiling(t *testing.T) {
 	saved := labelCeiling

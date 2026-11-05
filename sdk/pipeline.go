@@ -24,7 +24,7 @@ import (
 // directly.
 type Pipeline struct {
 	// Source is where records come from: the driver in From, plus the preview
-	// and the counters that every origin honours.
+	// and the counters that every origin honors.
 	Source Source
 
 	// Transform reshapes each record between Extract and Load, in order. See
@@ -131,7 +131,7 @@ func (p Pipeline) name() string {
 }
 
 // Run runs a Pipeline as a command: it parses flags, sets up logging,
-// honours -dry-run, prints the result and exits non-zero on failure.
+// honors -dry-run, prints the result and exits non-zero on failure.
 //
 // It calls os.Exit, so it belongs in main. Use Execute to keep control.
 func Run(p Pipeline) {
@@ -255,7 +255,7 @@ func runPipeline(ctx context.Context, p *Pipeline) error {
 	rep.finished(PhaseCheck, StateDone, nil)
 
 	rep.started(PhaseSource)
-	data, cp, err := extrairComCheckpoint(ctx, p)
+	data, cp, err := extractWithCheckpoint(ctx, p)
 	if err != nil {
 		rep.finished(PhaseSource, StateFailed, nil)
 		return err
@@ -279,21 +279,21 @@ func runPipeline(ctx context.Context, p *Pipeline) error {
 	// stages exist as boxes, and the target after them, so their indices have to
 	// be known before the first record moves.
 	if rep.on {
-		indicesDosEstagios := make([]int, len(stages))
+		stageIndexes := make([]int, len(stages))
 		for i := range stages {
-			indicesDosEstagios[i] = rep.nextIndex()
+			stageIndexes[i] = rep.nextIndex()
 		}
 		targetIndex := rep.nextIndex()
 
 		for i, st := range stages {
-			rep.startedAtIndex(st.kind, indicesDosEstagios[i])
+			rep.startedAtIndex(st.kind, stageIndexes[i])
 		}
 		applyStages(data, stages, counts, p.Source.From.Describe())
 
 		data.Records = onExhausted(data.Records, func() {
 			rep.finished(PhaseSource, StateDone, sourceNumbers(data, p))
 			for i, st := range stages {
-				rep.finishedAtIndex(st.kind, indicesDosEstagios[i], StateDone,
+				rep.finishedAtIndex(st.kind, stageIndexes[i], StateDone,
 					stageNumbers(counts[i]))
 			}
 			// Without batches nothing has been written yet: the Write only
@@ -379,7 +379,7 @@ func runPipeline(ctx context.Context, p *Pipeline) error {
 	return err
 }
 
-// montar resolves the stages and refuses what cannot run.
+// assemble resolves the stages and refuses what cannot run.
 //
 // It is PURE: no I/O, so the -dry-run can call exactly the same thing the real
 // run calls. An aggregator that does not exist, a name that collides with a
@@ -438,8 +438,8 @@ func checkDestination(ctx context.Context, t Target) error {
 	if err := t.validate(); err != nil {
 		return err
 	}
-	checker, sabe := t.To.(core.DestinationChecker)
-	if !sabe {
+	checker, knows := t.To.(core.DestinationChecker)
+	if !knows {
 		return nil
 	}
 	return checker.CheckDestination(ctx, t.declaredColumns())

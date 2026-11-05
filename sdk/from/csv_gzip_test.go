@@ -15,8 +15,8 @@ import (
 	"brevis.sh/brevis/sdk/from"
 )
 
-func csvPontoEVirgula() []byte {
-	return []byte("municipio;populacao\nSão Paulo;11451999\nRio;6211423\n")
+func csvSemicolon() []byte {
+	return []byte("city;population\nSão Paulo;11451999\nRio;6211423\n")
 }
 
 func readAll(t *testing.T, r core.Reader) []map[string]any {
@@ -28,7 +28,7 @@ func readAll(t *testing.T, r core.Reader) []map[string]any {
 	var out []map[string]any
 	for env, err := range lines {
 		if err != nil {
-			t.Fatalf("linha: %v", err)
+			t.Fatalf("line: %v", err)
 		}
 		out = append(out, asMap(t, env.Payload))
 	}
@@ -41,16 +41,16 @@ func readAll(t *testing.T, r core.Reader) []map[string]any {
 func TestHTTPWithASemicolonDelimiter(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/csv")
-		_, _ = w.Write(csvPontoEVirgula())
+		_, _ = w.Write(csvSemicolon())
 	}))
 	defer srv.Close()
 
 	lines := readAll(t, from.HTTP{URL: srv.URL, Format: core.FormatCSV, Delimiter: ';'})
 	if len(lines) != 2 {
-		t.Fatalf("saiu com %d linhas: %v", len(lines), lines)
+		t.Fatalf("finished with %d rows: %v", len(lines), lines)
 	}
-	if lines[0]["municipio"] != "São Paulo" || lines[0]["populacao"] != "11451999" {
-		t.Errorf("primeira linha: %v", lines[0])
+	if lines[0]["city"] != "São Paulo" || lines[0]["population"] != "11451999" {
+		t.Errorf("first row: %v", lines[0])
 	}
 }
 
@@ -58,13 +58,13 @@ func TestHTTPWithASemicolonDelimiter(t *testing.T) {
 // whole header -- the defect the field exists to prevent.
 func TestWithoutADelimiterASemicolonCSVBecomesOneColumn(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write(csvPontoEVirgula())
+		_, _ = w.Write(csvSemicolon())
 	}))
 	defer srv.Close()
 
 	lines := readAll(t, from.HTTP{URL: srv.URL, Format: core.FormatCSV})
 	if len(lines[0]) != 1 {
-		t.Errorf("com vírgula o CSV devia virar uma coluna só, veio %v", lines[0])
+		t.Errorf("with a comma the CSV should become a single column, got %v", lines[0])
 	}
 }
 
@@ -72,34 +72,34 @@ func TestWithoutADelimiterASemicolonCSVBecomesOneColumn(t *testing.T) {
 // large file. from.Files already decompressed by extension; the rule existed in
 // the SDK and simply did not reach HTTP.
 func TestHTTPDecompressesGzip(t *testing.T) {
-	var comprimido bytes.Buffer
-	gz := gzip.NewWriter(&comprimido)
-	_, _ = gz.Write(csvPontoEVirgula())
+	var compressed bytes.Buffer
+	gz := gzip.NewWriter(&compressed)
+	_, _ = gz.Write(csvSemicolon())
 	_ = gz.Close()
 
-	for _, caso := range []struct {
+	for _, testCase := range []struct {
 		name, contentType, path string
 	}{
-		{"por content-type", "application/gzip", "/dados"},
-		{"por extensão", "application/octet-stream", "/dados.csv.gz"},
-		{"por content-encoding", "", "/dados"},
+		{"by content-type", "application/gzip", "/data"},
+		{"by extension", "application/octet-stream", "/data.csv.gz"},
+		{"by content-encoding", "", "/data"},
 	} {
-		t.Run(caso.name, func(t *testing.T) {
+		t.Run(testCase.name, func(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-				if caso.contentType != "" {
-					w.Header().Set("Content-Type", caso.contentType)
+				if testCase.contentType != "" {
+					w.Header().Set("Content-Type", testCase.contentType)
 				} else {
 					w.Header().Set("Content-Encoding", "gzip")
 				}
-				_, _ = w.Write(comprimido.Bytes())
+				_, _ = w.Write(compressed.Bytes())
 			}))
 			defer srv.Close()
 
 			lines := readAll(t, from.HTTP{
-				URL: srv.URL + caso.path, Format: core.FormatCSV, Delimiter: ';',
+				URL: srv.URL + testCase.path, Format: core.FormatCSV, Delimiter: ';',
 			})
-			if len(lines) != 2 || lines[1]["municipio"] != "Rio" {
-				t.Errorf("não descomprimiu: %v", lines)
+			if len(lines) != 2 || lines[1]["city"] != "Rio" {
+				t.Errorf("did not decompress: %v", lines)
 			}
 		})
 	}
@@ -110,17 +110,17 @@ func TestHTTPDecompressesGzip(t *testing.T) {
 func TestALyingGzipFailsSayingWhatItIs(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/gzip")
-		_, _ = w.Write([]byte("isto nao e gzip"))
+		_, _ = w.Write([]byte("this is not gzip"))
 	}))
 	defer srv.Close()
 
 	_, err := from.HTTP{URL: srv.URL, Format: core.FormatCSV}.Read(
 		context.Background(), core.ReadOptions{Stats: &core.Stats{}})
 	if err == nil {
-		t.Fatal("um corpo que não é gzip passou")
+		t.Fatal("a body that is not gzip got through")
 	}
 	if !containsAll(err.Error(), "gzip") {
-		t.Errorf("a mensagem não diz o que houve: %v", err)
+		t.Errorf("the message does not say what happened: %v", err)
 	}
 }
 
@@ -128,18 +128,18 @@ func TestALyingGzipFailsSayingWhatItIs(t *testing.T) {
 // once downloaded.
 func TestFilesWithADelimiter(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "dados.csv")
-	if err := os.WriteFile(path, csvPontoEVirgula(), 0o600); err != nil {
+	path := filepath.Join(dir, "data.csv")
+	if err := os.WriteFile(path, csvSemicolon(), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	lines := readAll(t, from.Files{Path: path, Format: core.FormatCSV, Delimiter: ';'})
-	if len(lines) != 2 || lines[0]["municipio"] != "São Paulo" {
-		t.Errorf("linhas: %v", lines)
+	if len(lines) != 2 || lines[0]["city"] != "São Paulo" {
+		t.Errorf("lines: %v", lines)
 	}
 }
 
 // comoMapa narrows the payload. Every source yields the same record model, so
-// there is nothing to normalise -- this only fails loudly if that stops being
+// there is nothing to normalize -- this only fails loudly if that stops being
 // true.
 func asMap(t *testing.T, p any) map[string]any {
 	t.Helper()
@@ -150,8 +150,8 @@ func asMap(t *testing.T, p any) map[string]any {
 	return m
 }
 
-func containsAll(s string, partes ...string) bool {
-	for _, p := range partes {
+func containsAll(s string, parts ...string) bool {
+	for _, p := range parts {
 		if !bytes.Contains([]byte(s), []byte(p)) {
 			return false
 		}

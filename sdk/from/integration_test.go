@@ -22,7 +22,7 @@ import (
 	"brevis.sh/brevis/sdk/to"
 )
 
-// Os testes de object storage rodam contra o MinIO do
+// The object storage tests run against the MinIO in
 // docker-compose.drivers.yml:
 //
 //	docker compose -f docker-compose.drivers.yml up -d minio
@@ -63,7 +63,7 @@ func s3Client(t *testing.T) (*awss3.Client, string) {
 	}); err != nil {
 		t.Fatalf("creating the bucket: %v", err)
 	}
-	t.Cleanup(func() { limpa(client, bucket) })
+	t.Cleanup(func() { cleanup(client, bucket) })
 
 	return client, bucket
 }
@@ -75,7 +75,7 @@ func envOr(k, fallback string) string {
 	return fallback
 }
 
-func limpa(c *awss3.Client, bucket string) {
+func cleanup(c *awss3.Client, bucket string) {
 	ctx := context.Background()
 	out, err := c.ListObjectsV2(ctx, &awss3.ListObjectsV2Input{Bucket: aws.String(bucket)})
 	if err == nil {
@@ -94,8 +94,8 @@ func TestIntegrationS3RoundTrip(t *testing.T) {
 	store := s3.New(client)
 
 	records := []core.Envelope{
-		{Payload: map[string]any{"sku": "W-1", "quantidade": 3}},
-		{Payload: map[string]any{"sku": "W-2", "quantidade": 9}},
+		{Payload: map[string]any{"sku": "W-1", "quantity": 3}},
+		{Payload: map[string]any{"sku": "W-2", "quantity": 9}},
 	}
 
 	res, err := to.Files{Path: "s3://" + bucket + "/landing/", Store: store}.
@@ -116,16 +116,16 @@ func TestIntegrationS3RoundTrip(t *testing.T) {
 	var read []map[string]any
 	for env, err := range seq {
 		if err != nil {
-			t.Fatalf("iterando: %v", err)
+			t.Fatalf("iterating: %v", err)
 		}
 		read = append(read, env.Payload.(map[string]any))
 	}
 
 	if len(read) != 2 {
-		t.Fatalf("%d registros de volta, esperado 2", len(read))
+		t.Fatalf("%d records back, want 2", len(read))
 	}
 	if read[0]["sku"] != "W-1" || read[1]["sku"] != "W-2" {
-		t.Errorf("os registros voltaram diferentes: %v", read)
+		t.Errorf("the records came back different: %v", read)
 	}
 }
 
@@ -158,13 +158,13 @@ func TestIntegrationS3ReadsInOrder(t *testing.T) {
 			order = append(order, env.Payload.(map[string]any)["n"].(string))
 		}
 		if strings.Join(order, "") != "abc" {
-			t.Fatalf("ordem = %v, esperado a,b,c em toda execução", order)
+			t.Fatalf("order = %v, want a,b,c on every run", order)
 		}
 	}
 }
 
 // gzip crosses the cloud the same way: written compressed, read by extension.
-func TestIntegrationS3Comprimido(t *testing.T) {
+func TestIntegrationS3Compressed(t *testing.T) {
 	client, bucket := s3Client(t)
 	ctx := context.Background()
 	store := s3.New(client)
@@ -182,12 +182,12 @@ func TestIntegrationS3Comprimido(t *testing.T) {
 	n := 0
 	for _, err := range seq {
 		if err != nil {
-			t.Fatalf("iterando: %v", err)
+			t.Fatalf("iterating: %v", err)
 		}
 		n++
 	}
 	if n != 1 {
-		t.Errorf("%d registros, esperado 1", n)
+		t.Errorf("%d records, want 1", n)
 	}
 }
 
@@ -202,18 +202,18 @@ func TestIntegrationS3PaginatesTheListing(t *testing.T) {
 	const n = 1005
 	for i := 0; i < n; i++ {
 		body := fmt.Sprintf(`{"i":%d}`+"\n", i)
-		key := fmt.Sprintf("muitos/%05d.ndjson", i)
+		key := fmt.Sprintf("many/%05d.ndjson", i)
 		if err := store.Create(ctx, bucket, key, bytes.NewReader([]byte(body))); err != nil {
-			t.Fatalf("objeto %d: %v", i, err)
+			t.Fatalf("object %d: %v", i, err)
 		}
 	}
 
-	keys, err := store.List(ctx, bucket, "muitos/")
+	keys, err := store.List(ctx, bucket, "many/")
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
 	if len(keys) != n {
-		t.Errorf("List devolveu %d de %d objetos; a paginação não seguiu", len(keys), n)
+		t.Errorf("List returned %d of %d objects; the pagination did not follow", len(keys), n)
 	}
 }
 
@@ -238,10 +238,10 @@ func TestIntegrationGCSRoundTrip(t *testing.T) {
 	}
 	defer func() { _ = client.Close() }()
 
-	prefixo := fmt.Sprintf("it-files-%d/", time.Now().UnixNano())
+	prefix := fmt.Sprintf("it-files-%d/", time.Now().UnixNano())
 	store := gcs.New(client)
 	t.Cleanup(func() {
-		keys, _ := store.List(context.Background(), bucket, prefixo)
+		keys, _ := store.List(context.Background(), bucket, prefix)
 		for _, k := range keys {
 			_ = client.Bucket(bucket).Object(k).Delete(context.Background())
 		}
@@ -252,12 +252,12 @@ func TestIntegrationGCSRoundTrip(t *testing.T) {
 		{Payload: map[string]any{"sku": "W-2"}},
 	}
 
-	if _, err := (to.Files{Path: "gs://" + bucket + "/" + prefixo, Store: store}).
+	if _, err := (to.Files{Path: "gs://" + bucket + "/" + prefix, Store: store}).
 		Write(ctx, records, core.WriteOptions{}); err != nil {
 		t.Fatalf("Write: %v", err)
 	}
 
-	seq, err := from.Files{Path: "gs://" + bucket + "/" + prefixo + "*.ndjson", Store: store}.
+	seq, err := from.Files{Path: "gs://" + bucket + "/" + prefix + "*.ndjson", Store: store}.
 		Read(ctx, core.ReadOptions{})
 	if err != nil {
 		t.Fatalf("Read: %v", err)
@@ -265,14 +265,14 @@ func TestIntegrationGCSRoundTrip(t *testing.T) {
 	n := 0
 	for env, err := range seq {
 		if err != nil {
-			t.Fatalf("iterando: %v", err)
+			t.Fatalf("iterating: %v", err)
 		}
 		if env.Payload.(map[string]any)["sku"] == nil {
-			t.Errorf("registro sem sku: %v", env.Payload)
+			t.Errorf("record without sku: %v", env.Payload)
 		}
 		n++
 	}
 	if n != 2 {
-		t.Errorf("%d registros de volta, esperado 2", n)
+		t.Errorf("%d records back, want 2", n)
 	}
 }

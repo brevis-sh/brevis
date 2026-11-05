@@ -15,22 +15,22 @@ import (
 // JSON by hand is how you produce a file the server reads differently, and
 // here is worse -- the same rule composes a KEY.
 func TestAppendJSONStringAgreesWithTheEncoder(t *testing.T) {
-	casos := []struct {
-		s           string
-		soSemantico bool
+	cases := []struct {
+		s            string
+		onlySemantic bool
 	}{
-		{"", false}, {"simples", false}, {"com espaço", false},
-		{`aspas "no meio"`, false},
-		{`contrabarra \ e \\ dupla`, false},
-		{"quebra\nde\rlinha\te tab", false},
-		{"controle \x00\x01\x1f no meio", false},
-		{"acentuação e emoji 🎉", false},
-		{"html < > & sem escape", false},
+		{"", false}, {"plain", false}, {"with space", false},
+		{`quotes "in the middle"`, false},
+		{`backslash \ and \\ double`, false},
+		{"break\nof\rline\tand tab", false},
+		{"control \x00\x01\x1f in the middle", false},
+		{"café and emoji 🎉", false},
+		{"html < > & no escape", false},
 		{string([]byte{0xff, 0xfe}), true},
-		{"válido " + string([]byte{0xff}) + " misturado", true},
+		{"café " + string([]byte{0xff}) + " mixed", true},
 	}
 
-	for _, c := range casos {
+	for _, c := range cases {
 		name := strings.Map(func(r rune) rune {
 			if r < 0x20 {
 				return '_'
@@ -44,39 +44,39 @@ func TestAppendJSONStringAgreesWithTheEncoder(t *testing.T) {
 			if err := enc.Encode(c.s); err != nil {
 				t.Fatal(err)
 			}
-			quero := strings.TrimSuffix(buf.String(), "\n")
+			want := strings.TrimSuffix(buf.String(), "\n")
 
 			got := string(AppendJSONString(nil, c.s))
-			if got == quero {
+			if got == want {
 				return
 			}
-			if !c.soSemantico {
-				t.Fatalf("%q:\n  meu      %s\n  Encoder  %s", c.s, got, quero)
+			if !c.onlySemantic {
+				t.Fatalf("%q:\n  mine     %s\n  Encoder  %s", c.s, got, want)
 			}
 
 			// Invalid UTF-8: 1.25's encoding/json escapes the U+FFFD and
 			// 1.27 writes the bytes. Both forms are the same code point, and
 			// the equality that counts there is of the value.
-			var meu, dele string
-			if err := json.Unmarshal([]byte(got), &meu); err != nil {
-				t.Fatalf("a minha saída nem é JSON válido: %s", got)
+			var mine, dele string
+			if err := json.Unmarshal([]byte(got), &mine); err != nil {
+				t.Fatalf("my output is not even valid JSON: %s", got)
 			}
-			if err := json.Unmarshal([]byte(quero), &dele); err != nil {
-				t.Fatalf("a saída do encoder não decodifica: %s", quero)
+			if err := json.Unmarshal([]byte(want), &dele); err != nil {
+				t.Fatalf("the encoder's output does not decode: %s", want)
 			}
-			if meu != dele {
-				t.Errorf("%q decodifica diferente:\n  meu     %q\n  Encoder %q", c.s, meu, dele)
+			if mine != dele {
+				t.Errorf("%q decodes differently:\n  mine    %q\n  Encoder %q", c.s, mine, dele)
 			}
 		})
 	}
 }
 
-// TestAppendJSONStringAppendsToTheDestination: ela recebe o buffer e devolve o
+// TestAppendJSONStringAppendsToTheDestination: it takes the buffer and returns the
 // buffer, so it does not allocate one per string on a load of millions.
 func TestAppendJSONStringAppendsToTheDestination(t *testing.T) {
-	dst := []byte("antes:")
+	dst := []byte("before:")
 	got := string(AppendJSONString(dst, "x"))
-	if got != `antes:"x"` {
+	if got != `before:"x"` {
 		t.Errorf("= %q", got)
 	}
 }

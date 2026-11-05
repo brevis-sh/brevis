@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -18,7 +17,7 @@ import (
 // readsFake answers the two reads the palette needs; anything else it is asked
 // panics, which is also how a test learns the index reads more than it says.
 type readsFake struct {
-	api.Leitura
+	api.Reads
 	workflows []postgres.WorkflowSummary
 	projects  []postgres.ProjectSummary
 
@@ -93,8 +92,21 @@ func (f readsFake) CountRunsByState(context.Context, postgres.RunFilter) (map[st
 	return nil, nil
 }
 
+// paletteItem is what the index sends: a label and a hint are a name the data owns (a string) or a sentence the
+// app says ({"k": catalog key, ...}); said is what the test compares, the string or the key.
 type paletteItem struct {
-	Group, GroupLabel, Label, Hint, Href, Icon, Text, Action string
+	Group, Href, Icon, Action string
+	Label, Hint               any
+}
+
+func said(v any) string {
+	switch x := v.(type) {
+	case string:
+		return x
+	case map[string]any:
+		return "{" + x["k"].(string) + "}"
+	}
+	return ""
 }
 
 func palette(t *testing.T, ui *api.UI) (int, http.Header, []paletteItem) {
@@ -123,7 +135,7 @@ func paletteUI() *api.UI {
 
 func find(items []paletteItem, group, label string) *paletteItem {
 	for i := range items {
-		if items[i].Group == group && items[i].Label == label {
+		if items[i].Group == group && said(items[i].Label) == label {
 			return &items[i]
 		}
 	}
@@ -133,16 +145,16 @@ func find(items []paletteItem, group, label string) *paletteItem {
 // THE INDEX IS EVERYTHING THE CONSOLE LISTS, EACH WITH WHERE IT GOES.
 //
 // One JSON answer the palette fetches once and filters in the browser: the
-// sections, then the workflows, projects, destinations and endpoints. Each
-// item carries its search text, lower-cased by the server, the list filter's
-// contract -- so what matches is decided in one place.
+// sections, then the workflows, projects, destinations and endpoints. The
+// server says no words of its own: a sentence is a catalog key ({nav.loads})
+// and the app builds what a search looks in from what it says.
 func TestThePaletteIndexesWhatTheConsoleLists(t *testing.T) {
 	code, hdr, items := palette(t, paletteUI())
 	if code != http.StatusOK {
 		t.Fatalf("/api/palette answered %d", code)
 	}
 	for _, want := range []struct{ group, label, href string }{
-		{"Sections", "Loads", "/ingest/loads"},
+		{"Sections", "{nav.loads}", "/ingest/loads"},
 		{"Workflows", "daily_sales", "/workflows/daily_sales"},
 		{"Projects", "analytics", "/workflows?project=analytics"},
 		{"Loads", "build_report → s3://demo-landing/reports/", "/ingest/loads/shell_report/build_report"},
@@ -156,9 +168,6 @@ func TestThePaletteIndexesWhatTheConsoleLists(t *testing.T) {
 		if it.Href != want.href {
 			t.Errorf("%s %q goes to %q, want %q", want.group, want.label, it.Href, want.href)
 		}
-		if it.Text != strings.ToLower(it.Text) || !strings.Contains(it.Text, strings.ToLower(want.label)) {
-			t.Errorf("%s %q has search text %q", want.group, want.label, it.Text)
-		}
 	}
 	// It names what a login can see: kept by nobody between requests.
 	if cc := hdr.Get("Cache-Control"); cc != "no-store" {
@@ -171,7 +180,7 @@ func TestThePaletteIndexesWhatTheConsoleLists(t *testing.T) {
 // endpoints reader lists no endpoints and no error.
 func TestThePaletteOffersOnlyWhatThisConsoleHas(t *testing.T) {
 	_, _, items := palette(t, dataUI(catalogFake{entries: demoCatalog()}))
-	if find(items, "Sections", "SQL") != nil {
+	if find(items, "Sections", "{nav.sql}") != nil {
 		t.Error("the index offers SQL on a console with no SQL service")
 	}
 	for _, it := range items {
@@ -195,39 +204,15 @@ func TestThePaletteIndexIsReadOnly(t *testing.T) {
 	}
 }
 
-// THE ISLAND DRIVES THE PALETTE: Cmd/Ctrl-K from anywhere -- listened for in
-// the capture phase, so an editor below cannot swallow it -- the index
-// fetched from one place, a redirect or a refusal taken as "no index" and
-// never parsed as data, the active row named to a screen reader, the dialog
-// opened modally, Cmd-Enter to a new tab, and the opener revealed only here.
-// The ranking and the keys are verified in a browser (P4); what Go can hold
-// is that the pieces are there.
-func TestTheIslandDrivesThePalette(t *testing.T) {
-	_, ui := browsing(t)
-	_, raw := get(t, ui, "/assets/ui.js")
-	js := strip(raw)
-	for _, want := range []string{
-		`"/api/palette"`, ".redirected", "aria-activedescendant", "showModal", `"aria-expanded"`,
-		`=== "k"`, `"keydown", function`, "}, true);", "window.open", "[data-palette-open]",
-	} {
-		if !strings.Contains(js, want) {
-			t.Errorf("ui.js's palette never uses %s", want)
-		}
-	}
-	if n := strings.Count(js, `"/api/palette"`); n != 1 {
-		t.Errorf("the index is fetched from %d places; one is how it is fetched once", n)
-	}
-}
-
 // THE PALETTE DOES THINGS AS WELL AS GOING PLACES. An action is an item with
 // an `action` the island runs instead of following the href; the theme is
 // the first one, and the others arrive with the screens that own them.
 func TestThePaletteOffersToToggleTheTheme(t *testing.T) {
 	_, _, items := palette(t, dataUI(catalogFake{}))
 	for _, it := range items {
-		if it.Group == "Actions" && it.Label == "Toggle theme" && it.Action == "toggle-theme" {
+		if it.Group == "Actions" && said(it.Label) == "{palette.theme}" && it.Action == "toggle-theme" {
 			return
 		}
 	}
-	t.Errorf("no Actions › Toggle theme in %+v", items)
+	t.Errorf("no Actions › theme in %+v", items)
 }

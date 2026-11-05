@@ -55,7 +55,7 @@ func retryOf(t *testing.T, w wf.Workflow, settled []string, failing ...string) (
 	spy := &spyPersister{}
 	err := app.Runner{
 		Go: local.NewGoExecutor(reg), Persist: spy, RunID: uuid.New(),
-		History: &historico{settled: already},
+		History: &history{settled: already},
 	}.Run(context.Background(), w)
 	return done, spy, err
 }
@@ -190,7 +190,7 @@ func TestWithNoHistoryEverythingRuns(t *testing.T) {
 func TestIntegrationARetryReRunsOnlyWhatFailed(t *testing.T) {
 	dsn := os.Getenv("BREVIS_IT_PG_DSN")
 	if dsn == "" {
-		t.Skip("BREVIS_IT_PG_DSN ausente")
+		t.Skip("BREVIS_IT_PG_DSN is not set")
 	}
 	ctx := context.Background()
 	pool, err := postgres.New(ctx, dsn)
@@ -201,7 +201,7 @@ func TestIntegrationARetryReRunsOnlyWhatFailed(t *testing.T) {
 
 	runID := uuid.New()
 	if err := createRun(ctx, pool, runID); err != nil {
-		t.Fatalf("criando a run: %v", err)
+		t.Fatalf("creating the run: %v", err)
 	}
 	repo := postgres.NewRunRepo(pool)
 
@@ -293,7 +293,7 @@ func TestIntegrationARetryReRunsOnlyWhatFailed(t *testing.T) {
 func TestIntegrationTheRetryStillSeesWhatTheSettledStepPublished(t *testing.T) {
 	dsn := os.Getenv("BREVIS_IT_PG_DSN")
 	if dsn == "" {
-		t.Skip("BREVIS_IT_PG_DSN ausente")
+		t.Skip("BREVIS_IT_PG_DSN is not set")
 	}
 	exec, err := local.New("local")
 	if err != nil {
@@ -308,7 +308,7 @@ func TestIntegrationTheRetryStillSeesWhatTheSettledStepPublished(t *testing.T) {
 
 	runID := uuid.New()
 	if err := createRun(ctx, pool, runID); err != nil {
-		t.Fatalf("criando a run: %v", err)
+		t.Fatalf("creating the run: %v", err)
 	}
 	repo := postgres.NewRunRepo(pool)
 
@@ -327,7 +327,7 @@ func TestIntegrationTheRetryStillSeesWhatTheSettledStepPublished(t *testing.T) {
 	}
 	r := app.Runner{
 		RunID: runID, Persist: repo, History: repo,
-		Processo: exec, Report: &coletor{}, ContextDir: t.TempDir(),
+		Process: exec, Report: &collector{}, ContextDir: t.TempDir(),
 		Env: map[string]string{"PATH": os.Getenv("PATH")},
 	}
 

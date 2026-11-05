@@ -2,7 +2,7 @@
 //
 // It is the other half of `host:` in a workflow. The engine dispatches a
 // command here, follows its output, and can cancel it; this machine is where
-// the licence lives, or the GPU, or the data that cannot leave.
+// the license lives, or the GPU, or the data that cannot leave.
 //
 //	brevis-agent \
 //	  --listen :9443 \
@@ -41,7 +41,7 @@
 // bounds it, 0 by default: the orchestrator's grace period is the real bound,
 // so set THAT -- terminationGracePeriodSeconds, TimeoutStopSec -- to the
 // longest step this host runs. Past the timeout, or on a second SIGTERM, what
-// is left is cancelled, process group and all, and the exit code is 1.
+// is left is canceled, process group and all, and the exit code is 1.
 //
 // # What it will not do
 //
@@ -105,7 +105,7 @@ func main() {
 		keepMax    = flag.Int("keep-finished-max", 200, "at most this many finished steps are kept, each with its ring; past it the oldest goes first")
 		insecure   = flag.Bool("insecure-no-token", false, "run with NO authentication: anything that reaches the port runs any command. Say it out loud or do not do it")
 		advertise  = flag.String("advertise", "", "the address the engine should come back to for this instance's executions; required behind a shared address, meaningless without one")
-		drain      = flag.Duration("drain-timeout", 0, "on SIGTERM, how long to wait for the running steps to end and be read before cancelling them; 0 waits as long as it takes, leaving the bound to the orchestrator's grace period")
+		drain      = flag.Duration("drain-timeout", 0, "on SIGTERM, how long to wait for the running steps to end and be read before canceling them; 0 waits as long as it takes, leaving the bound to the orchestrator's grace period")
 		logLevel   = flag.String("log-level", "info", "debug, info, warn or error")
 	)
 	flag.Parse()

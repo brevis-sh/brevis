@@ -18,7 +18,7 @@ import (
 //
 // It matters more now than it did. Those sentences were written for a
 // parchment ground; the console is taking the site's dark identity, and a
-// colour tuned against #f2f4ed has no reason to work against #141711.
+// color tuned against #f2f4ed has no reason to work against #141711.
 
 var tokenLine = regexp.MustCompile(`--color-([a-z0-9-]+):\s*([^;]+);`)
 
@@ -84,7 +84,7 @@ func mixHex(t *testing.T, name, a, pct, b string) string {
 	ar, ag, ab, ok1 := rgb(t, name, a)
 	br, bg, bb, ok2 := rgb(t, name, b)
 	if !ok1 || !ok2 {
-		t.Fatalf("--color-%s mixes something that is not a hex colour: %q, %q", name, a, b)
+		t.Fatalf("--color-%s mixes something that is not a hex color: %q, %q", name, a, b)
 	}
 	w := float64(p) / 100
 	ch := func(x, y float64) int { return int(math.Round(x*w + y*(1-w))) }
@@ -130,11 +130,11 @@ func ratio(t *testing.T, tok map[string]string, fg, bg string) float64 {
 	t.Helper()
 	fr, fgg, fb, ok := rgb(t, fg, tok[fg])
 	if !ok {
-		t.Fatalf("--color-%s is not a hex colour: %q", fg, tok[fg])
+		t.Fatalf("--color-%s is not a hex color: %q", fg, tok[fg])
 	}
 	br, bgg, bb, ok := rgb(t, bg, tok[bg])
 	if !ok {
-		t.Fatalf("--color-%s is not a hex colour: %q", bg, tok[bg])
+		t.Fatalf("--color-%s is not a hex color: %q", bg, tok[bg])
 	}
 	l1, l2 := luminance(fr, fgg, fb), luminance(br, bgg, bb)
 	if l1 < l2 {
@@ -185,16 +185,16 @@ func textRolesReadable(t *testing.T, tok map[string]string) {
 	}
 }
 
-// THE STATE COLOURS ARE TEXT TOO, which their own comment says: "they are
+// THE STATE COLORS ARE TEXT TOO, which their own comment says: "they are
 // used as text on a pill and not only as a dot". A dot would need 3:1; a word
 // needs 4.5:1, and the word is what is there.
-func TestEveryStateColourIsReadableAsAWord(t *testing.T) {
+func TestEveryStateColorIsReadableAsAWord(t *testing.T) {
 	for _, theme := range themes {
-		t.Run(theme, func(t *testing.T) { stateColoursReadable(t, tokens(t, theme)) })
+		t.Run(theme, func(t *testing.T) { stateColorsReadable(t, tokens(t, theme)) })
 	}
 }
 
-func stateColoursReadable(t *testing.T, tok map[string]string) {
+func stateColorsReadable(t *testing.T, tok map[string]string) {
 	const aa = 4.5
 
 	states := []string{}
@@ -204,7 +204,7 @@ func stateColoursReadable(t *testing.T, tok map[string]string) {
 		}
 	}
 	if len(states) < 5 {
-		t.Fatalf("found %d state colours, which is not the set this is about", len(states))
+		t.Fatalf("found %d state colors, which is not the set this is about", len(states))
 	}
 	for _, s := range states {
 		for _, bg := range []string{"canvas", "surface"} {
@@ -264,7 +264,7 @@ func contrastReport(t *testing.T, tok map[string]string) {
 	}
 }
 
-// THE LIGHT THEME REPAINTS EVERY COLOUR, OR IT IS THE DARK ONE WITH A HOLE.
+// THE LIGHT THEME REPAINTS EVERY COLOR, OR IT IS THE DARK ONE WITH A HOLE.
 //
 // The contrast checks above would pass on a light block that forgot a name,
 // because the dark value shows through and the dark values pass. So the light

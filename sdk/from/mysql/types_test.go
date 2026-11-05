@@ -14,50 +14,50 @@ import (
 // would become
 // base64 in the JSON, and so would an INT.
 func TestToJSONRowByRow(t *testing.T) {
-	casos := []struct {
-		name      string
-		value     any
-		declarado string
-		quero     string
-		why       string
+	cases := []struct {
+		name     string
+		value    any
+		declared string
+		want     string
+		why      string
 	}{
 		{"NULL", nil, "VARCHAR", `null`, ""},
 		{
-			"DECIMAL vira string", []byte("123456789012345678.99"), "DECIMAL",
+			"DECIMAL becomes string", []byte("123456789012345678.99"), "DECIMAL",
 			`"123456789012345678.99"`,
-			"float64 perde centavos em valores grandes",
+			"float64 loses cents on large values",
 		},
-		{"BIGINT vira numero", []byte("42"), "BIGINT", `42`, "sem isto viraria base64"},
-		{"INT vira numero", []byte("7"), "INT", `7`, ""},
-		{"DOUBLE vira numero", []byte("1.5"), "DOUBLE", `1.5`, ""},
-		{"VARCHAR vira texto", []byte("ola"), "VARCHAR", `"ola"`, ""},
+		{"BIGINT becomes number", []byte("42"), "BIGINT", `42`, "without this it would become base64"},
+		{"INT becomes number", []byte("7"), "INT", `7`, ""},
+		{"DOUBLE becomes number", []byte("1.5"), "DOUBLE", `1.5`, ""},
+		{"VARCHAR becomes text", []byte("hello"), "VARCHAR", `"hello"`, ""},
 		{
-			"JSON aninhado", []byte(`{"a":[1,2]}`), "JSON", `{"a":[1,2]}`,
-			"reserializar viraria string com JSON dentro",
+			"nested JSON", []byte(`{"a":[1,2]}`), "JSON", `{"a":[1,2]}`,
+			"reserializing would become a string with JSON inside",
 		},
 		{
-			"JSON invalido vira string", []byte(`{quebrado`), "JSON", `"{quebrado"`,
-			"o dado existe; recusar perderia o registro inteiro por uma coluna",
+			"invalid JSON becomes string", []byte(`{broken`), "JSON", `"{broken"`,
+			"the data exists; refusing would lose the whole record over one column",
 		},
-		{"BLOB em base64", []byte{0xde, 0xad}, "BLOB", `"3q0="`, ""},
-		{"VARBINARY em base64", []byte{0xde, 0xad}, "VARBINARY", `"3q0="`, ""},
-		{"DATE como texto", []byte("2026-09-05"), "DATE", `"2026-09-05"`, ""},
+		{"BLOB in base64", []byte{0xde, 0xad}, "BLOB", `"3q0="`, ""},
+		{"VARBINARY in base64", []byte{0xde, 0xad}, "VARBINARY", `"3q0="`, ""},
+		{"DATE as text", []byte("2026-09-05"), "DATE", `"2026-09-05"`, ""},
 		{
-			"DATETIME sem parseTime", []byte("2026-09-05 12:30:00"), "DATETIME",
+			"DATETIME without parseTime", []byte("2026-09-05 12:30:00"), "DATETIME",
 			`"2026-09-05T12:30:00Z"`,
-			"este e o caminho que existe quando o DSN nao tem parseTime",
+			"this is the path that exists when the DSN has no parseTime",
 		},
-		{"ENUM vira texto", []byte("ativo"), "ENUM", `"ativo"`, ""},
+		{"ENUM becomes text", []byte("active"), "ENUM", `"active"`, ""},
 	}
 
-	for _, c := range casos {
+	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			b, err := json.Marshal(ToJSON(c.value, c.declarado))
+			b, err := json.Marshal(ToJSON(c.value, c.declared))
 			if err != nil {
 				t.Fatal(err)
 			}
-			if string(b) != c.quero {
-				t.Errorf("= %s, esperado %s\n  %s", b, c.quero, c.why)
+			if string(b) != c.want {
+				t.Errorf("= %s, want %s\n  %s", b, c.want, c.why)
 			}
 		})
 	}
@@ -73,14 +73,14 @@ func TestToJSONRowByRow(t *testing.T) {
 func TestTheTwoInstantPathsAgree(t *testing.T) {
 	instant := time.Date(2026, 9, 5, 12, 30, 0, 0, time.UTC)
 
-	comParse := ToJSON(instant, "DATETIME")
-	semParse := ToJSON([]byte("2026-09-05 12:30:00"), "DATETIME")
+	withParse := ToJSON(instant, "DATETIME")
+	noParse := ToJSON([]byte("2026-09-05 12:30:00"), "DATETIME")
 
-	if comParse != semParse {
-		t.Errorf("os caminhos divergem: com parseTime %v, sem %v", comParse, semParse)
+	if withParse != noParse {
+		t.Errorf("the paths diverge: with parseTime %v, without %v", withParse, noParse)
 	}
-	if comParse != "2026-09-05T12:30:00Z" {
-		t.Errorf("= %v", comParse)
+	if withParse != "2026-09-05T12:30:00Z" {
+		t.Errorf("= %v", withParse)
 	}
 }
 

@@ -16,11 +16,11 @@ import (
 // fakeAPI stands in for the API server: a sequence of phases, the log and a
 // record of what was asked. Testing the whole cycle with no cluster is what makes
 // this
-// caminho verificavel na CI.
-type apiFalsa struct {
+// path verifiable in CI.
+type fakeAPI struct {
 	mu sync.Mutex
 
-	fases     []k8s.Pod // devolvidas em ordem, a ultima repete
+	phases    []k8s.Pod // returned in order, the last one repeats
 	read      int
 	log       string
 	logErr    error
@@ -30,7 +30,7 @@ type apiFalsa struct {
 	deleted []string
 }
 
-func (a *apiFalsa) CreatePod(_ context.Context, p k8s.Pod) (k8s.Pod, error) {
+func (a *fakeAPI) CreatePod(_ context.Context, p k8s.Pod) (k8s.Pod, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if a.createErr != nil {
@@ -40,18 +40,18 @@ func (a *apiFalsa) CreatePod(_ context.Context, p k8s.Pod) (k8s.Pod, error) {
 	return p, nil
 }
 
-func (a *apiFalsa) LerPod(_ context.Context, _ string) (k8s.Pod, error) {
+func (a *fakeAPI) GetPod(_ context.Context, _ string) (k8s.Pod, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	i := a.read
-	if i >= len(a.fases) {
-		i = len(a.fases) - 1
+	if i >= len(a.phases) {
+		i = len(a.phases) - 1
 	}
 	a.read++
-	return a.fases[i], nil
+	return a.phases[i], nil
 }
 
-func (a *apiFalsa) Logs(_ context.Context, _ string, _ bool) (io.ReadCloser, error) {
+func (a *fakeAPI) Logs(_ context.Context, _ string, _ bool) (io.ReadCloser, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if a.logErr != nil {
@@ -60,7 +60,7 @@ func (a *apiFalsa) Logs(_ context.Context, _ string, _ bool) (io.ReadCloser, err
 	return io.NopCloser(strings.NewReader(a.log)), nil
 }
 
-func (a *apiFalsa) DeletePod(_ context.Context, name string) error {
+func (a *fakeAPI) DeletePod(_ context.Context, name string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.deleted = append(a.deleted, name)
@@ -74,7 +74,7 @@ func phase(f string) k8s.Pod {
 	}
 }
 
-func withOutput(f string, codigo int) k8s.Pod {
+func withOutput(f string, code int) k8s.Pod {
 	p := phase(f)
 	var st k8s.StatusContainer
 	st.Name = "step"
@@ -82,14 +82,14 @@ func withOutput(f string, codigo int) k8s.Pod {
 		ExitCode int    `json:"exitCode"`
 		Reason   string `json:"reason"`
 		Message  string `json:"message"`
-	}{ExitCode: codigo}
+	}{ExitCode: code}
 	p.Status.ContainerStatuses = []k8s.StatusContainer{st}
 	return p
 }
 
-func runStep(t *testing.T, api *apiFalsa, tk execution.TaskExec) []execution.Event {
+func runStep(t *testing.T, api *fakeAPI, tk execution.TaskExec) []execution.Event {
 	t.Helper()
-	e := k8s.NewExecutor(api, k8s.Options{Namespace: "dados"})
+	e := k8s.NewExecutor(api, k8s.Options{Namespace: "data"})
 	e.Interval = time.Millisecond
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -107,9 +107,9 @@ func runStep(t *testing.T, api *apiFalsa, tk execution.TaskExec) []execution.Eve
 }
 
 func TestASuccessfulPodReportsTheLogAndIsDeleted(t *testing.T) {
-	api := &apiFalsa{
-		fases: []k8s.Pod{phase("Pending"), phase("Running"), withOutput("Succeeded", 0)},
-		log:   "Running with dbt=1.10.3\nCompleted successfully\n",
+	api := &fakeAPI{
+		phases: []k8s.Pod{phase("Pending"), phase("Running"), withOutput("Succeeded", 0)},
+		log:    "Running with dbt=1.10.3\nCompleted successfully\n",
 	}
 	events := runStep(t, api, task())
 
@@ -133,14 +133,14 @@ func TestASuccessfulPodReportsTheLogAndIsDeleted(t *testing.T) {
 		t.Errorf("a successful pod has to be deleted (deleted=%v)", api.deleted)
 	}
 	if len(api.created) != 1 || api.created[0].Spec.Containers[0].Image != task().Image {
-		t.Errorf("pod criado errado: %+v", api.created)
+		t.Errorf("pod created wrong: %+v", api.created)
 	}
 }
 
 func TestAFailingPodCarriesTheExitCode(t *testing.T) {
-	api := &apiFalsa{
-		fases: []k8s.Pod{phase("Running"), withOutput("Failed", 2)},
-		log:   "Database Error in model x\n",
+	api := &fakeAPI{
+		phases: []k8s.Pod{phase("Running"), withOutput("Failed", 2)},
+		log:    "Database Error in model x\n",
 	}
 	events := runStep(t, api, task())
 
@@ -164,9 +164,9 @@ func TestAFailingPodCarriesTheExitCode(t *testing.T) {
 // Kubernetes's reason tells "the code failed" from "the cluster killed the
 // process" -- OOMKilled and DeadlineExceeded call for opposite actions.
 func TestTheClustersReasonShowsInTheFailure(t *testing.T) {
-	morto := withOutput("Failed", 137)
-	morto.Status.Reason = "DeadlineExceeded"
-	api := &apiFalsa{fases: []k8s.Pod{phase("Running"), morto}}
+	dead := withOutput("Failed", 137)
+	dead.Status.Reason = "DeadlineExceeded"
+	api := &fakeAPI{phases: []k8s.Pod{phase("Running"), dead}}
 
 	for _, e := range runStep(t, api, task()) {
 		if e.Kind == execution.EventFailed {
@@ -182,16 +182,16 @@ func TestTheClustersReasonShowsInTheFailure(t *testing.T) {
 // A pod stuck in ImagePullBackOff produces no log at all: without reporting the
 // reason, the step would look hung until the timeout, with no line explaining.
 func TestTheReasonForWaitingIsReported(t *testing.T) {
-	preso := phase("Pending")
+	stuck := phase("Pending")
 	var st k8s.StatusContainer
 	st.Name = "step"
 	st.State.Waiting = &struct {
 		Reason  string `json:"reason"`
 		Message string `json:"message"`
 	}{Reason: "ImagePullBackOff", Message: "Back-off pulling image"}
-	preso.Status.ContainerStatuses = []k8s.StatusContainer{st}
+	stuck.Status.ContainerStatuses = []k8s.StatusContainer{st}
 
-	api := &apiFalsa{fases: []k8s.Pod{preso, preso, withOutput("Failed", 1)}}
+	api := &fakeAPI{phases: []k8s.Pod{stuck, stuck, withOutput("Failed", 1)}}
 
 	var found bool
 	for _, e := range runStep(t, api, task()) {
@@ -208,9 +208,9 @@ func TestTheReasonForWaitingIsReported(t *testing.T) {
 // died before recording it. Adopting it avoids starting a second one running
 // the same dbt.
 func TestAnAlreadyExistingPodIsAdopted(t *testing.T) {
-	api := &apiFalsa{
+	api := &fakeAPI{
 		createErr: errors.New(`pods "x" already exists`),
-		fases:     []k8s.Pod{withOutput("Succeeded", 0)},
+		phases:    []k8s.Pod{withOutput("Succeeded", 0)},
 	}
 	events := runStep(t, api, task())
 	for _, e := range events {
@@ -224,7 +224,7 @@ func TestAnAlreadyExistingPodIsAdopted(t *testing.T) {
 // A creation failure (RBAC, quota, an invalid image) has to surface as the step's
 // error, rather than become a ghost pod nobody follows.
 func TestACreationErrorReachesTheCaller(t *testing.T) {
-	api := &apiFalsa{createErr: errors.New(`pods is forbidden: cannot create resource "pods"`)}
+	api := &fakeAPI{createErr: errors.New(`pods is forbidden: cannot create resource "pods"`)}
 	e := k8s.NewExecutor(api, k8s.Options{})
 	if _, err := e.Execute(context.Background(), task()); err == nil {
 		t.Fatal("expected an error")
@@ -234,7 +234,7 @@ func TestACreationErrorReachesTheCaller(t *testing.T) {
 }
 
 func TestAFailedPodMayBeKeptForInspection(t *testing.T) {
-	api := &apiFalsa{fases: []k8s.Pod{withOutput("Failed", 1)}}
+	api := &fakeAPI{phases: []k8s.Pod{withOutput("Failed", 1)}}
 	e := k8s.NewExecutor(api, k8s.Options{KeepFailedPod: true})
 	e.Interval = time.Millisecond
 
@@ -252,17 +252,16 @@ func TestAFailedPodMayBeKeptForInspection(t *testing.T) {
 // `Pending` is not an error to Kubernetes: a pod that fits on no node stays there
 // forever. Without a cutoff the stage waits along with it -- no failure and no
 // retry -- which is how a CPU request larger than the pool's free capacity hung a
-// run
-// inteira em dev.
+// whole run in dev.
 func TestAPodThatDoesNotStartFailsWithTheSchedulersReason(t *testing.T) {
-	preso := phase("Pending")
-	preso.Status.Conditions = []k8s.Condition{{
+	stuck := phase("Pending")
+	stuck.Status.Conditions = []k8s.Condition{{
 		Type: "PodScheduled", Status: "False", Reason: "Unschedulable",
 		Message: "0/8 nodes are available: 6 Insufficient cpu.",
 	}}
-	api := &apiFalsa{fases: []k8s.Pod{preso}}
+	api := &fakeAPI{phases: []k8s.Pod{stuck}}
 
-	e := k8s.NewExecutor(api, k8s.Options{EsperaParaIniciar: 30 * time.Millisecond})
+	e := k8s.NewExecutor(api, k8s.Options{StartTimeout: 30 * time.Millisecond})
 	e.Interval = time.Millisecond
 
 	ch, err := e.Execute(context.Background(), task())
@@ -292,16 +291,16 @@ func TestTheNameChangesWithTheRunsAttempt(t *testing.T) {
 	b := task()
 	b.RunAttempt = 1
 	if k8s.PodName(a) == k8s.PodName(b) {
-		t.Error("attempts diferentes do run geraram o mesmo pod")
+		t.Error("different attempts of the run produced the same pod")
 	}
 }
 
 // KeepFailedPod keeps a pod that FINISHED failing, for somebody to read. A pod
-// whose run was cancelled has not finished -- it is still running its step --
+// whose run was canceled has not finished -- it is still running its step --
 // and keeping it keeps that step running beside the run's next attempt, which
 // is the duplicate execution #121 exists to end. It is deleted.
-func TestACancelledPodIsDeletedEvenWhenFailedOnesAreKept(t *testing.T) {
-	api := &apiFalsa{fases: []k8s.Pod{phase("Running")}}
+func TestACanceledPodIsDeletedEvenWhenFailedOnesAreKept(t *testing.T) {
+	api := &fakeAPI{phases: []k8s.Pod{phase("Running")}}
 	e := k8s.NewExecutor(api, k8s.Options{KeepFailedPod: true})
 	e.Interval = time.Millisecond
 
@@ -318,6 +317,6 @@ func TestACancelledPodIsDeletedEvenWhenFailedOnesAreKept(t *testing.T) {
 	api.mu.Lock()
 	defer api.mu.Unlock()
 	if len(api.deleted) != 1 {
-		t.Errorf("a cancelled pod, still running, was kept (deleted=%v)", api.deleted)
+		t.Errorf("a canceled pod, still running, was kept (deleted=%v)", api.deleted)
 	}
 }

@@ -65,7 +65,7 @@ func pipeline(url string) sdk.Pipeline {
 		Target: sdk.Target{
 			To: bigquery.Table{
 				Project: "p",
-				Name:    "prova",
+				Name:    "proof",
 				// nil: the engine decides, or nobody does.
 				CreateTable: nil,
 			},
@@ -109,16 +109,16 @@ func TestBeforeSeesTheParams(t *testing.T) {
 	t.Setenv("BREVIS_RUN_ID", "run-1")
 	t.Setenv("BREVIS_RUN_PARAMS", `{"load_full":"true"}`)
 
-	var viu string
+	var saw string
 	p := pipeline(srv.URL)
 	p.Before = func(ctx context.Context, p *sdk.Pipeline) error {
-		viu = p.Run.Params["load_full"]
+		saw = p.Run.Params["load_full"]
 		return nil
 	}
 	run(t, p)
 
-	if viu != "true" {
-		t.Errorf(`p.Run.Params["load_full"] = %q, esperado "true"`, viu)
+	if saw != "true" {
+		t.Errorf(`p.Run.Params["load_full"] = %q, want "true"`, saw)
 	}
 }
 
@@ -129,13 +129,13 @@ func TestParamsIsNeverNil(t *testing.T) {
 	// With no engine at all: reading a missing key must not blow up.
 	p := pipeline(srv.URL)
 	p.Before = func(ctx context.Context, p *sdk.Pipeline) error {
-		_ = p.Run.Params["qualquer"]
+		_ = p.Run.Params["any"]
 		return nil
 	}
 	run(t, p) // a panic here fails the test
 }
 
-func TestBoolEstaExportado(t *testing.T) {
+func TestBoolIsExported(t *testing.T) {
 	// sdk.Bool is the only way to express an explicit refusal, and three options
 	// have already ended up unreachable for not having been re-exported.
 	if v := sdk.Bool(false); v == nil || *v {
@@ -196,7 +196,7 @@ func TestAConsumerReadsTheSizeOfWhatWasExtracted(t *testing.T) {
 	}
 
 	if data.Stats().Bytes <= 0 {
-		t.Errorf("Data.Stats().Bytes = %d depois de drenar o fluxo", data.Stats().Bytes)
+		t.Errorf("Data.Stats().Bytes = %d after draining the stream", data.Stats().Bytes)
 	}
 }
 
@@ -204,7 +204,7 @@ func TestAConsumerReadsTheSizeOfWhatWasExtracted(t *testing.T) {
 // provenance, reads no field of the record, and writes nothing beyond what it
 // received.
 func TestAConsumerLoadsWithNoProvenanceAtAll(t *testing.T) {
-	t.Setenv("GOOGLE_PROJECT_ID", "um-projeto")
+	t.Setenv("GOOGLE_PROJECT_ID", "a-project")
 
 	srv := source(t)
 	data, err := sdk.Extract(context.Background(), sdk.Source{From: from.HTTP{URL: srv.URL}})
@@ -213,7 +213,7 @@ func TestAConsumerLoadsWithNoProvenanceAtAll(t *testing.T) {
 	}
 
 	// No Provider, no Entity, no Key. Only where to write.
-	_, err = sdk.Load(context.Background(), data, sdk.Target{To: bigquery.Table{Name: "minha_tabela"}})
+	_, err = sdk.Load(context.Background(), data, sdk.Target{To: bigquery.Table{Name: "my_table"}})
 
 	// With no credential the load never reaches BigQuery, and that is enough: what
 	// this test proves is that the facade's validation lets it through. An error
@@ -241,11 +241,11 @@ func TestAConsumerComposesTheColumnsInTransform(t *testing.T) {
 	n := 0
 	for env, err := range data.Records {
 		if err != nil {
-			t.Fatalf("registro %d: %v", n, err)
+			t.Fatalf("record %d: %v", n, err)
 		}
 		obj, ok := env.Payload.(map[string]any)
 		if !ok {
-			t.Fatalf("registro %d mudou de forma: %T", n, env.Payload)
+			t.Fatalf("record %d changed shape: %T", n, env.Payload)
 		}
 		if len(obj) != 1 {
 			t.Errorf("record %d has %d fields, expected only the declared one: %v", n, len(obj), obj)
@@ -264,13 +264,13 @@ func TestAConsumerSeesTheSchemaFailWhenTheFieldGoes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Extract: %v", err)
 	}
-	data = sdk.Transform(data, sdk.Accept("campo_que_a_fonte_parou_de_mandar"))
+	data = sdk.Transform(data, sdk.Accept("field_the_source_stopped_sending"))
 
 	for _, err := range data.Records {
 		if err == nil {
 			t.Fatal("a field declared and missing has to be an error, not a NULL column")
 		}
-		if !strings.Contains(err.Error(), "campo_que_a_fonte_parou_de_mandar") {
+		if !strings.Contains(err.Error(), "field_the_source_stopped_sending") {
 			t.Errorf("the error does not name the field: %v", err)
 		}
 		return
@@ -293,8 +293,8 @@ func TestAConsumerWritesBothColumnsInTheChain(t *testing.T) {
 	}
 
 	data = sdk.Transform(data,
-		sdk.Compute("provider", func(map[string]any) (any, error) { return "prova", nil }),
-		sdk.Compute("entity", func(map[string]any) (any, error) { return "linhas", nil }),
+		sdk.Compute("provider", func(map[string]any) (any, error) { return "proof", nil }),
+		sdk.Compute("entity", func(map[string]any) (any, error) { return "rows", nil }),
 		sdk.ComputeText("source_key", sdk.Key("id")),
 		sdk.IngestionID("provider", "entity", "source_key", "id"),
 		sdk.IngestionLoadedAt(),
@@ -303,11 +303,11 @@ func TestAConsumerWritesBothColumnsInTheChain(t *testing.T) {
 	n := 0
 	for env, err := range data.Records {
 		if err != nil {
-			t.Fatalf("registro %d: %v", n, err)
+			t.Fatalf("record %d: %v", n, err)
 		}
 		line := env.Payload.(map[string]any)
 		for _, column := range []string{sdk.ColumnIngestionID, sdk.ColumnIngestionLoadedAt} {
-			if v, tem := line[column]; !tem || v == "" {
+			if v, has := line[column]; !has || v == "" {
 				t.Errorf("record %d came out without %s: %v", n, column, line)
 			}
 		}

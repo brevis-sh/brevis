@@ -12,9 +12,9 @@ import (
 	"brevis.sh/brevis/sql/internal/dialect/postgres"
 )
 
-func mustParse(t *testing.T, dia, src string) *Template {
+func mustParse(t *testing.T, dialect, src string) *Template {
 	t.Helper()
-	tmpl, err := Parse(dia, src)
+	tmpl, err := Parse(dialect, src)
 	if err != nil {
 		t.Fatalf("parsing %q: %v", src, err)
 	}
@@ -194,7 +194,7 @@ func TestACommentIsDropped(t *testing.T) {
 // never used -- or, worse, the author "fixes" it by building the pattern in
 // SQL text. Refused at load, where the author is.
 func TestAPlaceholderInsideALiteralOrACommentIsRefused(t *testing.T) {
-	for dia, srcs := range map[string][]string{
+	for dialect, srcs := range map[string][]string{
 		"postgres": {
 			"select * from t where c like '%{{ x }}%'",
 			"select 1 -- {{ x }}",
@@ -209,8 +209,8 @@ func TestAPlaceholderInsideALiteralOrACommentIsRefused(t *testing.T) {
 		},
 	} {
 		for _, src := range srcs {
-			if _, err := Parse(dia, src); err == nil {
-				t.Errorf("%s: %q parsed", dia, src)
+			if _, err := Parse(dialect, src); err == nil {
+				t.Errorf("%s: %q parsed", dialect, src)
 			}
 		}
 	}
@@ -278,7 +278,7 @@ func TestNamesAreEveryNameUsed(t *testing.T) {
 // CONDITIONS SIDE BY SIDE ARE NOT A GLUED WORD: each branch is checked as
 // the text it is, and a placeholder that ends one branch does not touch the
 // one that starts the next.
-func TestPlaceholdersInNeighbouringConditionsParse(t *testing.T) {
+func TestPlaceholdersInNeighboringConditionsParse(t *testing.T) {
 	src := "select 1 {% if a %}{{ a }}{% endif %}{% if b %}{{ b }}{% else %}{{ c }}{% endif %}"
 	if _, err := Parse("postgres", src); err != nil {
 		t.Errorf("refused: %v", err)
@@ -303,7 +303,7 @@ func TestUnconditionalIsAHoleOutsideEveryCondition(t *testing.T) {
 // warehouse disagree a placeholder can hide. Found in review: each of these
 // parsed, and in each the warehouse reads `{{ tenant }}` as text.
 func TestSQLTheTokenizerCannotFollowIsRefused(t *testing.T) {
-	for dia, srcs := range map[string][]string{
+	for dialect, srcs := range map[string][]string{
 		"postgres": {
 			"select 1 /* /* */ where t = {{ tenant }} */",
 			"select $$ {{ tenant }} $$",
@@ -317,8 +317,8 @@ func TestSQLTheTokenizerCannotFollowIsRefused(t *testing.T) {
 		},
 	} {
 		for _, src := range srcs {
-			if _, err := Parse(dia, src); err == nil {
-				t.Errorf("%s: %q parsed", dia, src)
+			if _, err := Parse(dialect, src); err == nil {
+				t.Errorf("%s: %q parsed", dialect, src)
 			}
 		}
 	}

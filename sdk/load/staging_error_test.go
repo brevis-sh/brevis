@@ -19,34 +19,34 @@ import (
 // "close gcs writer: googleapi: Error 404: The specified bucket does not
 // exist". It said neither which bucket, nor that the default changed in
 // v0.25.0, nor
-// as duas saidas. Este teste fixa as quatro coisas.
+// the two ways out. This test pins the four things.
 func TestStagingErrorNamesTheBucketAndTheWayOut(t *testing.T) {
 	l := &Loader{cfg: &core.LoadConfig{
-		StagingBucket:   "projeto-brevis-staging",
+		StagingBucket:   "project-brevis-staging",
 		StagingPrefix:   "brevis/",
 		ThresholdForGCS: 5000,
 	}}
 
-	for _, causa := range []struct {
+	for _, cause := range []struct {
 		name string
 		err  error
 	}{
-		{"sentinela do storage", storage.ErrBucketNotExist},
-		{"404 da api json", &googleapi.Error{Code: 404, Message: "The specified bucket does not exist"}},
+		{"storage sentinel", storage.ErrBucketNotExist},
+		{"404 from the JSON API", &googleapi.Error{Code: 404, Message: "The specified bucket does not exist"}},
 	} {
-		t.Run(causa.name, func(t *testing.T) {
-			msg := l.stagingError(context.Background(), causa.err, 12000).Error()
+		t.Run(cause.name, func(t *testing.T) {
+			msg := l.stagingError(context.Background(), cause.err, 12000).Error()
 
-			for _, exigido := range []string{
-				"projeto-brevis-staging", // qual bucket
+			for _, required := range []string{
+				"project-brevis-staging", // which bucket
 				"12000",                  // why it staged
-				"InlineLimit",            // saida 1
-				"create the bucket",      // saida 2
+				"InlineLimit",            // way out 1
+				"create the bucket",      // way out 2
 				"v0.25.0",                // why the name changed
 				"StagingBucket",          // how to choose another
 			} {
-				if !strings.Contains(msg, exigido) {
-					t.Errorf("mensagem nao diz %q:\n%s", exigido, msg)
+				if !strings.Contains(msg, required) {
+					t.Errorf("the message does not say %q:\n%s", required, msg)
 				}
 			}
 		})
@@ -59,17 +59,17 @@ func TestStagingErrorNamesTheBucketAndTheWayOut(t *testing.T) {
 // matters more than having advice to give.
 func TestStagingErrorInventsNoDiagnosis(t *testing.T) {
 	l := &Loader{cfg: &core.LoadConfig{StagingBucket: "b", StagingPrefix: "p/"}}
-	causa := errors.New("connection reset by peer")
+	cause := errors.New("connection reset by peer")
 
-	err := l.stagingError(context.Background(), causa, 12000)
-	if !errors.Is(err, causa) {
-		t.Fatal("o erro original precisa continuar acessivel por errors.Is")
+	err := l.stagingError(context.Background(), cause, 12000)
+	if !errors.Is(err, cause) {
+		t.Fatal("the original error must remain reachable through errors.Is")
 	}
 	if strings.Contains(err.Error(), "create the bucket") {
-		t.Errorf("aconselhou criar bucket numa falha de rede:\n%s", err)
+		t.Errorf("advised creating the bucket on a network failure:\n%s", err)
 	}
 	if !strings.Contains(err.Error(), "gs://b/p/") {
-		t.Errorf("nem no caminho generico diz onde estava escrevendo:\n%s", err)
+		t.Errorf("not even the generic path says where it was writing:\n%s", err)
 	}
 }
 
@@ -95,14 +95,14 @@ func TestLoadViaGCSUsesStagingError(t *testing.T) {
 		option.WithoutAuthentication(),
 	)
 	if err != nil {
-		t.Fatalf("cliente falso: %v", err)
+		t.Fatalf("fake client: %v", err)
 	}
 	defer func() { _ = client.Close() }()
 
 	l := &Loader{
 		cfg: &core.LoadConfig{
 			Format:          "ndjson",
-			StagingBucket:   "projeto-brevis-staging",
+			StagingBucket:   "project-brevis-staging",
 			StagingPrefix:   "brevis/",
 			ThresholdForGCS: 5000,
 		},
@@ -111,15 +111,15 @@ func TestLoadViaGCSUsesStagingError(t *testing.T) {
 
 	_, _, _, _, err = l.loadViaGCS(ctx, nil, []byte(`{"a":1}`+"\n"), 12000)
 	if err == nil {
-		t.Fatal("bucket ausente precisa falhar")
+		t.Fatal("a missing bucket has to fail")
 	}
 	msg := err.Error()
 	if strings.Contains(msg, "close gcs writer") {
-		t.Errorf("voltou a mensagem crua do writer:\n%s", msg)
+		t.Errorf("the writer's raw message came back:\n%s", msg)
 	}
-	for _, exigido := range []string{"projeto-brevis-staging", "InlineLimit", "12000"} {
-		if !strings.Contains(msg, exigido) {
-			t.Errorf("o caminho real nao diz %q:\n%s", exigido, msg)
+	for _, required := range []string{"project-brevis-staging", "InlineLimit", "12000"} {
+		if !strings.Contains(msg, required) {
+			t.Errorf("the real path does not say %q:\n%s", required, msg)
 		}
 	}
 }
@@ -169,16 +169,16 @@ func gcsWhere(t *testing.T, found ...string) *storage.Client {
 func TestTheErrorSaysTheOldBucketIsStillThere(t *testing.T) {
 	l := &Loader{
 		cfg: &core.LoadConfig{
-			StagingBucket:   "projeto-brevis-staging",
+			StagingBucket:   "project-brevis-staging",
 			StagingPrefix:   "extracts/",
 			ThresholdForGCS: 5000,
 		},
-		gcs: gcsWhere(t, "projeto-bravis-staging"),
+		gcs: gcsWhere(t, "project-bravis-staging"),
 	}
 
 	msg := l.stagingError(context.Background(), storage.ErrBucketNotExist, 5156).Error()
 	for _, wanted := range []string{
-		"projeto-bravis-staging",    // the one that IS there
+		"project-bravis-staging",    // the one that IS there
 		"DOES exist",                // said plainly
 		"BREVIS_SDK_STAGING_BUCKET", // how to point at it without a rebuild
 	} {
@@ -194,7 +194,7 @@ func TestTheErrorSaysTheOldBucketIsStillThere(t *testing.T) {
 // what it was.
 func TestNoHintWhenTheOldBucketIsGoneToo(t *testing.T) {
 	l := &Loader{
-		cfg: &core.LoadConfig{StagingBucket: "projeto-brevis-staging", ThresholdForGCS: 5000},
+		cfg: &core.LoadConfig{StagingBucket: "project-brevis-staging", ThresholdForGCS: 5000},
 		gcs: gcsWhere(t), // nothing exists
 	}
 	if msg := l.stagingError(context.Background(), storage.ErrBucketNotExist, 5156).Error(); strings.Contains(msg, "DOES exist") {
@@ -219,9 +219,9 @@ func TestNoHintForABucketSomebodyNamed(t *testing.T) {
 }
 
 // The probe never fails the error it is decorating: no client is the case every
-// unit test above has, and a cancelled run still gets the full message.
+// unit test above has, and a canceled run still gets the full message.
 func TestTheProbeNeverBreaksTheError(t *testing.T) {
-	l := &Loader{cfg: &core.LoadConfig{StagingBucket: "projeto-brevis-staging", ThresholdForGCS: 5000}}
+	l := &Loader{cfg: &core.LoadConfig{StagingBucket: "project-brevis-staging", ThresholdForGCS: 5000}}
 	if msg := l.stagingError(context.Background(), storage.ErrBucketNotExist, 5156).Error(); !strings.Contains(msg, "InlineLimit") {
 		t.Errorf("with no gcs client the message lost its advice:\n%s", msg)
 	}
@@ -230,8 +230,8 @@ func TestTheProbeNeverBreaksTheError(t *testing.T) {
 	// must not be worse for it.
 	dead, cancel := context.WithCancel(context.Background())
 	cancel()
-	l.gcs = gcsWhere(t, "projeto-bravis-staging")
+	l.gcs = gcsWhere(t, "project-bravis-staging")
 	if msg := l.stagingError(dead, storage.ErrBucketNotExist, 5156).Error(); !strings.Contains(msg, "DOES exist") {
-		t.Errorf("a cancelled run lost the hint:\n%s", msg)
+		t.Errorf("a canceled run lost the hint:\n%s", msg)
 	}
 }

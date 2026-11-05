@@ -8,10 +8,10 @@ import (
 	"brevis.sh/brevis/internal/execution"
 )
 
-// TestALocalSecretComesFromTheEnginesEnvironment: em Kubernetes a coordenada aponta um
+// TestALocalSecretComesFromTheEnginesEnvironment: in Kubernetes the coordinate points at a
 // Secret; in local there is no Secret at all, so the engine reads the variable of
 // the same
-// nome do proprio ambiente.
+// name from its own environment.
 func TestALocalSecretComesFromTheEnginesEnvironment(t *testing.T) {
 	t.Setenv("GABRIEL_SESSION_COOKIE", "session=abc==")
 
@@ -27,14 +27,14 @@ func TestALocalSecretComesFromTheEnginesEnvironment(t *testing.T) {
 		t.Errorf("the secret did not reach the process: %v", env)
 	}
 	if !contains(env, "BREVIS_LOG_LEVEL=info") {
-		t.Errorf("o env literal sumiu: %v", env)
+		t.Errorf("the literal env vanished: %v", env)
 	}
 }
 
-// TestAMissingSecretFailsBeforeRunning: string vazia viraria um cookie vazio e
+// TestAMissingSecretFailsBeforeRunning: an empty string would become an empty cookie and
 // a 401 further down, blaming the API for a variable nobody exported.
 func TestAMissingSecretFailsBeforeRunning(t *testing.T) {
-	casos := map[string]func(*testing.T){
+	cases := map[string]func(*testing.T){
 		// Setenv registers the cleanup; Unsetenv right after leaves the variable
 		// genuinely absent and the original value comes back at the end of the
 		// test.
@@ -44,11 +44,11 @@ func TestAMissingSecretFailsBeforeRunning(t *testing.T) {
 				t.Fatal(err)
 			}
 		},
-		"vazia": func(t *testing.T) { t.Setenv("GABRIEL_SESSION_COOKIE", "") },
+		"empty": func(t *testing.T) { t.Setenv("GABRIEL_SESSION_COOKIE", "") },
 	}
-	for name, preparar := range casos {
+	for name, prepare := range cases {
 		t.Run(name, func(t *testing.T) {
-			preparar(t)
+			prepare(t)
 
 			_, err := taskEnvironment(execution.TaskExec{
 				NodeID:  "fetch_occurrences",
@@ -57,9 +57,9 @@ func TestAMissingSecretFailsBeforeRunning(t *testing.T) {
 			if err == nil {
 				t.Fatal("a missing secret got through")
 			}
-			for _, exigido := range []string{"GABRIEL_SESSION_COOKIE", "fetch_occurrences", "gabriel-session/cookie"} {
-				if !strings.Contains(err.Error(), exigido) {
-					t.Errorf("the error does not say %q: %v", exigido, err)
+			for _, required := range []string{"GABRIEL_SESSION_COOKIE", "fetch_occurrences", "gabriel-session/cookie"} {
+				if !strings.Contains(err.Error(), required) {
+					t.Errorf("the error does not say %q: %v", required, err)
 				}
 			}
 		})
@@ -69,14 +69,14 @@ func TestAMissingSecretFailsBeforeRunning(t *testing.T) {
 // TestATaskDoesNotInheritTheEnginesEnvironmentByAccident: the rule that already
 // existed. `secrets:` is the by-name opt-in against it, not an open gate.
 func TestATaskDoesNotInheritTheEnginesEnvironmentByAccident(t *testing.T) {
-	t.Setenv("SEGREDO_DO_ORQUESTRADOR", "should not leak")
+	t.Setenv("ORCHESTRATOR_SECRET", "should not leak")
 
 	env, err := taskEnvironment(execution.TaskExec{NodeID: "a", Env: map[string]string{"OK": "1"}})
 	if err != nil {
 		t.Fatalf("taskEnvironment: %v", err)
 	}
 	for _, kv := range env {
-		if strings.HasPrefix(kv, "SEGREDO_DO_ORQUESTRADOR=") {
+		if strings.HasPrefix(kv, "ORCHESTRATOR_SECRET=") {
 			t.Errorf("the task inherited the engine's environment: %v", env)
 		}
 	}
@@ -86,24 +86,24 @@ func TestATaskDoesNotInheritTheEnginesEnvironmentByAccident(t *testing.T) {
 // wins -- but the domain already refuses the collision, so this only pins down
 // that the order is not accidental.
 func TestASecretOverridesTheLiteral(t *testing.T) {
-	t.Setenv("TOKEN", "do-ambiente")
+	t.Setenv("TOKEN", "from-environment")
 
 	env, err := taskEnvironment(execution.TaskExec{
 		NodeID:  "a",
 		Env:     map[string]string{"TOKEN": "literal"},
-		Secrets: map[string]string{"TOKEN": "cofre/token"},
+		Secrets: map[string]string{"TOKEN": "vault/token"},
 	})
 	if err != nil {
 		t.Fatalf("taskEnvironment: %v", err)
 	}
-	if !contains(env, "TOKEN=do-ambiente") {
+	if !contains(env, "TOKEN=from-environment") {
 		t.Errorf("the literal beat the secret: %v", env)
 	}
 }
 
-func contains(env []string, procurado string) bool {
+func contains(env []string, wanted string) bool {
 	for _, kv := range env {
-		if kv == procurado {
+		if kv == wanted {
 			return true
 		}
 	}

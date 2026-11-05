@@ -106,7 +106,7 @@ func Set(ctx context.Context, key string, value any) error {
 
 	body, err := json.Marshal(value)
 	if err != nil {
-		return fmt.Errorf("persist %q: the value does not serialise: %w", key, err)
+		return fmt.Errorf("persist %q: the value does not serialize: %w", key, err)
 	}
 	if len(body) > MaxBytes {
 		return fmt.Errorf("persist %q: %d bytes, and the ceiling is %d. "+
@@ -275,7 +275,7 @@ func Raw(ctx context.Context, key string) ([]byte, bool, error) {
 //
 // A key becomes an object name, so a `/` would silently make a directory and a
 // `..` would climb out of the prefix the installation chose. Both are refused
-// here rather than sanitised: a key that does not mean what it says is worse
+// here rather than sanitized: a key that does not mean what it says is worse
 // than a key that is rejected.
 func checkKey(key string) error {
 	switch {

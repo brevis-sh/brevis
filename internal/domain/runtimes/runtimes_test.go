@@ -305,7 +305,7 @@ func TestTheVocabularyAndTheRulesAgree(t *testing.T) {
 }
 
 // The ids reach three places outside this package: the label map the DAG draws
-// from, the colour tokens in the stylesheet, and the vocabulary table people
+// from, the color tokens in the stylesheet, and the vocabulary table people
 // read before writing YAML. Renaming or adding one breaks all three at once.
 //
 // This used to be a hard-coded string listing the ids, which meant it could
@@ -318,8 +318,8 @@ func TestTheIdsAreStableKeys(t *testing.T) {
 	documented := documentedVocabulary(t)
 
 	for _, id := range rt.Runtimes {
-		// A runtime carries its own colour. Without the token the chip renders
-		// in the muted grey every tool uses, which is not wrong enough to
+		// A runtime carries its own color. Without the token the chip renders
+		// in the muted gray every tool uses, which is not wrong enough to
 		// notice and not right enough to keep.
 		if !tokens[id] {
 			t.Errorf("runtime %q has no --color-lang-%s in web/assets/app.src.css", id, id)
@@ -330,13 +330,13 @@ func TestTheIdsAreStableKeys(t *testing.T) {
 	// one is a decision rather than a slip.
 	for _, id := range rt.Tools {
 		if tokens[id] {
-			t.Errorf("tool %q has a colour token; tools draw muted on purpose", id)
+			t.Errorf("tool %q has a color token; tools draw muted on purpose", id)
 		}
 	}
 
 	for _, id := range append(append([]string{}, rt.Runtimes...), rt.Tools...) {
 		if !labels[id] {
-			t.Errorf("%q has no entry in LANG_LABEL in web/assets/dag.js; the chip would render the raw id", id)
+			t.Errorf("%q has no entry in LANG in web/spa/src/ui/lang.ts; the chip would render the raw id", id)
 		}
 		if !documented[id] {
 			t.Errorf("%q is not in the vocabulary table in docs/RUNTIME.md, which is what publish refusals point at", id)
@@ -350,9 +350,9 @@ func TestTheIdsAreStableKeys(t *testing.T) {
 	}
 }
 
-// jsLabelKeys reads the ids out of LANG_LABEL.
+// jsLabelKeys reads the ids out of LANG, the console's label table.
 func jsLabelKeys(t *testing.T) map[string]bool {
-	return keysIn(t, "web/assets/dag.js", `var LANG_LABEL = {`, "};", `(?m)([a-z0-9]+):\s*"`)
+	return keysIn(t, "web/spa/src/ui/lang.ts", "const LANG: Record<string, string> = {", "};", `(?m)([a-z0-9]+):\s*"`)
 }
 
 // cssLangTokens reads the --color-lang-* custom properties.

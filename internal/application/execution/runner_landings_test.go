@@ -20,7 +20,7 @@ import (
 // speakerThatFails prints its lines and then exits non-zero.
 type speakerThatFails struct{ lines []string }
 
-func (speakerThatFails) Name() string                         { return "falha" }
+func (speakerThatFails) Name() string                         { return "fail" }
 func (speakerThatFails) Cancel(context.Context, string) error { return nil }
 
 func (f speakerThatFails) Execute(context.Context, execution.TaskExec) (<-chan execution.Event, error) {
@@ -93,7 +93,7 @@ func TestAStepThatLandsAndThenFailsStillRecordsItsLandings(t *testing.T) {
 }
 
 func runnerSpeaking(spy *spyPersister, ex execution.Executor) app.Runner {
-	return app.Runner{RunID: uuid.New(), Persist: spy, Report: &spyReporter{}, Processo: ex}
+	return app.Runner{RunID: uuid.New(), Persist: spy, Report: &spyReporter{}, Process: ex}
 }
 
 // Every landing of an attempt carries the configuration the pipeline
@@ -152,7 +152,7 @@ func TestALandingThatCouldNotBeRecordedIsLogged(t *testing.T) {
 	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
 	t.Cleanup(func() { slog.SetDefault(previous) })
 
-	r := app.Runner{RunID: uuid.New(), Persist: landingsFail{&spyPersister{}}, Report: &spyReporter{}, Processo: sdkSpeaker{lines: []string{
+	r := app.Runner{RunID: uuid.New(), Persist: landingsFail{&spyPersister{}}, Report: &spyReporter{}, Process: sdkSpeaker{lines: []string{
 		`@brevis:{"type":"landed","target":"bigquery://acme-prod/silver/orders","rows":10}`,
 		`@brevis:{"type":"landed","target":"bigquery://acme-prod/silver/items","rows":4}`,
 	}}}
@@ -164,7 +164,7 @@ func TestALandingThatCouldNotBeRecordedIsLogged(t *testing.T) {
 	if n := strings.Count(out, "could not record"); n != 1 {
 		t.Fatalf("%d warnings, want one:\n%s", n, out)
 	}
-	for _, want := range []string{"level=WARN", r.RunID.String(), "workflow=clima", "step=collectOutput", "targets=2", "SQLSTATE 54000"} {
+	for _, want := range []string{"level=WARN", r.RunID.String(), "workflow=weather", "step=collectOutput", "targets=2", "SQLSTATE 54000"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("the warning lacks %q:\n%s", want, out)
 		}
@@ -192,7 +192,7 @@ func TestPhasesAndLoadNumbersThatCouldNotBeRecordedAreLoggedOnce(t *testing.T) {
 	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
 	t.Cleanup(func() { slog.SetDefault(previous) })
 
-	r := app.Runner{RunID: uuid.New(), Persist: persistFails{&spyPersister{}}, Report: &spyReporter{}, Processo: sdkSpeaker{lines: []string{
+	r := app.Runner{RunID: uuid.New(), Persist: persistFails{&spyPersister{}}, Report: &spyReporter{}, Process: sdkSpeaker{lines: []string{
 		`@brevis:{"type":"stage","index":0,"name":"extract","state":"running"}`,
 		`@brevis:{"type":"stage","index":0,"name":"extract","state":"done","ms":10}`,
 		`@brevis:{"type":"stage","index":1,"name":"load","state":"running"}`,

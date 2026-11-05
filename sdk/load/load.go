@@ -373,14 +373,14 @@ func (l *Loader) Load(ctx context.Context, envelopes ...core.Envelope) (*core.Lo
 	//
 	// It said asking the Schema here would refuse, with a worse message, the
 	// batch that evolve was about to fix. It would not: evolveTable runs
-	// twenty lines up, so by the time this reads the catalogue the columns it
+	// twenty lines up, so by the time this reads the catalog the columns it
 	// would have missed are already there. A mutation switching this to
 	// DeclaredColumns killed no test, which is how the claim was caught.
 	//
 	// The real reason is narrower and it is about SCOPE. For a Schema caller
 	// with evolve ON the check is redundant; with evolve OFF it would be a NEW
 	// refusal -- useful, probably, since the alternative is BigQuery answering
-	// `no such field` after the extract -- and a new refusal is a behaviour
+	// `no such field` after the extract -- and a new refusal is a behavior
 	// change that belongs in a slice of its own, with its own test, not
 	// smuggled into an audit of readers.
 	if existed && len(l.cfg.Columns) > 0 {
@@ -431,10 +431,10 @@ func (l *Loader) Load(ctx context.Context, envelopes ...core.Envelope) (*core.Lo
 	} else {
 		var bytesStaged int64
 		if result.Strategy == "gcs" {
-			var objeto string
-			bytesStaged, objeto, result.JobID, rowErrs, err = l.loadViaGCS(ctx, table, data, len(envelopes))
-			if objeto != "" {
-				result.Objects = []string{objeto}
+			var object string
+			bytesStaged, object, result.JobID, rowErrs, err = l.loadViaGCS(ctx, table, data, len(envelopes))
+			if object != "" {
+				result.Objects = []string{object}
 			}
 		} else {
 			bytesStaged, result.JobID, rowErrs, err = l.loadInline(ctx, table, data)
@@ -530,7 +530,7 @@ func (l *Loader) renamedBucketHint(ctx context.Context) string {
 	previous := strings.TrimSuffix(l.cfg.StagingBucket, renamedBucketSuffix) + previousSuffix
 
 	// Detached from the caller's context and bounded: the load has already
-	// failed, so a cancelled run should still get the good message, and a slow
+	// failed, so a canceled run should still get the good message, and a slow
 	// GCS must not hold the failure open.
 	probe, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
 	defer cancel()
@@ -856,7 +856,7 @@ func (l *Loader) loadInline(ctx context.Context, table *bigquery.Table, data []b
 	return int64(len(data)), jobID, nil, nil
 }
 
-func (l *Loader) loadViaGCS(ctx context.Context, table *bigquery.Table, data []byte, rowCount int) (bytesStaged int64, objeto, jobID string, rowErrs []string, err error) {
+func (l *Loader) loadViaGCS(ctx context.Context, table *bigquery.Table, data []byte, rowCount int) (bytesStaged int64, object, jobID string, rowErrs []string, err error) {
 	format, err := sourceFormat(l.cfg.Format)
 	if err != nil {
 		return 0, "", "", nil, err

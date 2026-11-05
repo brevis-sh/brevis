@@ -134,6 +134,16 @@ type Config struct {
 	EndpointsURLs string
 	EndpointsKey  string
 
+	// The sources of the live volume screens (internal/metrics). Each is
+	// `name=url` pairs of a /metrics address, the same name repeated for
+	// replicas. Empty is "no metrics source configured", and nothing else
+	// changes. They are ADDRESSES OF OTHER PROCESSES' metrics listeners, not
+	// this console's own (BREVIS_METRICS_ADDR).
+	GatewayMetricsURLs   string
+	EndpointsMetricsURLs string
+	// MetricsScrapeInterval is how often each source is read; zero is 5 s.
+	MetricsScrapeInterval time.Duration
+
 	// Pods parameterises execution in Kubernetes. These are the INSTALLATION's
 	// decisions -- which identity and credentials the pods start with -- which
 	// is why they come from the environment and not the workflow's YAML: a
@@ -143,7 +153,7 @@ type Config struct {
 
 type PodsConfig struct {
 	// Mode: auto (use pods when a cluster is there), on (require) or off (never).
-	Modo              string
+	Mode              string
 	Namespace         string
 	ServiceAccount    string
 	PullSecrets       []string
@@ -171,7 +181,7 @@ type PodsConfig struct {
 type Grace struct {
 	Key    string
 	Value  string
-	Efeito string
+	Effect string
 }
 
 // Load builds the Config and fails at boot if something required is missing.
@@ -196,7 +206,10 @@ func Load() (Config, error) {
 		SQLServeURL:   os.Getenv("BREVIS_SQL_SERVE_URL"),
 		SQLServeToken: os.Getenv("BREVIS_SQL_SERVE_TOKEN"),
 		EndpointsURLs: os.Getenv("BREVIS_ENDPOINTS_URLS"),
-		EndpointsKey:  os.Getenv("BREVIS_ENDPOINTS_KEY"),
+
+		GatewayMetricsURLs:   os.Getenv("BREVIS_GATEWAY_METRICS_URLS"),
+		EndpointsMetricsURLs: os.Getenv("BREVIS_ENDPOINTS_METRICS_URLS"),
+		EndpointsKey:         os.Getenv("BREVIS_ENDPOINTS_KEY"),
 		Auth: auth.Credential{
 			User:   renamed("BREVIS_AUTH_USER", "BREVIS_AUTH_USUARIO"),
 			Hash:   renamed("BREVIS_AUTH_PASSWORD_HASH", "BREVIS_AUTH_SENHA_HASH"),
@@ -205,7 +218,7 @@ func Load() (Config, error) {
 			ClientIPHeader: os.Getenv("BREVIS_AUTH_CLIENT_IP_HEADER"),
 		},
 		Pods: PodsConfig{
-			Modo:              get("BREVIS_PODS", "auto"),
+			Mode:              get("BREVIS_PODS", "auto"),
 			Namespace:         os.Getenv("BREVIS_POD_NAMESPACE"),
 			ServiceAccount:    os.Getenv("BREVIS_POD_SERVICE_ACCOUNT"),
 			PullSecrets:       list("BREVIS_POD_PULL_SECRETS"),
@@ -236,6 +249,11 @@ func Load() (Config, error) {
 	}
 
 	var err error
+	if v := os.Getenv("BREVIS_METRICS_SCRAPE_INTERVAL"); v != "" {
+		if c.MetricsScrapeInterval, err = time.ParseDuration(v); err != nil || c.MetricsScrapeInterval < time.Second || c.MetricsScrapeInterval > time.Minute {
+			return Config{}, fmt.Errorf("BREVIS_METRICS_SCRAPE_INTERVAL: %q is not a duration between 1s and 1m", v)
+		}
+	}
 	if c.DBMaxConns, err = envInt("BREVIS_DB_MAX_CONNS", 0); err != nil {
 		return Config{}, err
 	}
@@ -288,10 +306,10 @@ func Load() (Config, error) {
 	if c.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("BREVIS_DATABASE_URL is required")
 	}
-	switch c.Pods.Modo {
+	switch c.Pods.Mode {
 	case "auto", "on", "off":
 	default:
-		return Config{}, fmt.Errorf("BREVIS_PODS: %q is not valid (auto, on or off)", c.Pods.Modo)
+		return Config{}, fmt.Errorf("BREVIS_PODS: %q is not valid (auto, on or off)", c.Pods.Mode)
 	}
 	if err := c.Auth.Validate(); err != nil {
 		return Config{}, err
@@ -369,7 +387,7 @@ func TasksEnvironment(names []string) map[string]string {
 		// A name with no value: passed on if it exists. Missing does NOT become
 		// an empty string -- `GOOGLE_PROJECT_ID=""` would make dbt fail later,
 		// with a message worse than the one for a missing variable.
-		if v, existe := os.LookupEnv(input); existe {
+		if v, exists := os.LookupEnv(input); exists {
 			env[input] = v
 		}
 	}
@@ -389,7 +407,7 @@ func envInt(key string, fallback int) (int, error) {
 	return n, nil
 }
 
-// toleracoes reads "key=value:effect,other=value:effect".
+// graces reads "key=value:effect,other=value:effect".
 //
 // A malformed entry is IGNORED rather than becoming a boot error: a wrong
 // toleration leaves the pod Pending, which is visible; refusing the scheduler's
@@ -397,13 +415,13 @@ func envInt(key string, fallback int) (int, error) {
 func graces(key string) []Grace {
 	var out []Grace
 	for _, input := range list(key) {
-		par, efeito, temEfeito := strings.Cut(input, ":")
+		par, effect, hasEffect := strings.Cut(input, ":")
 		k, v, hasValue := strings.Cut(par, "=")
-		if !hasValue || !temEfeito {
+		if !hasValue || !hasEffect {
 			continue
 		}
 		out = append(out, Grace{Key: strings.TrimSpace(k),
-			Value: strings.TrimSpace(v), Efeito: strings.TrimSpace(efeito)})
+			Value: strings.TrimSpace(v), Effect: strings.TrimSpace(effect)})
 	}
 	return out
 }
@@ -412,7 +430,7 @@ func graces(key string) []Grace {
 // Config.
 func TaskEnvFromEnvironment() []string { return list("BREVIS_TASK_ENV") }
 
-// lista splits on commas, ignoring empties — "a,,b" is a typo, and an empty
+// list splits on commas, ignoring empties — "a,,b" is a typo, and an empty
 // secret name would make the server refuse the whole pod.
 func list(key string) []string {
 	var out []string

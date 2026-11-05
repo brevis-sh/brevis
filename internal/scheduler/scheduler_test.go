@@ -28,23 +28,23 @@ func build(t *testing.T, cron string, catchup bool) (*scheduler.Scheduler, *post
 	pool := testDB(t)
 	ctx := context.Background()
 
-	projeto := uuid.New()
+	project := uuid.New()
 	if _, err := pool.Exec(ctx,
-		`INSERT INTO projects (id, slug, name) VALUES ($1, 'p', 'Projeto')`, projeto); err != nil {
+		`INSERT INTO projects (id, slug, name) VALUES ($1, 'p', 'Project')`, project); err != nil {
 		t.Fatal(err)
 	}
 
 	wRepo := postgres.NewWorkflowRepo(pool)
 	w := wf.Workflow{
-		Slug: "diario", Name: "diario", Kind: wf.KindChain, Schedule: cron,
+		Slug: "daily", Name: "daily", Kind: wf.KindChain, Schedule: cron,
 		Nodes: []wf.Node{{ID: "a", Run: "echo ok"}},
 	}
-	if err := wRepo.Publicar(ctx, w, projeto, "test"); err != nil {
+	if err := wRepo.Publish(ctx, w, project, "test"); err != nil {
 		t.Fatal(err)
 	}
 	if catchup {
 		if _, err := pool.Exec(ctx,
-			`UPDATE schedules SET catchup = true WHERE workflow_slug = 'diario'`); err != nil {
+			`UPDATE schedules SET catchup = true WHERE workflow_slug = 'daily'`); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -59,7 +59,7 @@ func build(t *testing.T, cron string, catchup bool) (*scheduler.Scheduler, *post
 func setLastSlot(t *testing.T, pool *postgres.Pool, when time.Time) {
 	t.Helper()
 	if _, err := pool.Exec(context.Background(),
-		`UPDATE schedules SET ultimo_slot = $1 WHERE workflow_slug = 'diario'`, when); err != nil {
+		`UPDATE schedules SET last_slot = $1 WHERE workflow_slug = 'daily'`, when); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -83,9 +83,9 @@ func TestTheSchedulerCreatesARunAndEnqueuesIt(t *testing.T) {
 	if count[dom.StatusQueued] != 1 {
 		t.Errorf("queued = %d, wanted 1", count[dom.StatusQueued])
 	}
-	porTrigger, _ := runs.CountByTrigger(ctx)
-	if porTrigger["schedule"] != 1 {
-		t.Errorf("trigger_type = %v, wanted schedule", porTrigger)
+	byTrigger, _ := runs.CountByTrigger(ctx)
+	if byTrigger["schedule"] != 1 {
+		t.Errorf("trigger_type = %v, wanted schedule", byTrigger)
 	}
 	pending, _, _ := queue.Size(ctx)
 	if pending != 1 {
@@ -95,7 +95,7 @@ func TestTheSchedulerCreatesARunAndEnqueuesIt(t *testing.T) {
 
 // The point of the idempotency: re-running the cycle at the same instant must
 // not
-// duplicar. E o caso da secao 29 — o scheduler cai e sobe de novo.
+// duplicate. And the section 29 case -- the scheduler dies and comes back up.
 func TestARepeatedCycleDoesNotDuplicate(t *testing.T) {
 	s, runs, _, pool := build(t, "0 2 * * *", true)
 	ctx := context.Background()
@@ -106,7 +106,7 @@ func TestARepeatedCycleDoesNotDuplicate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	segundo, err := s.Cycle(ctx, now)
+	secondRun, err := s.Cycle(ctx, now)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,8 +114,8 @@ func TestARepeatedCycleDoesNotDuplicate(t *testing.T) {
 	if first != 3 { // 02, 03, 04
 		t.Errorf("first cycle created %d, wanted 3", first)
 	}
-	if segundo != 0 {
-		t.Errorf("second cycle created %d, wanted 0", segundo)
+	if secondRun != 0 {
+		t.Errorf("second cycle created %d, wanted 0", secondRun)
 	}
 	c, _ := runs.CountByStatus(ctx)
 	if total := c[dom.StatusQueued]; total != 3 {
@@ -149,7 +149,7 @@ func TestABackfillEntersTheQueueWithLowerPriority(t *testing.T) {
 	ctx := context.Background()
 	setLastSlot(t, pool, inUTC("2026-03-01T02:00:00Z"))
 
-	n, err := s.Backfill(ctx, "diario", inUTC("2026-01-01T00:00:00Z"), inUTC("2026-01-05T23:59:00Z"), nil)
+	n, err := s.Backfill(ctx, "daily", inUTC("2026-01-01T00:00:00Z"), inUTC("2026-01-05T23:59:00Z"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,9 +157,9 @@ func TestABackfillEntersTheQueueWithLowerPriority(t *testing.T) {
 		t.Fatalf("the backfill created %d runs, wanted 5", n)
 	}
 
-	porTrigger, _ := runs.CountByTrigger(ctx)
-	if porTrigger["backfill"] != 5 {
-		t.Errorf("trigger = %v, wanted 5 backfill", porTrigger)
+	byTrigger, _ := runs.CountByTrigger(ctx)
+	if byTrigger["backfill"] != 5 {
+		t.Errorf("trigger = %v, wanted 5 backfill", byTrigger)
 	}
 	pending, _, _ := queue.Size(ctx)
 	if pending != 5 {
@@ -167,7 +167,7 @@ func TestABackfillEntersTheQueueWithLowerPriority(t *testing.T) {
 	}
 
 	var prio int
-	if err := pool.QueryRow(ctx, `SELECT min(prioridade) FROM queue_items`).Scan(&prio); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT min(priority) FROM queue_items`).Scan(&prio); err != nil {
 		t.Fatal(err)
 	}
 	if prio >= 0 {
@@ -183,48 +183,48 @@ func TestABackfillDoesNotAdvanceTheMarker(t *testing.T) {
 	marker := inUTC("2026-03-01T02:00:00Z")
 	setLastSlot(t, pool, marker)
 
-	if _, err := s.Backfill(ctx, "diario", inUTC("2026-01-01T00:00:00Z"), inUTC("2026-01-03T23:59:00Z"), nil); err != nil {
+	if _, err := s.Backfill(ctx, "daily", inUTC("2026-01-01T00:00:00Z"), inUTC("2026-01-03T23:59:00Z"), nil); err != nil {
 		t.Fatal(err)
 	}
 
 	var after time.Time
 	if err := pool.QueryRow(ctx,
-		`SELECT ultimo_slot FROM schedules WHERE workflow_slug = 'diario'`).Scan(&after); err != nil {
+		`SELECT last_slot FROM schedules WHERE workflow_slug = 'daily'`).Scan(&after); err != nil {
 		t.Fatal(err)
 	}
 	if !after.Equal(marker) {
-		t.Errorf("ultimo_slot = %v, should still be %v", after, marker)
+		t.Errorf("last_slot = %v, should still be %v", after, marker)
 	}
 }
 
 // Republishing a workflow must not make the scheduler recreate slots already
-// materializados.
+// materialized.
 func TestRepublishingPreservesTheMarker(t *testing.T) {
 	_, _, _, pool := build(t, "0 2 * * *", false)
 	ctx := context.Background()
 	marker := inUTC("2026-05-01T02:00:00Z")
 	setLastSlot(t, pool, marker)
 
-	var projeto uuid.UUID
-	if err := pool.QueryRow(ctx, `SELECT id FROM projects LIMIT 1`).Scan(&projeto); err != nil {
+	var project uuid.UUID
+	if err := pool.QueryRow(ctx, `SELECT id FROM projects LIMIT 1`).Scan(&project); err != nil {
 		t.Fatal(err)
 	}
 	w := wf.Workflow{
-		Slug: "diario", Name: "diario v2", Kind: wf.KindChain, Schedule: "0 3 * * *",
+		Slug: "daily", Name: "daily v2", Kind: wf.KindChain, Schedule: "0 3 * * *",
 		Nodes: []wf.Node{{ID: "a", Run: "echo v2"}},
 	}
-	if err := postgres.NewWorkflowRepo(pool).Publicar(ctx, w, projeto, "test"); err != nil {
+	if err := postgres.NewWorkflowRepo(pool).Publish(ctx, w, project, "test"); err != nil {
 		t.Fatal(err)
 	}
 
 	var after time.Time
 	var cron string
 	if err := pool.QueryRow(ctx,
-		`SELECT ultimo_slot, cron FROM schedules WHERE workflow_slug = 'diario'`).Scan(&after, &cron); err != nil {
+		`SELECT last_slot, cron FROM schedules WHERE workflow_slug = 'daily'`).Scan(&after, &cron); err != nil {
 		t.Fatal(err)
 	}
 	if !after.Equal(marker) {
-		t.Errorf("ultimo_slot = %v; republishing must not recreate the past", after)
+		t.Errorf("last_slot = %v; republishing must not recreate the past", after)
 	}
 	if cron != "0 3 * * *" {
 		t.Errorf("cron = %q; the new one should win", cron)
@@ -237,19 +237,19 @@ func TestPublishingWithNoCronRemovesTheSchedule(t *testing.T) {
 	_, _, _, pool := build(t, "0 2 * * *", false)
 	ctx := context.Background()
 
-	var projeto uuid.UUID
-	if err := pool.QueryRow(ctx, `SELECT id FROM projects LIMIT 1`).Scan(&projeto); err != nil {
+	var project uuid.UUID
+	if err := pool.QueryRow(ctx, `SELECT id FROM projects LIMIT 1`).Scan(&project); err != nil {
 		t.Fatal(err)
 	}
-	w := wf.Workflow{Slug: "diario", Name: "diario", Kind: wf.KindChain,
+	w := wf.Workflow{Slug: "daily", Name: "daily", Kind: wf.KindChain,
 		Nodes: []wf.Node{{ID: "a", Run: "echo"}}}
-	if err := postgres.NewWorkflowRepo(pool).Publicar(ctx, w, projeto, "test"); err != nil {
+	if err := postgres.NewWorkflowRepo(pool).Publish(ctx, w, project, "test"); err != nil {
 		t.Fatal(err)
 	}
 
 	var n int
 	if err := pool.QueryRow(ctx,
-		`SELECT count(*) FROM schedules WHERE workflow_slug = 'diario'`).Scan(&n); err != nil {
+		`SELECT count(*) FROM schedules WHERE workflow_slug = 'daily'`).Scan(&n); err != nil {
 		t.Fatal(err)
 	}
 	if n != 0 {
@@ -259,13 +259,13 @@ func TestPublishingWithNoCronRemovesTheSchedule(t *testing.T) {
 
 // A one-day backfill with an hourly cron has to give 24 slots, not 23: `Next(t)`
 // returns the next one strictly after `t`, so starting exactly at
-// `de` excluiria o slot da meia-noite.
+// `from` would exclude the midnight slot.
 func TestABackfillIncludesTheEdgeSlot(t *testing.T) {
 	s, _, _, pool := build(t, "0 * * * *", false)
 	ctx := context.Background()
 	setLastSlot(t, pool, inUTC("2026-06-01T00:00:00Z"))
 
-	n, err := s.Backfill(ctx, "diario",
+	n, err := s.Backfill(ctx, "daily",
 		inUTC("2026-01-01T00:00:00Z"), inUTC("2026-01-01T23:59:59Z"), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -285,42 +285,42 @@ func TestPruningRemovesWhatLeftTheFolder(t *testing.T) {
 	repo := postgres.NewWorkflowRepo(pool)
 	schedules := postgres.NewScheduleRepo(pool)
 
-	var projeto uuid.UUID
+	var project uuid.UUID
 	if err := pool.QueryRow(ctx, `
 		INSERT INTO projects (id, slug, name) VALUES ($1,'acme','acme') RETURNING id`,
-		uuid.New()).Scan(&projeto); err != nil {
+		uuid.New()).Scan(&project); err != nil {
 		t.Fatal(err)
 	}
 
-	fica := wf.Workflow{Slug: "id_verification", Name: "id", Schedule: "0 4 * * *",
+	stays := wf.Workflow{Slug: "id_verification", Name: "id", Schedule: "0 4 * * *",
 		Nodes: []wf.Node{{ID: "run", Run: "dbt build"}}}
-	sai := wf.Workflow{Slug: "vendors_ana_telemetry", Name: "ana", Schedule: "*/15 * * * *",
+	leaving := wf.Workflow{Slug: "vendors_ana_telemetry", Name: "ana", Schedule: "*/15 * * * *",
 		Nodes: []wf.Node{{ID: "run", Run: "echo x"}}}
-	for _, w := range []wf.Workflow{fica, sai} {
-		if err := repo.Publicar(ctx, w, projeto, "test"); err != nil {
+	for _, w := range []wf.Workflow{stays, leaving} {
+		if err := repo.Publish(ctx, w, project, "test"); err != nil {
 			t.Fatal(err)
 		}
 	}
 
 	// An old run of what is about to go: the history has to survive.
 	if _, err := postgres.NewRunRepo(pool).Create(ctx, dom.Run{
-		WorkflowSlug: sai.Slug, IdempotencyKey: "antiga", Definition: []byte(`{}`),
+		WorkflowSlug: leaving.Slug, IdempotencyKey: "old", Definition: []byte(`{}`),
 	}); err != nil {
 		t.Fatal(err)
 	}
 
-	removed, err := repo.Podar(ctx, projeto, []string{fica.Slug}, "test")
+	removed, err := repo.Prune(ctx, project, []string{stays.Slug}, "test")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(removed) != 1 || removed[0] != sai.Slug {
-		t.Fatalf("removidos = %v, want apenas %s", removed, sai.Slug)
+	if len(removed) != 1 || removed[0] != leaving.Slug {
+		t.Fatalf("removed = %v, want only %s", removed, leaving.Slug)
 	}
 
-	if _, err := repo.Definition(ctx, sai.Slug); err == nil {
+	if _, err := repo.Definition(ctx, leaving.Slug); err == nil {
 		t.Error("the removed workflow still has a definition in the database")
 	}
-	if _, err := repo.Definition(ctx, fica.Slug); err != nil {
+	if _, err := repo.Definition(ctx, stays.Slug); err != nil {
 		t.Errorf("the workflow that stayed is gone: %v", err)
 	}
 
@@ -332,18 +332,18 @@ func TestPruningRemovesWhatLeftTheFolder(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, a := range active {
-		if a.WorkflowSlug == sai.Slug {
+		if a.WorkflowSlug == leaving.Slug {
 			t.Error("the removed workflow's schedule survived and would keep creating runs")
 		}
 	}
 
-	var historico int
+	var history int
 	if err := pool.QueryRow(ctx,
-		`SELECT count(*) FROM runs WHERE workflow_slug = $1`, sai.Slug).Scan(&historico); err != nil {
+		`SELECT count(*) FROM runs WHERE workflow_slug = $1`, leaving.Slug).Scan(&history); err != nil {
 		t.Fatal(err)
 	}
-	if historico != 1 {
-		t.Errorf("the history was deleted along with it (%d runs); deleting the run would be deleting the evidence", historico)
+	if history != 1 {
+		t.Errorf("the history was deleted along with it (%d runs); deleting the run would be deleting the evidence", history)
 	}
 }
 
@@ -353,18 +353,18 @@ func TestPruningWithNoDifferenceRemovesNothing(t *testing.T) {
 	ctx := context.Background()
 	repo := postgres.NewWorkflowRepo(pool)
 
-	var projeto uuid.UUID
+	var project uuid.UUID
 	if err := pool.QueryRow(ctx, `
 		INSERT INTO projects (id, slug, name) VALUES ($1,'acme','acme') RETURNING id`,
-		uuid.New()).Scan(&projeto); err != nil {
+		uuid.New()).Scan(&project); err != nil {
 		t.Fatal(err)
 	}
 	w := wf.Workflow{Slug: "so_esse", Name: "x", Nodes: []wf.Node{{ID: "a", Run: "echo"}}}
-	if err := repo.Publicar(ctx, w, projeto, "test"); err != nil {
+	if err := repo.Publish(ctx, w, project, "test"); err != nil {
 		t.Fatal(err)
 	}
 
-	removed, err := repo.Podar(ctx, projeto, []string{"so_esse"}, "test")
+	removed, err := repo.Prune(ctx, project, []string{"so_esse"}, "test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -398,17 +398,17 @@ func TestPruningKeepsTheScheduleOfASlugAnotherProjectStillPublishes(t *testing.T
 	w := wf.Workflow{Slug: "billing", Name: "billing", Schedule: "30 4 * * *",
 		Nodes: []wf.Node{{ID: "run", Run: "dbt build"}}}
 	for _, p := range []uuid.UUID{old, moved} {
-		if err := repo.Publicar(ctx, w, p, "test"); err != nil {
+		if err := repo.Publish(ctx, w, p, "test"); err != nil {
 			t.Fatal(err)
 		}
 	}
 	if _, err := pool.Exec(ctx,
-		`UPDATE schedules SET ativo = false, ultimo_slot = $2 WHERE workflow_slug = $1`,
+		`UPDATE schedules SET active = false, last_slot = $2 WHERE workflow_slug = $1`,
 		w.Slug, inUTC("2026-01-01T04:30:00Z")); err != nil {
 		t.Fatal(err)
 	}
 
-	removed, err := repo.Podar(ctx, old, []string{}, "test")
+	removed, err := repo.Prune(ctx, old, []string{}, "test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -416,19 +416,19 @@ func TestPruningKeepsTheScheduleOfASlugAnotherProjectStillPublishes(t *testing.T
 		t.Fatalf("removed = %v, want only %s", removed, w.Slug)
 	}
 
-	var ativo bool
+	var active bool
 	var last *time.Time
 	if err := pool.QueryRow(ctx,
-		`SELECT ativo, ultimo_slot FROM schedules WHERE workflow_slug = $1`, w.Slug,
-	).Scan(&ativo, &last); err != nil {
+		`SELECT active, last_slot FROM schedules WHERE workflow_slug = $1`, w.Slug,
+	).Scan(&active, &last); err != nil {
 		t.Fatalf("the schedule went with the pruned copy: %v", err)
 	}
-	if ativo || last == nil {
-		t.Errorf("schedule = ativo %v, last slot %v; want the pause and the slot kept", ativo, last)
+	if active || last == nil {
+		t.Errorf("schedule = active %v, last slot %v; want the pause and the slot kept", active, last)
 	}
 
 	// Pruned from the last project that publishes it, the schedule goes.
-	if _, err := repo.Podar(ctx, moved, []string{}, "test"); err != nil {
+	if _, err := repo.Prune(ctx, moved, []string{}, "test"); err != nil {
 		t.Fatal(err)
 	}
 	var n int
@@ -441,13 +441,13 @@ func TestPruningKeepsTheScheduleOfASlugAnotherProjectStillPublishes(t *testing.T
 	}
 }
 
-// A newly published schedule (`ultimo_slot` NULL) has to start firing.
+// A newly published schedule (`last_slot` NULL) has to start firing.
 //
 // This is the test that was missing, and the gap had a shape: EVERY case above
 // calls `setLastSlot` before the cycle, so the null-marker path was never
 // exercised. In dev, 18 workflows sat registered for hours with not one
 // automatic run -- a `*/30` among them -- because `Slots` started from
-// proprio `agora`, o proximo horario do cron era sempre futuro, e o marcador
+// its own `now`, the next cron time was always in the future, and the marker
 // never left NULL to break the circle.
 func TestANewScheduleStartsFiring(t *testing.T) {
 	s, runs, _, _ := build(t, "*/30 * * * *", false)
@@ -470,9 +470,9 @@ func TestANewScheduleStartsFiring(t *testing.T) {
 	if n != 1 {
 		t.Fatalf("created %d runs after the cron's time; wanted 1", n)
 	}
-	porTrigger, _ := runs.CountByTrigger(ctx)
-	if porTrigger["schedule"] != 1 {
-		t.Errorf("trigger = %v; wanted schedule", porTrigger)
+	byTrigger, _ := runs.CountByTrigger(ctx)
+	if byTrigger["schedule"] != 1 {
+		t.Errorf("trigger = %v; wanted schedule", byTrigger)
 	}
 }
 
@@ -487,7 +487,7 @@ func TestTheFirstRunMarkerIsPlantedOnlyOnce(t *testing.T) {
 	}
 	var first time.Time
 	if err := pool.QueryRow(ctx,
-		`SELECT ultimo_slot FROM schedules WHERE workflow_slug = 'diario'`).Scan(&first); err != nil {
+		`SELECT last_slot FROM schedules WHERE workflow_slug = 'daily'`).Scan(&first); err != nil {
 		t.Fatal(err)
 	}
 
@@ -496,7 +496,7 @@ func TestTheFirstRunMarkerIsPlantedOnlyOnce(t *testing.T) {
 	}
 	var after time.Time
 	if err := pool.QueryRow(ctx,
-		`SELECT ultimo_slot FROM schedules WHERE workflow_slug = 'diario'`).Scan(&after); err != nil {
+		`SELECT last_slot FROM schedules WHERE workflow_slug = 'daily'`).Scan(&after); err != nil {
 		t.Fatal(err)
 	}
 	if !after.Equal(first) {
@@ -508,7 +508,7 @@ func TestTheFirstRunMarkerIsPlantedOnlyOnce(t *testing.T) {
 //
 // `brevis backfill` printed `N backfill run(s) queued`, and N is correct: a
 // slot that already has a run is not created twice, which is the right
-// behaviour and the reason the number can be small. What it did not say is
+// behavior and the reason the number can be small. What it did not say is
 // how small out of WHAT.
 //
 // Run the same January twice and the second prints `0 backfill run(s)
@@ -526,7 +526,7 @@ func TestABackfillReportsWhatWasAlreadyThere(t *testing.T) {
 	setLastSlot(t, pool, inUTC("2026-06-01T00:00:00Z"))
 
 	from, to := inUTC("2026-01-01T00:00:00Z"), inUTC("2026-01-01T23:59:59Z")
-	first, err := s.Backfill(ctx, "diario", from, to, nil)
+	first, err := s.Backfill(ctx, "daily", from, to, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -536,7 +536,7 @@ func TestABackfillReportsWhatWasAlreadyThere(t *testing.T) {
 
 	// THE SAME INTERVAL AGAIN. Nothing is created, and that is right --
 	// what matters is that the answer can say so.
-	again, err := s.Backfill(ctx, "diario", from, to, nil)
+	again, err := s.Backfill(ctx, "daily", from, to, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -558,7 +558,7 @@ func TestABackfillOverNoSlotsSaysThereWereNone(t *testing.T) {
 	ctx := context.Background()
 	setLastSlot(t, pool, inUTC("2026-06-01T00:00:00Z"))
 
-	empty, err := s.Backfill(ctx, "diario",
+	empty, err := s.Backfill(ctx, "daily",
 		inUTC("2026-01-01T03:00:00Z"), inUTC("2026-01-01T04:00:00Z"), nil)
 	if err != nil {
 		t.Fatal(err)

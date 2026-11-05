@@ -12,7 +12,7 @@ import (
 	"brevis.sh/brevis/sdk/from"
 )
 
-// fonteFalsa entrega N registros, ou falha.
+// fakeSource delivers N records, or fails.
 type fakeSource struct {
 	name     string
 	lines    int
@@ -29,10 +29,10 @@ func (f fakeSource) Read(context.Context, sdk.ReadOptions) (iter.Seq2[sdk.Envelo
 	return func(yield func(sdk.Envelope, error) bool) {
 		for i := 0; i < f.lines; i++ {
 			if f.errAfter > 0 && i == f.errAfter {
-				yield(sdk.Envelope{}, fmt.Errorf("%s quebrou na linha %d", f.name, i))
+				yield(sdk.Envelope{}, fmt.Errorf("%s broke at line %d", f.name, i))
 				return
 			}
-			if !yield(sdk.Envelope{Payload: map[string]any{"origem": f.name, "i": i}}, nil) {
+			if !yield(sdk.Envelope{Payload: map[string]any{"source": f.name, "i": i}}, nil) {
 				return
 			}
 		}
@@ -55,7 +55,7 @@ func drain(t *testing.T, source sdk.Reader, stats *sdk.Stats) ([]map[string]any,
 	return lines, nil
 }
 
-// TestManyJoinsTheSources: o caso base.
+// TestManyJoinsTheSources: the base case.
 func TestManyJoinsTheSources(t *testing.T) {
 	lines, err := drain(t, from.Many{Sources: []sdk.Reader{
 		fakeSource{name: "a", lines: 2},
@@ -65,7 +65,7 @@ func TestManyJoinsTheSources(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(lines) != 5 {
-		t.Errorf("%d linhas, esperado 5", len(lines))
+		t.Errorf("%d rows, want 5", len(lines))
 	}
 }
 
@@ -86,14 +86,14 @@ func TestManySequentialKeepsTheOrder(t *testing.T) {
 		}
 		var order []string
 		for _, l := range lines {
-			order = append(order, fmt.Sprintf("%s%v", l["origem"], l["i"]))
+			order = append(order, fmt.Sprintf("%s%v", l["source"], l["i"]))
 		}
 		current := strings.Join(order, ",")
 		if current != "a0,a1,b0,b1,c0,c1" {
-			t.Fatalf("ordem = %s", current)
+			t.Fatalf("order = %s", current)
 		}
 		if attempt > 0 && current != previous {
-			t.Fatalf("a ordem variou entre execuções: %s e %s", previous, current)
+			t.Fatalf("the order varied between runs: %s and %s", previous, current)
 		}
 		previous = current
 	}
@@ -104,14 +104,14 @@ func TestManySequentialKeepsTheOrder(t *testing.T) {
 func TestManyAbortsByDefault(t *testing.T) {
 	_, err := drain(t, from.Many{Sources: []sdk.Reader{
 		fakeSource{name: "boa", lines: 2},
-		fakeSource{name: "ruim", openErr: fmt.Errorf("504")},
-		fakeSource{name: "outra", lines: 2},
+		fakeSource{name: "bad", openErr: fmt.Errorf("504")},
+		fakeSource{name: "other", lines: 2},
 	}}, nil)
 	if err == nil {
-		t.Fatal("o padrão tolerou uma falha")
+		t.Fatal("the default tolerated a failure")
 	}
-	if !strings.Contains(err.Error(), "ruim") {
-		t.Errorf("o erro não nomeia a origem: %v", err)
+	if !strings.Contains(err.Error(), "bad") {
+		t.Errorf("the error does not name the source: %v", err)
 	}
 }
 
@@ -125,23 +125,23 @@ func TestManyContinuesAndSaysWhichFailed(t *testing.T) {
 	lines, err := drain(t, from.Many{
 		Sources: []sdk.Reader{
 			fakeSource{name: "a", lines: 2},
-			fakeSource{name: "quebrada", openErr: fmt.Errorf("504 do fornecedor")},
+			fakeSource{name: "broken", openErr: fmt.Errorf("504 from the provider")},
 			fakeSource{name: "c", lines: 3},
 		},
 		OnError: sdk.ContinueOnError,
 	}, &stats)
 	if err != nil {
-		t.Fatalf("ContinueOnError abortou: %v", err)
+		t.Fatalf("ContinueOnError aborted: %v", err)
 	}
 	if len(lines) != 5 {
-		t.Errorf("%d linhas, esperado 5 -- as boas têm de sobreviver à ruim", len(lines))
+		t.Errorf("%d rows, want 5 -- the good ones must survive the bad one", len(lines))
 	}
 	if len(stats.FailedSources) != 1 {
-		t.Fatalf("falhas = %v, esperado uma", stats.FailedSources)
+		t.Fatalf("failures = %v, want one", stats.FailedSources)
 	}
 	f := stats.FailedSources[0]
-	if f.Source != "quebrada" || !strings.Contains(f.Err, "504") {
-		t.Errorf("a falha não diz qual nem por quê: %+v", f)
+	if f.Source != "broken" || !strings.Contains(f.Err, "504") {
+		t.Errorf("the failure does not say which or why: %+v", f)
 	}
 }
 
@@ -151,8 +151,8 @@ func TestAFailureMidwayThroughASourceCountsToo(t *testing.T) {
 	var stats sdk.Stats
 	lines, err := drain(t, from.Many{
 		Sources: []sdk.Reader{
-			fakeSource{name: "meia", lines: 10, errAfter: 3},
-			fakeSource{name: "inteira", lines: 2},
+			fakeSource{name: "half", lines: 10, errAfter: 3},
+			fakeSource{name: "whole", lines: 2},
 		},
 		OnError: sdk.ContinueOnError,
 	}, &stats)
@@ -161,17 +161,17 @@ func TestAFailureMidwayThroughASourceCountsToo(t *testing.T) {
 	}
 	// The 3 the source delivered before breaking count: they were read.
 	if len(lines) != 5 {
-		t.Errorf("%d linhas, esperado 5 (3 da meia + 2 da inteira)", len(lines))
+		t.Errorf("%d rows, want 5 (3 from the half + 2 from the whole)", len(lines))
 	}
-	if len(stats.FailedSources) != 1 || stats.FailedSources[0].Source != "meia" {
-		t.Errorf("falhas = %v", stats.FailedSources)
+	if len(stats.FailedSources) != 1 || stats.FailedSources[0].Source != "half" {
+		t.Errorf("failures = %v", stats.FailedSources)
 	}
 }
 
-// TestEveryySourceFailingIsNotZeroRows: zero records from N good sources is a
+// TestEverySourceFailingIsNotZeroRows: zero records from N good sources is a
 // result; zero because all N failed is a broken run, and the two must not
-// podem parecer a mesma coisa.
-func TestEveryySourceFailingIsNotZeroRows(t *testing.T) {
+// look like the same thing.
+func TestEverySourceFailingIsNotZeroRows(t *testing.T) {
 	_, err := drain(t, from.Many{
 		Sources: []sdk.Reader{
 			fakeSource{name: "a", openErr: fmt.Errorf("504")},
@@ -180,10 +180,10 @@ func TestEveryySourceFailingIsNotZeroRows(t *testing.T) {
 		OnError: sdk.ContinueOnError,
 	}, nil)
 	if err == nil {
-		t.Fatal("todas as origens falharam e a execução deu certo")
+		t.Fatal("all the sources failed and the run succeeded")
 	}
 	if !strings.Contains(err.Error(), "all 2 sources failed") {
-		t.Errorf("o erro não diz que foram todas: %v", err)
+		t.Errorf("the error does not say they all failed: %v", err)
 	}
 }
 
@@ -200,18 +200,18 @@ func TestManyConcurrentReadsEverything(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(lines) != 200 {
-		t.Fatalf("%d linhas, esperado 200", len(lines))
+		t.Fatalf("%d rows, want 200", len(lines))
 	}
 	seen := map[string]int{}
 	for _, l := range lines {
-		seen[l["origem"].(string)]++
+		seen[l["source"].(string)]++
 	}
 	if len(seen) != 50 {
-		t.Errorf("%d origens apareceram, esperado 50", len(seen))
+		t.Errorf("%d sources showed up, want 50", len(seen))
 	}
 	for name, n := range seen {
 		if n != 4 {
-			t.Errorf("%s entregou %d linhas", name, n)
+			t.Errorf("%s delivered %d rows", name, n)
 		}
 	}
 }
@@ -221,21 +221,21 @@ func TestManyConcurrentReadsEverything(t *testing.T) {
 func TestManySumsTheCounters(t *testing.T) {
 	var stats sdk.Stats
 	if _, err := drain(t, from.Many{
-		Sources: []sdk.Reader{contadora{2}, contadora{3}, contadora{5}},
+		Sources: []sdk.Reader{counter{2}, counter{3}, counter{5}},
 		Workers: 3,
 	}, &stats); err != nil {
 		t.Fatal(err)
 	}
 	if stats.Pages != 10 {
-		t.Errorf("Pages = %d, esperado 10 (2+3+5)", stats.Pages)
+		t.Errorf("Pages = %d, want 10 (2+3+5)", stats.Pages)
 	}
 }
 
 // countingSource fills the Stats it receives, like a real driver.
-type contadora struct{ pages int }
+type counter struct{ pages int }
 
-func (c contadora) Describe() string { return fmt.Sprintf("contadora(%d)", c.pages) }
-func (c contadora) Read(_ context.Context, opt sdk.ReadOptions) (iter.Seq2[sdk.Envelope, error], error) {
+func (c counter) Describe() string { return fmt.Sprintf("counter(%d)", c.pages) }
+func (c counter) Read(_ context.Context, opt sdk.ReadOptions) (iter.Seq2[sdk.Envelope, error], error) {
 	return func(yield func(sdk.Envelope, error) bool) {
 		if opt.Stats != nil {
 			opt.Stats.Pages = c.pages
@@ -278,17 +278,17 @@ func TestManyStopsReadingWhenTheConsumerStops(t *testing.T) {
 	select {
 	case <-done:
 	case <-timeout():
-		t.Fatal("a iteração não terminou depois do break; alguma goroutine ficou presa")
+		t.Fatal("the iteration did not finish after the break; some goroutine got stuck")
 	}
 }
 
 // TestManyRefusesInvalidConfiguration.
 func TestManyRefusesInvalidConfiguration(t *testing.T) {
 	if _, err := drain(t, from.Many{}, nil); err == nil {
-		t.Error("aceitou zero origens")
+		t.Error("accepted zero sources")
 	}
 	if _, err := drain(t, from.Many{Sources: []sdk.Reader{nil}}, nil); err == nil {
-		t.Error("aceitou uma origem nil")
+		t.Error("accepted a nil source")
 	}
 }
 
@@ -307,8 +307,8 @@ func TestDiscoverBuildsTheSourcesInsideThePipeline(t *testing.T) {
 	lines, err := drain(t, from.Many{
 		Discover: func(context.Context) ([]sdk.Reader, error) {
 			return []sdk.Reader{
-				fakeSource{name: "descoberta-a", lines: 2},
-				fakeSource{name: "descoberta-b", lines: 3},
+				fakeSource{name: "discovered-a", lines: 2},
+				fakeSource{name: "discovered-b", lines: 3},
 			}, nil
 		},
 	}, nil)
@@ -316,7 +316,7 @@ func TestDiscoverBuildsTheSourcesInsideThePipeline(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(lines) != 5 {
-		t.Errorf("%d linhas, esperado 5", len(lines))
+		t.Errorf("%d rows, want 5", len(lines))
 	}
 }
 
@@ -326,14 +326,14 @@ func TestDiscoverBuildsTheSourcesInsideThePipeline(t *testing.T) {
 func TestAFailingDiscoverIsAnExtractError(t *testing.T) {
 	_, err := drain(t, from.Many{
 		Discover: func(context.Context) ([]sdk.Reader, error) {
-			return nil, fmt.Errorf("o endpoint que lista as partições devolveu 503")
+			return nil, fmt.Errorf("the endpoint that lists the partitions returned 503")
 		},
 	}, nil)
 	if err == nil {
-		t.Fatal("a descoberta falhou e a execução seguiu")
+		t.Fatal("the discovery failed and the run carried on")
 	}
 	if !strings.Contains(err.Error(), "discovering the sources") {
-		t.Errorf("o erro não diz o que falhou: %v", err)
+		t.Errorf("the error does not say what failed: %v", err)
 	}
 }
 
@@ -345,10 +345,10 @@ func TestAnEmptyDiscoverIsNotZeroRecords(t *testing.T) {
 		Discover: func(context.Context) ([]sdk.Reader, error) { return nil, nil },
 	}, nil)
 	if err == nil {
-		t.Fatal("zero origens passou como zero registros")
+		t.Fatal("zero sources passed as zero records")
 	}
 	if !strings.Contains(err.Error(), "returned no source at all") {
-		t.Errorf("erro = %v", err)
+		t.Errorf("error = %v", err)
 	}
 }
 
@@ -360,6 +360,6 @@ func TestDiscoverAndSourcesTogetherIsRefused(t *testing.T) {
 		Discover: func(context.Context) ([]sdk.Reader, error) { return nil, nil },
 	}, nil)
 	if err == nil {
-		t.Fatal("declarar os dois passou")
+		t.Fatal("declaring both got through")
 	}
 }

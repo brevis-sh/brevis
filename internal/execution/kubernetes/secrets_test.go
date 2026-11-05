@@ -10,7 +10,7 @@ import (
 
 // optionsAllowing is what an installation that authorized this Secret passes.
 func optionsAllowing() Options {
-	return Options{AllowedSecrets: []string{"gabriel-session", "cofre"}}.withDefaults()
+	return Options{AllowedSecrets: []string{"gabriel-session", "vault"}}.withDefaults()
 }
 
 func taskWithSecret() execution.TaskExec {
@@ -47,12 +47,12 @@ func TestASecretBecomesASecretKeyRef(t *testing.T) {
 		t.Fatal("no valueFrom.secretKeyRef")
 	}
 	if got := found.ValueFrom.SecretKeyRef; got.Name != "gabriel-session" || got.Key != "cookie" {
-		t.Errorf("coordenada errada: %+v", got)
+		t.Errorf("wrong coordinate: %+v", got)
 	}
 }
 
-// TestJSONDoPodNaoManda value VAZIO junto de valueFrom: o servidor recusa as
-// two keys on the same variable, and the refusal talks about a container field,
+// TestThePodsJSONSendsNoEmptyValueAlongsideValueFrom: an EMPTY value next to
+// valueFrom: the server refuses the two keys on the same variable, and the refusal talks about a container field,
 // not about a line of YAML.
 func TestThePodsJSONSendsNoEmptyValueAlongsideValueFrom(t *testing.T) {
 	pod, err := BuildPod(taskWithSecret(), optionsAllowing())
@@ -64,13 +64,13 @@ func TestThePodsJSONSendsNoEmptyValueAlongsideValueFrom(t *testing.T) {
 		t.Fatalf("marshal: %v", err)
 	}
 	if strings.Contains(string(b), `"value":""`) {
-		t.Errorf("o JSON manda value vazio junto de valueFrom:\n%s", b)
+		t.Errorf("the JSON sends an empty value next to valueFrom:\n%s", b)
 	}
 }
 
 // TestTheSecretDoesNotLeakInThePodsJSON: the manifest goes to the server, shows
 // up in
-// `kubectl get pod -o yaml` e costuma acabar em log de deploy.
+// `kubectl get pod -o yaml` and tends to end up in a deploy log.
 func TestTheSecretDoesNotLeakInThePodsJSON(t *testing.T) {
 	task := taskWithSecret()
 	task.Secrets["GABRIEL_SESSION_COOKIE"] = "gabriel-session/cookie"
@@ -93,7 +93,7 @@ func TestThePodsEnvironmentIsDeterministic(t *testing.T) {
 	task := taskWithSecret()
 	task.Env["A"] = "1"
 	task.Env["Z"] = "2"
-	task.Secrets["OUTRO"] = "cofre/chave"
+	task.Secrets["OTHER"] = "vault/key"
 
 	var first string
 	for i := 0; i < 20; i++ {
@@ -107,28 +107,28 @@ func TestThePodsEnvironmentIsDeterministic(t *testing.T) {
 			continue
 		}
 		if string(b) != first {
-			t.Fatalf("ordem instavel:\n%s\n%s", first, b)
+			t.Fatalf("unstable order:\n%s\n%s", first, b)
 		}
 	}
 }
 
-// TestTheYAMLDoesNotChooseWhichSecretToMount: `secrets:` inverte quem escolhe --
+// TestTheYAMLDoesNotChooseWhichSecretToMount: `secrets:` inverts who chooses --
 // EnvFromSecrets comes from the scheduler's environment, `secrets:` comes from
 // the file, and the file is written by somebody else. Without the list, a
 // workflow could mount
-// qualquer Secret do namespace, inclusive o do testDB do proprio Brevis, e
+// any Secret in the namespace, Brevis's own database one included,
 // and would run an arbitrary command with it in hand.
 func TestTheYAMLDoesNotChooseWhichSecretToMount(t *testing.T) {
 	task := taskWithSecret()
-	task.Secrets["ROUBADO"] = "brevis-database/url"
+	task.Secrets["STOLEN"] = "brevis-database/url"
 
 	_, err := BuildPod(task, optionsAllowing())
 	if err == nil {
 		t.Fatal("the YAML mounted a Secret the installation did not allow")
 	}
-	for _, exigido := range []string{"brevis-database", "BREVIS_POD_ALLOWED_SECRETS"} {
-		if !strings.Contains(err.Error(), exigido) {
-			t.Errorf("the error does not say %q: %v", exigido, err)
+	for _, required := range []string{"brevis-database", "BREVIS_POD_ALLOWED_SECRETS"} {
+		if !strings.Contains(err.Error(), required) {
+			t.Errorf("the error does not say %q: %v", required, err)
 		}
 	}
 }
@@ -148,7 +148,7 @@ func TestWithNoListNoSecretGetsThrough(t *testing.T) {
 
 // TestWithNoSecretsInTheYAMLNothingChanges: a workflow that does not use
 // `secrets:` must not
-// passar a exigir configuracao nova.
+// start requiring new configuration.
 func TestWithNoSecretsInTheYAMLNothingChanges(t *testing.T) {
 	task := taskWithSecret()
 	task.Secrets = nil

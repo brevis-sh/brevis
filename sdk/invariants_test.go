@@ -31,11 +31,11 @@ func TestI2SchemaRequiresAType(t *testing.T) {
 	}
 	err := sdk.ValidateTarget(target)
 	if err == nil {
-		t.Fatal("coluna sem Type passou")
+		t.Fatal("a column without a Type got through")
 	}
-	for _, quero := range []string{"a", "Type", "TypeString"} {
-		if !strings.Contains(err.Error(), quero) {
-			t.Errorf("o erro não diz %q: %v", quero, err)
+	for _, want := range []string{"a", "Type", "TypeString"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the error does not say %q: %v", want, err)
 		}
 	}
 }
@@ -49,10 +49,10 @@ func TestI2ColumnsAndSchemaTogetherIsRefused(t *testing.T) {
 		Schema:  sdk.Schema{{Name: "a", Type: sdk.TypeString}},
 	})
 	if err == nil {
-		t.Fatal("declarar Columns e Schema passou")
+		t.Fatal("declaring Columns and Schema got through")
 	}
 	if !strings.Contains(err.Error(), "drop Columns") {
-		t.Errorf("o erro não diz qual manter: %v", err)
+		t.Errorf("the error does not say which to keep: %v", err)
 	}
 }
 
@@ -62,26 +62,26 @@ func TestI2ColumnsAndSchemaTogetherIsRefused(t *testing.T) {
 // vendor with a quota that is the difference between one metadata query and the
 // whole quota window spent to find out that a column does not match.
 func TestI3ChecksBeforeTheExtract(t *testing.T) {
-	var extraiu bool
-	source := recordingSource{&extraiu}
+	var extracted bool
+	source := recordingSource{&extracted}
 
 	p := sdk.Pipeline{
 		Name:   "i3",
 		Source: sdk.Source{From: source},
 		Target: sdk.Target{
 			To:      refusingTarget{},
-			Columns: []string{"coluna_que_nao_existe"},
+			Columns: []string{"column_that_does_not_exist"},
 		},
 	}
 	err := sdk.Execute(context.Background(), &p, nil)
 	if err == nil {
-		t.Fatal("o destino recusou e a execução seguiu")
+		t.Fatal("the destination refused and the run carried on")
 	}
-	if extraiu {
-		t.Error("o extract rodou antes da conferência -- é exatamente a quota que o I3 economiza")
+	if extracted {
+		t.Error("the extract ran before the check -- exactly the quota that I3 saves")
 	}
 	if !strings.Contains(err.Error(), "before the extract") {
-		t.Errorf("o erro não diz que foi antes: %v", err)
+		t.Errorf("the error does not say it was before: %v", err)
 	}
 }
 
@@ -90,19 +90,19 @@ func TestI4ThePartitionIsDeclared(t *testing.T) {
 	err := sdk.ValidateTarget(sdk.Target{
 		To:          postgres.Table{DSN: "postgres://x/y", Name: "t"},
 		Schema:      sdk.Schema{{Name: "a", Type: sdk.TypeString}},
-		PartitionBy: "nao_declarada",
+		PartitionBy: "not_declared",
 	})
 	if err == nil {
-		t.Fatal("particionar por uma coluna que o Schema não declara passou")
+		t.Fatal("partitioning by a column the Schema does not declare got through")
 	}
-	if !strings.Contains(err.Error(), "nao_declarada") {
-		t.Errorf("o erro não nomeia a coluna: %v", err)
+	if !strings.Contains(err.Error(), "not_declared") {
+		t.Errorf("the error does not name the column: %v", err)
 	}
 }
 
 type recordingSource struct{ called *bool }
 
-func (f recordingSource) Describe() string { return "fonte de teste" }
+func (f recordingSource) Describe() string { return "test source" }
 func (f recordingSource) Read(context.Context, sdk.ReadOptions) (iter.Seq2[sdk.Envelope, error], error) {
 	*f.called = true
 	return func(yield func(sdk.Envelope, error) bool) {}, nil
@@ -110,9 +110,9 @@ func (f recordingSource) Read(context.Context, sdk.ReadOptions) (iter.Seq2[sdk.E
 
 type refusingTarget struct{}
 
-func (refusingTarget) Describe() string { return "destino de teste" }
+func (refusingTarget) Describe() string { return "test target" }
 func (refusingTarget) Write(context.Context, []sdk.Envelope, sdk.WriteOptions) (*sdk.LoadResult, error) {
-	return nil, fmt.Errorf("não deveria chegar aqui")
+	return nil, fmt.Errorf("should not get here")
 }
 func (refusingTarget) CheckDestination(_ context.Context, columns []string) error {
 	return fmt.Errorf("the declaration lists %s, which the table does not have. "+

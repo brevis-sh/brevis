@@ -26,7 +26,7 @@ import (
 // Taken where the record leaves the source, no ordering can contaminate it.
 func TestTheSnapshotDoesNotDependOnThePositionInTheChain(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = fmt.Fprint(w, `{"id":"1","temperatura":19.5}`)
+		_, _ = fmt.Fprint(w, `{"id":"1","temperature":19.5}`)
 	}))
 	defer srv.Close()
 
@@ -38,7 +38,7 @@ func TestTheSnapshotDoesNotDependOnThePositionInTheChain(t *testing.T) {
 	}
 	// The chain writes AFTER the snapshot, and writes plenty.
 	data = sdk.Transform(data,
-		sdk.Compute("derivado", func(map[string]any) (any, error) { return "novo", nil }),
+		sdk.Compute("derived", func(map[string]any) (any, error) { return "new", nil }),
 		sdk.Rename(map[string]string{"id": "source_key"}),
 	)
 
@@ -50,18 +50,18 @@ func TestTheSnapshotDoesNotDependOnThePositionInTheChain(t *testing.T) {
 		line = env.Payload.(map[string]any)
 	}
 
-	retrato, ok := line["payload"].(map[string]any)
+	snapshot, ok := line["payload"].(map[string]any)
 	if !ok {
-		t.Fatalf("sem retrato: %v", line)
+		t.Fatalf("no snapshot: %v", line)
 	}
-	if _, contaminado := retrato["derivado"]; contaminado {
-		t.Errorf("o retrato carrega um campo que a cadeia escreveu: %v", retrato)
+	if _, tainted := snapshot["derived"]; tainted {
+		t.Errorf("the snapshot carries a field the chain wrote: %v", snapshot)
 	}
-	if retrato["id"] != "1" {
-		t.Errorf("o retrato perdeu o nome original do campo: %v", retrato)
+	if snapshot["id"] != "1" {
+		t.Errorf("the snapshot lost the field's original name: %v", snapshot)
 	}
 	if line["source_key"] != "1" {
-		t.Errorf("a cadeia não rodou sobre o registro: %v", line)
+		t.Errorf("the chain did not run on the record: %v", line)
 	}
 }
 
@@ -70,7 +70,7 @@ func TestTheSnapshotDoesNotDependOnThePositionInTheChain(t *testing.T) {
 // that came from the source, in silence.
 func TestTheSnapshotRefusesToOverwriteWhatTheSourceSent(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = fmt.Fprint(w, `{"payload":"da fonte"}`)
+		_, _ = fmt.Fprint(w, `{"payload":"from the source"}`)
 	}))
 	defer srv.Close()
 
@@ -80,27 +80,27 @@ func TestTheSnapshotRefusesToOverwriteWhatTheSourceSent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var visto error
+	var seen error
 	for _, err := range data.Records {
 		if err != nil {
-			visto = err
+			seen = err
 		}
 	}
-	if visto == nil {
-		t.Fatal("gravou o retrato por cima de um campo da fonte")
+	if seen == nil {
+		t.Fatal("wrote the snapshot over a field of the source")
 	}
-	if !strings.Contains(visto.Error(), "payload") {
-		t.Errorf("o erro não nomeia o campo: %v", visto)
+	if !strings.Contains(seen.Error(), "payload") {
+		t.Errorf("the error does not name the field: %v", seen)
 	}
 }
 
 // TestSkipWithoutDropsInsteadOfFailing: a row without the field that composes
 // the key has no stable identity and cannot go in -- but it is also no reason
 // to
-// derrubar a janela inteira.
+// take the whole window down.
 func TestSkipWithoutDropsInsteadOfFailing(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = fmt.Fprint(w, `[{"id":"1"},{"id":null},{"outro":2},{"id":"4"}]`)
+		_, _ = fmt.Fprint(w, `[{"id":"1"},{"id":null},{"other":2},{"id":"4"}]`)
 	}))
 	defer srv.Close()
 
@@ -113,22 +113,22 @@ func TestSkipWithoutDropsInsteadOfFailing(t *testing.T) {
 	var ids []string
 	for env, err := range data.Records {
 		if err != nil {
-			t.Fatalf("SkipWithout derrubou a janela: %v", err)
+			t.Fatalf("SkipWithout took the window down: %v", err)
 		}
 		ids = append(ids, env.Payload.(map[string]any)["id"].(string))
 	}
 	if len(ids) != 2 || ids[0] != "1" || ids[1] != "4" {
-		t.Errorf("sobraram %v; esperava as duas com id -- nulo e ausente são a mesma coisa aqui", ids)
+		t.Errorf("%v left over; expected both with an id -- null and absent are the same thing here", ids)
 	}
 }
 
 // TestTheNamespaceChangesTheID is item 1: the namespace belongs to whoever uses
 // it, not to the
-// biblioteca.
+// library.
 func TestTheNamespaceChangesTheID(t *testing.T) {
 	record := func() map[string]any {
 		return map[string]any{
-			"provider": "acme", "entity": "pedidos",
+			"provider": "acme", "entity": "orders",
 			"source_key": "1", "record_ts": "2026-09-05T12:00:00Z",
 		}
 	}
@@ -137,16 +137,16 @@ func TestTheNamespaceChangesTheID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	meu := uuid.MustParse("11111111-2222-3333-4444-555555555555")
-	outro, err := sdk.Namespace(meu).IngestionID()(record())
+	mine := uuid.MustParse("11111111-2222-3333-4444-555555555555")
+	another, err := sdk.Namespace(mine).IngestionID()(record())
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	defaultID := fallback.(map[string]any)[sdk.ColumnIngestionID].(string)
-	idOutro := outro.(map[string]any)[sdk.ColumnIngestionID].(string)
-	if defaultID == idOutro {
-		t.Error("namespaces diferentes produziram o mesmo id; então o namespace não é usado")
+	otherID := another.(map[string]any)[sdk.ColumnIngestionID].(string)
+	if defaultID == otherID {
+		t.Error("different namespaces produced the same id; so the namespace is not used")
 	}
 }
 
@@ -166,19 +166,19 @@ func TestTheDefaultNamespaceHasNotChanged(t *testing.T) {
 	// This value has been the same since v0.1.x, checked against Python's
 	// uuid.uuid5. If it changes, every row already written has lost its
 	// identity.
-	const congelado = "7e18f9f9-37c4-5033-abce-def940db4cba"
-	if got != congelado {
-		t.Errorf("o id padrão mudou: %s, era %s", got, congelado)
+	const frozen = "7e18f9f9-37c4-5033-abce-def940db4cba"
+	if got != frozen {
+		t.Errorf("the default id changed: %s, was %s", got, frozen)
 	}
 }
 
 // TestAChosenNamespaceIsDeterministic: choosing a namespace must not introduce
 // variation between runs.
 func TestAChosenNamespaceIsDeterministic(t *testing.T) {
-	meu := sdk.Namespace(uuid.MustParse("11111111-2222-3333-4444-555555555555"))
+	mine := sdk.Namespace(uuid.MustParse("11111111-2222-3333-4444-555555555555"))
 	var previous string
 	for i := 0; i < 5; i++ {
-		output, err := meu.IngestionID()(map[string]any{
+		output, err := mine.IngestionID()(map[string]any{
 			"provider": "a", "entity": "b", "source_key": "c", "record_ts": "d",
 		})
 		if err != nil {
@@ -186,7 +186,7 @@ func TestAChosenNamespaceIsDeterministic(t *testing.T) {
 		}
 		got := output.(map[string]any)[sdk.ColumnIngestionID].(string)
 		if i > 0 && got != previous {
-			t.Fatalf("o id variou entre execuções: %s e %s", previous, got)
+			t.Fatalf("the id varied between runs: %s and %s", previous, got)
 		}
 		previous = got
 	}
@@ -194,20 +194,20 @@ func TestAChosenNamespaceIsDeterministic(t *testing.T) {
 
 // countingTarget records every batch it receives.
 type countingTarget struct {
-	levas  [][]int
-	failAt int // > 0: a leva N falha
+	batches [][]int
+	failAt  int // > 0: batch N fails
 }
 
-func (d *countingTarget) Describe() string { return "destino de teste" }
+func (d *countingTarget) Describe() string { return "test target" }
 
 func (d *countingTarget) Write(_ context.Context, envs []sdk.Envelope, _ sdk.WriteOptions) (*sdk.LoadResult, error) {
 	var ids []int
 	for _, e := range envs {
 		ids = append(ids, e.Payload.(map[string]any)["i"].(int))
 	}
-	d.levas = append(d.levas, ids)
-	if d.failAt > 0 && len(d.levas) == d.failAt {
-		return &sdk.LoadResult{RowsLoaded: 0}, fmt.Errorf("a leva %d falhou", d.failAt)
+	d.batches = append(d.batches, ids)
+	if d.failAt > 0 && len(d.batches) == d.failAt {
+		return &sdk.LoadResult{RowsLoaded: 0}, fmt.Errorf("batch %d failed", d.failAt)
 	}
 	return &sdk.LoadResult{RowsLoaded: int64(len(envs))}, nil
 }
@@ -223,17 +223,17 @@ func TestFlushEveryWritesInBatches(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(target.levas) != 4 {
-		t.Fatalf("%d levas, esperado 4 (3+3+3+1)", len(target.levas))
+	if len(target.batches) != 4 {
+		t.Fatalf("%d batches, want 4 (3+3+3+1)", len(target.batches))
 	}
-	if len(target.levas[3]) != 1 {
-		t.Errorf("a última leva tem %d, esperado 1", len(target.levas[3]))
+	if len(target.batches[3]) != 1 {
+		t.Errorf("the last batch has %d, want 1", len(target.batches[3]))
 	}
 
 	// The Result sums the batches. A Rows counting only the last one would lie
 	// to whoever reads the pipeline's line.
 	if res.Rows != 10 || res.Records != 10 {
-		t.Errorf("Rows=%d Records=%d, esperado 10 e 10", res.Rows, res.Records)
+		t.Errorf("Rows=%d Records=%d, want 10 and 10", res.Rows, res.Records)
 	}
 }
 
@@ -243,8 +243,8 @@ func TestFlushEveryZeroAccumulatesEverything(t *testing.T) {
 	if _, err := sdk.Load(context.Background(), dataOf(t, 10), sdk.Target{To: target}); err != nil {
 		t.Fatal(err)
 	}
-	if len(target.levas) != 1 || len(target.levas[0]) != 10 {
-		t.Errorf("levas = %v; sem FlushEvery a carga é uma só", target.levas)
+	if len(target.batches) != 1 || len(target.batches[0]) != 10 {
+		t.Errorf("batches = %v; without FlushEvery the load is a single one", target.batches)
 	}
 }
 
@@ -258,13 +258,13 @@ func TestFlushEveryFailingMidwaySaysWhatWentIn(t *testing.T) {
 		To: target, FlushEvery: 3,
 	})
 	if err == nil {
-		t.Fatal("a leva falhou e o Load deu certo")
+		t.Fatal("the batch failed and the Load succeeded")
 	}
 	if res == nil {
-		t.Fatal("o Result não voltou; quem reexecuta não saberia o que já entrou")
+		t.Fatal("the Result did not come back; whoever reruns would not know what already went in")
 	}
 	if res.Rows != 6 {
-		t.Errorf("Rows = %d, esperado 6 -- as duas primeiras levas gravaram", res.Rows)
+		t.Errorf("Rows = %d, want 6 -- the first two batches wrote", res.Rows)
 	}
 }
 
@@ -279,7 +279,7 @@ func dataOf(t *testing.T, n int) *sdk.Data {
 
 type sourceOfN struct{ n int }
 
-func (sourceOfN) Describe() string { return "fonte de teste" }
+func (sourceOfN) Describe() string { return "test source" }
 func (f sourceOfN) Read(context.Context, sdk.ReadOptions) (iter.Seq2[sdk.Envelope, error], error) {
 	return func(yield func(sdk.Envelope, error) bool) {
 		for i := 0; i < f.n; i++ {

@@ -230,7 +230,7 @@ func TestAnUnrelatedBranchKeepsGoing(t *testing.T) {
 }
 
 // A branch BELOW the failure still stops, which is the half of the old
-// behaviour that stays. `all_success` being local does not mean it is absent.
+// behavior that stays. `all_success` being local does not mean it is absent.
 func TestTheBranchBelowAFailureStillStops(t *testing.T) {
 	w := wf.Workflow{
 		Slug:  "w",
@@ -342,7 +342,7 @@ func TestAMarkerRunsWithoutAnExecutor(t *testing.T) {
 		Edges: []wf.Edge{{From: "start", To: "work"}, {From: "work", To: "end"}},
 	}
 	spy := &spyPersister{}
-	// No Processo and no Pods: a marker that needed either would fail here
+	// No Process and no Pods: a marker that needed either would fail here
 	// with "no process executor configured", which is exactly the point.
 	err := app.Runner{
 		Go: local.NewGoExecutor(reg), Persist: spy, RunID: uuid.New(),

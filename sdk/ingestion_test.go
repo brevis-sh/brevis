@@ -9,7 +9,7 @@ import (
 	core "brevis.sh/brevis/sdk/internal/core"
 )
 
-func aplica(t *testing.T, fn Transformer, in map[string]any) map[string]any {
+func applyTransform(t *testing.T, fn Transformer, in map[string]any) map[string]any {
 	t.Helper()
 	got, err := fn(in)
 	if err != nil {
@@ -34,13 +34,13 @@ func TestIngestionIDProducesTheSameIDAsBefore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got := aplica(t, IngestionID(), map[string]any{
+	got := applyTransform(t, IngestionID(), map[string]any{
 		"provider": "open_meteo", "entity": "hourly_temperature",
 		"source_key": "-23.55|-46.63|2026-01-01T00:00", "record_ts": "2026-01-01T00:00",
 	})
 
 	if got[ColumnIngestionID] != expected {
-		t.Errorf("o id mudou de fórmula:\n  transformer: %v\n  antes:       %v",
+		t.Errorf("the id changed formula:\n  transformer: %v\n  before:      %v",
 			got[ColumnIngestionID], expected)
 	}
 }
@@ -48,28 +48,28 @@ func TestIngestionIDProducesTheSameIDAsBefore(t *testing.T) {
 // And against the frozen value, written out: a test comparing two
 // implementations passes if both change together.
 func TestIngestionIDAgainstTheFrozenValue(t *testing.T) {
-	got := aplica(t, IngestionID(), map[string]any{
+	got := applyTransform(t, IngestionID(), map[string]any{
 		"provider": "p", "entity": "e", "source_key": "k", "record_ts": "2026-01-01T00:00:00Z",
 	})
 
 	// Checked against Python's uuid.uuid5, which is the parity that matters:
 	//   uuid.uuid5(UUID("e3a4f8c0-1b9d-4ea0-9c2e-77f6a6c4a4d7"),
 	//              "p|e|k|2026-01-01T00:00:00Z")
-	const congelado = "178d0b49-dece-5738-b8eb-f5cae222a1ea"
-	if got[ColumnIngestionID] != congelado {
-		t.Errorf("ingestion_id = %v, congelado em %s", got[ColumnIngestionID], congelado)
+	const frozen = "178d0b49-dece-5738-b8eb-f5cae222a1ea"
+	if got[ColumnIngestionID] != frozen {
+		t.Errorf("ingestion_id = %v, frozen at %s", got[ColumnIngestionID], frozen)
 	}
 }
 
 func TestIngestionIDReadsTheNamesYouGiveIt(t *testing.T) {
-	comCanonicos := aplica(t, IngestionID(), map[string]any{
+	withCanonical := applyTransform(t, IngestionID(), map[string]any{
 		"provider": "p", "entity": "e", "source_key": "k", "record_ts": "t",
 	})
-	comOutros := aplica(t, IngestionID("provider", "entity", "source_key", "time"),
+	withOthers := applyTransform(t, IngestionID("provider", "entity", "source_key", "time"),
 		map[string]any{"provider": "p", "entity": "e", "source_key": "k", "time": "t"})
 
-	if comCanonicos[ColumnIngestionID] != comOutros[ColumnIngestionID] {
-		t.Error("nomear os campos tem de dar o mesmo id que os canônicos")
+	if withCanonical[ColumnIngestionID] != withOthers[ColumnIngestionID] {
+		t.Error("naming the fields must give the same id as the canonical ones")
 	}
 }
 
@@ -78,16 +78,16 @@ func TestIngestionIDReadsTheNamesYouGiveIt(t *testing.T) {
 func TestIngestionIDRefusesAMissingField(t *testing.T) {
 	_, err := IngestionID()(map[string]any{"provider": "p", "entity": "e"})
 	if err == nil {
-		t.Fatal("faltando source_key e record_ts, o id seria construído de vazio")
+		t.Fatal("missing source_key and record_ts, the id would be built from nothing")
 	}
-	for _, quer := range []string{"source_key", "record_ts"} {
-		if !strings.Contains(err.Error(), quer) {
-			t.Errorf("o erro não nomeia %q: %v", quer, err)
+	for _, wants := range []string{"source_key", "record_ts"} {
+		if !strings.Contains(err.Error(), wants) {
+			t.Errorf("the error does not name %q: %v", wants, err)
 		}
 	}
 	// And it says what the row does have, so the fix comes out of one reading.
 	if !strings.Contains(err.Error(), "provider") {
-		t.Errorf("o erro não lista o que a linha tem: %v", err)
+		t.Errorf("the error does not list what the row has: %v", err)
 	}
 }
 
@@ -98,32 +98,32 @@ func TestIngestionIDRefusesAnEmptySourceKey(t *testing.T) {
 		"provider": "p", "entity": "e", "source_key": "", "record_ts": "t",
 	})
 	if err == nil {
-		t.Fatal("source_key vazio não dá identidade estável")
+		t.Fatal("an empty source_key gives no stable identity")
 	}
 }
 
 func TestIngestionIDRefusesToOverwrite(t *testing.T) {
 	_, err := IngestionID()(map[string]any{
 		"provider": "p", "entity": "e", "source_key": "k", "record_ts": "t",
-		"ingestion_id": "meu-proprio",
+		"ingestion_id": "my-own",
 	})
 	if err == nil {
-		t.Fatal("sobrescrever um id que a linha já tem seria invisível")
+		t.Fatal("overwriting an id the row already has would be invisible")
 	}
 }
 
 func TestIngestionIDRefusesTheWrongNumberOfFields(t *testing.T) {
 	_, err := IngestionID("provider", "entity")(map[string]any{"provider": "p", "entity": "e"})
 	if err == nil {
-		t.Fatal("a fórmula tem quatro componentes; dois não dá")
+		t.Fatal("the formula has four components; two will not do")
 	}
 	if !strings.Contains(err.Error(), "4") {
-		t.Errorf("o erro precisa dizer quantos: %v", err)
+		t.Errorf("the error must say how many: %v", err)
 	}
 }
 
 func TestIngestionLoadedAtWritesNowInUTC(t *testing.T) {
-	got := aplica(t, IngestionLoadedAt(), map[string]any{"a": 1})
+	got := applyTransform(t, IngestionLoadedAt(), map[string]any{"a": 1})
 
 	v, ok := got[ColumnIngestionLoadedAt].(string)
 	if !ok {
@@ -131,23 +131,23 @@ func TestIngestionLoadedAtWritesNowInUTC(t *testing.T) {
 	}
 	when, err := time.Parse(time.RFC3339, v)
 	if err != nil {
-		t.Fatalf("não é RFC 3339: %q", v)
+		t.Fatalf("not RFC 3339: %q", v)
 	}
 	if d := time.Since(when); d > time.Minute || d < -time.Minute {
-		t.Errorf("ingestion_loaded_at = %v, esperado agora", when)
+		t.Errorf("ingestion_loaded_at = %v, want now", when)
 	}
 	if !strings.HasSuffix(v, "Z") {
-		t.Errorf("esperado UTC: %q", v)
+		t.Errorf("expected UTC: %q", v)
 	}
 	if got["a"] != 1 {
-		t.Error("o resto da linha se perdeu")
+		t.Error("the rest of the row was lost")
 	}
 }
 
 func TestIngestionLoadedAtRefusesToOverwrite(t *testing.T) {
-	_, err := IngestionLoadedAt()(map[string]any{"ingestion_loaded_at": "ontem"})
+	_, err := IngestionLoadedAt()(map[string]any{"ingestion_loaded_at": "yesterday"})
 	if err == nil {
-		t.Fatal("sobrescrever o instante da carga seria invisível")
+		t.Fatal("overwriting the load instant would be invisible")
 	}
 }
 
@@ -166,13 +166,13 @@ func TestIngestionLoadedAtRefusesToOverwrite(t *testing.T) {
 // which the next test measures.
 func TestTransformersWriteInPlace(t *testing.T) {
 	line := map[string]any{"provider": "p", "entity": "e", "source_key": "k", "record_ts": "t"}
-	output := aplica(t, IngestionID(), line)
+	output := applyTransform(t, IngestionID(), line)
 
 	if _, ok := line[ColumnIngestionID]; !ok {
-		t.Error("o transformer devolveu um mapa novo; a economia da cadeia depende de ele escrever no lugar")
+		t.Error("the transformer returned a new map; the chain's saving depends on it writing in place")
 	}
 	if fmt.Sprint(output) != fmt.Sprint(line) {
-		t.Error("o que voltou não é o mesmo mapa que entrou")
+		t.Error("what came back is not the same map that went in")
 	}
 }
 
@@ -188,15 +188,15 @@ func TestTransformDoesNotMutateWhatExtractDelivered(t *testing.T) {
 
 	output, skipped, err := applyAll([]Transformer{IngestionID(), IngestionLoadedAt()}, original)
 	if err != nil || skipped {
-		t.Fatalf("applyAll: %v, pulou=%v", err, skipped)
+		t.Fatalf("applyAll: %v, skipped=%v", err, skipped)
 	}
 
 	if len(original) != 4 {
-		t.Errorf("a cadeia escreveu no registro do extract: %v", original)
+		t.Errorf("the chain wrote into the extract's record: %v", original)
 	}
 	obj := output.(map[string]any)
 	if len(obj) != 6 {
-		t.Errorf("a saída não tem as duas colunas novas: %v", obj)
+		t.Errorf("the output lacks the two new columns: %v", obj)
 	}
 }
 
@@ -210,7 +210,7 @@ func TestTheChainMakesOneCopyOnly(t *testing.T) {
 	}
 
 	allocations := testing.AllocsPerRun(200, func() {
-		line := map[string]any{"provider": "p", "entity": "e", "source_key": "k", "record_ts": "t", "lixo": 1}
+		line := map[string]any{"provider": "p", "entity": "e", "source_key": "k", "record_ts": "t", "junk": 1}
 		if _, _, err := applyAll(fns, line); err != nil {
 			t.Fatal(err)
 		}
@@ -221,8 +221,8 @@ func TestTheChainMakesOneCopyOnly(t *testing.T) {
 	// difference the ceiling catches, not an absolute allocation count.
 	const ceiling float64 = 12
 	if allocations > ceiling {
-		t.Errorf("%.0f alocações para uma linha e quatro transformers (teto %.0f); "+
-			"algum transformer voltou a copiar o mapa", allocations, ceiling)
+		t.Errorf("%.0f allocations for one row and four transformers (ceiling %.0f); "+
+			"some transformer went back to copying the map", allocations, ceiling)
 	}
-	t.Logf("%.0f alocações", allocations)
+	t.Logf("%.0f allocations", allocations)
 }

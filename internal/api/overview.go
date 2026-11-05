@@ -2,12 +2,10 @@ package api
 
 import (
 	"context"
-	"net/http"
 	"time"
 
 	"brevis.sh/brevis/internal/domain/diagnosis"
 	"brevis.sh/brevis/internal/infrastructure/postgres"
-	"brevis.sh/brevis/web/i18n"
 	"brevis.sh/brevis/web/pages"
 )
 
@@ -69,7 +67,7 @@ func (u *UI) failingItems(ctx context.Context, failing []postgres.FailingWorkflo
 		it := pages.AttentionItem{Workflow: f.Slug, RunID: f.RunID, FailedAt: f.FailedAt, Streak: f.Streak}
 		if u.execs != nil {
 			if r, err := u.execs.Get(ctx, f.RunID); err == nil {
-				if logs, err := u.execs.LogsDaRun(ctx, f.RunID); err == nil {
+				if logs, err := u.execs.RunLogs(ctx, f.RunID); err == nil {
 					it.Cause = causeOf(logs, r.Err)
 				}
 				it.Params, it.Rerunnable = u.rerunValues(ctx, r.WorkflowSlug, r.Params)
@@ -105,10 +103,10 @@ func (u *UI) rerunValues(ctx context.Context, slug string, used map[string]strin
 // inFlightBySlug is each workflow's run in flight, if any: a failing workflow
 // whose rerun is going says so instead of offering another.
 func (u *UI) inFlightBySlug(ctx context.Context) map[string]string {
-	if u.leitura == nil {
+	if u.reads == nil {
 		return nil
 	}
-	runs, err := u.leitura.InFlight(ctx, 100)
+	runs, err := u.reads.InFlight(ctx, 100)
 	if err != nil {
 		u.log.Warn("the runs in flight are unavailable", "error", err)
 		return nil
@@ -120,18 +118,6 @@ func (u *UI) inFlightBySlug(ctx context.Context) map[string]string {
 		}
 	}
 	return out
-}
-
-// overviewAttention is "Needs your attention" alone, for the page to follow.
-// In the reader's language and drawn directly: render would also take a
-// flash meant for the next page.
-func (u *UI) overviewAttention(w http.ResponseWriter, r *http.Request) {
-	ctx := i18n.WithLang(r.Context(), i18n.Negotiate(r))
-	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := pages.AttentionLive(u.attention(ctx), time.Now()).Render(ctx, w); err != nil {
-		u.log.Warn("rendering the attention fragment", "error", err)
-	}
 }
 
 // lateTargets are the catalog's destinations whose data stopped coming,

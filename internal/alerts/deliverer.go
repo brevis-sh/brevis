@@ -68,7 +68,7 @@ func (c *Config) defaults() {
 type Deliverer struct {
 	cfg      Config
 	outbox   *Outbox
-	channels map[string]notify.Notificador
+	channels map[string]notify.Notifier
 	log      *slog.Logger
 
 	// Metrics is optional, as everywhere else.
@@ -77,12 +77,12 @@ type Deliverer struct {
 
 // NewDeliverer builds the loop. `channels` maps a channel name to what talks to
 // it; a name absent from the map is a permanent failure rather than a retry.
-func NewDeliverer(cfg Config, o *Outbox, channels map[string]notify.Notificador, log *slog.Logger) *Deliverer {
+func NewDeliverer(cfg Config, o *Outbox, channels map[string]notify.Notifier, log *slog.Logger) *Deliverer {
 	cfg.defaults()
 	return &Deliverer{cfg: cfg, outbox: o, channels: channels, log: log}
 }
 
-// Run drains until the context is cancelled.
+// Run drains until the context is canceled.
 func (d *Deliverer) Run(ctx context.Context) error {
 	tick := time.NewTicker(d.cfg.Interval)
 	defer tick.Stop()
@@ -116,7 +116,7 @@ func (d *Deliverer) cycle(ctx context.Context) error {
 	for _, it := range items {
 		if ctx.Err() != nil {
 			// Shutting down. The rest stay claimed and the visibility sweep
-			// frees them; delivering half a batch against a cancelled context
+			// frees them; delivering half a batch against a canceled context
 			// would fail every one of them and burn their attempts.
 			return nil
 		}
@@ -147,7 +147,7 @@ func (d *Deliverer) deliver(ctx context.Context, it Item) {
 		return
 	}
 
-	// A context of its own, and short. The loop's may be cancelled -- a
+	// A context of its own, and short. The loop's may be canceled -- a
 	// shutdown -- and an alert half-delivered because the process was leaving
 	// is one that gets retried against a webhook that already received it.
 	send, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)

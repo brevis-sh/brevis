@@ -68,14 +68,14 @@ func (r *Registry) Register(t Task) error {
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if _, existe := r.tasks[name]; existe {
+	if _, exists := r.tasks[name]; exists {
 		return fmt.Errorf("task %q is already registered", name)
 	}
 	r.tasks[name] = t
 	return nil
 }
 
-// MustRegister registra e entra em panico se falhar.
+// MustRegister registers, and panics on failure.
 //
 // For use in `init()` or at boot: an invalid registration is a programming
 // error, and failing at start beats finding out on the first scheduled run.
@@ -93,7 +93,7 @@ func (r *Registry) Get(name string) (Task, bool) {
 	return t, ok
 }
 
-// Nomes lists what is registered, sorted. It serves the unknown-task error:
+// Names lists what is registered, sorted. It serves the unknown-task error:
 // saying what does exist saves a trip to the documentation.
 func (r *Registry) Names() []string {
 	r.mu.RLock()

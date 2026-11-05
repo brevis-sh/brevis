@@ -14,7 +14,7 @@ import (
 
 // A SUBSCRIPTION IS READ FROM THE PUBLISHED DOCUMENT, and only from there.
 //
-// `definicao` is what `publish` stored, so the trigger the scheduler acts on
+// `definition` is what `publish` stored, so the trigger the scheduler acts on
 // is the trigger in the file that was published -- not a column somebody
 // could update out from under it. A workflow with no trigger is not returned
 // at all; the poll must not walk every workflow to find the two that have one.
@@ -59,11 +59,11 @@ func TestLandingsSinceReadsTheEnginesClock(t *testing.T) {
 	pool := landingsDB(t)
 	ctx := context.Background()
 	repo := postgres.NewRunRepo(pool)
-	runID := aged(t, pool, "vendas", time.Hour, dom.StatusSuccess)
+	runID := aged(t, pool, "sales", time.Hour, dom.StatusSuccess)
 
 	before := time.Now().Add(-time.Second)
 	old := time.Now().Add(-2 * time.Hour).UTC()
-	if err := repo.RecordLandings(ctx, runID, dom.Step("carga"), "vendas", []app.Landing{
+	if err := repo.RecordLandings(ctx, runID, dom.Step("load"), "sales", []app.Landing{
 		{Target: "bigquery://acme-prod/bronze/orders", Rows: n(3), At: old},
 	}); err != nil {
 		t.Fatal(err)
@@ -76,7 +76,7 @@ func TestLandingsSinceReadsTheEnginesClock(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("%d landings since a second ago, wanted 1 -- it read loaded_at", len(got))
 	}
-	if got[0].Target != "bigquery://acme-prod/bronze/orders" || got[0].Workflow != "vendas" {
+	if got[0].Target != "bigquery://acme-prod/bronze/orders" || got[0].Workflow != "sales" {
 		t.Errorf("landing = %+v", got[0])
 	}
 	// And the instant it carries is the one a debounce window is cut from.
@@ -95,7 +95,7 @@ func TestLandingsSinceReadsTheEnginesClock(t *testing.T) {
 }
 
 // THE CURSOR IS PLANTED, NEVER ASSUMED. A first read with no row returns
-// "not set", and the caller plants now() -- the rule schedules.ultimo_slot
+// "not set", and the caller plants now() -- the rule schedules.last_slot
 // learned by leaving eighteen workflows without an automatic run.
 func TestTheCursorStartsUnsetAndIsPlanted(t *testing.T) {
 	pool := landingsDB(t)
@@ -154,17 +154,17 @@ func publishWith(t *testing.T, pool *postgres.Pool, slug string, tr wf.Trigger) 
 		t.Fatal(err)
 	}
 	ctx := context.Background()
-	var projeto string
+	var project string
 	if err := pool.QueryRow(ctx, `
 		INSERT INTO projects (id, slug, name) VALUES (gen_random_uuid(), 'it', 'it')
-		ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name RETURNING id`).Scan(&projeto); err != nil {
+		ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name RETURNING id`).Scan(&project); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := pool.Exec(ctx, `
-		INSERT INTO workflows (id, project_id, slug, name, definicao)
+		INSERT INTO workflows (id, project_id, slug, name, definition)
 		VALUES (gen_random_uuid(), $1, $2, $2, $3)
-		ON CONFLICT (project_id, slug) DO UPDATE SET definicao = EXCLUDED.definicao`,
-		projeto, slug, doc); err != nil {
+		ON CONFLICT (project_id, slug) DO UPDATE SET definition = EXCLUDED.definition`,
+		project, slug, doc); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -7,11 +7,11 @@ import "testing"
 // the stages, not the JSON that carried them.
 func TestAMarkedLineIsConsumed(t *testing.T) {
 	var c stageCollector
-	if !c.line(`@brevis:{"tipo":"etapa","nome":"extract","estado":"running","em":"agora"}`) {
+	if !c.line(`@brevis:{"type":"stage","name":"extract","state":"running","at":"now"}`) {
 		t.Fatal("the marker was not recognized")
 	}
 	if len(c.Stages) != 1 || c.Stages[0].TaskName != "extract" {
-		t.Fatalf("etapas: %+v", c.Stages)
+		t.Fatalf("stages: %+v", c.Stages)
 	}
 }
 
@@ -21,10 +21,10 @@ func TestAMarkedLineIsConsumed(t *testing.T) {
 func TestAPlainLineStaysALogLine(t *testing.T) {
 	var c stageCollector
 	for _, line := range []string{
-		"rodando o extract",
+		"running the extract",
 		"@brevis",
 		"@brevis:this is not json",
-		`prefixo @brevis:{"tipo":"etapa","nome":"load","estado":"done"}`,
+		`prefix @brevis:{"type":"stage","name":"load","state":"done"}`,
 	} {
 		if c.line(line) {
 			t.Errorf("it swallowed a line that was a log line: %q", line)
@@ -39,8 +39,8 @@ func TestAPlainLineStaysALogLine(t *testing.T) {
 // shows four boxes, not a diary.
 func TestAStageIsOneEntryThatChanges(t *testing.T) {
 	var c stageCollector
-	c.line(`@brevis:{"tipo":"etapa","nome":"extract","estado":"running"}`)
-	c.line(`@brevis:{"tipo":"etapa","nome":"extract","estado":"done","ms":2400,"paginas":300}`)
+	c.line(`@brevis:{"type":"stage","name":"extract","state":"running"}`)
+	c.line(`@brevis:{"type":"stage","name":"extract","state":"done","ms":2400,"pages":300}`)
 
 	if len(c.Stages) != 1 {
 		t.Fatalf("became %d entries, expected 1: %+v", len(c.Stages), c.Stages)
@@ -49,7 +49,7 @@ func TestAStageIsOneEntryThatChanges(t *testing.T) {
 	if e.State != "done" || e.Ms == nil || *e.Ms != 2400 {
 		t.Errorf("it did not update: %+v", e)
 	}
-	if e.Numbers["paginas"] != 300.0 {
+	if e.Numbers["pages"] != 300.0 {
 		t.Errorf("the stage's numbers were lost: %+v", e.Numbers)
 	}
 }
@@ -57,15 +57,15 @@ func TestAStageIsOneEntryThatChanges(t *testing.T) {
 // The arrival order is the screen's order: extract before load, always.
 func TestTheArrivalOrderIsPreserved(t *testing.T) {
 	var c stageCollector
-	c.line(`@brevis:{"tipo":"etapa","nome":"check","estado":"done"}`)
-	c.line(`@brevis:{"tipo":"etapa","nome":"extract","estado":"running"}`)
-	c.line(`@brevis:{"tipo":"etapa","nome":"load","estado":"running"}`)
-	c.line(`@brevis:{"tipo":"etapa","nome":"extract","estado":"done"}`)
+	c.line(`@brevis:{"type":"stage","name":"check","state":"done"}`)
+	c.line(`@brevis:{"type":"stage","name":"extract","state":"running"}`)
+	c.line(`@brevis:{"type":"stage","name":"load","state":"running"}`)
+	c.line(`@brevis:{"type":"stage","name":"extract","state":"done"}`)
 
-	querido := []string{"check", "extract", "load"}
-	for i, name := range querido {
+	wantedList := []string{"check", "extract", "load"}
+	for i, name := range wantedList {
 		if c.Stages[i].TaskName != name {
-			t.Fatalf("ordem: %+v, esperada %v", c.Stages, querido)
+			t.Fatalf("order: %+v, want %v", c.Stages, wantedList)
 		}
 	}
 }
@@ -75,11 +75,11 @@ func TestTheArrivalOrderIsPreserved(t *testing.T) {
 // about them.
 func TestAnUnknownStageIsIgnored(t *testing.T) {
 	var c stageCollector
-	if !c.line(`@brevis:{"tipo":"etapa","nome":"reticulando","estado":"running"}`) {
+	if !c.line(`@brevis:{"type":"stage","name":"reticulating","state":"running"}`) {
 		t.Error("the line is a marker and should be consumed even when unknown")
 	}
 	if len(c.Stages) != 0 {
-		t.Errorf("inventou um bloco: %+v", c.Stages)
+		t.Errorf("invented a block: %+v", c.Stages)
 	}
 }
 
@@ -91,11 +91,11 @@ func TestTheBadgeComesFromTheAnnouncement(t *testing.T) {
 	if c.Version != "" {
 		t.Error("a step that said nothing cannot have a version")
 	}
-	if !c.line(`@brevis:{"tipo":"sdk","versao":"v0.44.1","pipeline":"fetcher"}`) {
+	if !c.line(`@brevis:{"type":"sdk","version":"v0.44.1","pipeline":"fetcher"}`) {
 		t.Fatal("the announcement was not recognized")
 	}
 	if c.Version != "v0.44.1" {
-		t.Errorf("versao = %q", c.Version)
+		t.Errorf("version = %q", c.Version)
 	}
 	// And the announcement invents no box on the screen: it only carries the
 	// badge.
@@ -111,10 +111,10 @@ func TestTheBadgeComesFromTheAnnouncement(t *testing.T) {
 func TestTheCeilingProtectsTheDatabase(t *testing.T) {
 	var c stageCollector
 	for i := 0; i < stageCeiling*3; i++ {
-		c.line(`@brevis:{"tipo":"etapa","nome":"extract","estado":"running"}`)
+		c.line(`@brevis:{"type":"stage","name":"extract","state":"running"}`)
 	}
 	if c.seen > stageCeiling {
-		t.Errorf("registrou %d transicoes, o teto e %d", c.seen, stageCeiling)
+		t.Errorf("recorded %d transitions, the ceiling is %d", c.seen, stageCeiling)
 	}
 }
 
@@ -122,32 +122,32 @@ func TestTheCeilingProtectsTheDatabase(t *testing.T) {
 //
 // The SDK spoke Portuguese up to v0.47.0 and English from v0.48.0 on. An engine
 // that only understood the new one would make an old fetcher's stages vanish
-// from the screen -- with no error, no log, just the grey box back.
+// from the screen -- with no error, no log, just the gray box back.
 func TestBothFormatsOfTheProtocol(t *testing.T) {
-	casos := map[string]string{
-		"ingles (v0.48+)":         `@brevis:{"type":"stage","name":"extract","state":"done","ms":2400,"at":"agora","paginas":300}`,
-		"portugues (ate a v0.47)": `@brevis:{"tipo":"etapa","nome":"extract","estado":"done","ms":2400,"em":"agora","paginas":300}`,
+	cases := map[string]string{
+		"english (v0.48+)":         `@brevis:{"type":"stage","name":"extract","state":"done","ms":2400,"at":"now","pages":300}`,
+		"portuguese (up to v0.47)": `@brevis:{"tipo":"etapa","nome":"extract","estado":"done","ms":2400,"em":"agora","pages":300}`,
 	}
-	for name, line := range casos {
+	for name, line := range cases {
 		t.Run(name, func(t *testing.T) {
 			var c stageCollector
 			if !c.line(line) {
 				t.Fatal("the marker was not recognized")
 			}
 			if len(c.Stages) != 1 {
-				t.Fatalf("etapas: %+v", c.Stages)
+				t.Fatalf("stages: %+v", c.Stages)
 			}
 			e := c.Stages[0]
 			if e.TaskName != "extract" || e.State != "done" || e.Ms == nil || *e.Ms != 2400 {
 				t.Errorf("stage: %+v", e)
 			}
 			// And the stage's numbers must not carry the protocol's fields.
-			if e.Numbers["paginas"] != 300.0 {
-				t.Errorf("numeros: %+v", e.Numbers)
+			if e.Numbers["pages"] != 300.0 {
+				t.Errorf("numbers: %+v", e.Numbers)
 			}
-			for _, reservado := range []string{"tipo", "type", "nome", "name", "estado", "state", "em", "at"} {
-				if _, tem := e.Numbers[reservado]; tem {
-					t.Errorf("the protocol field %q leaked into the numbers: %+v", reservado, e.Numbers)
+			for _, reserved := range []string{"tipo", "type", "nome", "name", "estado", "state", "em", "at"} {
+				if _, has := e.Numbers[reserved]; has {
+					t.Errorf("the protocol field %q leaked into the numbers: %+v", reserved, e.Numbers)
 				}
 			}
 		})
@@ -186,14 +186,14 @@ func TestTwoStagesWithTheSameNameAreTwoBoxes(t *testing.T) {
 		t.Fatalf("became %d boxes, expected 3: %+v", len(c.Stages), c.Stages)
 	}
 	// And in the pipeline's order, which is what the screen draws.
-	for i, quero := range []string{"map", "aggregate", "map"} {
-		if c.Stages[i].TaskName != quero || c.Stages[i].Index != i {
-			t.Errorf("position %d: %+v, expected %q", i, c.Stages[i], quero)
+	for i, want := range []string{"map", "aggregate", "map"} {
+		if c.Stages[i].TaskName != want || c.Stages[i].Index != i {
+			t.Errorf("position %d: %+v, expected %q", i, c.Stages[i], want)
 		}
 	}
 	// The first map was not swallowed by the second.
 	if c.Stages[0].Numbers["in"] != 100.0 {
-		t.Errorf("o primeiro map perdeu os numeros: %+v", c.Stages[0].Numbers)
+		t.Errorf("the first map lost its numbers: %+v", c.Stages[0].Numbers)
 	}
 }
 
@@ -204,8 +204,8 @@ func TestTheBoxesComeOutInThePipelinesOrder(t *testing.T) {
 	c.line(`@brevis:{"type":"stage","index":0,"name":"check","state":"done"}`)
 	c.line(`@brevis:{"type":"stage","index":1,"name":"extract","state":"done"}`)
 
-	for i, quero := range []string{"check", "extract", "load"} {
-		if c.Stages[i].TaskName != quero {
+	for i, want := range []string{"check", "extract", "load"} {
+		if c.Stages[i].TaskName != want {
 			t.Fatalf("ordem: %+v", c.Stages)
 		}
 	}
@@ -223,7 +223,7 @@ func TestTheLoadNumbersComeOutOfThePhases(t *testing.T) {
 		t.Helper()
 		for _, l := range lines {
 			if !c.line(l) {
-				t.Fatalf("not recognised: %s", l)
+				t.Fatalf("not recognized: %s", l)
 			}
 		}
 	}
@@ -248,7 +248,7 @@ func TestTheLoadNumbersComeOutOfThePhases(t *testing.T) {
 	})
 
 	// The case a fixed slot would get wrong. Two Map stages push load to index
-	// three, and `etapas[1]` there is a map -- whose numbers would be filed in
+	// three, and `stages[1]` there is a map -- whose numbers would be filed in
 	// a load's column and read as a collapse in rows loaded.
 	t.Run("two map stages push load off position one", func(t *testing.T) {
 		var c stageCollector

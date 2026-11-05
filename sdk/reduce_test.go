@@ -20,10 +20,10 @@ func linesOf(records ...map[string]any) iter.Seq2[Envelope, error] {
 	}
 }
 
-func reduzir(t *testing.T, d *Reduce, records ...map[string]any) []map[string]any {
+func runReduce(t *testing.T, d *Reduce, records ...map[string]any) []map[string]any {
 	t.Helper()
 	if err := d.validate(); err != nil {
-		t.Fatalf("validar: %v", err)
+		t.Fatalf("validate: %v", err)
 	}
 	var out []map[string]any
 	for env, err := range d.apply(linesOf(records...)) {
@@ -35,54 +35,54 @@ func reduzir(t *testing.T, d *Reduce, records ...map[string]any) []map[string]an
 	return out
 }
 
-func vendas() []map[string]any {
+func sales() []map[string]any {
 	return []map[string]any{
-		{"regiao": "sul", "ano": 2025.0, "valor": 10.0, "nome": "a", "ok": true},
-		{"regiao": "sul", "ano": 2026.0, "valor": 30.0, "nome": "b", "ok": false},
-		{"regiao": "norte", "ano": 2026.0, "valor": 20.0, "nome": "c", "ok": true},
-		{"regiao": "sul", "ano": 2024.0, "valor": nil, "nome": "d", "ok": true},
+		{"region": "south", "year": 2025.0, "value": 10.0, "name": "a", "ok": true},
+		{"region": "south", "year": 2026.0, "value": 30.0, "name": "b", "ok": false},
+		{"region": "north", "year": 2026.0, "value": 20.0, "name": "c", "ok": true},
+		{"region": "south", "year": 2024.0, "value": nil, "name": "d", "ok": true},
 	}
 }
 
 func TestAggregatorsComputeWhatTheyPromise(t *testing.T) {
-	lines := reduzir(t, &Reduce{
-		By: GroupBy("regiao"),
+	lines := runReduce(t, &Reduce{
+		By: GroupBy("region"),
 		Agg: map[string]Aggregator{
-			"linhas":     Count(),
-			"com_valor":  CountOf("valor"),
-			"total":      Sum("valor"),
-			"media":      Mean("valor"),
-			"menor":      Min("valor"),
-			"maior":      Max("valor"),
-			"primeiro":   First("nome"),
-			"ultimo":     Last("nome"),
-			"nome_final": MaxBy("nome", "ano"),
-			"nome_velho": MinBy("nome", "ano"),
-			"amplitude":  Range("valor"),
-			"algum_ok":   Any("ok"),
-			"todos_ok":   All("ok"),
+			"lines":      Count(),
+			"with_value": CountOf("value"),
+			"total":      Sum("value"),
+			"mean":       Mean("value"),
+			"min":        Min("value"),
+			"max":        Max("value"),
+			"first":      First("name"),
+			"last":       Last("name"),
+			"name_final": MaxBy("name", "year"),
+			"name_old":   MinBy("name", "year"),
+			"range":      Range("value"),
+			"any_ok":     Any("ok"),
+			"all_ok":     All("ok"),
 		},
-	}, vendas()...)
+	}, sales()...)
 
 	if len(lines) != 2 {
-		t.Fatalf("saiu com %d grupos, esperado 2", len(lines))
+		t.Fatalf("came out with %d groups, want 2", len(lines))
 	}
 	// Deterministic order by key: "norte" before "sul".
-	if lines[0]["regiao"] != "norte" || lines[1]["regiao"] != "sul" {
-		t.Fatalf("ordem não determinística: %v", lines)
+	if lines[0]["region"] != "north" || lines[1]["region"] != "south" {
+		t.Fatalf("non-deterministic order: %v", lines)
 	}
 
-	sul := lines[1]
-	casos := map[string]any{
-		"linhas": int64(3), "com_valor": int64(2),
-		"total": 40.0, "media": 20.0, "menor": 10.0, "maior": 30.0,
-		"primeiro": "a", "ultimo": "d",
-		"nome_final": "b", "nome_velho": "d",
-		"amplitude": 20.0, "algum_ok": true, "todos_ok": false,
+	secondLine := lines[1]
+	cases := map[string]any{
+		"lines": int64(3), "with_value": int64(2),
+		"total": 40.0, "mean": 20.0, "min": 10.0, "max": 30.0,
+		"first": "a", "last": "d",
+		"name_final": "b", "name_old": "d",
+		"range": 20.0, "any_ok": true, "all_ok": false,
 	}
-	for k, quero := range casos {
-		if sul[k] != quero {
-			t.Errorf("%s = %v (%T), esperado %v", k, sul[k], sul[k], quero)
+	for k, want := range cases {
+		if secondLine[k] != want {
+			t.Errorf("%s = %v (%T), want %v", k, secondLine[k], secondLine[k], want)
 		}
 	}
 }
@@ -90,16 +90,16 @@ func TestAggregatorsComputeWhatTheyPromise(t *testing.T) {
 // A group with no values returns null, not zero. Zero is a number somebody will
 // add up; null says there was nothing to add.
 func TestAGroupWithNoValuesReturnsNullNotZero(t *testing.T) {
-	lines := reduzir(t, &Reduce{
+	lines := runReduce(t, &Reduce{
 		By:  GroupBy("g"),
-		Agg: map[string]Aggregator{"total": Sum("v"), "media": Mean("v"), "n": Count()},
+		Agg: map[string]Aggregator{"total": Sum("v"), "mean": Mean("v"), "n": Count()},
 	}, map[string]any{"g": "x", "v": nil})
 
-	if lines[0]["total"] != nil || lines[0]["media"] != nil {
-		t.Errorf("total=%v media=%v, os dois deviam ser nulos", lines[0]["total"], lines[0]["media"])
+	if lines[0]["total"] != nil || lines[0]["mean"] != nil {
+		t.Errorf("total=%v avg=%v, both should be null", lines[0]["total"], lines[0]["mean"])
 	}
 	if lines[0]["n"] != int64(1) {
-		t.Errorf("a linha existiu e Count devia vê-la: %v", lines[0]["n"])
+		t.Errorf("the row existed and Count should see it: %v", lines[0]["n"])
 	}
 }
 
@@ -111,45 +111,45 @@ func TestVarianceSurvivesLargeValues(t *testing.T) {
 	for _, d := range []float64{0, 1, 2, 3, 4} {
 		records = append(records, map[string]any{"g": "x", "v": base + d})
 	}
-	lines := reduzir(t, &Reduce{
+	lines := runReduce(t, &Reduce{
 		By:  GroupBy("g"),
 		Agg: map[string]Aggregator{"var": Variance("v"), "dp": StdDev("v")},
 	}, records...)
 
 	v := lines[0]["var"].(float64)
 	if v < 0 {
-		t.Fatalf("variância negativa (%v): a fórmula perdeu os dígitos", v)
+		t.Fatalf("negative variance (%v): the formula lost the digits", v)
 	}
 	if math.Abs(v-2.5) > 1e-6 {
-		t.Errorf("variância = %v, esperado 2.5", v)
+		t.Errorf("variance = %v, want 2.5", v)
 	}
 	if dp := lines[0]["dp"].(float64); math.Abs(dp-math.Sqrt(2.5)) > 1e-9 {
-		t.Errorf("desvio = %v", dp)
+		t.Errorf("deviation = %v", dp)
 	}
 }
 
 // A field with the wrong name would produce a column of nulls, and nobody would
 // notice. It is refused, naming what does exist.
 func TestAFieldNoRowHasIsRefused(t *testing.T) {
-	d := &Reduce{By: GroupBy("regiao"), Agg: map[string]Aggregator{"total": Sum("vlaor")}}
+	d := &Reduce{By: GroupBy("region"), Agg: map[string]Aggregator{"total": Sum("vlaue")}}
 	var failure error
-	for _, err := range d.apply(linesOf(vendas()...)) {
+	for _, err := range d.apply(linesOf(sales()...)) {
 		if err != nil {
 			failure = err
 		}
 	}
 	if failure == nil {
-		t.Fatal("um campo inexistente passou como coluna de nulos")
+		t.Fatal("a nonexistent field passed as a column of nulls")
 	}
-	if !strings.Contains(failure.Error(), "vlaor") || !strings.Contains(failure.Error(), "valor") {
-		t.Errorf("a mensagem precisa nomear o errado e listar os certos: %v", failure)
+	if !strings.Contains(failure.Error(), "vlaue") || !strings.Contains(failure.Error(), "value") {
+		t.Errorf("the message must name the wrong one and list the right ones: %v", failure)
 	}
 }
 
 // Mixed types in the same field are an error: the ordering between 10 and "9"
 // would depend on arrival order, and the maximum would change between runs.
 func TestMixedTypesAreAnError(t *testing.T) {
-	d := &Reduce{By: GroupBy("g"), Agg: map[string]Aggregator{"maior": Max("v")}}
+	d := &Reduce{By: GroupBy("g"), Agg: map[string]Aggregator{"max": Max("v")}}
 	var failure error
 	for _, err := range d.apply(linesOf(
 		map[string]any{"g": "x", "v": 10.0},
@@ -160,17 +160,17 @@ func TestMixedTypesAreAnError(t *testing.T) {
 		}
 	}
 	if failure == nil {
-		t.Fatal("misturar número e texto passou")
+		t.Fatal("mixing number and text got through")
 	}
 	if !strings.Contains(failure.Error(), "arrival order") {
-		t.Errorf("a mensagem não diz o problema: %v", failure)
+		t.Errorf("the message does not say the problem: %v", failure)
 	}
 }
 
 // Text that is a number IS a number: a CSV hands everything over as text, and
 // refusing it would force a transformer just to convert.
 func TestNumericTextAddsUp(t *testing.T) {
-	lines := reduzir(t, &Reduce{
+	lines := runReduce(t, &Reduce{
 		By:  GroupBy("g"),
 		Agg: map[string]Aggregator{"total": Sum("v")},
 	},
@@ -185,28 +185,28 @@ func TestNumericTextAddsUp(t *testing.T) {
 // GroupBy() with no fields reduces the whole stream to one row -- the grand
 // total.
 func TestGroupByWithNoFieldsGivesTheGrandTotal(t *testing.T) {
-	lines := reduzir(t, &Reduce{
-		Agg: map[string]Aggregator{"total": Sum("valor"), "n": Count()},
-	}, vendas()...)
+	lines := runReduce(t, &Reduce{
+		Agg: map[string]Aggregator{"total": Sum("value"), "n": Count()},
+	}, sales()...)
 	if len(lines) != 1 {
-		t.Fatalf("saiu com %d linhas, esperado 1", len(lines))
+		t.Fatalf("came out with %d rows, want 1", len(lines))
 	}
 	if lines[0]["total"] != 60.0 || lines[0]["n"] != int64(4) {
-		t.Errorf("total geral errado: %v", lines[0])
+		t.Errorf("wrong grand total: %v", lines[0])
 	}
 }
 
 // Finish sees the GROUPS, not the records -- it is what allows the global phase
 // without undoing the memory guarantee.
 func TestFinishSeesTheGroups(t *testing.T) {
-	lines := reduzir(t, &Reduce{
-		By:  GroupBy("regiao"),
-		Agg: map[string]Aggregator{"total": Sum("valor")},
-		Finish: func(grupos iter.Seq2[Group, map[string]any]) ([]map[string]any, error) {
+	lines := runReduce(t, &Reduce{
+		By:  GroupBy("region"),
+		Agg: map[string]Aggregator{"total": Sum("value")},
+		Finish: func(groups iter.Seq2[Group, map[string]any]) ([]map[string]any, error) {
 			var best map[string]any
-			for g, row := range grupos {
-				if len(g.Fields) != 1 || g.Fields[0] != "regiao" {
-					return nil, fmt.Errorf("o grupo não trouxe seus campos: %v", g.Fields)
+			for g, row := range groups {
+				if len(g.Fields) != 1 || g.Fields[0] != "region" {
+					return nil, fmt.Errorf("the group did not bring its fields: %v", g.Fields)
 				}
 				if best == nil || row["total"].(float64) > best["total"].(float64) {
 					best = row
@@ -214,16 +214,16 @@ func TestFinishSeesTheGroups(t *testing.T) {
 			}
 			return []map[string]any{best}, nil
 		},
-	}, vendas()...)
+	}, sales()...)
 
-	if len(lines) != 1 || lines[0]["regiao"] != "sul" {
-		t.Errorf("a redução global não escolheu o maior: %v", lines)
+	if len(lines) != 1 || lines[0]["region"] != "south" {
+		t.Errorf("the global reduction did not pick the largest: %v", lines)
 	}
 }
 
 // The refusals fail at ASSEMBLY time, before the extraction: finding them
 // afterwards
-// custaria a janela do fornecedor.
+// would cost the provider's window.
 func TestWhatDoesNotFitRefusesBeforeExtracting(t *testing.T) {
 	for name, a := range map[string]Aggregator{
 		"Median":   Median("v"),
@@ -234,13 +234,13 @@ func TestWhatDoesNotFitRefusesBeforeExtracting(t *testing.T) {
 	} {
 		err := (&Reduce{By: GroupBy("g"), Agg: map[string]Aggregator{"x": a}}).validate()
 		if err == nil {
-			t.Errorf("%s passou na validação", name)
+			t.Errorf("%s passed validation", name)
 			continue
 		}
 		// The message has to name both ways out, because both exist.
 		for _, expected := range []string{"constant", "SQL", "sdk.Custom"} {
 			if !strings.Contains(err.Error(), expected) {
-				t.Errorf("%s: a mensagem não diz %q: %v", name, expected, err)
+				t.Errorf("%s: the message does not say %q: %v", name, expected, err)
 			}
 		}
 	}
@@ -248,11 +248,11 @@ func TestWhatDoesNotFitRefusesBeforeExtracting(t *testing.T) {
 
 func TestANameCollidingWithTheGroupIsRefused(t *testing.T) {
 	err := (&Reduce{
-		By:  GroupBy("regiao"),
-		Agg: map[string]Aggregator{"regiao": Count()},
+		By:  GroupBy("region"),
+		Agg: map[string]Aggregator{"region": Count()},
 	}).validate()
 	if err == nil || !strings.Contains(err.Error(), "two values") {
-		t.Errorf("colisão de nome passou: %v", err)
+		t.Errorf("a name collision got through: %v", err)
 	}
 }
 
@@ -264,9 +264,9 @@ func generateGroups(n, g int) iter.Seq2[Envelope, error] {
 	return func(yield func(Envelope, error) bool) {
 		for i := 0; i < n; i++ {
 			r := map[string]any{
-				"grupo": fmt.Sprintf("g%04d", i%g),
-				"valor": float64(i % 1000),
-				"nome":  "linha",
+				"group": fmt.Sprintf("g%04d", i%g),
+				"value": float64(i % 1000),
+				"name":  "line",
 			}
 			if !yield(Envelope{Payload: r}, nil) {
 				return
@@ -275,7 +275,7 @@ func generateGroups(n, g int) iter.Seq2[Envelope, error] {
 	}
 }
 
-// picoDeHeap mede o maior heap vivo DURANTE o fold.
+// heapPeak measures the largest live heap DURING the fold.
 //
 // Measuring afterwards does not work, and that cost one version of this test:
 // by the time the first row comes out, the groups' state is already dead -- the
@@ -285,25 +285,25 @@ func generateGroups(n, g int) iter.Seq2[Envelope, error] {
 //
 // The probe goes in as one more aggregator: its `Add` runs once per
 // record, while ALL of the groups' state is alive.
-func picoDeHeap(t *testing.T, n, grupos int, agg map[string]Aggregator) uint64 {
+func heapPeak(t *testing.T, n, groups int, agg map[string]Aggregator) uint64 {
 	t.Helper()
 
-	var pico uint64
+	var peak uint64
 	var i int
-	intervalo := n / 20
-	if intervalo < 1 {
-		intervalo = 1
+	interval := n / 20
+	if interval < 1 {
+		interval = 1
 	}
 
-	comSonda := make(map[string]Aggregator, len(agg)+1)
+	withProbe := make(map[string]Aggregator, len(agg)+1)
 	for k, v := range agg {
-		comSonda[k] = v
+		withProbe[k] = v
 	}
-	comSonda["_sonda"] = Custom(Accumulator{
+	withProbe["_probe"] = Custom(Accumulator{
 		Init: func() any { return nil },
 		Add: func(any, map[string]any) error {
 			i++
-			if i%intervalo != 0 {
+			if i%interval != 0 {
 				return nil
 			}
 			// A GC before reading: without it the measurement would be
@@ -312,55 +312,55 @@ func picoDeHeap(t *testing.T, n, grupos int, agg map[string]Aggregator) uint64 {
 			runtime.GC()
 			var m runtime.MemStats
 			runtime.ReadMemStats(&m)
-			if m.HeapAlloc > pico {
-				pico = m.HeapAlloc
+			if m.HeapAlloc > peak {
+				peak = m.HeapAlloc
 			}
 			return nil
 		},
 		Value: func(any) (any, error) { return nil, nil },
 	})
 
-	d := &Reduce{By: GroupBy("grupo"), Agg: comSonda}
+	d := &Reduce{By: GroupBy("group"), Agg: withProbe}
 	var lines int
-	for _, err := range d.apply(generateGroups(n, grupos)) {
+	for _, err := range d.apply(generateGroups(n, groups)) {
 		if err != nil {
 			t.Fatal(err)
 		}
 		lines++
 	}
-	if lines != grupos {
-		t.Fatalf("saiu com %d grupos, esperado %d", lines, grupos)
+	if lines != groups {
+		t.Fatalf("came out with %d groups, want %d", lines, groups)
 	}
-	return pico
+	return peak
 }
 
 // Reduce's promise is not "the sum is right": it is that MEMORY does not grow
 // with the input.
 //
-// Cem grupos fixos, a entrada crescendo 100x. Se o teto se mantiver, a promessa
+// A hundred fixed groups, the input growing 100x. If the ceiling holds, the promise
 // is in the code and not only in the documentation -- and this is the feature's
 // most likely regression: somebody adding an aggregator that keeps rows.
 func TestMemoryDoesNotGrowWithTheInput(t *testing.T) {
 	if testing.Short() {
-		t.Skip("mede heap com 1M de registros")
+		t.Skip("measures heap with 1M records")
 	}
-	const grupos = 100
+	const groups = 100
 	agg := map[string]Aggregator{
-		"n": Count(), "total": Sum("valor"), "media": Mean("valor"),
-		"maior": Max("valor"), "dp": StdDev("valor"), "nome": MaxBy("nome", "valor"),
+		"n": Count(), "total": Sum("value"), "mean": Mean("value"),
+		"max": Max("value"), "dp": StdDev("value"), "name": MaxBy("name", "value"),
 	}
 
-	pequeno := picoDeHeap(t, 10_000, grupos, agg)
-	grande := picoDeHeap(t, 1_000_000, grupos, agg)
+	small := heapPeak(t, 10_000, groups, agg)
+	big := heapPeak(t, 1_000_000, groups, agg)
 
 	// A fixed allowance, not a proportional one: if the input were retained, 1M
 	// records would weigh hundreds of MB and blow past any reasonable
 	// allowance.
-	const folga = 4 << 20
-	if grande > pequeno+folga {
-		t.Errorf("o heap cresceu com a entrada: %.1f MB com 10 mil registros, "+
-			"%.1f MB com 1 milhão. A memória devia depender só dos %d grupos",
-			mb(pequeno), mb(grande), grupos)
+	const slack = 4 << 20
+	if big > small+slack {
+		t.Errorf("the heap grew with the input: %.1f MB with 10 thousand records, "+
+			"%.1f MB with 1 million. Memory should depend only on the %d groups",
+			mb(small), mb(big), groups)
 	}
 }
 
@@ -371,9 +371,9 @@ func TestTheMeasurementCatchesAnAggregatorThatKeepsRows(t *testing.T) {
 	if testing.Short() {
 		t.Skip("mede heap")
 	}
-	const grupos = 100
-	guardador := map[string]Aggregator{
-		"tudo": Custom(Accumulator{
+	const groups = 100
+	guardedAgg := map[string]Aggregator{
+		"everything": Custom(Accumulator{
 			Init: func() any { return &[]map[string]any{} },
 			Add: func(acc any, r map[string]any) error {
 				p := acc.(*[]map[string]any)
@@ -384,14 +384,14 @@ func TestTheMeasurementCatchesAnAggregatorThatKeepsRows(t *testing.T) {
 		}),
 	}
 
-	pequeno := picoDeHeap(t, 10_000, grupos, guardador)
-	grande := picoDeHeap(t, 200_000, grupos, guardador)
+	small := heapPeak(t, 10_000, groups, guardedAgg)
+	big := heapPeak(t, 200_000, groups, guardedAgg)
 
-	const folga = 4 << 20
-	if grande <= pequeno+folga {
-		t.Errorf("a medição NÃO pegou um agregador que guarda linhas: "+
-			"%.1f MB contra %.1f MB. O teste da promessa não vale nada assim",
-			mb(pequeno), mb(grande))
+	const slack = 4 << 20
+	if big <= small+slack {
+		t.Errorf("the measurement did NOT catch an aggregator that keeps rows: "+
+			"%.1f MB against %.1f MB. The promise's test is worthless this way",
+			mb(small), mb(big))
 	}
 }
 

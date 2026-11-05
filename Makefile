@@ -69,7 +69,7 @@ help: ## Lists the targets
 # reporting `brevis dev`, with no commit and no date, while the documentation
 # promised the version stamped in -- and telling a local build from a release
 # artifact is exactly what those fields are for.
-build: generate ## Builds the binary into bin/ (generates templ and css first)
+build: generate ## Builds the binary into bin/ (generates the css and the React app first)
 	@go build -trimpath \
 	  -ldflags="-X main.Version=$(VERSION) -X main.Commit=$(COMMIT) -X main.BuildDate=$(BUILD_DATE)" \
 	  -o $(BIN) ./cmd/brevis
@@ -158,11 +158,14 @@ tailwind-install: ## Downloads the standalone Tailwind binary (no Node)
 	   "https://github.com/tailwindlabs/tailwindcss/releases/download/$(TAILWIND_VERSION)/tailwindcss-$$OS-$$ARCH" \
 	 && chmod +x bin/tailwindcss && echo "bin/tailwindcss $(TAILWIND_VERSION) installed"
 
-generate: ## Generates the _templ.go files and the CSS
-	@command -v templ >/dev/null || { echo "install it: go install github.com/a-h/templ/cmd/templ@$$(go list -m -f '{{.Version}}' github.com/a-h/templ)"; exit 1; }
+generate: ## Generates the CSS and the React app
 	@test -x bin/tailwindcss && ./bin/tailwindcss --help 2>&1 | head -1 | grep -q "$(patsubst v%,%,$(TAILWIND_VERSION))" || $(MAKE) tailwind-install
-	@templ generate
 	@./bin/tailwindcss -i web/assets/app.src.css -o web/assets/app.css --minify
+	@$(MAKE) --no-print-directory spa
+
+spa: ## Builds the React app into web/spa/dist (embedded in the binary)
+	@command -v npm >/dev/null || { echo "install Node (24+): the React app is built with it"; exit 1; }
+	@cd web/spa && npm ci --silent && npm run build --silent
 
 image: generate ## Builds the images for the local architecture (does not publish)
 	@docker build --target api  -t $(IMAGE):$(VERSION)        -t $(IMAGE):latest \
@@ -484,7 +487,7 @@ cluster-ui: ## The Argo CD URL and the admin password
 cluster-status: ## What Argo CD has synced, and what is running
 	@$(CLUSTER) exec -T k3s kubectl -n argocd get applications
 	@echo
-	@$(CLUSTER) exec -T k3s kubectl -n dados get pods
+	@$(CLUSTER) exec -T k3s kubectl -n data get pods
 
 cluster-dev-image: ## Builds the agent from THIS tree into the cluster (it is not published yet)
 	@docker build -q --target agent -t brevis-agent:dev --build-arg VERSION=dev . >/dev/null
@@ -511,9 +514,9 @@ cluster-goapp: ## The visual test: a Go pod you own, with Brevis running command
 	  -o jsonpath='{range .status.resources[*]}{.kind}/{.name}{"\n"}{end}' | sed -n 's/^/   /p' | grep goapp
 	@echo
 	@echo "3. THE POD, started before the run rather than for it"
-	@$(CLUSTER) exec -T k3s kubectl -n dados get pods -l app.kubernetes.io/component=goapp \
+	@$(CLUSTER) exec -T k3s kubectl -n data get pods -l app.kubernetes.io/component=goapp \
 	  -o 'custom-columns=NAME:.metadata.name,PHASE:.status.phase,IMAGE:.spec.containers[0].image,STARTED:.status.startTime'
-	@before=$$($(CLUSTER) exec -T k3s kubectl -n dados get pods --no-headers 2>/dev/null | wc -l | tr -d ' '); \
+	@before=$$($(CLUSTER) exec -T k3s kubectl -n data get pods --no-headers 2>/dev/null | wc -l | tr -d ' '); \
 	 echo "   pods in the namespace before the run: $$before"; \
 	 echo; \
 	 echo "4. BREVIS SENDS THE COMMANDS"; \
@@ -530,11 +533,11 @@ cluster-goapp: ## The visual test: a Go pod you own, with Brevis running command
 	 done; \
 	 echo; echo "   the run ended: $${state%% *}"; echo; \
 	 echo "5. WHAT THE POD WAS ASKED TO DO -- one line per command, all on one container"; \
-	 $(CLUSTER) exec -T k3s kubectl -n dados logs brevis-goapp-0 --tail=400 \
+	 $(CLUSTER) exec -T k3s kubectl -n data logs brevis-goapp-0 --tail=400 \
 	   | grep '"msg":"step started"' \
 	   | sed -E 's/.*"workflow":"([^"]*)".*"node":"([^"]*)".*/   \1 -> \2/' | tail -4; \
 	 echo; \
-	 after=$$($(CLUSTER) exec -T k3s kubectl -n dados get pods --no-headers 2>/dev/null | wc -l | tr -d ' '); \
+	 after=$$($(CLUSTER) exec -T k3s kubectl -n data get pods --no-headers 2>/dev/null | wc -l | tr -d ' '); \
 	 echo "6. PODS AFTER THE RUN: $$after, and there were $$before. Brevis created none."; \
 	 echo; \
 	 echo "   Open $$url for the output of each command,"; \
@@ -547,7 +550,7 @@ cluster-run: ## Triggers a workflow in the cluster: make cluster-run WORKFLOW=po
 
 cluster-watch: ## Watches the step pods appear and die
 	@echo "Two pods at once is the point. Ctrl-C to stop."
-	@$(CLUSTER) exec -T k3s kubectl -n dados get pods -w \
+	@$(CLUSTER) exec -T k3s kubectl -n data get pods -w \
 	  -o 'custom-columns=NAME:.metadata.name,PHASE:.status.phase,IMAGE:.spec.containers[0].image,CPU:.spec.containers[0].resources.requests.cpu,MEM:.spec.containers[0].resources.requests.memory'
 
 cluster-tree: ## What Argo CD OWNS -- the step pods are deliberately not in it
@@ -574,4 +577,4 @@ smoke: ## Checks the api's /health and /ready, and that the gateway accepts an e
 	  -d '{"event_id":"smoke","occurred_at":"2026-01-01T00:00:00Z","host":"smoke.example.com","region":"local"}' \
 	  | grep -q '^202$$' && echo 202 || { echo "not 202: see 'docker compose logs gateway'"; exit 1; }
 
-.PHONY: help local-password-check build test test-int test-db check up down serve-up serve-down serve-restart endpoints-demo endpoints-publish endpoints-build logs smoke dev generate tailwind-install image image-push image-smoke
+.PHONY: help local-password-check build test test-int test-db check up down serve-up serve-down serve-restart endpoints-demo endpoints-publish endpoints-build logs smoke dev generate spa tailwind-install image image-push image-smoke

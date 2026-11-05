@@ -68,8 +68,8 @@ func taskEnvironment(t execution.TaskExec) ([]string, error) {
 
 	var missing []string
 	for name, coord := range t.Secrets {
-		v, existe := os.LookupEnv(name)
-		if !existe || v == "" {
+		v, exists := os.LookupEnv(name)
+		if !exists || v == "" {
 			missing = append(missing, fmt.Sprintf("%s (secrets: %s)", name, coord))
 			continue
 		}
@@ -148,7 +148,7 @@ func (p *ProcessExecutor) Execute(ctx context.Context, t execution.TaskExec) (<-
 	}
 	if err := cmd.Start(); err != nil {
 		cancel()
-		return nil, fmt.Errorf("iniciando %q: %w", t.NodeID, err)
+		return nil, fmt.Errorf("starting %q: %w", t.NodeID, err)
 	}
 
 	events := make(chan execution.Event, 64)

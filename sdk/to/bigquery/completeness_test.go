@@ -11,9 +11,9 @@ import (
 // bigquery.Table is an adapter: it translates its fields into the LoadConfig
 // the load package consumes. A LoadConfig field it never writes is a
 // adjustment the facade's consumer has no way to make -- and nothing breaks,
-// nada avisa.
+// nothing warns.
 //
-// Aconteceu de verdade: a fase 0 parou de repassar Provider e Entity, e toda
+// It really happened: phase 0 stopped passing Provider and Entity on, and every
 // table created since then came out with no cost-attribution labels. No
 // test saw it, because no row count changes.
 //
@@ -22,21 +22,21 @@ import (
 // here, which is exactly when you want to be bothered.
 func TestEveryLoadConfigFieldIsReachable(t *testing.T) {
 	fields := fieldsOf(t, "../../internal/core/types.go", "LoadConfig")
-	escritos := escritosPor(t, "bigquery.go")
+	written := writtenBy(t, "bigquery.go")
 
 	// These the adapter does not write, and for stated reasons.
-	naoSeAplica := map[string]string{
-		"Format":   "sempre ndjson: é o único formato que o load escreve",
-		"Provider": "vem do lote, não do Target -- ver Write",
-		"Entity":   "vem do lote, não do Target -- ver Write",
+	notApplicable := map[string]string{
+		"Format":   "always ndjson: it is the only format the load writes",
+		"Provider": "comes from the batch, not from the Target -- see Write",
+		"Entity":   "comes from the batch, not from the Target -- see Write",
 	}
 
 	var missing []string
 	for _, c := range fields {
-		if escritos[c] {
+		if written[c] {
 			continue
 		}
-		if _, ok := naoSeAplica[c]; ok {
+		if _, ok := notApplicable[c]; ok {
 			continue
 		}
 		missing = append(missing, c)
@@ -44,28 +44,28 @@ func TestEveryLoadConfigFieldIsReachable(t *testing.T) {
 
 	if len(missing) > 0 {
 		sort.Strings(missing)
-		t.Errorf("LoadConfig tem %s, e bigquery.Table não os define nem os declara "+
-			"inaplicáveis. Quem usa a fachada não consegue ajustá-los, e nada avisa.",
+		t.Errorf("LoadConfig has %s, and bigquery.Table neither defines nor declares them: "+
+			"inapplicable. Whoever uses the facade cannot tune them, and nothing warns them.",
 			strings.Join(missing, ", "))
 	}
 }
 
 var (
-	fieldRe   = regexp.MustCompile(`(?m)^\t([A-Z][A-Za-z0-9]*)\s`)
-	escritaRe = regexp.MustCompile(`(?m)^\t+([A-Z][A-Za-z0-9]*):`)
-	atribRe   = regexp.MustCompile(`cfg\.([A-Z][A-Za-z0-9]*)\s*(,|=)`)
+	fieldRe = regexp.MustCompile(`(?m)^\t([A-Z][A-Za-z0-9]*)\s`)
+	writeRe = regexp.MustCompile(`(?m)^\t+([A-Z][A-Za-z0-9]*):`)
+	attrRe  = regexp.MustCompile(`cfg\.([A-Z][A-Za-z0-9]*)\s*(,|=)`)
 )
 
 func fieldsOf(t *testing.T, path, kind string) []string {
 	t.Helper()
 	data, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("lendo %s: %v", path, err)
+		t.Fatalf("reading %s: %v", path, err)
 	}
 	s := string(data)
 	i := strings.Index(s, "type "+kind+" struct {")
 	if i < 0 {
-		t.Fatalf("%s não achado em %s", kind, path)
+		t.Fatalf("%s not found in %s", kind, path)
 	}
 	body := s[i:]
 	body = body[:strings.Index(body, "\n}")]
@@ -77,19 +77,19 @@ func fieldsOf(t *testing.T, path, kind string) []string {
 	return out
 }
 
-func escritosPor(t *testing.T, path string) map[string]bool {
+func writtenBy(t *testing.T, path string) map[string]bool {
 	t.Helper()
 	data, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("lendo %s: %v", path, err)
+		t.Fatalf("reading %s: %v", path, err)
 	}
 	s := string(data)
 
 	out := map[string]bool{}
-	for _, m := range escritaRe.FindAllStringSubmatch(s, -1) {
+	for _, m := range writeRe.FindAllStringSubmatch(s, -1) {
 		out[m[1]] = true
 	}
-	for _, m := range atribRe.FindAllStringSubmatch(s, -1) {
+	for _, m := range attrRe.FindAllStringSubmatch(s, -1) {
 		out[m[1]] = true
 	}
 	return out

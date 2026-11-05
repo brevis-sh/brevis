@@ -13,11 +13,11 @@ import (
 // built inside a method that held a client and had never been seen by a
 // teste.
 func TestInsertSQLNamesTheColumns(t *testing.T) {
-	got := InsertSQL("landing.pedidos", "brevis_stage",
-		[]string{"ingestion_id", "provider", "valor"}, core.MetadataID)
+	got := InsertSQL("landing.orders", "brevis_stage",
+		[]string{"ingestion_id", "provider", "value"}, core.MetadataID)
 
-	expected := `INSERT INTO landing.pedidos ("ingestion_id", "provider", "valor") ` +
-		`SELECT "ingestion_id", "provider", "valor" FROM brevis_stage ` +
+	expected := `INSERT INTO landing.orders ("ingestion_id", "provider", "value") ` +
+		`SELECT "ingestion_id", "provider", "value" FROM brevis_stage ` +
 		`ON CONFLICT ("ingestion_id") DO NOTHING`
 	if got != expected {
 		t.Errorf("SQL:\n  got  %s\n  want %s", got, expected)
@@ -29,9 +29,9 @@ func TestInsertSQLNamesTheColumns(t *testing.T) {
 // on a batch that has already run the whole extract.
 func TestInsertSQLQuotesIdentifiers(t *testing.T) {
 	got := InsertSQL("t", "s", []string{core.MetadataID, "order", "group"}, core.MetadataID)
-	for _, palavra := range []string{`"order"`, `"group"`} {
-		if !strings.Contains(got, palavra) {
-			t.Errorf("%s nao esta citado:\n%s", palavra, got)
+	for _, word := range []string{`"order"`, `"group"`} {
+		if !strings.Contains(got, word) {
+			t.Errorf("%s is not quoted:\n%s", word, got)
 		}
 	}
 }
@@ -41,39 +41,39 @@ func TestInsertSQLQuotesIdentifiers(t *testing.T) {
 func TestInsertSQLEscapesQuotes(t *testing.T) {
 	got := InsertSQL("t", "s", []string{`a"b`}, core.MetadataID)
 	if !strings.Contains(got, `"a""b"`) {
-		t.Errorf("aspa nao escapada:\n%s", got)
+		t.Errorf("unescaped quote:\n%s", got)
 	}
 }
 
 // TestInsertSQLConflictsOnIngestionID: the SDK's dedup is on ingestion_id, and
 // swapping that column for another would make the dedup match on the wrong
 // thing in
-// silencio.
+// silence.
 func TestInsertSQLConflictsOnIngestionID(t *testing.T) {
 	got := InsertSQL("t", "s", []string{"a"}, core.MetadataID)
 	if !strings.Contains(got, `ON CONFLICT ("`+core.MetadataID+`")`) {
-		t.Errorf("o ON CONFLICT nao e por %s:\n%s", core.MetadataID, got)
+		t.Errorf("the ON CONFLICT is not on %s:\n%s", core.MetadataID, got)
 	}
 }
 
 // TestSplitName covers the implicit schema and a name with too many parts.
 func TestSplitName(t *testing.T) {
-	casos := []struct {
-		name, esquema, table string
-		failure              bool
+	cases := []struct {
+		name, schema, table string
+		failure             bool
 	}{
-		{"pedidos", "public", "pedidos", false},
-		{"landing.pedidos", "landing", "pedidos", false},
+		{"orders", "public", "orders", false},
+		{"landing.orders", "landing", "orders", false},
 		{"a.b.c", "", "", true},
 	}
-	for _, c := range casos {
+	for _, c := range cases {
 		e, tb, err := splitName(c.name)
 		if (err != nil) != c.failure {
-			t.Errorf("%q: erro = %v, esperado erro=%v", c.name, err, c.failure)
+			t.Errorf("%q: error = %v, want error=%v", c.name, err, c.failure)
 			continue
 		}
-		if !c.failure && (e != c.esquema || tb != c.table) {
-			t.Errorf("%q = (%q, %q), esperado (%q, %q)", c.name, e, tb, c.esquema, c.table)
+		if !c.failure && (e != c.schema || tb != c.table) {
+			t.Errorf("%q = (%q, %q), want (%q, %q)", c.name, e, tb, c.schema, c.table)
 		}
 	}
 }
@@ -90,18 +90,18 @@ func TestRowsFollowTheTablesOrder(t *testing.T) {
 	l := &rows{columns: []string{"a", "b", "c"}, envelopes: envelopes}
 
 	if !l.Next() {
-		t.Fatal("sem primeira linha")
+		t.Fatal("no first row")
 	}
 	v, err := l.Values()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if v[0] != 1 || v[1] != 2 || v[2] != 3 {
-		t.Errorf("linha 1 = %v, esperado [1 2 3] na ordem da TABELA", v)
+		t.Errorf("row 1 = %v, want [1 2 3] in TABLE order", v)
 	}
 
 	if !l.Next() {
-		t.Fatal("sem segunda linha")
+		t.Fatal("no second row")
 	}
 	v, err = l.Values()
 	if err != nil {
@@ -110,11 +110,11 @@ func TestRowsFollowTheTablesOrder(t *testing.T) {
 	// A column the record does not carry becomes NULL, which is legitimate in a
 	// landing table.
 	if v[0] != 10 || v[1] != 20 || v[2] != nil {
-		t.Errorf("linha 2 = %v, esperado [10 20 <nil>]", v)
+		t.Errorf("row 2 = %v, want [10 20 <nil>]", v)
 	}
 
 	if l.Next() {
-		t.Error("Next continuou depois do fim")
+		t.Error("Next went on past the end")
 	}
 }
 
@@ -139,6 +139,6 @@ func TestRowsDoesNotAllocatePerRow(t *testing.T) {
 	// Zero is the target: the buffer is allocated once, outside the measured
 	// loop.
 	if allocations > 0 {
-		t.Errorf("%.0f alocacoes para 1000 rows; o buffer deveria ser reusado", allocations)
+		t.Errorf("%.0f allocations for 1000 rows; the buffer should be reused", allocations)
 	}
 }

@@ -9,7 +9,7 @@
 > the binaries and fails if either document has stopped mentioning one.
 >
 > It checks NAMES, not prose. Two documents describing the same command
-> differently is a judgement call; one document silently missing a command that
+> differently is a judgment call; one document silently missing a command that
 > exists is not.
 
 The command-line reference. The outputs below were captured from the binary
@@ -273,7 +273,7 @@ well.
 
 ### It is a query, not a rollup table
 
-Aggregating the window scans `runs` and digs into `task_runs.etapas` per row.
+Aggregating the window scans `runs` and digs into `task_runs.stages` per row.
 The alternative is a rollup written as each run finishes, which would make this
 read cheap and would also add a write to the hottest path in the system plus a
 second source of truth for numbers that already exist — and can therefore drift
@@ -364,11 +364,11 @@ run in parallel at the same level:
 
 ```
 workflow hello (dag, 4 steps) in examples
-  ▶ preparar
-    preparar | preparando
-  ✓ preparar
-  ▶ validar
-  ▶ extrair
+  ▶ prepare
+    prepare | preparing
+  ✓ prepare
+  ▶ validate
+  ▶ extract
 ```
 
 ---
@@ -562,7 +562,7 @@ still believes it owns.
 ### The space is reusable, not returned
 
 Postgres marks the space free for the table to reuse; it does not hand it back
-to the filesystem. For a prune that runs regularly that is the right behaviour —
+to the filesystem. For a prune that runs regularly that is the right behavior —
 the table stops growing. To actually shrink the files, `VACUUM FULL task_runs`,
 which takes an exclusive lock and wants a maintenance window.
 
@@ -597,7 +597,7 @@ the installation on the default identity with nothing said; the field names also
 became English in that version, and a file still using `titulo:` fails naming
 it.
 
-One behavioural difference from boot: **a missing file is an error**. In `serve`,
+One behavioral difference from boot: **a missing file is an error**. In `serve`,
 absence means "use the default identity"; whoever asked to validate a path
 expects to be told it does not exist.
 
@@ -642,7 +642,7 @@ brevis 0.6.0
 The version, the commit and the date are stamped at build time by `-ldflags`.
 Built straight with `go build`, it prints `brevis dev` with no commit and no
 date — and telling that apart from a release artifact matters when somebody
-reports odd behaviour. `make image` appends `-dirty` to the commit when there is
+reports odd behavior. `make image` appends `-dirty` to the commit when there is
 an uncommitted change.
 
 ---
@@ -875,6 +875,9 @@ afterwards.
 |---|---|---|
 | `BREVIS_ENV` | `production` | `local` uses text logging and opens the UI without a password; anything else (including unset) requires a credential and logs JSON. Set `BREVIS_ENV=local` for development |
 | `BREVIS_HTTP_ADDR` | `:8080` | listen address |
+| `BREVIS_GATEWAY_METRICS_URLS` | — | Where the gateways' `/metrics` answer, as `name=url` pairs (the gateway's `name:`), comma- or newline-separated; repeat a name for replicas. Feeds the live volume of Streams. Unset: those screens say "no metrics source configured". See [OBSERVABILITY](OBSERVABILITY.md#the-live-volume-on-the-consoles-screens) |
+| `BREVIS_ENDPOINTS_METRICS_URLS` | — | The same for each `brevis-sql-api` (`api=url`, the API's name as in `BREVIS_ENDPOINTS_URLS`). Feeds the live consumption of Endpoints |
+| `BREVIS_METRICS_SCRAPE_INTERVAL` | `5s` | How often each source is read (`1s` to `1m`) |
 | `BREVIS_METRICS_ADDR` | `:9090` | where `/metrics` listens, on a port of its own. `""` serves nothing — and unlike the others here, an EMPTY value is not the same as an unset one |
 | `BREVIS_LOG_LEVEL` | `info` | |
 | `BREVIS_SHUTDOWN_TIMEOUT_SECONDS` | `15` | an integer; a non-numeric value is a boot error |

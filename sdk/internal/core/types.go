@@ -94,12 +94,12 @@ func ComputeIngestionIDIn(namespace uuid.UUID, provider, entity, sourceKey, reco
 	return formatUUID(uuidV5(namespace, key)), nil
 }
 
-// digestos keeps the sha1 states between calls.
+// digests keeps the sha1 states between calls.
 //
 // uuid.NewSHA1 calls sha1.New() per invocation, and Sum(nil) allocates again:
 // three allocations per record to compute a 20-byte hash. On a load of millions,
 // that is millions of digests created and thrown away.
-var digestos = sync.Pool{New: func() any { return sha1.New() }} // #nosec G401 -- UUID v5 is defined over SHA-1; not a cryptographic use
+var digests = sync.Pool{New: func() any { return sha1.New() }} // #nosec G401 -- UUID v5 is defined over SHA-1; not a cryptographic use
 
 // uuidV5 is the same thing as uuid.NewSHA1, without the allocations.
 //
@@ -108,12 +108,12 @@ var digestos = sync.Pool{New: func() any { return sha1.New() }} // #nosec G401 -
 // differential test comparing this function with the uuid package's own over
 // thousands of random inputs. A one-bit divergence here would change every
 // ingestion_id ever written.
-func uuidV5(espaco uuid.UUID, data []byte) uuid.UUID {
-	h := digestos.Get().(hash.Hash)
-	defer digestos.Put(h)
+func uuidV5(namespace uuid.UUID, data []byte) uuid.UUID {
+	h := digests.Get().(hash.Hash)
+	defer digests.Put(h)
 
 	h.Reset()
-	_, _ = h.Write(espaco[:])
+	_, _ = h.Write(namespace[:])
 	_, _ = h.Write(data)
 
 	var sum [sha1.Size]byte
@@ -121,8 +121,8 @@ func uuidV5(espaco uuid.UUID, data []byte) uuid.UUID {
 
 	var u uuid.UUID
 	copy(u[:], digest)
-	u[6] = (u[6] & 0x0f) | 0x50 // versao 5
-	u[8] = (u[8] & 0x3f) | 0x80 // variante RFC 4122
+	u[6] = (u[6] & 0x0f) | 0x50 // version 5
+	u[8] = (u[8] & 0x3f) | 0x80 // RFC 4122 variant
 	return u
 }
 
@@ -305,7 +305,7 @@ type LoadConfig struct {
 	//
 	// EvolveNone -- the zero value -- refuses any difference, which is what
 	// this path did before, silently. The Postgres and MySQL destinations have
-	// honoured this field for a while; BigQuery ignored it, and `auto_table`
+	// honored this field for a while; BigQuery ignored it, and `auto_table`
 	// declared EvolveAdditive on every destination regardless.
 	//
 	// The result: adding a fixed column to the gateway broke every BigQuery

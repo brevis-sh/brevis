@@ -7,11 +7,11 @@ import (
 
 func TestTheWindowKeepsEverythingWhenItFits(t *testing.T) {
 	var j window
-	for _, l := range []string{"first", "segunda", "terceira"} {
+	for _, l := range []string{"first", "second", "third"} {
 		j.Write(l)
 	}
-	if got := j.String(); got != "first\nsegunda\nterceira\n" {
-		t.Errorf("saida = %q", got)
+	if got := j.String(); got != "first\nsecond\nthird\n" {
+		t.Errorf("output = %q", got)
 	}
 }
 
@@ -24,29 +24,28 @@ func TestTheWindowRespectsTheCeiling(t *testing.T) {
 		j.Write(line)
 	}
 	if n := len(j.String()); n > LogCeiling+512 {
-		t.Errorf("guardou %d bytes; o teto e %d", n, LogCeiling)
+		t.Errorf("kept %d bytes; the ceiling is %d", n, LogCeiling)
 	}
 }
 
-// As duas pontas precisam sobreviver: o comeco traz o comando e a configuracao,
+// Both ends must survive: the start carries the command and the configuration,
 // the end carries the reason for the failure. Keeping only one of them loses
-// half the
-// diagnostico.
+// half the diagnosis.
 func TestTheWindowKeepsBothEnds(t *testing.T) {
 	var j window
-	j.Write("COMECO-DA-SAIDA")
+	j.Write("START-OF-OUTPUT")
 	filler := strings.Repeat("y", 500)
 	for i := 0; i < 3000; i++ {
 		j.Write(filler)
 	}
-	j.Write("ERRO-NO-FIM")
+	j.Write("ERROR-AT-END")
 
 	got := j.String()
-	if !strings.Contains(got, "COMECO-DA-SAIDA") {
+	if !strings.Contains(got, "START-OF-OUTPUT") {
 		t.Error("it lost the beginning -- the command that ran disappears")
 	}
-	if !strings.Contains(got, "ERRO-NO-FIM") {
-		t.Error("perdeu o fim — some o motivo da falha")
+	if !strings.Contains(got, "ERROR-AT-END") {
+		t.Error("lost the end -- the reason for the failure is gone")
 	}
 }
 

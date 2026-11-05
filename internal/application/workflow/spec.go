@@ -14,7 +14,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	dominio "brevis.sh/brevis/internal/domain/workflow"
+	domain "brevis.sh/brevis/internal/domain/workflow"
 )
 
 // Spec mirrors the YAML, and nothing more. Loose fields here, invariants in the domain.
@@ -76,8 +76,8 @@ type ResourceSpec struct {
 	} `yaml:"limits,omitempty"`
 }
 
-func (r ResourceSpec) dominio() dominio.Resources {
-	return dominio.Resources{
+func (r ResourceSpec) domain() domain.Resources {
+	return domain.Resources{
 		CPU: r.CPU, Memory: r.Memory,
 		CPULimit: r.Limits.CPU, MemoryLimit: r.Limits.Memory,
 	}
@@ -108,15 +108,15 @@ type ParamSpec struct {
 	Uses        string   `yaml:"uses,omitempty"`
 }
 
-func (p ParamSpec) dominio() dominio.Param {
-	kind := dominio.ParamType(strings.TrimSpace(p.Type))
+func (p ParamSpec) domain() domain.Param {
+	kind := domain.ParamType(strings.TrimSpace(p.Type))
 	if kind == "" {
 		// `string` as the default: it is the most common type and the only one
 		// that does not change the value's meaning. Requiring the key on every
 		// param would be noise.
-		kind = dominio.ParamString
+		kind = domain.ParamString
 	}
-	return dominio.Param{
+	return domain.Param{
 		Name: strings.TrimSpace(p.Name), Type: kind,
 		Default: p.Default, Description: p.Description,
 		Enum: p.Enum, Pattern: p.Pattern,
@@ -133,7 +133,7 @@ type StepSpec struct {
 	With      map[string]any `yaml:"with,omitempty"`
 	DependsOn []Dependency   `yaml:"depends_on,omitempty"`
 
-	// Image e Resources sobrescrevem os do workflow. Ausentes = herda.
+	// Image and Resources override the workflow's. Absent = inherits.
 	Image     string       `yaml:"image,omitempty"`
 	Host      string       `yaml:"host,omitempty"`
 	Resources ResourceSpec `yaml:"resources,omitempty"`
@@ -327,14 +327,14 @@ type OnErrorSpec struct {
 	When string `yaml:"when,omitempty"`
 }
 
-func (o *OnErrorSpec) dominio() *dominio.OnError {
+func (o *OnErrorSpec) domain() *domain.OnError {
 	if o == nil {
 		return nil
 	}
 	// The type is upper-cased and the moment lower-cased, matching how each is
 	// written in the vocabulary. `type: slack` in a file is a typo, not a
 	// different channel, and refusing it would be pedantry with a 4am cost.
-	return &dominio.OnError{
+	return &domain.OnError{
 		Type: strings.ToUpper(strings.TrimSpace(o.Type)),
 		When: strings.ToLower(strings.TrimSpace(o.When)),
 	}
@@ -345,10 +345,10 @@ func (o *OnErrorSpec) dominio() *dominio.OnError {
 // `caminho` serves two purposes: deriving the slug when the file carries no
 // `name`, and naming the file in error messages -- a graph error without the
 // file's name is useless when there are dozens of them.
-func Parse(path string, conteudo []byte) (dominio.Workflow, error) {
+func Parse(path string, content []byte) (domain.Workflow, error) {
 	var s Spec
-	if err := yaml.Unmarshal(conteudo, &s); err != nil {
-		return dominio.Workflow{}, fmt.Errorf("%s: invalid yaml: %w", path, err)
+	if err := yaml.Unmarshal(content, &s); err != nil {
+		return domain.Workflow{}, fmt.Errorf("%s: invalid yaml: %w", path, err)
 	}
 
 	slug := s.Name
@@ -358,10 +358,10 @@ func Parse(path string, conteudo []byte) (dominio.Workflow, error) {
 
 	kind, err := parseKind(s.Type)
 	if err != nil {
-		return dominio.Workflow{}, fmt.Errorf("%s: %w", path, err)
+		return domain.Workflow{}, fmt.Errorf("%s: %w", path, err)
 	}
 
-	w := dominio.Workflow{
+	w := domain.Workflow{
 		Slug:     slug,
 		Name:     slug,
 		Kind:     kind,
@@ -376,24 +376,24 @@ func Parse(path string, conteudo []byte) (dominio.Workflow, error) {
 		// step becomes a pod, and it is the image that decides what that pod
 		// knows how to do.
 		Image:     strings.TrimSpace(s.Image),
-		Resources: s.Resources.dominio(),
+		Resources: s.Resources.domain(),
 		MaxActive: s.Concurrency.Limit,
 		Group:     s.Concurrency.Group,
-		Env:       aparar(s.Env),
-		Secrets:   aparar(s.Secrets),
+		Env:       trimAll(s.Env),
+		Secrets:   trimAll(s.Secrets),
 	}
 
-	w.Trigger = s.Trigger.dominio()
+	w.Trigger = s.Trigger.domain()
 	for _, ps := range s.Params {
-		w.Params = append(w.Params, ps.dominio())
+		w.Params = append(w.Params, ps.domain())
 	}
 	for _, st := range s.Steps {
-		w.Nodes = append(w.Nodes, dominio.Node{
+		w.Nodes = append(w.Nodes, domain.Node{
 			ID: st.ID, Run: st.Run, Action: st.Action, With: st.With,
 			Image: strings.TrimSpace(st.Image), Host: strings.TrimSpace(st.Host),
-			Resources: st.Resources.dominio(),
+			Resources: st.Resources.domain(),
 			Shell:     st.Shell,
-			Env:       aparar(st.Env), Secrets: aparar(st.Secrets),
+			Env:       trimAll(st.Env), Secrets: trimAll(st.Secrets),
 			PersistContext: trimList(st.PersistContext),
 			Runtime:        strings.ToLower(strings.TrimSpace(st.Runtime)),
 			Tools:          normalizeTools(st.Tools),
@@ -403,28 +403,28 @@ func Parse(path string, conteudo []byte) (dominio.Workflow, error) {
 			ForEach:        strings.TrimSpace(st.ForEach),
 			Group:          strings.TrimSpace(st.Group),
 			Uses:           strings.TrimSpace(st.Uses),
-			OnError:        st.OnError.dominio(),
+			OnError:        st.OnError.domain(),
 		})
 	}
 
 	w.Edges, err = edges(kind, s.Steps)
 	if err != nil {
-		return dominio.Workflow{}, fmt.Errorf("%s: %w", path, err)
+		return domain.Workflow{}, fmt.Errorf("%s: %w", path, err)
 	}
 
 	if err := w.Validate(); err != nil {
-		return dominio.Workflow{}, fmt.Errorf("%s: %w", path, err)
+		return domain.Workflow{}, fmt.Errorf("%s: %w", path, err)
 	}
 	return w, nil
 }
 
-// dominio turns the YAML's trigger into the domain's.
+// domain turns the YAML's trigger into the domain's.
 //
 // It does NOT check the targets: that is an invariant, it belongs in
 // Validate with the workflow's slug and the catalog's own message, and a
 // second check here would be a second place for the two to drift.
-func (t TriggerSpec) dominio() dominio.Trigger {
-	return dominio.Trigger{OnLanded: trimList(t.OnLanded), Debounce: t.Debounce}
+func (t TriggerSpec) domain() domain.Trigger {
+	return domain.Trigger{OnLanded: trimList(t.OnLanded), Debounce: t.Debounce}
 }
 
 // normalizeTools lowercases and trims, and drops the empties.
@@ -442,7 +442,7 @@ func normalizeTools(in []string) []string {
 	return out
 }
 
-// aparar trims the name and the value, and discards an entry with an empty
+// trimList trims the name and the value, and discards an entry with an empty
 // name.
 //
 // `GABRIEL_SESSION_COOKIE : gabriel-session/cookie` with a space before the
@@ -461,7 +461,7 @@ func trimList(in []string) []string {
 	return out
 }
 
-func aparar(m map[string]string) map[string]string {
+func trimAll(m map[string]string) map[string]string {
 	if len(m) == 0 {
 		return nil
 	}
@@ -492,7 +492,7 @@ func normalizeTags(brutas []string) []string {
 		if t == "" {
 			continue
 		}
-		if _, ja := seen[t]; ja {
+		if _, already := seen[t]; already {
 			continue
 		}
 		seen[t] = struct{}{}
@@ -501,30 +501,30 @@ func normalizeTags(brutas []string) []string {
 	return out
 }
 
-// arestas turns the declaration into a graph.
+// edges turns the declaration into a graph.
 //
 // `chain` is sugar: every step depends on the previous one. Converting here, the
 // execution engine knows only DAGs — one more format in the file, zero extra
 // paths at runtime.
-func edges(kind dominio.Kind, steps []StepSpec) ([]dominio.Edge, error) {
-	var out []dominio.Edge
+func edges(kind domain.Kind, steps []StepSpec) ([]domain.Edge, error) {
+	var out []domain.Edge
 
 	switch kind {
-	case dominio.KindChain:
+	case domain.KindChain:
 		for _, st := range steps {
 			if len(st.DependsOn) > 0 {
-				return nil, fmt.Errorf("step %q usa `depends_on` num workflow `chain`; "+
+				return nil, fmt.Errorf("step %q uses `depends_on` in a `chain` workflow; "+
 					"in a chain the order is the file's -- use `type: dag` to declare dependencies", st.ID)
 			}
 		}
 		for i := 1; i < len(steps); i++ {
-			out = append(out, dominio.Edge{From: steps[i-1].ID, To: steps[i].ID})
+			out = append(out, domain.Edge{From: steps[i-1].ID, To: steps[i].ID})
 		}
 
-	case dominio.KindDAG:
+	case domain.KindDAG:
 		for _, st := range steps {
 			for _, dep := range st.DependsOn {
-				out = append(out, dominio.Edge{
+				out = append(out, domain.Edge{
 					From:  strings.TrimSpace(dep.Step),
 					To:    st.ID,
 					Label: strings.TrimSpace(dep.Label),
@@ -535,15 +535,15 @@ func edges(kind dominio.Kind, steps []StepSpec) ([]dominio.Edge, error) {
 	return out, nil
 }
 
-func parseKind(t string) (dominio.Kind, error) {
+func parseKind(t string) (domain.Kind, error) {
 	switch strings.TrimSpace(t) {
-	case "", string(dominio.KindDAG):
+	case "", string(domain.KindDAG):
 		// With no `type`, assume DAG: it is the general model, and a file with no
 		// declared dependencies becomes a graph of loose nodes that run in
 		// parallel. `chain` has to be asked for, because it imposes order.
-		return dominio.KindDAG, nil
-	case string(dominio.KindChain):
-		return dominio.KindChain, nil
+		return domain.KindDAG, nil
+	case string(domain.KindChain):
+		return domain.KindChain, nil
 	default:
 		return "", fmt.Errorf("unknown type %q (use `chain` or `dag`)", t)
 	}

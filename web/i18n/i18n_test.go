@@ -1,67 +1,23 @@
 package i18n
 
 import (
-	"context"
 	"regexp"
 	"sort"
+	"strings"
 	"testing"
 )
 
-// fixture is a catalog written for the test, so the behaviour of T and N is
-// pinned without depending on what the real catalogs happen to say.
-func fixture(t *testing.T) map[string]catalog {
-	t.Helper()
-	out := map[string]catalog{}
-	for lang, raw := range map[string]string{
-		"en":    `{"_review": "ignored", "hello": "Hello, {name}", "runs": {"one": "{count} run", "other": "{count} runs"}, "only_en": "English only"}`,
-		"pt-BR": `{"hello": "Olá, {name}", "runs": {"one": "{count} execução", "other": "{count} execuções"}}`,
-	} {
-		c, err := parse([]byte(raw))
-		if err != nil {
-			t.Fatalf("%s: %v", lang, err)
-		}
-		out[lang] = c
+// A FIELD STARTING WITH _ IS A NOTE TO WHOEVER EDITS THE FILE (_review), NOT A MESSAGE.
+func TestANoteInACatalogIsNotAMessage(t *testing.T) {
+	c, err := parse([]byte(`{"_review": "ignored", "hello": "Hello, {name}", "runs": {"one": "{count} run", "other": "{count} runs"}}`))
+	if err != nil {
+		t.Fatal(err)
 	}
-	return out
-}
-
-func TestTFillsNamedPlaceholdersInTheContextsLanguage(t *testing.T) {
-	cats := fixture(t)
-	pt := WithLang(context.Background(), "pt-BR")
-	if got := translate(cats, pt, "hello", "name", "Ana"); got != "Olá, Ana" {
-		t.Errorf("pt: %q", got)
-	}
-	if got := translate(cats, context.Background(), "hello", "name", "Ana"); got != "Hello, Ana" {
-		t.Errorf("no language is English: %q", got)
-	}
-}
-
-// ONE IS ONLY ONE. Portuguese, English and Spanish agree: 0 and 2 take the
-// plural, 1 the singular.
-func TestNChoosesOneOrOther(t *testing.T) {
-	cats := fixture(t)
-	pt := WithLang(context.Background(), "pt-BR")
-	for n, want := range map[int]string{0: "0 execuções", 1: "1 execução", 2: "2 execuções"} {
-		if got := plural(cats, pt, "runs", n); got != want {
-			t.Errorf("N(%d) = %q, want %q", n, got, want)
-		}
-	}
-}
-
-// A MISSING KEY FALLS BACK TO ENGLISH, AND A KEY ENGLISH LACKS SHOWS ITSELF.
-// A screen half in Portuguese and half in English is better than a blank;
-// a bracketed key on the screen is a bug nobody can miss.
-func TestAMissingKeyFallsBackToEnglishThenShowsItself(t *testing.T) {
-	cats := fixture(t)
-	pt := WithLang(context.Background(), "pt-BR")
-	if got := translate(cats, pt, "only_en"); got != "English only" {
-		t.Errorf("fallback = %q", got)
-	}
-	if got := translate(cats, pt, "nowhere"); got != "[nowhere]" {
-		t.Errorf("a key nobody has = %q", got)
-	}
-	if _, ok := cats["en"]["_review"]; ok {
+	if _, ok := c["_review"]; ok {
 		t.Error("a field starting with _ was loaded as a message")
+	}
+	if len(c) != 2 {
+		t.Errorf("%d messages, want 2", len(c))
 	}
 }
 
@@ -97,11 +53,19 @@ func TestTheCatalogsAreCompleteAndConsistent(t *testing.T) {
 				continue
 			}
 			for i, form := range got.forms() {
-				if form == "" {
+				// summary.sep.* are punctuation: Japanese and Chinese join clauses with no space at all.
+				if form == "" && !strings.HasPrefix(key, "summary.sep.") {
 					t.Errorf("%s: %s is empty", lang, key)
 				}
-				if set(form) != set(want.forms()[i]) {
-					t.Errorf("%s: %s has placeholders %s, English has %s", lang, key, set(form), set(want.forms()[i]))
+				// A form English has no counterpart for (few, many) is held to its "other". So is
+				// Russian's "one": it also serves 21, 31..., so it carries {count} even where
+				// English writes "1 worker".
+				ref := want.forms()[min(i, 1)]
+				if lang == "ru" && want.plural() {
+					ref = want.forms()[1]
+				}
+				if set(form) != set(ref) {
+					t.Errorf("%s: %s has placeholders %s, English has %s", lang, key, set(form), set(ref))
 				}
 			}
 		}
@@ -119,4 +83,26 @@ func fmtSlice(s []string) string {
 		out += v + " "
 	}
 	return out
+}
+
+// THE REACT APP'S BUNDLE FALLS BACK TO ENGLISH, like the server: a key a
+// language lacks is English's, a plural stays {one, other}, and a language the
+// console does not speak is English.
+func TestTheBundleFallsBackToEnglishLikeTheServer(t *testing.T) {
+	en := Bundle("en")
+	for _, lang := range Langs {
+		b := Bundle(lang)
+		if len(b) != len(en) {
+			t.Errorf("%s: %d keys, English has %d; the fallback must fill every key", lang, len(b), len(en))
+		}
+	}
+	if got := Bundle("xx")["nav.projects"]; got != en["nav.projects"] {
+		t.Errorf("an unknown language gave %v, want English's %v", got, en["nav.projects"])
+	}
+	if _, ok := en["nav.catalog.attention"].(map[string]string); !ok {
+		t.Errorf("a plural key is %T, want {one, other}", en["nav.catalog.attention"])
+	}
+	if b1, e1 := BundleJSON("pt-BR"); len(b1) == 0 || e1 == "" {
+		t.Error("the encoded bundle has no body or no validator")
+	}
 }

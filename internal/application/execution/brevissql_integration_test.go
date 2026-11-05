@@ -26,7 +26,7 @@ import (
 // it -- `sql/` is a module of its own and cannot import a line of this one,
 // which is #66's rule and the reason the engine's weight gate stays put.
 //
-// AND THE GAP HAS NO EDGE. A target the engine does not recognise is
+// AND THE GAP HAS NO EDGE. A target the engine does not recognize is
 // DROPPED AND COUNTED, never refused: the step succeeds, the tables really
 // are built, and the models simply never appear. So this is the only place
 // the contract can be checked, and it is checked with the real binary, the
@@ -84,7 +84,7 @@ func TestIntegrationBrevisSQLModelsReachTheCatalog(t *testing.T) {
 		t.Fatalf("creating the run: %v", err)
 	}
 
-	r := app.Runner{RunID: runID, Persist: repo, Processo: localExecutor(t)}
+	r := app.Runner{RunID: runID, Persist: repo, Process: localExecutor(t)}
 	w := wf.Workflow{
 		Slug: "e2e",
 		Nodes: []wf.Node{{
@@ -122,7 +122,7 @@ func TestIntegrationBrevisSQLModelsReachTheCatalog(t *testing.T) {
 	for target, found := range want {
 		if !found {
 			t.Errorf("%s built and never reached /data.\n"+
-				"    An unrecognised target is dropped and counted, so the step "+
+				"    An unrecognized target is dropped and counted, so the step "+
 				"succeeded and said nothing.", target)
 		}
 	}
@@ -137,7 +137,7 @@ func TestIntegrationBrevisSQLModelsReachTheCatalog(t *testing.T) {
 	}
 
 	// And the marker is not in the step's log; it is a message, not output.
-	logs, err := repo.LogsDaRun(ctx, runID)
+	logs, err := repo.RunLogs(ctx, runID)
 	if err != nil {
 		t.Fatalf("logs: %v", err)
 	}

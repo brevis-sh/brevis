@@ -1,7 +1,7 @@
 package pages
 
 import (
-	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -22,6 +22,21 @@ func states(ps []Phase) string {
 	return strings.Join(out, " ")
 }
 
+// detail is a phase's detail as "kind:ms" (a duration) or "kind" -- the shape every case asserts.
+func detail(p Phase) string {
+	d := p.Detail
+	if d == nil {
+		return ""
+	}
+	if d.Ms != nil {
+		return fmt.Sprintf("%s:%d", d.Kind, *d.Ms)
+	}
+	if d.State != "" {
+		return d.Kind + ":" + d.State
+	}
+	return d.Kind
+}
+
 // A RUN'S PHASES COME FROM ITS OWN TIMES, AND ITS STATUS SAYS WHICH IS NOW.
 // One case per state the strip draws differently.
 func TestPhasesFollowTheRunsTimes(t *testing.T) {
@@ -34,25 +49,25 @@ func TestPhasesFollowTheRunsTimes(t *testing.T) {
 	}{
 		{"queued", run.Run{Status: run.StatusQueued, CreatedAt: created},
 			"scheduled:done started:current running:pending finished:pending",
-			map[string]string{"started": "waiting 10m 00s"}},
+			map[string]string{"started": "waiting:600000"}},
 		{"running", run.Run{Status: run.StatusRunning, CreatedAt: created, StartedAt: at(2 * time.Second)},
 			"scheduled:done started:done running:current finished:pending",
-			map[string]string{"started": "+2.0s", "running": "9m 58s"}},
+			map[string]string{"started": "late:2000", "running": "ran:598000"}},
 		{"succeeded", run.Run{Status: run.StatusSuccess, CreatedAt: created, StartedAt: at(2 * time.Second), FinishedAt: at(92 * time.Second)},
 			"scheduled:done started:done running:done finished:done",
-			map[string]string{"running": "1m 30s", "finished": "succeeded"}},
+			map[string]string{"running": "ran:90000", "finished": "ended:success"}},
 		{"failed", run.Run{Status: run.StatusFailed, CreatedAt: created, StartedAt: at(time.Second), FinishedAt: at(31 * time.Second)},
 			"scheduled:done started:done running:done finished:failed",
-			map[string]string{"running": "30.0s", "finished": "failed"}},
+			map[string]string{"running": "ran:30000", "finished": "ended:failed"}},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			ps := PhasesOf(context.Background(), c.r, now)
+			ps := PhasesOf(c.r, now)
 			if got := states(ps); got != c.want {
 				t.Fatalf("phases = %s\nwant     %s", got, c.want)
 			}
 			for _, p := range ps {
-				if want, ok := c.details[p.Key]; ok && !strings.Contains(p.Detail, want) {
-					t.Errorf("%s says %q, want %q in it", p.Key, p.Detail, want)
+				if want, ok := c.details[p.Key]; ok && detail(p) != want {
+					t.Errorf("%s says %q, want %q", p.Key, detail(p), want)
 				}
 			}
 		})
@@ -62,75 +77,19 @@ func TestPhasesFollowTheRunsTimes(t *testing.T) {
 // A SCHEDULED RUN NAMES ITS SLOT; one triggered by hand says so instead.
 func TestTheFirstPhaseSaysHowTheRunWasMade(t *testing.T) {
 	slot := created
-	ps := PhasesOf(context.Background(), run.Run{Status: run.StatusQueued, CreatedAt: created, LogicalDate: &slot, TriggerType: "schedule"}, created)
-	if ps[0].Label != "Scheduled" || !strings.Contains(ps[0].Detail, "2026-10-15 04:00") {
+	ps := PhasesOf(run.Run{Status: run.StatusQueued, CreatedAt: created, LogicalDate: &slot, TriggerType: "schedule"}, created)
+	if ps[0].Label.K != "run.phase.scheduled" || detail(ps[0]) != "slot" || !ps[0].Detail.At.Equal(slot) {
 		t.Errorf("a scheduled run's first phase is %+v", ps[0])
 	}
 	// How late it started is counted from the slot, as its `delay` auto param
-	// is: created 1s after the slot and started 3s after it is "+3.0s".
-	ps = PhasesOf(context.Background(), run.Run{Status: run.StatusSuccess, CreatedAt: created.Add(time.Second), LogicalDate: &slot,
+	// is: created 1s after the slot and started 3s after it is 3s late.
+	ps = PhasesOf(run.Run{Status: run.StatusSuccess, CreatedAt: created.Add(time.Second), LogicalDate: &slot,
 		StartedAt: at(3 * time.Second), FinishedAt: at(4 * time.Second)}, created)
-	if ps[1].Detail != "+3.0s" {
-		t.Errorf("a scheduled run started %q after its slot, want +3.0s", ps[1].Detail)
+	if detail(ps[1]) != "late:3000" {
+		t.Errorf("a scheduled run started %q after its slot, want late:3000", detail(ps[1]))
 	}
-	ps = PhasesOf(context.Background(), run.Run{Status: run.StatusQueued, CreatedAt: created, TriggerType: "manual"}, created)
-	if ps[0].Label != "Triggered" {
+	ps = PhasesOf(run.Run{Status: run.StatusQueued, CreatedAt: created, TriggerType: "manual"}, created)
+	if ps[0].Label.K != "run.phase.triggered" || detail(ps[0]) != "at" {
 		t.Errorf("a manual run's first phase is %+v", ps[0])
-	}
-}
-
-// THE STRIP IS IN THE RUN'S LIVE REGION, so it refreshes with the rest of
-// the head while the run moves.
-func TestThePhasesAreDrawnInTheLiveHead(t *testing.T) {
-	r := run.Run{Status: run.StatusRunning, CreatedAt: created, StartedAt: at(time.Second), WorkflowSlug: "daily"}
-	page := draw(t, RunLive(RunPage{Run: r}))
-	head := page[:strings.Index(page, `data-live-target="run-body"`)]
-	if !strings.Contains(head, "data-phases") || !strings.Contains(head, `data-phase-state="current"`) {
-		t.Error("the live head does not draw the phases")
-	}
-}
-
-// THE RUN PAGE, ONE FOR ONE (density-base DB6): the same phases, error and
-// auto params, denser. The phases are a timeline on one rule; the error is a
-// line that opens to the whole text; the auto params are a key-value grid --
-// every key, value and note still there.
-func TestTheRunPageIsDenseWithNothingLost(t *testing.T) {
-	slot := created
-	r := run.Run{Status: run.StatusFailed, CreatedAt: created, StartedAt: at(time.Second), FinishedAt: at(31 * time.Second),
-		WorkflowSlug: "daily", Attempt: 1, LogicalDate: &slot,
-		Err: "step \"load\": exited with code 1\npanic: boom\n\tat main.go:12"}
-	r.Auto.AdjustedAt = created
-	r.Auto.Date = "2026-10-15"
-	r.Auto.ScheduledAt = &slot
-	page := draw(t, Runs(RunsScreen{Detail: &RunPage{Run: r}}))
-
-	if !strings.Contains(page, "data-timeline") || strings.Count(page, "data-phase=") != 4 {
-		t.Error("the phases are not a four-step timeline")
-	}
-	at := strings.Index(page, "<details data-run-error")
-	if at < 0 {
-		t.Fatal("the error is not a collapsible line")
-	}
-	errBlock := page[at : at+strings.Index(page[at:], "</details>")]
-	summary := errBlock[:strings.Index(errBlock, "</summary>")]
-	if !strings.Contains(summary, `step &#34;load&#34;: exited with code 1`) || strings.Contains(summary, "panic: boom") {
-		t.Errorf("the summary is not the error's first line: %s", summary)
-	}
-	if !strings.Contains(errBlock, "panic: boom") || !strings.Contains(errBlock, "main.go:12") {
-		t.Error("the whole error is not inside")
-	}
-	if !strings.Contains(summary, "↻2") && !strings.Contains(summary, "Attempt 2") {
-		t.Error("the error's line does not say which attempt")
-	}
-
-	kv := page[strings.Index(page, "data-kv"):]
-	for _, want := range []string{"adjusted_at", "2026-10-15 04:00:00 UTC", "the clock to read instead of now()",
-		"date", "the UTC day of adjusted_at", "scheduled_at", "previous_error", "$BREVIS_AUTO_*"} {
-		if !strings.Contains(kv, want) {
-			t.Errorf("the auto params lost %q", want)
-		}
-	}
-	if strings.Contains(page, "rounded-2xl") {
-		t.Error("an auto param is still a card")
 	}
 }

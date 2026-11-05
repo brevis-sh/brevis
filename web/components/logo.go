@@ -1,46 +1,20 @@
 package components
 
 import (
-	"context"
-	"embed"
-	"slices"
-	"strings"
 	"unicode"
-
-	"brevis.sh/brevis/web/i18n"
 )
 
-// The marks of the things Brevis connects to and the languages a step runs
-// in: Devicon's coloured originals (MIT, LICENSE-devicon) for the languages
-// and the two databases they have, Simple Icons' one-colour marks (CC0,
-// LICENSE-simple-icons) for the rest, and Brevis's own breve for brevis-sql.
-//
-// EMBEDDED, NOT FETCHED. The console runs where there is no internet, so each
-// mark is a file in logos/ compiled into the binary and written inline -- an
-// inline SVG also takes the theme's colours, which an <img> would not.
-//
-// The files came from the UI 2.0 prototype's logos.js, converted once; a mark
-// added later is a file here and a line below. logo_test.go holds that the
-// files are only drawings, with no id repeated between two of them.
-//
-//go:embed logos/*.svg
-var logoFiles embed.FS
-
-// logoPaint is how a mark is coloured.
+// logoPaint is how a mark is colored.
 type logoPaint int
 
 const (
-	paintMono    logoPaint = iota // one colour, the brand's, written in the file
-	paintMulti                    // the mark's own colours
+	paintMono    logoPaint = iota // one color, the brand's, written in the file
+	paintMulti                    // the mark's own colors
 	paintDark                     // a brand too dark for a dark ground: drawn in ink
 	paintLight                    // a brand too light for a light ground: darkened there
 	paintBrand                    // Brevis's own mark, in the accent
-	paintOnWhite                  // its own colours, too dark for any dark tile: on white in both themes
+	paintOnWhite                  // its own colors, too dark for any dark tile: on white in both themes
 )
-
-func (p logoPaint) class() string {
-	return [...]string{"cg-one", "cg-multi", "cg-dark", "cg-light", "cg-brand text-accent-strong", "cg-multi cg-on-white"}[p]
-}
 
 // logo is one registered key: whose mark it is, how it is painted, and, for
 // a key with no mark, the monogram drawn instead.
@@ -88,30 +62,9 @@ var logos = map[string]logo{
 	"sftp":    {title: "SFTP", monogram: "SF"},
 }
 
-// logoSVG is each mark's file, read once.
-var logoSVG = func() map[string]string {
-	out := map[string]string{}
-	for key := range logos {
-		if raw, err := logoFiles.ReadFile("logos/" + key + ".svg"); err == nil {
-			out[key] = strings.TrimSpace(string(raw))
-		}
-	}
-	return out
-}()
-
-// LogoKeys is every registered key, for the gallery.
-func LogoKeys() []string {
-	keys := make([]string, 0, len(logos))
-	for k := range logos {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
-	return keys
-}
-
 // lookLogo is a key's entry; one nobody registered is its own monogram, the
 // first two letters of its name, so an unknown connector is still told apart
-// from its neighbours and never drawn as somebody else's mark.
+// from its neighbors and never drawn as somebody else's mark.
 func lookLogo(key string) logo {
 	if l, ok := logos[key]; ok {
 		return l
@@ -128,38 +81,9 @@ func lookLogo(key string) logo {
 	return logo{title: key, monogram: string(letters)}
 }
 
-// logoTitle is a mark's name for a screen reader. A brand is its own name
-// in every language; the two monograms that are words are translated.
-// LogoTitle is the name a key's logo is read by, in the request's language:
-// what a filter writes beside the mark.
-func LogoTitle(ctx context.Context, key string) string {
-	return logoTitle(ctx, key, lookLogo(key))
-}
-
-func logoTitle(ctx context.Context, key string, l logo) string {
-	switch key {
-	case "file", "gateway":
-		return i18n.T(ctx, "logo."+key)
-	}
-	return l.title
-}
-
-func logoSize(size int) string {
-	switch size {
-	case 28:
-		return "cg-28"
-	case 40:
-		return "cg-40"
-	}
-	return "cg-18"
-}
-
-func countMonograms() int {
-	n := 0
-	for _, l := range logos {
-		if l.monogram != "" {
-			n++
-		}
-	}
-	return n
+// LogoTitle is the name a key's brand is read by: a brand is its own name in
+// every language. The two keys that are words ("file", "gateway") are
+// sentences the app says (logo.file, logo.gateway), never this.
+func LogoTitle(key string) string {
+	return lookLogo(key).title
 }

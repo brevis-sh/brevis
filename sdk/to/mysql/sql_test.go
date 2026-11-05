@@ -13,8 +13,8 @@ import (
 // and
 // cost v0.12.0 because it was built inside a method that held a client.
 func TestInsertSQLNamesTheColumns(t *testing.T) {
-	got := InsertSQL("pedidos", []string{"ingestion_id", "valor"}, 2, "")
-	expected := "INSERT INTO `pedidos` (`ingestion_id`, `valor`) VALUES (?,?), (?,?)"
+	got := InsertSQL("orders", []string{"ingestion_id", "value"}, 2, "")
+	expected := "INSERT INTO `orders` (`ingestion_id`, `value`) VALUES (?,?), (?,?)"
 	if got != expected {
 		t.Errorf("SQL:\n  got  %s\n  want %s", got, expected)
 	}
@@ -58,17 +58,17 @@ func TestBatchSizeStaysUnderThePlaceholderLimit(t *testing.T) {
 // table
 // literally called "database.table".
 func TestQualifyQuotesEachPart(t *testing.T) {
-	if got := qualify("landing.pedidos"); got != "`landing`.`pedidos`" {
+	if got := qualify("landing.orders"); got != "`landing`.`orders`" {
 		t.Errorf("qualify = %s", got)
 	}
-	if got := qualify("pedidos"); got != "`pedidos`" {
+	if got := qualify("orders"); got != "`orders`" {
 		t.Errorf("qualify = %s", got)
 	}
 }
 
 // TestQuoteEscapesABacktick: a backtick inside the name would close the
 // identifier and the
-// resto viraria SQL.
+// rest would become SQL.
 func TestQuoteEscapesABacktick(t *testing.T) {
 	if got := quote("a`b"); got != "`a``b`" {
 		t.Errorf("quote = %s", got)
@@ -79,17 +79,17 @@ func TestQuoteEscapesABacktick(t *testing.T) {
 func TestInsertSQLReservedWord(t *testing.T) {
 	got := InsertSQL("t", []string{core.MetadataID, "order"}, 1, "")
 	if !strings.Contains(got, "`order`") {
-		t.Errorf("palavra reservada sem crase:\n%s", got)
+		t.Errorf("reserved word without a backtick:\n%s", got)
 	}
 }
 
-// TestSplitName cobre o banco implicito.
+// TestSplitName covers the implicit database.
 func TestSplitName(t *testing.T) {
-	if b, tb := splitName("landing.pedidos"); b != "landing" || tb != "pedidos" {
+	if b, tb := splitName("landing.orders"); b != "landing" || tb != "orders" {
 		t.Errorf("= (%q, %q)", b, tb)
 	}
-	if b, tb := splitName("pedidos"); b != "" || tb != "pedidos" {
-		t.Errorf("= (%q, %q); banco vazio significa o do DSN", b, tb)
+	if b, tb := splitName("orders"); b != "" || tb != "orders" {
+		t.Errorf("= (%q, %q); an empty database means the DSN's", b, tb)
 	}
 }
 
@@ -98,14 +98,14 @@ func TestSplitName(t *testing.T) {
 // as []byte, and every instant would become base64 in the JSON -- silently,
 // because []byte is a legitimate value.
 func TestWithParseTime(t *testing.T) {
-	casos := map[string]string{
+	cases := map[string]string{
 		"u:s@tcp(h:3306)/db":                 "u:s@tcp(h:3306)/db?parseTime=true",
 		"u:s@tcp(h:3306)/db?charset=utf8":    "u:s@tcp(h:3306)/db?charset=utf8&parseTime=true",
 		"u:s@tcp(h:3306)/db?parseTime=false": "u:s@tcp(h:3306)/db?parseTime=false",
 	}
-	for input, quero := range casos {
-		if got := comParseTime(input); got != quero {
-			t.Errorf("comParseTime(%q) = %q, esperado %q", input, got, quero)
+	for input, want := range cases {
+		if got := withParseTime(input); got != want {
+			t.Errorf("withParseTime(%q) = %q, want %q", input, got, want)
 		}
 	}
 }

@@ -52,9 +52,9 @@ type Alert struct {
 	BaseURL string
 }
 
-// Notificador sends the alert. A small interface so the dispatcher knows nothing
+// Notifier sends the alert. A small interface so the dispatcher knows nothing
 // of Slack -- and so the test needs no network.
-type Notificador interface {
+type Notifier interface {
 	Failed(ctx context.Context, a Alert) error
 }
 
@@ -69,7 +69,7 @@ type Slack struct {
 	Environment string
 }
 
-func NovoSlack(webhook, environment string) *Slack {
+func NewSlack(webhook, environment string) *Slack {
 	return &Slack{
 		Webhook:     webhook,
 		Environment: environment,
@@ -112,18 +112,18 @@ func (s *Slack) post(ctx context.Context, payload map[string]any) error {
 		// JSON. Passing the body through is what lets one tell a revoked webhook
 		// from a malformed payload without opening a browser.
 		reason, _ := io.ReadAll(io.LimitReader(res.Body, 512))
-		return fmt.Errorf("slack respondeu %s: %s", res.Status, strings.TrimSpace(string(reason)))
+		return fmt.Errorf("slack answered %s: %s", res.Status, strings.TrimSpace(string(reason)))
 	}
 	return nil
 }
 
-type bloco map[string]any
+type block map[string]any
 
 func (s *Slack) message(a Alert) map[string]any {
-	dominio, pipeline := s.classificar(a)
+	domain, pipeline := s.classify(a)
 
-	fields := []bloco{
-		field("*Domain:*\n`" + dominio + "`"),
+	fields := []block{
+		field("*Domain:*\n`" + domain + "`"),
 		field("*Pipeline:*\n`" + pipeline + "`"),
 		field("*Status:*\n:x: " + strings.ToUpper(a.Status)),
 		field("*Trigger:*\n`" + a.Trigger + "`"),
@@ -145,11 +145,11 @@ func (s *Slack) message(a Alert) map[string]any {
 		// setting TZ on the deployment -- and now the message says which
 		// decision that was.
 		fields = append(fields, field("*Logical date:*\n"+
-			a.LogicalDate.Local().Format("02/01/2006 15:04 MST")))
+			a.LogicalDate.Local().Format("2006-01-02 15:04 MST")))
 	}
 
-	blocos := []bloco{
-		{"type": "header", "text": bloco{
+	blocks := []block{
+		{"type": "header", "text": block{
 			"type": "plain_text", "emoji": true,
 			"text": ":rotating_light: Pipeline failure" + s.environmentSuffix(),
 		}},
@@ -161,8 +161,8 @@ func (s *Slack) message(a Alert) map[string]any {
 		// 900 characters stays under Slack's 3000-character block limit, which
 		// would otherwise make the whole message be refused rather than
 		// truncated.
-		blocos = append(blocos, bloco{"type": "section", "text": bloco{
-			"type": "mrkdwn", "text": "```" + truncar(a.Err, 900) + "```",
+		blocks = append(blocks, block{"type": "section", "text": block{
+			"type": "mrkdwn", "text": "```" + truncate(a.Err, 900) + "```",
 		}})
 	}
 	// The log goes in AFTER the error and separate from it: the error is the
@@ -170,13 +170,13 @@ func (s *Slack) message(a Alert) map[string]any {
 	// the same limit, and what usually survives is the evidence without the
 	// conclusion.
 	if a.LogExcerpt != "" {
-		blocos = append(blocos, bloco{"type": "section", "text": bloco{
-			"type": "mrkdwn", "text": "*Last lines:*\n```" + truncar(a.LogExcerpt, 900) + "```",
+		blocks = append(blocks, block{"type": "section", "text": block{
+			"type": "mrkdwn", "text": "*Last lines:*\n```" + truncate(a.LogExcerpt, 900) + "```",
 		}})
 	}
 	if a.BaseURL != "" && a.RunID != "" {
 		url := strings.TrimRight(a.BaseURL, "/") + "/runs/" + a.RunID
-		blocos = append(blocos, bloco{"type": "context", "elements": []bloco{
+		blocks = append(blocks, block{"type": "context", "elements": []block{
 			{"type": "mrkdwn", "text": "<" + url + "|open the run> · `" + a.RunID + "`"},
 		}})
 	}
@@ -186,17 +186,17 @@ func (s *Slack) message(a Alert) map[string]any {
 		// in the channel list. Without it Slack shows "This content can't be
 		// displayed" in the preview.
 		"text":   fmt.Sprintf(":rotating_light: %s failed", a.Workflow),
-		"blocks": blocos,
+		"blocks": blocks,
 	}
 }
 
-// tagsDeTecnologia are tags that name HOW a pipeline is built, not what it is
+// technologyTags are tags that name HOW a pipeline is built, not what it is
 // about. They never make a good domain in an alert.
-var tagsDeTecnologia = map[string]bool{
+var technologyTags = map[string]bool{
 	"dbt": true, "python": true, "go": true, "sql": true, "spark": true,
 }
 
-// classificar derives domain and pipeline from the tags, with the slug as a
+// classify derives domain and pipeline from the tags, with the slug as a
 // fallback.
 //
 // The convention is the one the data repository uses: the first tag is the
@@ -206,26 +206,26 @@ var tagsDeTecnologia = map[string]bool{
 //
 // With no tags, the slug already says enough to keep the alert from being
 // anonymous.
-func (s *Slack) classificar(a Alert) (dominio, pipeline string) {
+func (s *Slack) classify(a Alert) (domain, pipeline string) {
 	pipeline = a.Workflow
-	dominio = "-"
+	domain = "-"
 
-	candidatas := a.Tags
-	if len(candidatas) > 1 {
-		candidatas = candidatas[1:]
+	candidates := a.Tags
+	if len(candidates) > 1 {
+		candidates = candidates[1:]
 	}
-	for _, t := range candidatas {
-		if !tagsDeTecnologia[t] {
-			dominio = t
+	for _, t := range candidates {
+		if !technologyTags[t] {
+			domain = t
 			break
 		}
 	}
-	if dominio == "-" {
-		if partes := strings.SplitN(a.Workflow, "_", 2); len(partes) == 2 {
-			dominio = partes[0]
+	if domain == "-" {
+		if parts := strings.SplitN(a.Workflow, "_", 2); len(parts) == 2 {
+			domain = parts[0]
 		}
 	}
-	return dominio, pipeline
+	return domain, pipeline
 }
 
 func (s *Slack) environmentSuffix() string {
@@ -235,13 +235,13 @@ func (s *Slack) environmentSuffix() string {
 	return " (" + s.Environment + ")"
 }
 
-func field(text string) bloco {
-	return bloco{"type": "mrkdwn", "text": text}
+func field(text string) block {
+	return block{"type": "mrkdwn", "text": text}
 }
 
-func truncar(s string, max int) string {
+func truncate(s string, max int) string {
 	if len(s) <= max {
 		return s
 	}
-	return s[:max] + "\n… (truncado)"
+	return s[:max] + "\n… (truncated)"
 }

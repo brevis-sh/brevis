@@ -32,7 +32,7 @@ import (
 func TestIntegrationStagesReachTheDatabaseThroughARealBinary(t *testing.T) {
 	dsn := os.Getenv("BREVIS_IT_PG_DSN")
 	if dsn == "" {
-		t.Skip("BREVIS_IT_PG_DSN ausente")
+		t.Skip("BREVIS_IT_PG_DSN is not set")
 	}
 
 	ctx := context.Background()
@@ -44,7 +44,7 @@ func TestIntegrationStagesReachTheDatabaseThroughARealBinary(t *testing.T) {
 
 	dir := t.TempDir()
 	binary := buildFetcher(t, dir)
-	input := filepath.Join(dir, "entrada.ndjson")
+	input := filepath.Join(dir, "input.ndjson")
 	if err := os.WriteFile(input, []byte(
 		`{"id":1,"ts":"2026-09-05T00:00:00Z"}`+"\n"+
 			`{"id":2,"ts":"2026-09-05T01:00:00Z"}`+"\n"), 0o600); err != nil {
@@ -54,20 +54,20 @@ func TestIntegrationStagesReachTheDatabaseThroughARealBinary(t *testing.T) {
 	runID := uuid.New()
 	repo := postgres.NewRunRepo(pool)
 	if err := createRun(ctx, pool, runID); err != nil {
-		t.Fatalf("criando a run: %v", err)
+		t.Fatalf("creating the run: %v", err)
 	}
 
 	r := app.Runner{
-		RunID:    runID,
-		Persist:  repo,
-		Processo: localExecutor(t),
+		RunID:   runID,
+		Persist: repo,
+		Process: localExecutor(t),
 	}
 	w := wf.Workflow{
 		Slug:  "e2e",
 		Nodes: []wf.Node{{ID: "collectOutput", Run: binary + " 2>&1"}},
 	}
 	// The step's WorkDir is the test's directory, because the fetcher reads
-	// "entrada.ndjson" relative to it. The cwd is RESTORED at the end: leaving it
+	// "input.ndjson" relative to it. The cwd is RESTORED at the end: leaving it
 	// in a temporary directory would break any later test in this package that
 	// uses a relative path -- and this very test does, to compile the fetcher.
 	previous, err := os.Getwd()
@@ -84,7 +84,7 @@ func TestIntegrationStagesReachTheDatabaseThroughARealBinary(t *testing.T) {
 
 	states, err := repo.NodeStates(ctx, runID)
 	if err != nil {
-		t.Fatalf("estado: %v", err)
+		t.Fatalf("state: %v", err)
 	}
 	e, ok := states["collectOutput"]
 	if !ok {
@@ -139,7 +139,7 @@ func TestIntegrationStagesReachTheDatabaseThroughARealBinary(t *testing.T) {
 	}
 
 	// The marker must NOT have become the step's log.
-	logs, err := repo.LogsDaRun(ctx, runID)
+	logs, err := repo.RunLogs(ctx, runID)
 	if err != nil {
 		t.Fatalf("logs: %v", err)
 	}
@@ -162,7 +162,7 @@ func buildFetcher(t *testing.T, dir string) string {
 	// three places that build against the local SDK and they all need it.
 	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod")
 	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("compilando o fetcher: %v\n%s", err, out)
+		t.Fatalf("compiling the fetcher: %v\n%s", err, out)
 	}
 	return output
 }
@@ -170,7 +170,7 @@ func buildFetcher(t *testing.T, dir string) string {
 func createRun(ctx context.Context, pool *postgres.Pool, id uuid.UUID) error {
 	def, _ := json.Marshal(wf.Workflow{Slug: "e2e"})
 	_, err := pool.Exec(ctx, `
-		INSERT INTO runs (id, workflow_slug, idempotency_key, status, definicao, criado_em)
+		INSERT INTO runs (id, workflow_slug, idempotency_key, status, definition, created_at)
 		VALUES ($1, 'e2e', $2, 'running', $3, $4)`,
 		id, "e2e-"+id.String(), def, time.Now())
 	return err

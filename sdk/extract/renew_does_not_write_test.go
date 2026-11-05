@@ -17,31 +17,31 @@ import (
 
 // spyStore records what was written, touching neither disk nor cloud.
 type spyStore struct {
-	mu       sync.Mutex
-	guardado string
-	writes   int
+	mu      sync.Mutex
+	guarded string
+	writes  int
 }
 
 func (s *spyStore) Load() (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.guardado, nil
+	return s.guarded, nil
 }
 
 func (s *spyStore) Save(v string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.guardado = v
+	s.guarded = v
 	s.writes++
 	return nil
 }
 
-func (s *spyStore) Describe() string { return "store espiao" }
+func (s *spyStore) Describe() string { return "spy store" }
 
 func (s *spyStore) state() (string, int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.guardado, s.writes
+	return s.guarded, s.writes
 }
 
 // loggedOutSession imitates NextAuth for a session that did not authenticate:
@@ -55,7 +55,7 @@ func loggedOutSession(t *testing.T, outCookie string) (*httptest.Server, *int) {
 		http.SetCookie(w, &http.Cookie{Name: "session", Value: outCookie})
 		_, _ = fmt.Fprint(w, `null`)
 	})
-	mux.HandleFunc("/api/proxy/dados", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/api/proxy/data", func(w http.ResponseWriter, _ *http.Request) {
 		pages++
 		_, _ = fmt.Fprint(w, `{"ok":1}`)
 	})
@@ -67,9 +67,9 @@ func loggedOutSession(t *testing.T, outCookie string) (*httptest.Server, *int) {
 func runWithStore(t *testing.T, srv *httptest.Server, store core.CredentialStore, expiresAt func([]byte) (time.Time, error)) error {
 	t.Helper()
 	seq, err := JSON(context.Background(), core.Source{
-		URL: srv.URL + "/api/proxy/dados",
+		URL: srv.URL + "/api/proxy/data",
 		Auth: &core.Credential{
-			Value: func(context.Context) (string, error) { return "session=colado-por-um-humano", nil },
+			Value: func(context.Context) (string, error) { return "session=pasted-by-a-human", nil },
 			Apply: core.AsCookie,
 			Refresh: &core.Refresh{
 				URL:       srv.URL + "/api/auth/session",
@@ -104,16 +104,16 @@ func TestARefreshThatDoesNotAuthenticateDoesNotWrite(t *testing.T) {
 
 	err := runWithStore(t, srv, store, core.JSONField("expires"))
 	if err == nil {
-		t.Fatal("a renovacao nao autenticada devia falhar a execucao")
+		t.Fatal("an unauthenticated renewal should have failed the run")
 	}
 	if !strings.Contains(err.Error(), "expires") {
-		t.Errorf("o erro nao aponta a validade ausente: %v", err)
+		t.Errorf("the error does not point to the missing expiry: %v", err)
 	}
 
-	guardado, writes := store.state()
+	guarded, writes := store.state()
 	if writes != 0 {
-		t.Errorf("gravou %d vez(es) numa renovacao que nao autenticou; guardou %q",
-			writes, guardado)
+		t.Errorf("wrote %d time(s) after a renewal that did not authenticate; kept %q",
+			writes, guarded)
 	}
 }
 
@@ -123,10 +123,10 @@ func TestARefreshThatDoesNotAuthenticateDoesNotWrite(t *testing.T) {
 func TestAGoodRefreshStillWrites(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/session", func(w http.ResponseWriter, _ *http.Request) {
-		http.SetCookie(w, &http.Cookie{Name: "session", Value: "rotacionado"})
+		http.SetCookie(w, &http.Cookie{Name: "session", Value: "rotated"})
 		_, _ = fmt.Fprintf(w, `{"expires":%q}`, time.Now().Add(30*24*time.Hour).Format(time.RFC3339))
 	})
-	mux.HandleFunc("/api/proxy/dados", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/api/proxy/data", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = fmt.Fprint(w, `{"ok":1}`)
 	})
 	srv := httptest.NewServer(mux)
@@ -134,15 +134,15 @@ func TestAGoodRefreshStillWrites(t *testing.T) {
 
 	store := &spyStore{}
 	if err := runWithStore(t, srv, store, core.JSONField("expires")); err != nil {
-		t.Fatalf("execucao boa falhou: %v", err)
+		t.Fatalf("a good run failed: %v", err)
 	}
 
-	guardado, writes := store.state()
+	guarded, writes := store.state()
 	if writes != 1 {
-		t.Fatalf("gravacoes = %d, esperado 1", writes)
+		t.Fatalf("writes = %d, want 1", writes)
 	}
-	if !strings.Contains(guardado, "rotacionado") {
-		t.Errorf("guardou %q, esperava o valor rotacionado", guardado)
+	if !strings.Contains(guarded, "rotated") {
+		t.Errorf("kept %q, expected the rotated value", guarded)
 	}
 }
 
@@ -151,14 +151,14 @@ func TestAGoodRefreshStillWrites(t *testing.T) {
 // writes, and the warning at assembly time is what tells whoever configured it
 // what that costs.
 func TestWithoutExpiresAtItWrites(t *testing.T) {
-	srv, _ := loggedOutSession(t, "seja-la-o-que-for")
+	srv, _ := loggedOutSession(t, "whatever-it-is")
 	store := &spyStore{}
 
 	if err := runWithStore(t, srv, store, nil); err != nil {
-		t.Fatalf("sem ExpiresAt a execucao devia seguir: %v", err)
+		t.Fatalf("without ExpiresAt the run should carry on: %v", err)
 	}
 	if _, writes := store.state(); writes != 1 {
-		t.Errorf("gravacoes = %d, esperado 1", writes)
+		t.Errorf("writes = %d, want 1", writes)
 	}
 }
 
@@ -173,10 +173,10 @@ func TestTheRotationAppliesToThePagesEvenWhenExpiresAtFails(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/session", func(w http.ResponseWriter, _ *http.Request) {
-		http.SetCookie(w, &http.Cookie{Name: "session", Value: "rotacionado"})
+		http.SetCookie(w, &http.Cookie{Name: "session", Value: "rotated"})
 		_, _ = fmt.Fprint(w, `null`) // no "expires"
 	})
-	mux.HandleFunc("/api/proxy/dados", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/proxy/data", func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		cookieOnPage = r.Header.Get("Cookie")
 		mu.Unlock()
@@ -186,15 +186,14 @@ func TestTheRotationAppliesToThePagesEvenWhenExpiresAtFails(t *testing.T) {
 	defer srv.Close()
 
 	source := core.Source{
-		URL: srv.URL + "/api/proxy/dados",
+		URL: srv.URL + "/api/proxy/data",
 		Auth: &core.Credential{
-			Value: func(context.Context) (string, error) { return "session=velho", nil },
+			Value: func(context.Context) (string, error) { return "session=old", nil },
 			Apply: core.AsCookie,
 			Refresh: &core.Refresh{
 				URL: srv.URL + "/api/auth/session",
 				// Without ExpiresAt the run goes on, and that is where it becomes
-				// observable
-				// se a rotacao chegou as paginas.
+				// observable whether the rotation reached the pages.
 			},
 		},
 	}
@@ -204,14 +203,14 @@ func TestTheRotationAppliesToThePagesEvenWhenExpiresAtFails(t *testing.T) {
 	}
 	for _, err := range seq {
 		if err != nil {
-			t.Fatalf("iterando: %v", err)
+			t.Fatalf("iterating: %v", err)
 		}
 	}
 
 	mu.Lock()
 	defer mu.Unlock()
-	if !strings.Contains(cookieOnPage, "rotacionado") {
-		t.Errorf("a pagina foi com %q; a rotacao deixou de valer para a execucao", cookieOnPage)
+	if !strings.Contains(cookieOnPage, "rotated") {
+		t.Errorf("the page went with %q; the rotation stopped applying to the run", cookieOnPage)
 	}
 }
 
@@ -232,20 +231,20 @@ func TestAStoreWithoutExpiresAtWarnsAtAssembly(t *testing.T) {
 		Refresh: &core.Refresh{URL: "http://x", Store: &spyStore{}},
 	}
 	if err := c.Check(); err != nil {
-		t.Fatalf("virou erro em vez de aviso: %v", err)
+		t.Fatalf("became an error instead of a warning: %v", err)
 	}
 
 	log := buf.String()
-	for _, exigido := range []string{"ExpiresAt", "store espiao", "200"} {
-		if !strings.Contains(log, exigido) {
-			t.Errorf("o aviso nao diz %q:\n%s", exigido, log)
+	for _, required := range []string{"ExpiresAt", "spy store", "200"} {
+		if !strings.Contains(log, required) {
+			t.Errorf("the warning does not say %q:\n%s", required, log)
 		}
 	}
 }
 
 // TestAStoreWithExpiresAtDoesNotWarn: a warning that appears on the right
 // configuration
-// ensina a ignorar avisos.
+// teaches people to ignore warnings.
 func TestAStoreWithExpiresAtDoesNotWarn(t *testing.T) {
 	var buf bytes.Buffer
 	previous := slog.Default()
@@ -263,6 +262,6 @@ func TestAStoreWithExpiresAtDoesNotWarn(t *testing.T) {
 		t.Fatal(err)
 	}
 	if strings.Contains(buf.String(), "without ExpiresAt") {
-		t.Errorf("avisou na configuracao certa:\n%s", buf.String())
+		t.Errorf("warned about the right setting:\n%s", buf.String())
 	}
 }

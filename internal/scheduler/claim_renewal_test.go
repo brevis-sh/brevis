@@ -48,8 +48,8 @@ func claimOne(t *testing.T, pool *postgres.Pool, q *queue.Queue, key string) que
 func age(t *testing.T, pool *postgres.Pool, it queue.Item) queue.Item {
 	t.Helper()
 	if err := pool.QueryRow(context.Background(), `
-		UPDATE queue_items SET reivindicado_em = reivindicado_em - interval '1 hour'
-		WHERE id = $1 RETURNING reivindicado_em`, it.ID).Scan(&it.ClaimedAt); err != nil {
+		UPDATE queue_items SET claimed_at = claimed_at - interval '1 hour'
+		WHERE id = $1 RETURNING claimed_at`, it.ID).Scan(&it.ClaimedAt); err != nil {
 		t.Fatal(err)
 	}
 	return it
@@ -60,7 +60,7 @@ func age(t *testing.T, pool *postgres.Pool, it queue.Item) queue.Item {
 func reclaim(t *testing.T, pool *postgres.Pool, it queue.Item) {
 	t.Helper()
 	if _, err := pool.Exec(context.Background(), `
-		UPDATE queue_items SET reivindicado_em = now() + interval '1 second', reivindicado_por = 'other'
+		UPDATE queue_items SET claimed_at = now() + interval '1 second', claimed_by = 'other'
 		WHERE id = $1`, it.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func reclaim(t *testing.T, pool *postgres.Pool, it queue.Item) {
 func claimedBy(t *testing.T, pool *postgres.Pool, it queue.Item) (by *string, renewed *time.Time) {
 	t.Helper()
 	if err := pool.QueryRow(context.Background(), `
-		SELECT reivindicado_por, renovado_em FROM queue_items WHERE id = $1`, it.ID).
+		SELECT claimed_by, renewed_at FROM queue_items WHERE id = $1`, it.ID).
 		Scan(&by, &renewed); err != nil {
 		t.Fatal(err)
 	}
@@ -122,7 +122,7 @@ func TestRenewingAClaimTakenSinceReportsItLost(t *testing.T) {
 		t.Error("a stale holder's renewal reports the claim still held")
 	}
 	if _, renewed := claimedBy(t, pool, it); renewed != nil {
-		t.Error("a stale holder's renewal wrote renovado_em on somebody else's claim")
+		t.Error("a stale holder's renewal wrote renewed_at on somebody else's claim")
 	}
 }
 
@@ -271,7 +271,7 @@ func queuedRun(t *testing.T, pool *postgres.Pool, q *queue.Queue, key string) uu
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := repo.Transicionar(ctx, r.ID, dom.StatusQueued); err != nil {
+	if err := repo.Transition(ctx, r.ID, dom.StatusQueued); err != nil {
 		t.Fatal(err)
 	}
 	if err := q.Enqueue(ctx, r.ID, 0, time.Time{}); err != nil {
@@ -360,7 +360,7 @@ func TestARunLongerThanTheWindowRunsOnce(t *testing.T) {
 	}
 }
 
-// The heartbeat lives exactly as long as executar: renewing during it, and not
+// The heartbeat lives exactly as long as execute: renewing during it, and not
 // a single renewal after it returns.
 func TestTheHeartbeatRenewsOnlyWhileTheRunRuns(t *testing.T) {
 	pool := testDB(t)
@@ -395,14 +395,14 @@ func TestARenewalErrorIsNotALostClaim(t *testing.T) {
 	q := queue.New(pool.Pool)
 	id := queuedRun(t, pool, q, "blip")
 
-	var executions, cancelled atomic.Int32
+	var executions, canceled atomic.Int32
 	d := scheduler.New(longRun, q, repo, func(ctx context.Context, _ uuid.UUID) error {
 		executions.Add(1)
 		select {
 		case <-time.After(threeWindows):
 			return nil
 		case <-ctx.Done():
-			cancelled.Add(1)
+			canceled.Add(1)
 			return ctx.Err()
 		}
 	}, noLog())
@@ -415,9 +415,9 @@ func TestARenewalErrorIsNotALostClaim(t *testing.T) {
 	}
 
 	r := dispatchUntilSettled(t, d, repo, id, nil)
-	if n := executions.Load(); n != 1 || cancelled.Load() != 0 {
-		t.Errorf("executed %d times, cancelled %d; one renewal error must change neither",
-			n, cancelled.Load())
+	if n := executions.Load(); n != 1 || canceled.Load() != 0 {
+		t.Errorf("executed %d times, canceled %d; one renewal error must change neither",
+			n, canceled.Load())
 	}
 	if r.Status != dom.StatusSuccess {
 		t.Errorf("run = %s; wanted success", r.Status)
@@ -438,14 +438,14 @@ func heldBy(t *testing.T, pool *postgres.Pool, id uuid.UUID) string {
 	t.Helper()
 	var by *string
 	err := pool.QueryRow(context.Background(),
-		`SELECT reivindicado_por FROM queue_items WHERE run_id = $1`, id).Scan(&by)
+		`SELECT claimed_by FROM queue_items WHERE run_id = $1`, id).Scan(&by)
 	if err != nil || by == nil {
 		return ""
 	}
 	return *by
 }
 
-// untilExecuted runs the dispatcher until executar has returned once, then
+// untilExecuted runs the dispatcher until execute has returned once, then
 // stops it -- Run waits for the bookkeeping, so whatever the attempt was going
 // to write has been written when this returns.
 func untilExecuted(t *testing.T, d *scheduler.Dispatcher, returned <-chan struct{}) {
@@ -456,7 +456,7 @@ func untilExecuted(t *testing.T, d *scheduler.Dispatcher, returned <-chan struct
 	select {
 	case <-returned:
 	case <-time.After(10 * time.Second):
-		t.Fatal("executar never returned")
+		t.Fatal("run never returned")
 	}
 	stop()
 	<-done
@@ -484,7 +484,7 @@ func assertUntouched(t *testing.T, pool *postgres.Pool, id uuid.UUID) {
 }
 
 // AC4: the sweep took the claim while the run ran. The heartbeat finds out,
-// the attempt is cancelled -- its pod or process stops -- and it writes nothing.
+// the attempt is canceled -- its pod or process stops -- and it writes nothing.
 func TestALostClaimCancelsTheRunAndWritesNothing(t *testing.T) {
 	pool := testDB(t)
 	repo := postgres.NewRunRepo(pool)
@@ -492,18 +492,18 @@ func TestALostClaimCancelsTheRunAndWritesNothing(t *testing.T) {
 	id := queuedRun(t, pool, q, "lost")
 
 	returned := make(chan struct{})
-	var cancelledAfter atomic.Int64
+	var canceledAfter atomic.Int64
 	d := scheduler.New(lostClaim, q, repo, func(ctx context.Context, _ uuid.UUID) error {
 		defer close(returned)
 		if _, err := pool.Exec(ctx, `
-			UPDATE queue_items SET reivindicado_em = now() + interval '1 hour', reivindicado_por = 'other'
+			UPDATE queue_items SET claimed_at = now() + interval '1 hour', claimed_by = 'other'
 			WHERE run_id = $1`, id); err != nil {
 			return err
 		}
 		taken := time.Now()
 		select {
 		case <-ctx.Done():
-			cancelledAfter.Store(int64(time.Since(taken)))
+			canceledAfter.Store(int64(time.Since(taken)))
 			return ctx.Err()
 		case <-time.After(threeWindows):
 			return nil
@@ -512,16 +512,16 @@ func TestALostClaimCancelsTheRunAndWritesNothing(t *testing.T) {
 	d.Channel = alerts.ChannelSlack
 
 	untilExecuted(t, d, returned)
-	if after := time.Duration(cancelledAfter.Load()); after == 0 {
-		t.Error("the run went on after its claim was taken; it has to be cancelled")
+	if after := time.Duration(canceledAfter.Load()); after == 0 {
+		t.Error("the run went on after its claim was taken; it has to be canceled")
 	} else if after > lostClaim.Visibility {
-		t.Errorf("the run was cancelled %s after its claim was taken; the heartbeat is every %s",
+		t.Errorf("the run was canceled %s after its claim was taken; the heartbeat is every %s",
 			after, lostClaim.Visibility/3)
 	}
 	assertUntouched(t, pool, id)
 }
 
-// The claim can be lost after the last renewal and before executar returns,
+// The claim can be lost after the last renewal and before execute returns,
 // which the heartbeat cannot see. The last write is fenced too: one more
 // renewal, and nothing written if it says the claim is gone -- whatever the
 // run's outcome was.
@@ -540,7 +540,7 @@ func TestAClaimLostAsTheRunEndsWritesNothing(t *testing.T) {
 			d := scheduler.New(lostClaim, q, repo, func(ctx context.Context, _ uuid.UUID) error {
 				defer close(returned)
 				if _, err := pool.Exec(ctx, `
-					UPDATE queue_items SET reivindicado_em = now() + interval '1 hour', reivindicado_por = 'other'
+					UPDATE queue_items SET claimed_at = now() + interval '1 hour', claimed_by = 'other'
 					WHERE run_id = $1`, id); err != nil {
 					return err
 				}
@@ -632,7 +632,7 @@ func TestALostClaimCancelsTheRunWithItsReason(t *testing.T) {
 	d := scheduler.New(lostClaim, q, repo, func(ctx context.Context, _ uuid.UUID) error {
 		defer close(returned)
 		if _, err := pool.Exec(ctx, `
-			UPDATE queue_items SET reivindicado_em = now() + interval '1 hour', reivindicado_por = 'other'
+			UPDATE queue_items SET claimed_at = now() + interval '1 hour', claimed_by = 'other'
 			WHERE run_id = $1`, id); err != nil {
 			return err
 		}

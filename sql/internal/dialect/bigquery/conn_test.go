@@ -166,7 +166,7 @@ func TestPollingStopsWhenTheContextIsDone(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	if _, err := c.Scalar(ctx, "SELECT 1"); err == nil {
-		t.Error("a cancelled context did not stop the wait")
+		t.Error("a canceled context did not stop the wait")
 	}
 }
 
@@ -185,7 +185,7 @@ func TestColumnsRefusesANameItWillNotQuote(t *testing.T) {
 	for _, r := range []dialect.Relation{
 		{Schema: "bronze", Name: "orders'; DROP TABLE x --"},
 		{Schema: "bronze-prod", Name: "orders"},
-		{Schema: "bronze", Name: "ordens`"},
+		{Schema: "bronze", Name: "orders`"},
 		{Schema: "", Name: "orders"},
 		{Schema: "bronze", Name: strings.Repeat("c", maxIdentifier+1)},
 	} {

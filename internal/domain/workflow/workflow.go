@@ -31,7 +31,7 @@ type Workflow struct {
 	Slug     string
 	Name     string
 	Kind     Kind
-	Schedule string // cron; vazio = so disparo manual
+	Schedule string // cron; empty = manual trigger only
 
 	// Description is what this workflow is FOR, in the author's own words.
 	//
@@ -130,7 +130,7 @@ type Node struct {
 	// DECLARED lands here.
 	//
 	// They are additive in the stored document. A Workflow is written whole as
-	// JSON into workflows.definicao and runs.definicao with no tags, so the Go
+	// JSON into workflows.definition and runs.definition with no tags, so the Go
 	// field name is the key -- an older engine ignores what it does not know,
 	// and this one reading an older document gets the zero value, which means
 	// "not declared" and falls through to the inference. Nothing to migrate.
@@ -343,16 +343,16 @@ func (w Workflow) ResourcesFor(n Node) Resources {
 	return n.Resources.WithDefaults(w.Resources)
 }
 
-// EnvDe resolves a step's effective literal variables: the workflow's, with
+// EnvOf resolves a step's effective literal variables: the workflow's, with
 // the step's on top.
-func (w Workflow) EnvDe(n Node) map[string]string { return sobrepor(w.Env, n.Env) }
+func (w Workflow) EnvOf(n Node) map[string]string { return overlay(w.Env, n.Env) }
 
-// SecretsDe resolves a step's effective secrets, by the same rule.
-func (w Workflow) SecretsDe(n Node) map[string]string { return sobrepor(w.Secrets, n.Secrets) }
+// SecretsOf resolves a step's effective secrets, by the same rule.
+func (w Workflow) SecretsOf(n Node) map[string]string { return overlay(w.Secrets, n.Secrets) }
 
-// sobrepor returns base with cima on top, mutating neither: the maps come from
+// overlay returns base with up on top, mutating neither: the maps come from
 // the published workflow and are read by every step at the same time.
-func sobrepor(base, up map[string]string) map[string]string {
+func overlay(base, up map[string]string) map[string]string {
 	if len(base) == 0 && len(up) == 0 {
 		return nil
 	}
@@ -366,8 +366,8 @@ func sobrepor(base, up map[string]string) map[string]string {
 	return out
 }
 
-// UsaShell says whether the command enters through `sh -c`.
-func (n Node) UsaShell() bool { return n.Shell == nil || *n.Shell }
+// UsesShell says whether the command enters through `sh -c`.
+func (n Node) UsesShell() bool { return n.Shell == nil || *n.Shell }
 
 // Edge links two nodes: From runs before To.
 // IsEmpty decides whether a published value counts as absent, for
@@ -492,7 +492,7 @@ func (n Node) WhenOf() string {
 }
 
 // validateWhen refuses an unknown rule at publish, naming what is valid. A rule
-// nobody recognises would otherwise mean "the default" -- a step declaring
+// nobody recognizes would otherwise mean "the default" -- a step declaring
 // `when: on_failure` would run on SUCCESS, which is the opposite of what it
 // says, discovered the night it mattered.
 func validateWhen(slug string, n Node) error {
@@ -603,19 +603,19 @@ func (w Workflow) Validate() error {
 		return err
 	}
 
-	vistos := make(map[string]struct{}, len(w.Nodes))
+	seen := make(map[string]struct{}, len(w.Nodes))
 	for _, n := range w.Nodes {
 		if n.ID == "" {
 			return fmt.Errorf("workflow %q has a step with no id", w.Slug)
 		}
-		if _, dup := vistos[n.ID]; dup {
+		if _, dup := seen[n.ID]; dup {
 			return fmt.Errorf("workflow %q: duplicate step id: %q", w.Slug, n.ID)
 		}
-		vistos[n.ID] = struct{}{}
+		seen[n.ID] = struct{}{}
 
-		temRun, temAction := n.Run != "", n.Action != ""
+		hasRun, hasAction := n.Run != "", n.Action != ""
 		switch {
-		case n.Uses != "" && (temRun || temAction || n.Marker):
+		case n.Uses != "" && (hasRun || hasAction || n.Marker):
 			// A step that names another workflow AND declares work of its own
 			// is a file saying two things, and expansion would have to drop
 			// one of them.
@@ -624,7 +624,7 @@ func (w Workflow) Validate() error {
 		case n.Uses != "":
 			// Fine, and it is checked again after expansion -- by then this
 			// node no longer exists.
-		case n.Marker && (temRun || temAction):
+		case n.Marker && (hasRun || hasAction):
 			// A marker that also declares work is a file saying two things. It
 			// is refused rather than silently preferring one, because either
 			// reading loses something somebody wrote.
@@ -632,14 +632,14 @@ func (w Workflow) Validate() error {
 				"a marker does nothing", n.ID)
 		case n.Marker:
 			// Fine: a marker is the one step allowed to declare no work.
-		case temRun && temAction:
+		case hasRun && hasAction:
 			return fmt.Errorf("step %q declares both `run` and `action`; use one of the two", n.ID)
-		case !temRun && !temAction:
+		case !hasRun && !hasAction:
 			// Still refused, and deliberately: an empty `run:` is almost always
 			// a mistake, and `marker: true` is how somebody says they meant it.
 			return fmt.Errorf("step %q declares neither `run` nor `action` "+
 				"(if it is meant to do nothing, say `marker: true`)", n.ID)
-		case temRun && len(n.With) > 0:
+		case hasRun && len(n.With) > 0:
 			return fmt.Errorf("step %q uses `with`, which only applies with `action`", n.ID)
 		}
 
@@ -687,10 +687,10 @@ func (w Workflow) Validate() error {
 	}
 
 	for _, e := range w.Edges {
-		if _, ok := vistos[e.From]; !ok {
+		if _, ok := seen[e.From]; !ok {
 			return fmt.Errorf("workflow %q: dependency %q does not exist", w.Slug, e.From)
 		}
-		if _, ok := vistos[e.To]; !ok {
+		if _, ok := seen[e.To]; !ok {
 			return fmt.Errorf("workflow %q: dependency %q does not exist", w.Slug, e.To)
 		}
 		if e.From == e.To {
@@ -703,7 +703,7 @@ func (w Workflow) Validate() error {
 		if err := p.Validate(); err != nil {
 			return fmt.Errorf("workflow %q: %w", w.Slug, err)
 		}
-		if _, ja := seenParams[p.Name]; ja {
+		if _, already := seenParams[p.Name]; already {
 			return fmt.Errorf("workflow %q: duplicate param: %q", w.Slug, p.Name)
 		}
 		seenParams[p.Name] = struct{}{}
@@ -734,7 +734,7 @@ func (w Workflow) Validate() error {
 		// Against the effective view, not the declared one: an `env:` on the
 		// workflow and a `secrets:` of the same name on the step collide just
 		// the same, and only the inherited view sees it.
-		if err := validateEnvironment(w.Slug, "step "+n.ID, w.EnvDe(n), w.SecretsDe(n)); err != nil {
+		if err := validateEnvironment(w.Slug, "step "+n.ID, w.EnvOf(n), w.SecretsOf(n)); err != nil {
 			return err
 		}
 	}
@@ -764,7 +764,7 @@ func validateEnvironment(slug, where string, env, secrets map[string]string) err
 
 		// A variable defined in both places is ambiguous, and any tie-break
 		// chosen here would be a rule nobody remembers.
-		if _, colide := env[name]; colide {
+		if _, collides := env[name]; collides {
 			return fmt.Errorf("workflow %q, %s: %q is in both `env` and `secrets`; "+
 				"the same variable cannot have a literal value and come from a secret",
 				slug, where, name)
@@ -808,7 +808,7 @@ func validateVarName(name string) error {
 	return nil
 }
 
-// findCycle devolve o caminho do ciclo, ou vazio se o grafo for aciclico.
+// findCycle returns the path of the cycle, or empty if the graph is acyclic.
 //
 // It returns the PATH, not just a boolean: whoever wrote the DAG needs to know
 // which steps close the loop in order to fix it.
@@ -819,44 +819,44 @@ func (w Workflow) findCycle() string {
 	}
 
 	const (
-		novo = iota // without iota, emUso and pronto would repeat novo's value
-		emUso
-		pronto
+		fresh = iota // without iota, inUse and ready would repeat fresh's value
+		inUse
+		ready
 	)
 	state := make(map[string]int, len(w.Nodes))
 	var path []string
-	var achado string
+	var found string
 
-	var visitar func(string) bool
-	visitar = func(id string) bool {
-		state[id] = emUso
+	var visit func(string) bool
+	visit = func(id string) bool {
+		state[id] = inUse
 		path = append(path, id)
 
-		for _, prox := range outgoing[id] {
-			switch state[prox] {
-			case emUso:
+		for _, next := range outgoing[id] {
+			switch state[next] {
+			case inUse:
 				// closes the loop: it slices the path from where `prox` went in
 				for i, v := range path {
-					if v == prox {
-						achado = formatCycle(append(append([]string{}, path[i:]...), prox))
+					if v == next {
+						found = formatCycle(append(append([]string{}, path[i:]...), next))
 						return true
 					}
 				}
-			case novo:
-				if visitar(prox) {
+			case fresh:
+				if visit(next) {
 					return true
 				}
 			}
 		}
 
 		path = path[:len(path)-1]
-		state[id] = pronto
+		state[id] = ready
 		return false
 	}
 
 	for _, n := range w.Nodes {
-		if state[n.ID] == novo && visitar(n.ID) {
-			return achado
+		if state[n.ID] == fresh && visit(n.ID) {
+			return found
 		}
 	}
 	return ""
@@ -877,7 +877,7 @@ func formatCycle(ids []string) string {
 // in two files and greps for, so nothing a shell or a URL would mangle.
 var groupName = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,62}$`)
 
-// quantidade is Kubernetes's format: an integer or a decimal with an optional
+// quantity is Kubernetes's format: an integer or a decimal with an optional
 // suffix (m for CPU; Ki/Mi/Gi/K/M/G for memory).
 var quantity = regexp.MustCompile(`^[0-9]+(\.[0-9]+)?(m|[KMGTPE]i?)?$`)
 

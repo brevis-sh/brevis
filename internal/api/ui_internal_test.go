@@ -43,17 +43,17 @@ func equal(t *testing.T, got, expected []string) {
 	}
 }
 
-func TestFiltrar(t *testing.T) {
-	casos := []struct {
+func TestFilter(t *testing.T) {
+	cases := []struct {
 		name     string
 		f        pages.Filter
 		expected []string
 	}{
 		{"no filter", pages.Filter{}, []string{"id_verification", "platform_workspace", "vendors_inmet", "protect_ad_hoc"}},
-		{"busca parcial", pages.Filter{Search: "verif"}, []string{"id_verification"}},
-		{"busca ignora caixa", pages.Filter{Search: "PLATFORM"}, []string{"platform_workspace"}},
-		{"ultimo estado", pages.Filter{State: "failed"}, []string{"platform_workspace"}},
-		{"ativos", pages.Filter{Active: "active"}, []string{"id_verification", "platform_workspace"}},
+		{"partial search", pages.Filter{Search: "verif"}, []string{"id_verification"}},
+		{"search ignores case", pages.Filter{Search: "PLATFORM"}, []string{"platform_workspace"}},
+		{"last state", pages.Filter{State: "failed"}, []string{"platform_workspace"}},
+		{"active", pages.Filter{Active: "active"}, []string{"id_verification", "platform_workspace"}},
 		// The case that motivated the test: "paused" is a schedule switched off,
 		// not the absence of one. Merging the two would hide the workflow somebody
 		// paused.
@@ -63,12 +63,12 @@ func TestFiltrar(t *testing.T) {
 		// with every tag clicked, which is not what choosing more says.
 		{"two tags are AND", pages.Filter{Tags: []string{"acme", "platform"}}, []string{"platform_workspace"}},
 		{"two tags nobody carries together", pages.Filter{Tags: []string{"acme", "vendors"}}, nil},
-		{"combinado", pages.Filter{Tags: []string{"acme"}, State: "success"}, []string{"id_verification"}},
-		{"nada casa", pages.Filter{Search: "inexistente"}, nil},
+		{"combined", pages.Filter{Tags: []string{"acme"}, State: "success"}, []string{"id_verification"}},
+		{"nothing matches", pages.Filter{Search: "nonexistent"}, nil},
 	}
-	for _, c := range casos {
+	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			equal(t, slugs(filtrar(list(), c.f, listFacts{})), c.expected)
+			equal(t, slugs(filter(list(), c.f, listFacts{})), c.expected)
 		})
 	}
 }
@@ -78,57 +78,57 @@ func TestFiltrar(t *testing.T) {
 // another.
 func TestTheTagsDoNotShrinkWithTheFilter(t *testing.T) {
 	all := list()
-	equal(t, tagsDe(all), []string{"acme", "id", "platform", "vendors"})
+	equal(t, allTags(all), []string{"acme", "id", "platform", "vendors"})
 
-	so := filtrar(all, pages.Filter{Tags: []string{"vendors"}}, listFacts{})
+	so := filter(all, pages.Filter{Tags: []string{"vendors"}}, listFacts{})
 	if len(so) != 1 {
 		t.Fatalf("expected 1 filtered row, got %d", len(so))
 	}
-	equal(t, tagsDe(all), []string{"acme", "id", "platform", "vendors"})
+	equal(t, allTags(all), []string{"acme", "id", "platform", "vendors"})
 }
 
 func TestTheWorkflowsNextRun(t *testing.T) {
 	now := time.Date(2026, 3, 10, 4, 30, 0, 0, time.UTC)
 
 	active1 := postgres.WorkflowSummary{Slug: "a", Cron: "0 5 * * *", Timezone: "UTC", Active: true}
-	if p := proximaDoWorkflow(active1, now); p == nil || !p.Equal(time.Date(2026, 3, 10, 5, 0, 0, 0, time.UTC)) {
-		t.Errorf("next = %v, want 05:00 do mesmo dia", p)
+	if p := nextOfWorkflow(active1, now); p == nil || !p.Equal(time.Date(2026, 3, 10, 5, 0, 0, 0, time.UTC)) {
+		t.Errorf("next = %v, want 05:00 the same day", p)
 	}
 
 	// Paused has no next firing: showing one would mislead whoever paused it.
 	paused := postgres.WorkflowSummary{Slug: "b", Cron: "0 5 * * *", Active: false}
-	if p := proximaDoWorkflow(paused, now); p != nil {
-		t.Errorf("workflow pausado devolveu next disparo: %v", p)
+	if p := nextOfWorkflow(paused, now); p != nil {
+		t.Errorf("a paused workflow returned a next trigger: %v", p)
 	}
 
-	semCron := postgres.WorkflowSummary{Slug: "c", Active: true}
-	if p := proximaDoWorkflow(semCron, now); p != nil {
+	noCron := postgres.WorkflowSummary{Slug: "c", Active: true}
+	if p := nextOfWorkflow(noCron, now); p != nil {
 		t.Errorf("a workflow with no cron returned a next firing: %v", p)
 	}
 
 	invalid := postgres.WorkflowSummary{Slug: "d", Cron: "this is not a cron", Active: true}
-	if p := proximaDoWorkflow(invalid, now); p != nil {
-		t.Errorf("cron invalido devolveu next disparo: %v", p)
+	if p := nextOfWorkflow(invalid, now); p != nil {
+		t.Errorf("an invalid cron returned a next trigger: %v", p)
 	}
 }
 
 func TestNextRunsSortsAndIgnoresInvalidOnes(t *testing.T) {
 	now := time.Date(2026, 3, 10, 4, 30, 0, 0, time.UTC)
 	schedules := []postgres.ScheduleSummary{
-		{WorkflowSlug: "tarde", Cron: "0 22 * * *", Timezone: "UTC", Active: true},
-		{WorkflowSlug: "cedo", Cron: "0 5 * * *", Timezone: "UTC", Active: true},
-		{WorkflowSlug: "pausada", Cron: "* * * * *", Timezone: "UTC", Active: false},
+		{WorkflowSlug: "late", Cron: "0 22 * * *", Timezone: "UTC", Active: true},
+		{WorkflowSlug: "early", Cron: "0 5 * * *", Timezone: "UTC", Active: true},
+		{WorkflowSlug: "paused", Cron: "* * * * *", Timezone: "UTC", Active: false},
 		// One broken schedule in the database must not take the whole dashboard
 		// down.
-		{WorkflowSlug: "quebrada", Cron: "@@@", Timezone: "UTC", Active: true},
+		{WorkflowSlug: "broken", Cron: "@@@", Timezone: "UTC", Active: true},
 	}
 
 	out := nextRuns(schedules, now, 8, slog.New(slog.DiscardHandler))
 	if len(out) != 2 {
-		t.Fatalf("obtive %d entradas, want 2 (a pausada e a quebrada ficam de fora)", len(out))
+		t.Fatalf("got %d entries, want 2 (the paused one and the broken one stay out)", len(out))
 	}
-	if out[0].Workflow != "cedo" || out[1].Workflow != "tarde" {
-		t.Errorf("ordem = %s, %s; want o disparo mais next primeiro", out[0].Workflow, out[1].Workflow)
+	if out[0].Workflow != "early" || out[1].Workflow != "late" {
+		t.Errorf("order = %s, %s; want the earliest next trigger first", out[0].Workflow, out[1].Workflow)
 	}
 }
 
@@ -141,7 +141,7 @@ func TestNextRunsRespectsTheLimit(t *testing.T) {
 		})
 	}
 	if out := nextRuns(schedules, now, 5, slog.New(slog.DiscardHandler)); len(out) != 5 {
-		t.Errorf("obtive %d, want 5", len(out))
+		t.Errorf("got %d, want 5", len(out))
 	}
 }
 
@@ -154,32 +154,32 @@ func TestSortingByLastRun(t *testing.T) {
 	t2 := time.Date(2026, 3, 2, 10, 0, 0, 0, time.UTC)
 	base := func() []postgres.WorkflowSummary {
 		return []postgres.WorkflowSummary{
-			withTimes("b_recente", &t2, nil),
-			withTimes("a_nunca", nil, nil),
-			withTimes("c_antiga", &t1, nil),
+			withTimes("b_recent", &t2, nil),
+			withTimes("a_never", nil, nil),
+			withTimes("c_old", &t1, nil),
 		}
 	}
 
 	asc := base()
 	sortBy(asc, pages.Filter{Sort: "last"})
-	equal(t, slugs(asc), []string{"c_antiga", "b_recente", "a_nunca"})
+	equal(t, slugs(asc), []string{"c_old", "b_recent", "a_never"})
 
 	// The absent one goes last in BOTH directions: treating null as "very old"
 	// would make the list start with the ones that never ran precisely when
 	// looking for the most recent run.
 	desc := base()
 	sortBy(desc, pages.Filter{Sort: "last", Desc: true})
-	equal(t, slugs(desc), []string{"b_recente", "c_antiga", "a_nunca"})
+	equal(t, slugs(desc), []string{"b_recent", "c_old", "a_never"})
 }
 
 func TestSortingByScheduleSendsTheCronlessToTheEnd(t *testing.T) {
 	ws := []postgres.WorkflowSummary{
-		{Slug: "sem_cron"},
-		{Slug: "cinco", Cron: "0 5 * * *"},
-		{Slug: "quatro", Cron: "0 4 * * *"},
+		{Slug: "no_cron"},
+		{Slug: "five", Cron: "0 5 * * *"},
+		{Slug: "four", Cron: "0 4 * * *"},
 	}
 	sortBy(ws, pages.Filter{Sort: "schedule"})
-	equal(t, slugs(ws), []string{"quatro", "cinco", "sem_cron"})
+	equal(t, slugs(ws), []string{"four", "five", "no_cron"})
 }
 
 // A tie is settled by the slug: without that, two "never ran" rows would swap
@@ -196,21 +196,21 @@ func TestSlicingAPage(t *testing.T) {
 		ws = append(ws, postgres.WorkflowSummary{Slug: string(rune('a' + i))})
 	}
 	f := pages.Filter{Page: 2, PerPage: 3}
-	equal(t, slugs(recortar(ws, f)), []string{"d", "e", "f"})
+	equal(t, slugs(clip(ws, f)), []string{"d", "e", "f"})
 
 	// A page past the end happens when filtering while on a high page; it has to
-	// voltar vazia em vez de estourar o slice.
-	if r := recortar(ws, pages.Filter{Page: 9, PerPage: 3}); r != nil {
-		t.Errorf("pagina fora do intervalo devolveu %d linhas", len(r))
+	// come back empty instead of overflowing the slice.
+	if r := clip(ws, pages.Filter{Page: 9, PerPage: 3}); r != nil {
+		t.Errorf("a page out of range returned %d rows", len(r))
 	}
-	equal(t, slugs(recortar(ws, pages.Filter{Page: 3, PerPage: 3})), []string{"g"})
+	equal(t, slugs(clip(ws, pages.Filter{Page: 3, PerPage: 3})), []string{"g"})
 }
 
 func TestAValidStateRefusesAnUnknownOne(t *testing.T) {
 	if validState("success") != "success" {
 		t.Error("a legitimate state was refused")
 	}
-	// `?state=xpto` would return an empty list with every chip greyed out, and the
+	// `?state=xpto` would return an empty list with every chip grayed out, and the
 	// operator would read that as "there are no runs".
 	if validState("xpto") != "" || validState("' OR 1=1") != "" {
 		t.Error("an unknown state should become 'no filter'")
@@ -218,7 +218,7 @@ func TestAValidStateRefusesAnUnknownOne(t *testing.T) {
 }
 
 func TestTheInstantAndThePage(t *testing.T) {
-	if instant("") != nil || instant("ontem") != nil {
+	if instant("") != nil || instant("yesterday") != nil {
 		t.Error("an invalid value has to become the absence of a filter, not an error")
 	}
 	if got := instant("2026-09-01T02:00:00Z"); got == nil || got.Hour() != 2 {
@@ -226,7 +226,7 @@ func TestTheInstantAndThePage(t *testing.T) {
 	}
 	for _, s := range []string{"", "0", "-3", "abc"} {
 		if page(s) != 1 {
-			t.Errorf("pagina(%q) = %d, want 1", s, page(s))
+			t.Errorf("page(%q) = %d, want 1", s, page(s))
 		}
 	}
 	if page("4") != 4 {
@@ -238,7 +238,7 @@ func TestTheInstantAndThePage(t *testing.T) {
 // comma-joined string everywhere else in the engine -- so the form is where the
 // two meet.
 func TestTheTriggerFormJoinsAListsValues(t *testing.T) {
-	casos := []struct {
+	cases := []struct {
 		why  string
 		form url.Values
 		want map[string]string
@@ -277,7 +277,7 @@ func TestTheTriggerFormJoinsAListsValues(t *testing.T) {
 			want: map[string]string{"layers": "bronze,gold"},
 		},
 	}
-	for _, c := range casos {
+	for _, c := range cases {
 		got := paramsFromForm(c.form)
 		if len(got) != len(c.want) {
 			t.Errorf("%s: got %d params, want %d (%#v)", c.why, len(got), len(c.want), got)

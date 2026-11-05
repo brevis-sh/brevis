@@ -21,16 +21,16 @@ func triggered(t *testing.T, tr wf.Trigger) (*scheduler.Scheduler, *postgres.Poo
 	pool := testDB(t)
 	ctx := context.Background()
 
-	projeto := uuid.New()
+	project := uuid.New()
 	if _, err := pool.Exec(ctx,
-		`INSERT INTO projects (id, slug, name) VALUES ($1, 'p', 'Projeto')`, projeto); err != nil {
+		`INSERT INTO projects (id, slug, name) VALUES ($1, 'p', 'Project')`, project); err != nil {
 		t.Fatal(err)
 	}
 	wRepo := postgres.NewWorkflowRepo(pool)
-	if err := wRepo.Publicar(ctx, wf.Workflow{
+	if err := wRepo.Publish(ctx, wf.Workflow{
 		Slug: "silver", Name: "silver", Kind: wf.KindChain,
 		Nodes: []wf.Node{{ID: "a", Run: "brevis-sql build"}}, Trigger: tr,
-	}, projeto, "test"); err != nil {
+	}, project, "test"); err != nil {
 		t.Fatal(err)
 	}
 	s := scheduler.NewScheduler(postgres.NewScheduleRepo(pool), wRepo,
@@ -47,7 +47,7 @@ func land(t *testing.T, pool *postgres.Pool, writer, target string, recorded tim
 	if _, err := pool.Exec(context.Background(), `
 		INSERT INTO landings (run_id, node_id, map_index, target, workflow_slug,
 		                      loaded_at, recorded_at)
-		VALUES ($1, 'carga', -1, $2, $3, $4, $5)`,
+		VALUES ($1, 'load', -1, $2, $3, $4, $5)`,
 		uuid.New(), target, writer,
 		recorded.Add(-7*time.Hour), // what a skewed step would have said
 		recorded); err != nil {
@@ -76,7 +76,7 @@ func TestTenLandingsInAMinuteStartOneRun(t *testing.T) {
 
 	// The first cycle PLANTS the cursor and starts nothing: a trigger that
 	// fired for the whole history of the table on its first turn is the
-	// mistake `schedules.ultimo_slot` already made once.
+	// mistake `schedules.last_slot` already made once.
 	if n, err := s.Cycle(ctx, t0); err != nil || n != 0 {
 		t.Fatalf("the planting cycle created %d runs (%v)", n, err)
 	}
@@ -125,7 +125,7 @@ func TestTheNextWindowIsANewRun(t *testing.T) {
 // A PATTERN SUBSCRIBES TO A DATASET, which is the only thing auto_table's
 // tables can be named by -- and it must not reach a dataset that merely
 // starts with the same letters.
-func TestAPatternMatchesTheDatasetAndNotItsNeighbour(t *testing.T) {
+func TestAPatternMatchesTheDatasetAndNotItsNeighbor(t *testing.T) {
 	s, pool := triggered(t, wf.Trigger{OnLanded: []string{"bigquery://acme-prod/bronze/*"}})
 	t0 := inUTC("2026-03-11T04:00:00Z")
 	mustCycle(t, s, t0)

@@ -39,7 +39,7 @@ func mapped(t *testing.T, body, key string) ([]string, *spyPersister, error) {
 	}
 	spy := &spyPersister{}
 	runErr := app.Runner{
-		Processo: exec, Report: &coletor{}, ContextDir: t.TempDir(),
+		Process: exec, Report: &collector{}, ContextDir: t.TempDir(),
 		Persist: spy, RunID: uuid.New(),
 		Env: map[string]string{"PATH": os.Getenv("PATH")},
 	}.Run(context.Background(), w)
@@ -154,7 +154,7 @@ func TestAnUnmappedStepIsUntouched(t *testing.T) {
 	}
 	spy := &spyPersister{}
 	if err := (app.Runner{
-		Processo: exec, Report: &coletor{}, ContextDir: t.TempDir(),
+		Process: exec, Report: &collector{}, ContextDir: t.TempDir(),
 		Persist: spy, RunID: uuid.New(),
 		Env: map[string]string{"PATH": os.Getenv("PATH")},
 	}).Run(context.Background(), w); err != nil {
@@ -194,7 +194,7 @@ func TestOneFailedInstanceFailsTheStep(t *testing.T) {
 	}
 	spy := &spyPersister{}
 	err = app.Runner{
-		Processo: exec, Report: &coletor{}, ContextDir: t.TempDir(),
+		Process: exec, Report: &collector{}, ContextDir: t.TempDir(),
 		Persist: spy, RunID: uuid.New(),
 		Env: map[string]string{"PATH": os.Getenv("PATH")},
 	}.Run(context.Background(), w)
@@ -220,11 +220,11 @@ func TestOneFailedInstanceFailsTheStep(t *testing.T) {
 // The interaction between mapping and resume, and the reason AlreadySucceeded
 // is keyed by instance rather than by node: twenty partitions do not fail
 // together, and a retry that redid all twenty because two broke would be the
-// old behaviour wearing a new column.
+// old behavior wearing a new column.
 func TestIntegrationARetryRedoesOnlyTheInstancesThatFailed(t *testing.T) {
 	dsn := os.Getenv("BREVIS_IT_PG_DSN")
 	if dsn == "" {
-		t.Skip("BREVIS_IT_PG_DSN ausente")
+		t.Skip("BREVIS_IT_PG_DSN is not set")
 	}
 	exec, err := local.New("local")
 	if err != nil {
@@ -239,7 +239,7 @@ func TestIntegrationARetryRedoesOnlyTheInstancesThatFailed(t *testing.T) {
 
 	runID := uuid.New()
 	if err := createRun(ctx, pool, runID); err != nil {
-		t.Fatalf("criando a run: %v", err)
+		t.Fatalf("creating the run: %v", err)
 	}
 	repo := postgres.NewRunRepo(pool)
 
@@ -259,7 +259,7 @@ func TestIntegrationARetryRedoesOnlyTheInstancesThatFailed(t *testing.T) {
 	}
 	r := app.Runner{
 		RunID: runID, Persist: repo, History: repo,
-		Processo: exec, Report: &coletor{}, ContextDir: t.TempDir(),
+		Process: exec, Report: &collector{}, ContextDir: t.TempDir(),
 		Env: map[string]string{"PATH": os.Getenv("PATH")},
 	}
 

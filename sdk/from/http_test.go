@@ -19,7 +19,7 @@ import (
 // This test checks that every field reaches the other side.
 func TestHTTPPassesEveryFieldThrough(t *testing.T) {
 	var (
-		metodo string
+		method string
 		body   string
 		header string
 		path   string
@@ -27,11 +27,11 @@ func TestHTTPPassesEveryFieldThrough(t *testing.T) {
 	)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls++
-		metodo = r.Method
+		method = r.Method
 		b := make([]byte, r.ContentLength)
 		_, _ = r.Body.Read(b)
 		body = string(b)
-		header = r.Header.Get("X-Cliente")
+		header = r.Header.Get("X-Customer")
 		path = r.URL.Path
 		_, _ = w.Write([]byte(`[{"id":1}]`))
 	}))
@@ -41,10 +41,10 @@ func TestHTTPPassesEveryFieldThrough(t *testing.T) {
 	var preview strings.Builder
 
 	seq, err := HTTP{
-		URL:          srv.URL + "/v1/eventos",
+		URL:          srv.URL + "/v1/events",
 		Method:       http.MethodPost,
 		Body:         strings.NewReader(`{"q":1}`),
-		Header:       map[string][]string{"X-Cliente": {"brevis"}},
+		Header:       map[string][]string{"X-Customer": {"brevis"}},
 		Timeout:      5 * time.Second,
 		TotalTimeout: time.Minute,
 		Format:       core.FormatJSON,
@@ -59,44 +59,44 @@ func TestHTTPPassesEveryFieldThrough(t *testing.T) {
 	n := 0
 	for _, err := range seq {
 		if err != nil {
-			t.Fatalf("iterando: %v", err)
+			t.Fatalf("iterating: %v", err)
 		}
 		n++
 	}
 
 	// Os campos do driver.
-	if metodo != http.MethodPost {
-		t.Errorf("Method não chegou: %q", metodo)
+	if method != http.MethodPost {
+		t.Errorf("Method did not arrive: %q", method)
 	}
 	if body != `{"q":1}` {
-		t.Errorf("Body não chegou: %q", body)
+		t.Errorf("Body did not arrive: %q", body)
 	}
 	if header != "brevis" {
-		t.Errorf("Header não chegou: %q", header)
+		t.Errorf("Header did not arrive: %q", header)
 	}
-	if path != "/v1/eventos" {
-		t.Errorf("URL não chegou inteira: %q", path)
+	if path != "/v1/events" {
+		t.Errorf("URL did not arrive whole: %q", path)
 	}
 
 	// The options that cross every driver.
 	if stats.Bytes == 0 || stats.Pages == 0 {
-		t.Errorf("Stats não foi preenchido: %+v", stats)
+		t.Errorf("Stats was not filled in: %+v", stats)
 	}
 	if !strings.Contains(preview.String(), "id") {
-		t.Errorf("o Preview não saiu:\n%s", preview.String())
+		t.Errorf("the Preview did not come out:\n%s", preview.String())
 	}
 	if n != 1 {
-		t.Errorf("%d registros, esperado 1", n)
+		t.Errorf("%d records, want 1", n)
 	}
 }
 
 // Every format has to reach the right decoder. An ignored Format would decode
 // JSON where the fetcher asked for CSV.
 func TestHTTPForwardsEachFormat(t *testing.T) {
-	casos := []struct {
-		formato core.Format
-		body    string
-		field   string
+	cases := []struct {
+		format core.Format
+		body   string
+		field  string
 	}{
 		{core.FormatJSON, `[{"a":"1"}]`, "a"},
 		{core.FormatNDJSON, `{"a":"1"}` + "\n", "a"},
@@ -104,14 +104,14 @@ func TestHTTPForwardsEachFormat(t *testing.T) {
 		{core.FormatXML, `<r><item><a>1</a></item></r>`, "a"},
 	}
 
-	for _, c := range casos {
-		t.Run(string(c.formato), func(t *testing.T) {
+	for _, c := range cases {
+		t.Run(string(c.format), func(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				_, _ = w.Write([]byte(c.body))
 			}))
 			defer srv.Close()
 
-			seq, err := HTTP{URL: srv.URL, Format: c.formato}.
+			seq, err := HTTP{URL: srv.URL, Format: c.format}.
 				Read(context.Background(), core.ReadOptions{})
 			if err != nil {
 				t.Fatalf("Read: %v", err)
@@ -119,15 +119,15 @@ func TestHTTPForwardsEachFormat(t *testing.T) {
 			n := 0
 			for env, err := range seq {
 				if err != nil {
-					t.Fatalf("iterando: %v", err)
+					t.Fatalf("iterating: %v", err)
 				}
 				if _, err := core.AsObject(env.Payload); err != nil {
-					t.Errorf("o registro não é objeto: %v", env.Payload)
+					t.Errorf("the record is not an object: %v", env.Payload)
 				}
 				n++
 			}
 			if n == 0 {
-				t.Errorf("nenhum registro saiu de um corpo %s válido", c.formato)
+				t.Errorf("no record came out of a valid %s body", c.format)
 			}
 		})
 	}
@@ -136,23 +136,23 @@ func TestHTTPForwardsEachFormat(t *testing.T) {
 func TestHTTPRefusesAnUnknownFormat(t *testing.T) {
 	_, err := HTTP{URL: "http://x", Format: "yaml"}.Read(context.Background(), core.ReadOptions{})
 	if err == nil {
-		t.Fatal("um formato que o SDK não decodifica tem de ser recusado")
+		t.Fatal("a format the SDK does not decode has to be refused")
 	}
 	if !strings.Contains(err.Error(), "yaml") {
-		t.Errorf("o erro precisa nomear o formato: %v", err)
+		t.Errorf("the error must name the format: %v", err)
 	}
 }
 
 // Describe is what appears in the log and in the error message, so it must not
 // carry the secret the URL carries.
 func TestHTTPDescribeLeaksNoSecret(t *testing.T) {
-	got := HTTP{URL: "https://api.exemplo.com/v1?api_key=SEGREDO&lat=-23.5"}.Describe()
+	got := HTTP{URL: "https://api.example.com/v1?api_key=SECRET&lat=-23.5"}.Describe()
 
-	if strings.Contains(got, "SEGREDO") {
-		t.Errorf("Describe vazou a chave: %s", got)
+	if strings.Contains(got, "SECRET") {
+		t.Errorf("Describe leaked the key: %s", got)
 	}
-	if !strings.Contains(got, "api.exemplo.com") || !strings.Contains(got, "lat=-23.5") {
-		t.Errorf("Describe apagou o que serve para depurar: %s", got)
+	if !strings.Contains(got, "api.example.com") || !strings.Contains(got, "lat=-23.5") {
+		t.Errorf("Describe erased what is useful for debugging: %s", got)
 	}
 }
 

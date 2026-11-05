@@ -226,7 +226,7 @@ Changing any of these breaks idempotence with every previous load, in silence:
 | the `ingestion_id` namespace | `e3a4f8c0-1b9d-4ea0-9c2e-77f6a6c4a4d7` |
 | the UUID v5 key | `provider\|entity\|source_key\|record_ts` |
 | the `Key()` separator | `\|` |
-| the checkpoint's on-disk format | `_completo`, `parte-%05d.ndjson`, and the manifest keys |
+| the checkpoint's on-disk format | `_complete`, `part-%05d.ndjson`, and the manifest keys (an older depot, `_completo` and `parte-%05d.ndjson`, is still read) |
 
 Checked byte for byte against Python's `uuid.uuid5`, because a row written here
 has to match the one a Python fetcher writes for the same record.
@@ -252,7 +252,7 @@ The practical consequences:
 - an exported name that shipped is kept as a deprecated alias rather than
   deleted: a deletion breaks a consumer's build with an error that names a
   symbol and explains nothing. `from.CampoJSON`, `from/mysql.ComParseTime`,
-  `from/postgres.ParaJSON`, `load.ComoCriar` and their neighbours are alive for
+  `from/postgres.ParaJSON`, `load.ComoCriar` and their neighbors are alive for
   that reason, each held down by a test, and they go in `v1`.
 - `pkg.go.dev` renders the README **of the published version**, not of the
   branch. A README fix needs a tag before it shows.

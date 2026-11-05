@@ -7,18 +7,17 @@
 # "Buscar workflow", and the column headers "Origem" and "Criado", all shipped
 # and all read by whoever operates an installation.
 #
-# It covers web/**/*.templ, only USER-VISIBLE text, and the VALUES of the
-# English message catalog (web/i18n/locales/en.json): since the console speaks
-# three languages, much of its English lives there rather than in a template,
-# and an English catalog with Portuguese in it is the same leak in a new place.
+# It covers the VALUES of the English message catalog (web/i18n/locales/en.json):
+# the console speaks many languages and all of its English lives there, and an
+# English catalog with Portuguese in it is a leak read by whoever operates an
+# installation.
 #
-# pt-BR.json and es.json are OUT, deliberately: they are the translations, and
-# Portuguese is what one of them is for.
+# The other ten catalogs are OUT, deliberately: they are the translations, and
+# another language is what each of them is for. Their parity with English is the
+# keys test's job (web/i18n/keys_test.go).
 #
-# The rest of the repository keeps its deliberately Portuguese identifiers -- `criado_em`,
-# `saida`, `disparar`, `Transicionar` -- each documented where it lives. A
-# detector that flagged those would be turned off within a week, and a check
-# that is turned off is worse than one that never existed.
+# The rest of the repository -- comments, identifiers, schema, file names -- is
+# judged by repo-language-check.sh; this one reads only the English catalog.
 set -uo pipefail
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
@@ -57,27 +56,9 @@ PT = re.compile(r"\b(" + "|".join(WORDS.split()) + r")\b", re.I)
 #
 # The interpolations are stripped before the words are checked: `fmt.Sprint` is
 # Go, not prose, and matching inside it would flag identifiers forever.
-PATTERNS = [
-    re.compile(r">([^<>]+)<"),                                    # between tags
-    re.compile(r'(?:placeholder|title|aria-label|alt)="([^"]+)"'), # attributes
-    re.compile(r'@\w+\(\s*"([^"]+)"'),                             # component arguments
-    re.compile(r'\{\s*"([^"]+)"\s*\}'),                            # templ literals
-]
-
 INTERPOLATION = re.compile(r"\{[^{}]*\}")
 
 bad = []
-for path in sorted(pathlib.Path("web").rglob("*.templ")):
-    for n, line in enumerate(path.read_text().split("\n"), 1):
-        stripped = line.strip()
-        if stripped.startswith("//"):
-            continue  # comments are checked by the reader, not by this
-        for pat in PATTERNS:
-            for raw in pat.findall(line):
-                text = INTERPOLATION.sub(" ", raw)
-                m = PT.search(text)
-                if m and text.strip():
-                    bad.append((path, n, m.group(0), raw.strip()[:60]))
 
 # The English catalog: every message, and both forms of a plural one. A
 # placeholder ({name}) is not prose, so it is stripped like an interpolation.

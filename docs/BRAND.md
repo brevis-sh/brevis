@@ -65,7 +65,7 @@ The three carry the same path. If one changes, all three change.
 `brevis.sh`, set in **IBM Plex Mono Medium**, with `.sh` in the olive. Mono
 because the name is a shell command, and the TLD is part of it.
 
-The mark sits to the left, optically centred on the x-height, at roughly 1.05×
+The mark sits to the left, optically centered on the x-height, at roughly 1.05×
 the type size. Do not stack them, do not box them, and do not set the wordmark
 in the serif — there is no serif in this identity any more.
 
@@ -74,7 +74,7 @@ Written in prose it is always **brevis.sh**, lowercase, never *Brevis.sh* or
 this page, the site's About — and not to running text, where it would break
 copy-paste and search.
 
-## Colour
+## Color
 
 The palette is the site's, and the console inverts the ground: `#141711` is the
 site's *background* and the console's *text*. Same hues, opposite footing —
@@ -105,9 +105,8 @@ text pair in either theme, the dimmest text on the secondary ground, is
 Four places, and no others: the one primary action on a screen, the bar beside
 the open section, the mark itself, and the focus ring. Links are ink,
 underlined; a selected tab is underlined in ink; bars, charts and the DAG's
-edges are neutral. A test in `web/pages/accent_test.go` reads every template and
-refuses any other use, because an accent spent on everything stops pointing at
-anything.
+edges are neutral. Nothing else gets it, because an accent spent on everything
+stops pointing at anything.
 
 **Every ratio here is measured, not asserted.** `--green-2` at 1.7:1 is a
 hairline and nothing else: never text, never the outline of a control. That is
@@ -133,7 +132,7 @@ a brochure's vocabulary on a screen whose job is a table of run ids.
 **Do**
 
 - give the mark clear space of at least its own cap height on every side;
-- let it inherit colour from its surroundings;
+- let it inherit color from its surroundings;
 - use the favicon file, not the plain mark, anywhere a solid ground is needed.
 
 **Do not**

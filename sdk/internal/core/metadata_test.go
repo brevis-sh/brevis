@@ -16,15 +16,15 @@ func TestColumnsRefusesAColumnNobodyDelivered(t *testing.T) {
 		coreLine(map[string]any{"ingestion_id": "x", "provider": "p", "payload": "{}"}),
 	)
 	if err == nil {
-		t.Fatal("uma coluna declarada e não entregue landa NULL sem ninguém saber")
+		t.Fatal("a declared column that is not delivered lands as NULL without anyone knowing")
 	}
 	if !strings.Contains(err.Error(), "entity") {
-		t.Errorf("o erro não nomeia a coluna: %v", err)
+		t.Errorf("the error does not name the column: %v", err)
 	}
 	// And it says what the row actually has, so the fix comes out of one
 	// reading.
 	if !strings.Contains(err.Error(), "provider") {
-		t.Errorf("o erro não lista o que a linha tem: %v", err)
+		t.Errorf("the error does not list what the row has: %v", err)
 	}
 }
 
@@ -32,13 +32,13 @@ func TestColumnsRefusesAColumnNobodyDelivered(t *testing.T) {
 func TestColumnsRefusesAnUndeclaredField(t *testing.T) {
 	err := CheckColumns(
 		[]string{"provider", "payload"},
-		coreLine(map[string]any{"provider": "p", "payload": "{}", "surpresa": 1}),
+		coreLine(map[string]any{"provider": "p", "payload": "{}", "surprise": 1}),
 	)
 	if err == nil {
-		t.Fatal("um campo não declarado seria escrito numa tabela que nunca o mencionou")
+		t.Fatal("an undeclared field would be written to a table that never mentioned it")
 	}
-	if !strings.Contains(err.Error(), "surpresa") {
-		t.Errorf("o erro não nomeia o campo: %v", err)
+	if !strings.Contains(err.Error(), "surprise") {
+		t.Errorf("the error does not name the field: %v", err)
 	}
 }
 
@@ -54,7 +54,7 @@ func TestColumnsAcceptsTheMetadataColumns(t *testing.T) {
 		}),
 	)
 	if err != nil {
-		t.Fatalf("as seis colunas do DDL deveriam passar: %v", err)
+		t.Fatalf("the six DDL columns should pass: %v", err)
 	}
 }
 
@@ -62,20 +62,20 @@ func TestResolvePrecedence(t *testing.T) {
 	t.Setenv("BREVIS_TEST_X", "from-the-environment")
 
 	if got := Resolve("explicit-value", "BREVIS_TEST_X", "default-value"); got.Value != "explicit-value" || got.Where != "explicit" {
-		t.Errorf("o explícito tem de vencer: %+v", got)
+		t.Errorf("the explicit one has to win: %+v", got)
 	}
 	if got := Resolve("", "BREVIS_TEST_X", "default-value"); got.Value != "from-the-environment" || got.Where != "BREVIS_TEST_X" {
-		t.Errorf("o ambiente vem depois, e o log nomeia a variável: %+v", got)
+		t.Errorf("the environment comes after, and the log names the variable: %+v", got)
 	}
 	if got := Resolve("", "BREVIS_TEST_ABSENT", "default-value"); got.Value != "default-value" || got.Where != "default" {
-		t.Errorf("o padrão fecha a lista: %+v", got)
+		t.Errorf("the default closes the list: %+v", got)
 	}
 }
 
 func TestEnvIntFallsBackToTheDefaultInsteadOfBreaking(t *testing.T) {
 	t.Setenv("BREVIS_TEST_N", "not-a-number")
 	if got := EnvInt("BREVIS_TEST_N", 7); got != 7 {
-		t.Errorf("um valor ilegível não pode derrubar a pipeline: %d", got)
+		t.Errorf("an unreadable value must not bring the pipeline down: %d", got)
 	}
 	t.Setenv("BREVIS_TEST_N", "42")
 	if got := EnvInt("BREVIS_TEST_N", 7); got != 42 {
@@ -86,13 +86,13 @@ func TestEnvIntFallsBackToTheDefaultInsteadOfBreaking(t *testing.T) {
 // Does an invalid log level take the pipeline down? No: it warns and carries
 // on.
 func TestAnInvalidLogLevelDoesNotBringItDown(t *testing.T) {
-	t.Setenv(EnvLogLevel, "nao-existe")
+	t.Setenv(EnvLogLevel, "does-not-exist")
 	if got := LogLevel(); got != slog.LevelInfo {
-		t.Errorf("LogLevel = %v, esperado info", got)
+		t.Errorf("LogLevel = %v, want info", got)
 	}
 	t.Setenv(EnvLogLevel, "debug")
 	if got := LogLevel(); got != slog.LevelDebug {
-		t.Errorf("LogLevel = %v, esperado debug", got)
+		t.Errorf("LogLevel = %v, want debug", got)
 	}
 }
 
@@ -140,7 +140,7 @@ func TestEnvIntRenamedAcceptsTheOldName(t *testing.T) {
 // DedupKey defaults to ingestion_id and refuses anything that could not be a
 // column name.
 //
-// It reaches SQL -- `ON CONFLICT (…)` and a catalogue query -- and it comes
+// It reaches SQL -- `ON CONFLICT (…)` and a catalog query -- and it comes
 // from a config file, so it is validated rather than quoted and hoped:
 // quoting makes `"; DROP TABLE x; --` a legal identifier, which is not the
 // failure anybody wants to find out about.

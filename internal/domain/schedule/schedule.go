@@ -87,7 +87,7 @@ func (s Schedule) Parse() (cron.Schedule, *time.Location, error) {
 // `limite` caps the count: a workflow stopped for months with catchup=true would
 // create thousands of runs at once and drown the queue. Returning the excess as
 // `truncado` makes that visible instead of silent.
-func (s Schedule) Slots(now time.Time, limite int) (slots []time.Time, truncado bool, err error) {
+func (s Schedule) Slots(now time.Time, limit int) (slots []time.Time, truncated bool, err error) {
 	if !s.Active {
 		return nil, false, nil
 	}
@@ -100,9 +100,9 @@ func (s Schedule) Slots(now time.Time, limite int) (slots []time.Time, truncado 
 	// when
 	// the schedule never ran. Starting from zero would create the cron's entire
 	// history.
-	de := now.In(loc)
+	from := now.In(loc)
 	if s.LastSlot != nil {
-		de = s.LastSlot.In(loc)
+		from = s.LastSlot.In(loc)
 	}
 
 	// Without catchup, only the MOST RECENT slot matters — the gap is discarded
@@ -110,16 +110,16 @@ func (s Schedule) Slots(now time.Time, limite int) (slots []time.Time, truncado 
 	// there is nothing to truncate when only one slot will be materialized.
 	//
 	// The iteration ceiling protects against a schedule with a very old
-	// ultimo_slot, which would make the loop walk years of cron every cycle.
+	// last_slot, which would make the loop walk years of cron every cycle.
 	if !s.Catchup {
 		const maxIter = 500_000
 		var last time.Time
 		for i := 0; i < maxIter; i++ {
-			prox := sched.Next(de)
-			if prox.After(now) {
+			next := sched.Next(from)
+			if next.After(now) {
 				break
 			}
-			last, de = prox, prox
+			last, from = next, next
 		}
 		if last.IsZero() {
 			return nil, false, nil
@@ -128,16 +128,16 @@ func (s Schedule) Slots(now time.Time, limite int) (slots []time.Time, truncado 
 	}
 
 	for {
-		prox := sched.Next(de)
-		if prox.After(now) {
+		next := sched.Next(from)
+		if next.After(now) {
 			break
 		}
-		slots = append(slots, prox)
-		de = prox
+		slots = append(slots, next)
+		from = next
 
 		// It truncates and SIGNALS. The rest goes into the following cycles,
 		// because the marker advances on every materialized slot.
-		if limite > 0 && len(slots) >= limite {
+		if limit > 0 && len(slots) >= limit {
 			return slots, true, nil
 		}
 	}
@@ -194,4 +194,46 @@ func (s Schedule) Window(slot time.Time) (start, end time.Time, err error) {
 		}
 	}
 	return time.Time{}, time.Time{}, nil
+}
+
+// SlotCode is why a manual run's slot was refused, answered as a word; Error() keeps the English
+// sentence for the logs.
+type SlotCode string
+
+const (
+	SlotInFuture   SlotCode = "slot_in_future"
+	SlotNotOnCron  SlotCode = "slot_not_on_schedule" // with Cron, and Nearest when one exists before it
+	SlotNoSchedule SlotCode = "slot_no_schedule"     // the workflow has no schedule to take a slot from
+)
+
+// SlotError is a refused slot. Slot and Nearest are instants; Zone is the schedule's zone name, which
+// the sentence names beside Nearest when it is not UTC.
+type SlotError struct {
+	Code     SlotCode
+	Workflow string
+	Slot     time.Time
+	Cron     string
+	Nearest  time.Time // zero when no fire exists before Slot
+	Zone     string
+}
+
+const slotLayout = "2006-01-02 15:04"
+
+func (e *SlotError) Error() string {
+	switch e.Code {
+	case SlotNoSchedule:
+		return fmt.Sprintf("workflow %q has no schedule: a slot is one of its schedule's runs", e.Workflow)
+	case SlotInFuture:
+		return fmt.Sprintf("slot %s is in the future", e.Slot.UTC().Format(slotLayout+" UTC"))
+	}
+	msg := fmt.Sprintf("%s is not a slot of %q", e.Slot.UTC().Format(slotLayout+" UTC"), e.Cron)
+	if !e.Nearest.IsZero() {
+		msg += "; the nearest before it is " + e.Nearest.UTC().Format(slotLayout+" UTC")
+		if e.Zone != "" && e.Zone != "UTC" {
+			if loc, err := time.LoadLocation(e.Zone); err == nil {
+				msg += " (" + e.Nearest.In(loc).Format(slotLayout) + " " + e.Zone + ")"
+			}
+		}
+	}
+	return msg
 }

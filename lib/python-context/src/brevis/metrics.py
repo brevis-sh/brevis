@@ -20,7 +20,7 @@ looking for `@brevis:` lines -- that is how the SDK's phases reach the graph --
 and it already has a meter and a Prometheus endpoint.
 
 So this writes one line to stdout and the engine does the rest. The metric
-arrives labelled with the workflow and the step for free, because the engine
+arrives labeled with the workflow and the step for free, because the engine
 knows what it was running; through a Pushgateway this library would have to
 label itself, and would get it wrong.
 
@@ -50,7 +50,7 @@ from .context import MARKER  # noqa: E402
 # A name that breaks it does not produce a broken metric -- it produces an
 # exposition Prometheus REFUSES TO PARSE, and the whole scrape is lost, every
 # other metric with it. So it is refused HERE, where the mistake was made,
-# rather than normalised into a name nobody wrote.
+# rather than normalized into a name nobody wrote.
 _NAME = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
 Number = Union[int, float]

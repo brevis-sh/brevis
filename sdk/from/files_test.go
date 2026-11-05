@@ -13,9 +13,9 @@ import (
 	core "brevis.sh/brevis/sdk/internal/core"
 )
 
-func escreve(t *testing.T, dir, name, conteudo string) {
+func writeFile(t *testing.T, dir, name, content string) {
 	t.Helper()
-	if err := os.WriteFile(filepath.Join(dir, name), []byte(conteudo), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -38,24 +38,24 @@ func le(t *testing.T, f Files) ([]core.Envelope, error) {
 
 func TestFilesLeNDJSONLocal(t *testing.T) {
 	dir := t.TempDir()
-	escreve(t, dir, "a.ndjson", "{\"id\":1}\n{\"id\":2}\n")
+	writeFile(t, dir, "a.ndjson", "{\"id\":1}\n{\"id\":2}\n")
 
 	got, err := le(t, Files{Path: filepath.Join(dir, "*.ndjson")})
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
 	if len(got) != 2 {
-		t.Fatalf("%d registros, esperado 2", len(got))
+		t.Fatalf("%d records, want 2", len(got))
 	}
 }
 
 // The order is a contract: a positional Key depends on it, and without it the
 // same record's ingestion_id changes between runs.
-func TestFilesLeEmOrdemDeterminística(t *testing.T) {
+func TestFilesReadsInDeterministicOrder(t *testing.T) {
 	dir := t.TempDir()
-	escreve(t, dir, "c.ndjson", `{"n":"c"}`+"\n")
-	escreve(t, dir, "a.ndjson", `{"n":"a"}`+"\n")
-	escreve(t, dir, "b.ndjson", `{"n":"b"}`+"\n")
+	writeFile(t, dir, "c.ndjson", `{"n":"c"}`+"\n")
+	writeFile(t, dir, "a.ndjson", `{"n":"a"}`+"\n")
+	writeFile(t, dir, "b.ndjson", `{"n":"b"}`+"\n")
 
 	for i := 0; i < 5; i++ {
 		got, err := le(t, Files{Path: filepath.Join(dir, "*.ndjson")})
@@ -67,33 +67,33 @@ func TestFilesLeEmOrdemDeterminística(t *testing.T) {
 			order = append(order, e.Payload.(map[string]any)["n"].(string))
 		}
 		if strings.Join(order, "") != "abc" {
-			t.Fatalf("ordem = %v, esperado a,b,c em toda execução", order)
+			t.Fatalf("order = %v, want a,b,c on every run", order)
 		}
 	}
 }
 
 func TestFilesReadsCSVWithAHeader(t *testing.T) {
 	dir := t.TempDir()
-	escreve(t, dir, "p.csv", "nome,idade\nana,30\nbeto,41\n")
+	writeFile(t, dir, "p.csv", "name,age\nana,30\nbeto,41\n")
 
 	got, err := le(t, Files{Path: filepath.Join(dir, "*.csv"), Format: core.FormatCSV})
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
 	if len(got) != 2 {
-		t.Fatalf("%d registros, esperado 2", len(got))
+		t.Fatalf("%d records, want 2", len(got))
 	}
 	// The CSV decoder yields map[string]any -- the same record model as every
 	// other source. It used to yield map[string]string, and that meant no
 	// transformer worked on a CSV at all.
-	if got[0].Payload.(map[string]any)["nome"] != "ana" {
-		t.Errorf("a primeira linha não virou registro: %v", got[0].Payload)
+	if got[0].Payload.(map[string]any)["name"] != "ana" {
+		t.Errorf("the first line did not become a record: %v", got[0].Payload)
 	}
 }
 
 func TestFilesDecompressesGzipByExtension(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "a.ndjson.gz"), gzipado(t, "{\"id\":1}\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "a.ndjson.gz"), gzipped(t, "{\"id\":1}\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -102,7 +102,7 @@ func TestFilesDecompressesGzipByExtension(t *testing.T) {
 		t.Fatalf("Read: %v", err)
 	}
 	if len(got) != 1 {
-		t.Fatalf("%d registros, esperado 1", len(got))
+		t.Fatalf("%d records, want 1", len(got))
 	}
 }
 
@@ -110,14 +110,14 @@ func TestFilesDecompressesGzipByExtension(t *testing.T) {
 // further down.
 func TestFilesInvalidGzipNamesTheFile(t *testing.T) {
 	dir := t.TempDir()
-	escreve(t, dir, "mentira.ndjson.gz", "isto nao e gzip")
+	writeFile(t, dir, "fake.ndjson.gz", "this is not gzip")
 
 	_, err := le(t, Files{Path: filepath.Join(dir, "*.gz")})
 	if err == nil {
-		t.Fatal("um .gz que não é gzip tem de falhar")
+		t.Fatal("a .gz that is not gzip has to fail")
 	}
-	if !strings.Contains(err.Error(), "mentira.ndjson.gz") || !strings.Contains(err.Error(), "gzip") {
-		t.Errorf("o erro precisa nomear o arquivo e o problema: %v", err)
+	if !strings.Contains(err.Error(), "fake.ndjson.gz") || !strings.Contains(err.Error(), "gzip") {
+		t.Errorf("the error must name the file and the problem: %v", err)
 	}
 }
 
@@ -126,10 +126,10 @@ func TestFilesInvalidGzipNamesTheFile(t *testing.T) {
 func TestFilesAnEmptyDirectoryIsNotAFailure(t *testing.T) {
 	got, err := le(t, Files{Path: filepath.Join(t.TempDir(), "*.ndjson")})
 	if err != nil {
-		t.Fatalf("um diretório sem arquivos é uma janela vazia: %v", err)
+		t.Fatalf("a directory with no files is an empty window: %v", err)
 	}
 	if len(got) != 0 {
-		t.Errorf("%d registros de um diretório vazio", len(got))
+		t.Errorf("%d records from an empty directory", len(got))
 	}
 }
 
@@ -137,30 +137,30 @@ func TestFilesAnEmptyDirectoryIsNotAFailure(t *testing.T) {
 func TestFilesRefusesAPathWithNoStore(t *testing.T) {
 	_, err := Files{Path: "s3://bucket/x/*.ndjson"}.Read(context.Background(), core.ReadOptions{})
 	if err == nil {
-		t.Fatal("um caminho s3:// sem Store não tem como ser lido")
+		t.Fatal("an s3:// path without a Store cannot be read")
 	}
-	for _, quer := range []string{"s3", "Store"} {
-		if !strings.Contains(err.Error(), quer) {
-			t.Errorf("o erro não menciona %q: %v", quer, err)
+	for _, wants := range []string{"s3", "Store"} {
+		if !strings.Contains(err.Error(), wants) {
+			t.Errorf("the error does not mention %q: %v", wants, err)
 		}
 	}
 }
 
 func TestFilesRefusesAStoreForAnotherScheme(t *testing.T) {
-	_, err := Files{Path: "gs://b/x/*.ndjson", Store: falso{"s3"}}.
+	_, err := Files{Path: "gs://b/x/*.ndjson", Store: fake{"s3"}}.
 		Read(context.Background(), core.ReadOptions{})
 	if err == nil {
-		t.Fatal("um Store de S3 não serve um caminho gs://")
+		t.Fatal("an S3 Store does not serve a gs:// path")
 	}
 	if !strings.Contains(err.Error(), "gs") || !strings.Contains(err.Error(), "s3") {
-		t.Errorf("o erro precisa nomear os dois lados: %v", err)
+		t.Errorf("the error must name both sides: %v", err)
 	}
 }
 
 func TestFilesCountsTheBytesRead(t *testing.T) {
 	dir := t.TempDir()
 	body := "{\"id\":1}\n{\"id\":2}\n"
-	escreve(t, dir, "a.ndjson", body)
+	writeFile(t, dir, "a.ndjson", body)
 
 	stats := &core.Stats{}
 	seq, err := Files{Path: filepath.Join(dir, "*.ndjson")}.
@@ -172,18 +172,18 @@ func TestFilesCountsTheBytesRead(t *testing.T) {
 	}
 
 	if stats.Bytes != int64(len(body)) {
-		t.Errorf("Stats.Bytes = %d, esperado %d", stats.Bytes, len(body))
+		t.Errorf("Stats.Bytes = %d, want %d", stats.Bytes, len(body))
 	}
 	if stats.Pages != 1 {
-		t.Errorf("Stats.Pages = %d; um arquivo é uma página", stats.Pages)
+		t.Errorf("Stats.Pages = %d; a file is a page", stats.Pages)
 	}
 }
 
 // The preview holds for every driver, not only for HTTP -- otherwise
 // ReadOptions.Preview would be a dead field here.
-func TestFilesHonraOPreview(t *testing.T) {
+func TestFilesHonorThePreview(t *testing.T) {
 	dir := t.TempDir()
-	escreve(t, dir, "a.ndjson", "{\"id\":1,\"n\":\"alfa\"}\n{\"id\":2,\"n\":\"beta\"}\n")
+	writeFile(t, dir, "a.ndjson", "{\"id\":1,\"n\":\"alpha\"}\n{\"id\":2,\"n\":\"beta\"}\n")
 
 	var out strings.Builder
 	seq, err := Files{Path: filepath.Join(dir, "*.ndjson")}.Read(context.Background(),
@@ -194,19 +194,19 @@ func TestFilesHonraOPreview(t *testing.T) {
 	for range seq {
 	}
 
-	if !strings.Contains(out.String(), "alfa") || !strings.Contains(out.String(), "2 rows") {
-		t.Errorf("o preview não saiu:\n%s", out.String())
+	if !strings.Contains(out.String(), "alpha") || !strings.Contains(out.String(), "2 rows") {
+		t.Errorf("the preview did not come out:\n%s", out.String())
 	}
 }
 
-type falso struct{ esquema string }
+type fake struct{ schema string }
 
-func (f falso) Scheme() string                                              { return f.esquema }
-func (f falso) List(context.Context, string, string) ([]string, error)      { return nil, nil }
-func (f falso) Open(context.Context, string, string) (io.ReadCloser, error) { return nil, nil }
-func (f falso) Create(context.Context, string, string, io.Reader) error     { return nil }
+func (f fake) Scheme() string                                              { return f.schema }
+func (f fake) List(context.Context, string, string) ([]string, error)      { return nil, nil }
+func (f fake) Open(context.Context, string, string) (io.ReadCloser, error) { return nil, nil }
+func (f fake) Create(context.Context, string, string, io.Reader) error     { return nil }
 
-func gzipado(t *testing.T, s string) []byte {
+func gzipped(t *testing.T, s string) []byte {
 	t.Helper()
 	var b bytes.Buffer
 	w := gzip.NewWriter(&b)

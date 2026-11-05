@@ -1,12 +1,21 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
 
-/* Where to look for classes. It points at the .templ files (the source) and at
-   the generated _templ.go ones: Tailwind v4 detects them on its own in most
-   cases, but generated files tend to fall outside the default heuristics, and an
-   undetected class disappears from the CSS with no warning. */
+/* Where to look for classes: the React app's sources, which write the utility
+   classes this sheet provides (its own styles.css holds only its aliases), and the
+   Go that writes class names (status colors, bars). The app's build output and
+   tests are NOT read: dist/ is generated after this sheet, so reading it would make
+   the sheet depend on its own consumer -- the generated-artifacts check failed on
+   exactly that. Automatic detection is OFF (`source(none)`): it reads every file in
+   the repository, prose included, so a changelog entry could change this sheet. */
+@source "../spa/src";
+@source "../spa/index.html";
 @source "../layouts";
 @source "../pages";
 @source "../components";
+/* Classes the app writes that this sheet never had: they were no-ops while the
+   sheet was built from the old pages, and the move to / is not the place to change
+   how those places draw. Drop one from here when the screen is meant to have it. */
+@source not inline("w-0 min-w-full flex-nowrap ease-out size-4 shadow disabled:opacity-60 aria-selected:shadow-[inset_0_-2px_0_var(--color-ink)]");
 
 /* ---------------------------------------------------------------------------
    Typography — served from the binary itself, not from Google Fonts.
@@ -71,7 +80,7 @@
    minutes. This is a console, read for hours, in a bright office, beside a
    browser full of light tools. So the hues are the site's -- the same
    green-tinted neutrals and the same olive accent -- and the ground is
-   inverted: the site's background colour (#141711) becomes this one's text.
+   inverted: the site's background color (#141711) becomes this one's text.
 
    Every value below is MEASURED against both grounds, in the shape the site's
    own CSS uses. A palette whose contrast is asserted rather than computed is a
@@ -128,7 +137,7 @@
      repaint would make both impossible to review.
 
      The values come from site/css/styles.css. The two were inversions of
-     each other sharing one colour -- the site's background WAS the
+     each other sharing one color -- the site's background WAS the
      console's ink -- so somebody arriving from the page that sells this
      found what looked like another product. */
   --color-parchment: #0d1117;
@@ -149,7 +158,7 @@
   --color-accent-wash: var(--color-gold-wash);
   --color-line-strong: #484f58;
 
-  /* THE ROLES THE REDESIGN ADDS, AND NOT ONE OF THEM IS A COLOUR.
+  /* THE ROLES THE REDESIGN ADDS, AND NOT ONE OF THEM IS A COLOR.
 
      Each is a MIX of variables internal/branding writes, so a brand.yaml
      that repaints the ground and the ink repaints these too -- a literal
@@ -220,10 +229,10 @@
   --color-state-skipped: #a371f7;
 
   /* What a step runs in. Each is the language's own convention, because the
-     colour is what makes the chip readable before anybody reads the label.
+     color is what makes the chip readable before anybody reads the label.
 
      They are tokens rather than literals in dag.js for the same reason every
-     other colour here is: an installation can bring its own theme through
+     other color here is: an installation can bring its own theme through
      internal/branding, and a palette hard-coded in one file would make the DAG
      the one part of the screen that ignores it. */
   --color-lang-python: #2f5f8a;
@@ -342,10 +351,10 @@ body {
 }
 
 /* One card lifted off the background, by a ring rather than by a glow.
-   `oklch(from ...)` derives it from the theme's own colour, so an installation
+   `oklch(from ...)` derives it from the theme's own color, so an installation
    that changes the accent takes the ring along with no second variable. */
 /* The label on the accent, derived from the accent itself: near-white on a
-   dark brand colour, near-black on a light one (flip at oklch L 0.65). The
+   dark brand color, near-black on a light one (flip at oklch L 0.65). The
    `--color-on-accent` token stays the dark theme's own pairing (the contrast
    test reads it as a hex); every label that sits on `accent-strong` -- the
    primary buttons, the open sidebar item -- uses this instead, so a client's
@@ -355,16 +364,6 @@ body {
 }
 .text-on-accent {
   color: var(--on-accent-auto);
-}
-.glow-accent {
-  box-shadow: 0 0 0 1px oklch(from var(--color-accent) l c h / 45%);
-}
-
-/* Kept as no-ops so a template still referencing them renders nothing rather
-   than breaking. The decorations they drew are gone. */
-.grade-fundo,
-.halo-acento {
-  background: none;
 }
 
 /* The account menu.
@@ -401,71 +400,6 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-/* The editor, painted with this interface's own tokens rather than one of
-   CodeMirror's themes. A theme would be a second palette to keep in step with
-   the first, and the first is the one a client overrides through brand.CSS().
-
-   Only the surfaces and the text roles are set here; the syntax colours come
-   from the state palette, which the contrast test already measures as text. */
-.CodeMirror {
-  height: auto;
-  min-height: 14rem;
-  background: var(--color-surface);
-  color: var(--color-ink);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-card, 0.375rem);
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 0.75rem;
-  line-height: 1.6;
-}
-/* The gutter is metadata: a step back from the text, in the faint role. */
-.CodeMirror-gutters {
-  background: var(--color-canvas-subtle);
-  border-right: 1px solid var(--color-line-soft);
-}
-.CodeMirror-linenumber {
-  color: var(--color-faint);
-}
-.CodeMirror-cursor {
-  border-left-color: var(--color-ink);
-}
-.CodeMirror-selected {
-  background: var(--color-accent-wash);
-}
-.cm-s-default .cm-keyword {
-  color: var(--color-accent-strong);
-}
-.cm-s-default .cm-string,
-.cm-s-default .cm-string-2 {
-  color: var(--color-state-success);
-}
-.cm-s-default .cm-number {
-  color: var(--color-state-running);
-}
-.cm-s-default .cm-comment {
-  color: var(--color-muted);
-  font-style: italic;
-}
-.cm-s-default .cm-variable-2,
-.cm-s-default .cm-type,
-.cm-s-default .cm-variable-3 {
-  color: var(--color-state-queued);
-}
-/* THE FOUR THAT WERE LEFT TO THE LIGHT THEME. codemirror.css colours atoms
-   #219 and builtins #30a -- a dark blue and a dark purple for a white page --
-   so NULL, TRUE and every type name (INT, DATE) all but vanished here. The
-   test beside the sheets reads which classes the SQL mode emits and refuses
-   one the default theme colours and this file does not. */
-.cm-s-default .cm-atom {
-  color: var(--color-state-retrying);
-}
-.cm-s-default .cm-builtin {
-  color: var(--color-state-skipped);
-}
-.cm-s-default .cm-bracket {
-  color: var(--color-muted);
-}
-
 /* The charts' tooltip. Out of the flow and with no position transition:
    following the cursor with animation produces drag, and the tooltip arrives
    after the eye. */
@@ -487,44 +421,28 @@ body {
   color: var(--color-ink);
 }
 
-.grafico-dica {
-  position: fixed;
-  z-index: 50;
-  display: none;
-  pointer-events: none;
-  max-width: 260px;
-  padding: 0.5rem 0.7rem;
-  border-radius: var(--radius-card);
-  border: 1px solid var(--color-line);
-  background: var(--color-surface);
-  box-shadow: 0 2px 8px rgba(20, 23, 17, 0.10);
-  font-size: 0.75rem;
-  line-height: 1.45;
-  color: var(--color-ink);
-}
-
 /* The chart's clickable targets. The hover highlight is what says the bar leads
    somewhere — without it only the cursor gives it away, and too late. */
-.grafico-alvo {
+.chart-target {
   cursor: pointer;
 }
-.grafico-alvo:hover rect,
-.grafico-alvo:focus-visible rect {
+.chart-target:hover rect,
+.chart-target:focus-visible rect {
   opacity: 0.78;
 }
-.grafico-alvo:hover circle,
-.grafico-alvo:focus-visible circle {
+.chart-target:hover circle,
+.chart-target:focus-visible circle {
   opacity: 0.82;
 }
-.grafico-faixa {
+.chart-band {
   fill: transparent;
 }
-.grafico-alvo:hover .grafico-faixa {
+.chart-target:hover .chart-band {
   fill: var(--color-hover);
 }
 
 /* Tailwind's reset zeroes every element's margin, and with it the <dialog> loses
-   the `margin: auto` the browser uses to centre it — it was being born stuck to
+   the `margin: auto` the browser uses to center it — it was being born stuck to
    the top-left corner. */
 dialog {
   margin: auto;
@@ -538,7 +456,7 @@ dialog:focus {
 }
 
 /* React Flow's controls.
-   The xyflow bundle ships fixed colours (white on the button, black on the icon)
+   The xyflow bundle ships fixed colors (white on the button, black on the icon)
    and is loaded AFTER the compiled sheet, so it wins at equal specificity —
    which is why the selectors here are doubled. Without this, a dark theme ends
    up with a white block in the graph's corner. */
@@ -685,95 +603,6 @@ main[data-fill] > :last-child {
   display: none;
 }
 
-/* INSIDE THE WORKBENCH THE EDITOR FILLS ITS PANE.
-   
-   `fromTextArea` REPLACES the textarea with CodeMirror's own element, which
-   does not inherit the `flex-1 min-h-0` the textarea carried -- so the rule
-   above (`height: auto; min-height: 14rem`) would leave a short query with
-   an empty pane under it and a long one overflowing past the grip. Its own
-   scroller is already `height: 100%`, so filling the pane is all it needs. */
-.workbench-editor .CodeMirror {
-  flex: 1;
-  min-height: 0;
-  height: auto;
-}
-
-/* THE RESULT PANEL.
-   
-   The heading stays while the body scrolls, which is the difference between
-   a grid you can read at row 400 and a grid you scroll back up to decode.
-   `position: sticky` on the cells and not the row: a <thead> cannot be
-   sticky on its own in every browser, a <th> can. */
-.results-head {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: var(--color-surface-2);
-  border-bottom: 1px solid var(--color-line);
-  color: var(--color-muted);
-}
-
-/* THE ROW NUMBER IS NAVIGATION, NOT A VALUE.
-   
-   Somebody who selects the grid and pastes it into a sheet must get the
-   warehouse's columns and not an extra one this console invented. It also
-   stays put while the grid scrolls sideways, because a row number that
-   scrolls away is a row number that stops numbering anything. */
-.results-rownum {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  background: var(--color-canvas);
-  color: var(--color-muted);
-  user-select: none;
-  -webkit-user-select: none;
-}
-.results-head.results-rownum {
-  z-index: 3;
-  background: var(--color-surface-2);
-}
-
-.results-tab[aria-selected="true"] {
-  color: var(--color-ink);
-  box-shadow: inset 0 -2px 0 var(--color-ink);
-}
-
-/* THE COMPLETION LIST, in this interface's palette rather than the addon's.
-
-   show-hint ships `background:#fff`, `color:#000` and a `#08f` selected row:
-   a white box in the middle of a dark editor, and a blue nobody here chose.
-   Same reason the editor itself is painted from tokens — a second palette is
-   a second thing to keep in step, and the first is the one a client
-   overrides through brand.CSS().
-
-   The list is appended to <body>, outside the workbench, so it carries its
-   own font: nothing above it in the tree is the editor. */
-.CodeMirror-hints {
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-card, 0.375rem);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 0.75rem;
-}
-.CodeMirror-hint {
-  color: var(--color-ink);
-  padding: 0.125rem 0.5rem;
-}
-li.CodeMirror-hint-active {
-  background: var(--color-accent-wash);
-  color: var(--color-ink);
-}
-
-/* The addon tags each entry with what it is, which is how a keyword reads
-   differently from a table without this file inventing a convention. */
-.CodeMirror-hint-keyword {
-  color: var(--color-accent-strong);
-}
-.CodeMirror-hint-table {
-  color: var(--color-ink);
-}
-
 /* THE RESULT ZONE: the tabs over the answer, then the answer or History
    (screen-sql T3; History was a rail beside the grid). The tabs stay put
    and the panel under them scrolls. */
@@ -832,10 +661,6 @@ li.CodeMirror-hint-active {
   .workbench-editor {
     height: auto;
   }
-  .workbench-editor .CodeMirror {
-    flex: none;
-    height: 14rem;
-  }
   .workbench-results {
     flex: none;
     flex-direction: column;
@@ -846,19 +671,11 @@ li.CodeMirror-hint-active {
   }
 }
 
-/* The active statement, marked the way the result panel marks its tab: the
-   two strips are the same control in two places and should not look like
-   two conventions. */
-[data-tab-pick][aria-selected="true"] {
-  color: var(--color-ink);
-  box-shadow: inset 0 -2px 0 var(--color-ink);
-}
-
 /* THE ONE BANNER THAT HAS TO BE SEEN.
  *
  * `brevis-sql serve` can be told that a connection accepts statements which
  * CHANGE data, and when it has been, the workbench says so above the box.
- * Styled against the `queued` state's amber rather than a colour of its own:
+ * Styled against the `queued` state's amber rather than a color of its own:
  * this console already means "attention, not failure" with that hue, and a
  * second amber would be a second thing to keep in step.
  *
@@ -980,12 +797,6 @@ li.CodeMirror-hint-active {
     height: 1px;
   }
 }
-/* A STREAM'S CONFIGURATION, EXPLAINED OR AS YAML: one at a time where a
-   script drives the segment, both stacked where none does. */
-.js [data-config-view="explained"] [data-view-pane="yaml"],
-.js [data-config-view="yaml"] [data-view-pane="explained"] {
-  display: none;
-}
 
 /* A BATCH ON ITS WAY: a dot travelling the edge before a step, down where
    the steps stack and across from 700px, so the diagram reads as data
@@ -1041,7 +852,7 @@ li.CodeMirror-hint-active {
   }
 }
 /* The dead letter hangs off the destination by a dashed line, in the
-   colour of what travels down it: refused batches. */
+   color of what travels down it: refused batches. */
 .flow-branch {
   position: relative;
 }
@@ -1069,81 +880,14 @@ dialog.run-drawer:not([open]):target {
   border-radius: var(--radius-card);
 }
 
-/* A RUN THAT ARRIVED WHILE THE LIST WAS LIVE: its row starts washed in the
-   accent and fades to the table's own, so the eye finds what is new without a
-   badge that has to be dismissed. Still, with reduced motion: the wash stays
-   until the next refresh instead of fading. */
-@keyframes run-arrived {
-  from {
-    background: color-mix(in srgb, var(--color-state-running) 12%, transparent);
-  }
-}
-[data-run-new] {
-  animation: run-arrived 2.5s ease-out;
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-run-new] {
-    animation: none;
-    background: color-mix(in srgb, var(--color-state-running) 12%, transparent);
-  }
-}
-
 /* WHAT NEEDS A SCRIPT IS IN THE FIRST PAINT, OR NEVER (nav-latency N6).
    `js` is on <html> before anything is drawn (an inline line at the top of
    the head), so a control that only works with ui.js or sql.js -- the
    palette's opener, Copy, Live, the tab bars, a group's toggle -- is drawn
    with the page, instead of `hidden` and revealed after a paint, which made
-   it pop in on every navigation. With no script it is never shown. A
-   stream's panel headings are the no-script page's; with the tab bar they
-   would say the tab twice. */
+   it pop in on every navigation. With no script it is never shown. */
 :root:not(.js) [data-js] {
   display: none !important;
-}
-.js [data-panel-heading] {
-  display: none;
-}
-
-/* A LOAD'S PREVIEW WITHOUT ITS EMPTY COLUMNS (screen-load-v2 LV4): the
-   server marks a column NULL in every row; the switch (data-js) hides them,
-   on by default -- and only under .js, so with no script every column shows.
-   The note says which are hidden, so it goes when they come back. */
-.js [data-hide-null] [data-null-col] {
-  display: none;
-}
-[data-preview]:not([data-hide-null]) [data-null-note] {
-  display: none;
-}
-
-/* A NAVIGATION IN FLIGHT (nav-latency NL3): a thin accent bar at the top while
-   the next page comes, once it has taken more than 120 ms (ui.js sets the
-   mark). A pseudo-element, so there is nothing to announce and nothing to
-   lay out. Still under reduced motion: the bar is there, it just does not
-   move. */
-@keyframes navigating {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(250%);
-  }
-}
-html[data-navigating] body::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 60;
-  width: 40%;
-  height: 2px;
-  background: var(--color-ink-2);
-  animation: navigating 900ms ease-in-out infinite;
-  pointer-events: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  html[data-navigating] body::after {
-    width: 100%;
-    animation: none;
-  }
 }
 
 /* A SWAP WITHOUT A GHOST (nav-latency NL4). The browser's default for a
@@ -1202,11 +946,11 @@ table.ct > tbody > tr > td {
 }
 
 /* ---------------------------------------------------------------------------
-   STATE: A SHAPE, A WORD AND A COLOUR (web/components/status.go)
+   STATE: A SHAPE, A WORD AND A COLOR (web/components/status.go)
 
    The mark is drawn here, in currentColor, so the word and the mark are
-   always the same colour and a class on the span is all a state needs. The
-   shapes are what somebody who cannot tell the colours apart reads: filled
+   always the same color and a class on the span is all a state needs. The
+   shapes are what somebody who cannot tell the colors apart reads: filled
    is settled, a ring is waiting, a spinning ring is working, a diamond needs
    a person, a triangle is late, a square is a choice, a pulse never ends.
 --------------------------------------------------------------------------- */
@@ -1319,7 +1063,7 @@ table.ct > tbody > tr > td {
 }
 
 /* ---------------------------------------------------------------------------
-   OVERLAYS (web/components/overlays.templ)
+   OVERLAYS
 
    A drawer slides in from the right; a modal sits a little above the middle.
    Both are native <dialog>s, so the backdrop is ::backdrop and the page
@@ -1469,35 +1213,7 @@ tr[data-paused] > td[data-fade] {
   outline-offset: 1px;
 }
 
-/* The Steps card's two views (screen-workflows T8). With a script the
-   segment chooses; with none, the list shows and the graph -- which needs
-   one -- does not. */
-.js [data-steps-view][data-view="graph"] [data-view-panel="list"],
-.js [data-steps-view][data-view="list"] [data-view-panel="graph"] {
-  display: none;
-}
-.steps-view-btn {
-  display: inline-flex;
-  height: 100%;
-  align-items: center;
-  border-radius: 2px;
-  padding: 0 0.625rem;
-  font-size: 0.8rem;
-  color: var(--color-muted);
-}
-.steps-view-btn[aria-pressed="true"] {
-  background: var(--color-surface-2);
-  color: var(--color-ink);
-  font-weight: 500;
-}
-
-/* What only works with no script: the script draws its own (a boolean's
-   select, which a switch drives once there is one). */
-.js [data-no-js] {
-  display: none;
-}
-
-/* A switch: on is the ok colour, because on means "this is running". */
+/* A switch: on is the ok color, because on means "this is running". */
 .switch {
   position: relative;
   display: inline-block;
@@ -1525,7 +1241,7 @@ tr[data-paused] > td[data-fade] {
   transform: translateX(12px);
 }
 
-/* A sidebar badge: a count in the failure colour, or a live pulse. */
+/* A sidebar badge: a count in the failure color, or a live pulse. */
 .nav-badge {
   margin-left: auto;
   display: inline-flex;
@@ -1571,11 +1287,11 @@ tr[data-paused] > td[data-fade] {
 }
 
 /* ---------------------------------------------------------------------------
-   LOGOS (web/components/logo.templ)
+   LOGOS
 
    A brand's mark on a quiet tile: the raised surface on the dark theme,
    white on the light one, where most marks were drawn to sit. The mark takes
-   two thirds of the tile. A one-colour mark is in its brand colour (written
+   two thirds of the tile. A one-color mark is in its brand color (written
    in the file); one too dark for the dark ground is drawn in ink, one too
    light for the light ground is darkened there. A key with no mark is a
    monogram in the same tile.
@@ -1593,7 +1309,7 @@ tr[data-paused] > td[data-fade] {
 :root[data-theme="light"] .cg {
   background: var(--color-surface);
 }
-/* pandas' navy is invisible on a dark tile, and its own colours are the
+/* pandas' navy is invisible on a dark tile, and its own colors are the
    mark: it keeps a white tile in both themes. */
 .cg.cg-on-white {
   background: #ffffff;
@@ -1669,7 +1385,7 @@ tr[data-paused] > td[data-fade] {
   }
 }
 
-/* THE RELEASE NOTES in the version dialog: GitHub's own HTML, sanitised on the
+/* THE RELEASE NOTES in the version dialog: GitHub's own HTML, sanitized on the
    way in (internal/updates), set in the console's type. A section's heading is
    a label with a dot; a list is a column of short lines. */
 .release-notes {
@@ -1798,7 +1514,7 @@ tr[data-paused] > td[data-fade] {
    IT IS A CURTAIN, NOT A REARRANGEMENT. Every icon keeps its place in both
    states -- the 56px rail is the icon column of the 236px sidebar -- so
    folding only draws the width in, clipping the labels as it goes while they
-   fade (`data-collapse`). Nothing is centred, switched off or re-flowed, which
+   fade (`data-collapse`). Nothing is centered, switched off or re-flowed, which
    is what made the old fold jump. Group titles fold their height away, and
    the groups pick up a hairline between them as they do. The curve is an
    ease-out that lands softly. A badge moves to the icon's corner; the account
@@ -1854,7 +1570,7 @@ tr[data-paused] > td[data-fade] {
   }
   /* SQUARE ITEMS. The rail's 56px less 12px a side leaves 32px, and every item
      is 32px tall: a square, with its icon in the middle. The icon's left
-     padding is what centres it in the square, so an item never changes how it
+     padding is what centers it in the square, so an item never changes how it
      is laid out -- only how much room it has. */
   .sb-pad {
     transition: padding-inline 360ms var(--ease-cine);

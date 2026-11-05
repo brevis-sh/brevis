@@ -18,17 +18,17 @@ import (
 )
 
 // fakeGCS is a pretend GCS with what matters here: a per-object generation,
-// and
-// ifGenerationMatch de verdade.
+// and a real
+// ifGenerationMatch.
 type fakeGCS struct {
 	mu         sync.Mutex
-	conteudo   []byte
+	content    []byte
 	generation int64
-	existe     bool
-	conflitos  int
+	exists     bool
+	conflicts  int
 }
 
-func (g *fakeGCS) servidor(t *testing.T) *storage.Client {
+func (g *fakeGCS) server(t *testing.T) *storage.Client {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		g.mu.Lock()
@@ -38,15 +38,15 @@ func (g *fakeGCS) servidor(t *testing.T) *storage.Client {
 		// (/bucket/object),
 		// and not through the JSON API -- that is how the first version of this
 		// fake
-		// errou.
+		// got it wrong.
 		if r.Method == http.MethodGet {
-			if !g.existe {
+			if !g.exists {
 				http.Error(w, `{"error":{"code":404}}`, http.StatusNotFound)
 				return
 			}
 			w.Header().Set("x-goog-generation", fmt.Sprint(g.generation))
-			w.Header().Set("Content-Length", fmt.Sprint(len(g.conteudo)))
-			_, _ = w.Write(g.conteudo)
+			w.Header().Set("Content-Length", fmt.Sprint(len(g.content)))
+			_, _ = w.Write(g.content)
 			return
 		}
 
@@ -55,25 +55,25 @@ func (g *fakeGCS) servidor(t *testing.T) *storage.Client {
 			if v := q.Get("ifGenerationMatch"); v != "" {
 				expected := v == fmt.Sprint(g.generation)
 				if v == "0" {
-					expected = !g.existe
+					expected = !g.exists
 				}
 				if !expected {
-					g.conflitos++
+					g.conflicts++
 					http.Error(w, `{"error":{"code":412,"message":"generation mismatch"}}`,
 						http.StatusPreconditionFailed)
 					return
 				}
 			}
 			body, _ := io.ReadAll(r.Body)
-			g.conteudo = extrairCorpoMultipart(body)
+			g.content = extractMultipartBody(body)
 			g.generation++
-			g.existe = true
+			g.exists = true
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"name": "obj", "bucket": "b", "generation": fmt.Sprint(g.generation),
 			})
 			return
 		}
-		http.Error(w, "nao esperado: "+r.Method+" "+r.URL.Path, http.StatusBadRequest)
+		http.Error(w, "unexpected: "+r.Method+" "+r.URL.Path, http.StatusBadRequest)
 	}))
 	t.Cleanup(srv.Close)
 
@@ -86,13 +86,13 @@ func (g *fakeGCS) servidor(t *testing.T) *storage.Client {
 	return cli
 }
 
-// extrairCorpoMultipart pega a segunda parte do upload multipart do GCS.
-func extrairCorpoMultipart(b []byte) []byte {
-	partes := strings.Split(string(b), "\r\n\r\n")
-	if len(partes) < 3 {
+// extractMultipartBody takes the second part of the GCS multipart upload.
+func extractMultipartBody(b []byte) []byte {
+	parts := strings.Split(string(b), "\r\n\r\n")
+	if len(parts) < 3 {
 		return b
 	}
-	body := partes[2]
+	body := parts[2]
 	if i := strings.LastIndex(body, "\r\n--"); i >= 0 {
 		body = body[:i]
 	}
@@ -103,16 +103,16 @@ func credential(t *testing.T, g *fakeGCS) Credential {
 	t.Helper()
 	t.Setenv(core.EnvCredentialKey, "")
 	generations.Delete("gs://b/obj")
-	return Credential{Bucket: "b", Object: "obj", Client: g.servidor(t)}
+	return Credential{Bucket: "b", Object: "obj", Client: g.server(t)}
 }
 
-// TestItStoresAndReturns: o caminho feliz.
+// TestItStoresAndReturns: the happy path.
 func TestItStoresAndReturns(t *testing.T) {
 	g := &fakeGCS{}
 	c := credential(t, g)
 
 	if v, err := c.Load(); err != nil || v != "" {
-		t.Fatalf("objeto ausente = (%q, %v); devia ser vazio sem erro", v, err)
+		t.Fatalf("missing object = (%q, %v); should be empty with no error", v, err)
 	}
 	if err := c.Save("session=abc=="); err != nil {
 		t.Fatalf("Save: %v", err)
@@ -134,32 +134,32 @@ func TestTheConditionalWrite(t *testing.T) {
 	g := &fakeGCS{}
 	c := credential(t, g)
 
-	if err := c.Save("primeiro"); err != nil {
+	if err := c.Save("first"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.Load(); err != nil { // lembra a geracao 1
+	if _, err := c.Load(); err != nil { // remembers generation 1
 		t.Fatal(err)
 	}
 
 	// Another process writes from outside, advancing the generation.
 	g.mu.Lock()
 	g.generation++
-	g.conteudo = []byte("brevis-cred/1p\nde-outro-processo")
+	g.content = []byte("brevis-cred/1p\nfrom-another-process")
 	g.mu.Unlock()
 
 	// This run's write was conditional on the generation it read.
-	if err := c.Save("meu-valor"); err != nil {
-		t.Fatalf("o conflito virou erro: %v", err)
+	if err := c.Save("my-value"); err != nil {
+		t.Fatalf("the conflict became an error: %v", err)
 	}
 	g.mu.Lock()
-	conflitos, conteudo := g.conflitos, string(g.conteudo)
+	conflicts, content := g.conflicts, string(g.content)
 	g.mu.Unlock()
 
-	if conflitos != 1 {
-		t.Errorf("conflitos = %d, esperado 1 -- a escrita nao foi condicional", conflitos)
+	if conflicts != 1 {
+		t.Errorf("conflicts = %d, want 1 -- the write was not conditional", conflicts)
 	}
-	if !strings.Contains(conteudo, "de-outro-processo") {
-		t.Errorf("sobrescreveu o valor mais novo: %q", conteudo)
+	if !strings.Contains(content, "from-another-process") {
+		t.Errorf("overwrote the newer value: %q", content)
 	}
 }
 
@@ -169,24 +169,24 @@ func TestTheFirstWriteUsesDoesNotExist(t *testing.T) {
 	g := &fakeGCS{}
 	c := credential(t, g)
 
-	if _, err := c.Load(); err != nil { // objeto ausente, geracao 0
+	if _, err := c.Load(); err != nil { // missing object, generation 0
 		t.Fatal(err)
 	}
 	// Another process creates the object first.
 	g.mu.Lock()
-	g.existe, g.generation, g.conteudo = true, 7, []byte("brevis-cred/1p\nde-outro")
+	g.exists, g.generation, g.content = true, 7, []byte("brevis-cred/1p\nfrom-another")
 	g.mu.Unlock()
 
-	if err := c.Save("meu"); err != nil {
-		t.Fatalf("o conflito virou erro: %v", err)
+	if err := c.Save("my"); err != nil {
+		t.Fatalf("the conflict became an error: %v", err)
 	}
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	if g.conflitos != 1 {
-		t.Errorf("conflitos = %d; a primeira gravacao nao usou DoesNotExist", g.conflitos)
+	if g.conflicts != 1 {
+		t.Errorf("conflicts = %d; the first write did not use DoesNotExist", g.conflicts)
 	}
-	if !strings.Contains(string(g.conteudo), "de-outro") {
-		t.Errorf("sobrescreveu: %q", g.conteudo)
+	if !strings.Contains(string(g.content), "from-another") {
+		t.Errorf("overwrote: %q", g.content)
 	}
 }
 
@@ -194,16 +194,16 @@ func TestTheFirstWriteUsesDoesNotExist(t *testing.T) {
 func TestBucketAndObjectAreRequired(t *testing.T) {
 	for _, c := range []Credential{{Object: "o"}, {Bucket: "b"}, {}} {
 		if err := c.CheckStore(); err == nil {
-			t.Errorf("aceitou %+v", c)
+			t.Errorf("accepted %+v", c)
 		}
 	}
 }
 
 // TestDescribeRevealsNothing: Describe reaches the log.
 func TestDescribeRevealsNothing(t *testing.T) {
-	c := Credential{Bucket: "b", Object: "o", Key: "chave-secreta-aqui"}
-	if strings.Contains(c.Describe(), "chave-secreta") {
-		t.Errorf("Describe vaza a chave: %q", c.Describe())
+	c := Credential{Bucket: "b", Object: "o", Key: "secret-key-here"}
+	if strings.Contains(c.Describe(), "secret-key") {
+		t.Errorf("Describe leaks the key: %q", c.Describe())
 	}
 	if c.Describe() != "gs://b/o" {
 		t.Errorf("Describe = %q", c.Describe())

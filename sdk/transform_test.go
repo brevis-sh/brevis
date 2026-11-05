@@ -13,7 +13,7 @@ import (
 	"brevis.sh/brevis/sdk/from"
 )
 
-// perto compares floats. Writing 14.1*9/5+32 as a literal would be evaluated
+// near compares floats. Writing 14.1*9/5+32 as a literal would be evaluated
 // as an untyped constant at arbitrary precision and not equal the float64 the
 // code actually produces.
 func near(a, b float64) bool { return math.Abs(a-b) < 1e-9 }
@@ -350,11 +350,11 @@ func TestAcceptAfterRename(t *testing.T) {
 
 // Nothing to name, nothing to do.
 func TestAcceptPassesScalarsThrough(t *testing.T) {
-	got, err := Accept("a")("um texto")
+	got, err := Accept("a")("some text")
 	if err != nil {
 		t.Fatalf("a scalar record has no fields to name: %v", err)
 	}
-	if got != "um texto" {
+	if got != "some text" {
 		t.Errorf("the record changed: %v", got)
 	}
 }
@@ -366,26 +366,26 @@ func TestIngestionIDReadsItAfterTheRename(t *testing.T) {
 		"provider": "p", "entity": "e", "source_key": "k", "time": "2026-01-01T00:00",
 	}
 
-	renomeado, err := Rename(map[string]string{"time": "observed_at"})(line)
+	renamed, err := Rename(map[string]string{"time": "observed_at"})(line)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// The old name no longer exists, and the error says so.
-	if _, err := IngestionID("provider", "entity", "source_key", "time")(renomeado); err == nil {
-		t.Fatal("nomear o campo antigo depois de um rename tem de falhar")
+	if _, err := IngestionID("provider", "entity", "source_key", "time")(renamed); err == nil {
+		t.Fatal("naming the old field after a rename has to fail")
 	} else if !strings.Contains(err.Error(), "observed_at") {
-		t.Errorf("o erro precisa listar o que a linha tem: %v", err)
+		t.Errorf("the error must list what the row has: %v", err)
 	}
 
-	// Com o nome novo, funciona.
-	if _, err := IngestionID("provider", "entity", "source_key", "observed_at")(renomeado); err != nil {
-		t.Errorf("com o nome novo deveria funcionar: %v", err)
+	// With the new name, it works.
+	if _, err := IngestionID("provider", "entity", "source_key", "observed_at")(renamed); err != nil {
+		t.Errorf("with the new name it should work: %v", err)
 	}
 }
 
 // TestRenameDoesNotChain guards a trap the move to in-place writing created,
-// and that the previous behaviour did not have.
+// and that the previous behavior did not have.
 //
 // Before, Rename built a new map by walking the record once, so {a: b, b: c}
 // over a record holding only `a` always produced {b: …}. Applying the swaps one
@@ -401,8 +401,8 @@ func TestRenameDoesNotChain(t *testing.T) {
 			t.Fatal(err)
 		}
 		m := out.(map[string]any)
-		if _, tem := m["b"]; !tem {
-			t.Fatalf("o valor foi parar em %v; renomear a->b não pode encadear em b->c", m)
+		if _, has := m["b"]; !has {
+			t.Fatalf("the value ended up in %v; renaming a->b must not chain into b->c", m)
 		}
 	}
 }
@@ -484,7 +484,7 @@ func TestComputeTextMatchesTheWrapperItReplaces(t *testing.T) {
 		return map[string]any{"a": "1", "b": 2.0, "time": "2026-01-01T00:00"}
 	}
 
-	novo, err := ComputeText("source_key", Key("a", "b"))(line())
+	fresh, err := ComputeText("source_key", Key("a", "b"))(line())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -494,9 +494,9 @@ func TestComputeTextMatchesTheWrapperItReplaces(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if novo.(map[string]any)["source_key"] != old.(map[string]any)["source_key"] {
+	if fresh.(map[string]any)["source_key"] != old.(map[string]any)["source_key"] {
 		t.Errorf("the key changed: %v against %v",
-			novo.(map[string]any)["source_key"], old.(map[string]any)["source_key"])
+			fresh.(map[string]any)["source_key"], old.(map[string]any)["source_key"])
 	}
 }
 

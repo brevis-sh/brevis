@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -20,7 +19,6 @@ import (
 	dom "brevis.sh/brevis/internal/domain/run"
 	wf "brevis.sh/brevis/internal/domain/workflow"
 	"brevis.sh/brevis/internal/infrastructure/postgres"
-	"brevis.sh/brevis/web/assets"
 )
 
 // A diamond graph: b and c depend on a, d depends on both. The shape matters
@@ -64,7 +62,7 @@ func (e execsFake) WaitingOn(context.Context, uuid.UUID) (*postgres.Wait, error)
 }
 
 func (e execsFake) Get(context.Context, uuid.UUID) (dom.Run, error) { return e.run, e.err }
-func (e execsFake) LogsDaRun(context.Context, uuid.UUID) ([]postgres.StepLog, error) {
+func (e execsFake) RunLogs(context.Context, uuid.UUID) ([]postgres.StepLog, error) {
 	return e.logs, nil
 }
 
@@ -108,7 +106,7 @@ func request(t *testing.T, ui *api.UI, path string) (*http.Response, graph) {
 	body, _ := io.ReadAll(res.Body)
 	if res.StatusCode == http.StatusOK {
 		if err := json.Unmarshal(body, &g); err != nil {
-			t.Fatalf("json invalido: %v — %s", err, body)
+			t.Fatalf("invalid json: %v — %s", err, body)
 		}
 	}
 	return res, g
@@ -138,16 +136,16 @@ func TestTheWorkflowGraphPutsLevelsInColumns(t *testing.T) {
 		}
 	}
 	if x["a"] >= x["b"] || x["b"] >= x["d"] {
-		t.Errorf("colunas fora de ordem: a=%d b=%d d=%d", x["a"], x["b"], x["d"])
+		t.Errorf("columns out of order: a=%d b=%d d=%d", x["a"], x["b"], x["d"])
 	}
 	if x["b"] != x["c"] {
 		t.Errorf("b and c run in parallel but came out in different columns: %d and %d", x["b"], x["c"])
 	}
 	if y["b"] == y["c"] {
-		t.Errorf("b e c sairam sobrepostos em y=%d", y["b"])
+		t.Errorf("b and c came out overlapping at y=%d", y["b"])
 	}
 	if y["a"] != y["d"] {
-		t.Errorf("single-node levels should stay centred: a=%d d=%d", y["a"], y["d"])
+		t.Errorf("single-node levels should stay centered: a=%d d=%d", y["a"], y["d"])
 	}
 }
 
@@ -165,8 +163,8 @@ func TestTheWorkflowGraphHasNoState(t *testing.T) {
 	if g.RunID != "" {
 		t.Errorf("run_id = %q on a graph with no run", g.RunID)
 	}
-	if g.Nodes[0].Data["acao"] == nil {
-		t.Error("o card perdeu o rotulo da acao")
+	if g.Nodes[0].Data["action"] == nil {
+		t.Error("the card lost the action's label")
 	}
 }
 
@@ -188,25 +186,25 @@ func TestTheRunGraphAppliesStatePerNode(t *testing.T) {
 		t.Fatalf("status = %d, want 200", res.StatusCode)
 	}
 	if g.RunID != id.String() || g.Status != "running" {
-		t.Fatalf("cabecalho errado: run=%q status=%q", g.RunID, g.Status)
+		t.Fatalf("wrong header: run=%q status=%q", g.RunID, g.Status)
 	}
 	if g.Terminal {
 		t.Error("a running run marked terminal: the UI would stop refreshing")
 	}
 
-	porID := map[string]map[string]any{}
+	byID := map[string]map[string]any{}
 	for _, n := range g.Nodes {
-		porID[n.ID] = n.Data
+		byID[n.ID] = n.Data
 	}
-	if porID["a"]["status"] != "success" || porID["a"]["duracao_ms"] != float64(1200) {
-		t.Errorf("no a: %v", porID["a"])
+	if byID["a"]["status"] != "success" || byID["a"]["duration_ms"] != float64(1200) {
+		t.Errorf("no a: %v", byID["a"])
 	}
-	if porID["c"]["erro"] != "boom" || porID["c"]["exit_code"] != float64(2) {
-		t.Errorf("node c lost its error/exit code: %v", porID["c"])
+	if byID["c"]["error"] != "boom" || byID["c"]["exit_code"] != float64(2) {
+		t.Errorf("node c lost its error/exit code: %v", byID["c"])
 	}
-	// d never ran; it has to stay grey rather than inherit the parent's state.
-	if porID["d"]["status"] != "pending" {
-		t.Errorf("no d: %v", porID["d"])
+	// d never ran; it has to stay gray rather than inherit the parent's state.
+	if byID["d"]["status"] != "pending" {
+		t.Errorf("no d: %v", byID["d"])
 	}
 
 	for _, e := range g.Edges {
@@ -235,25 +233,25 @@ func TestTheRunGraphMarksTerminal(t *testing.T) {
 }
 
 func TestTheGraphRefusesInvalidInput(t *testing.T) {
-	casos := []struct {
+	cases := []struct {
 		name     string
 		ui       *api.UI
 		path     string
 		expected int
 	}{
-		{"workflow inexistente", newUI(defsFake{err: errors.New("no rows")}, execsFake{}),
-			"/api/workflows/fantasma/graph", http.StatusNotFound},
-		{"uuid malformado", newUI(defsFake{}, execsFake{}),
-			"/api/runs/nao-e-uuid/graph", http.StatusBadRequest},
-		{"run inexistente", newUI(defsFake{}, execsFake{err: errors.New("no rows")}),
+		{"unknown workflow", newUI(defsFake{err: errors.New("no rows")}, execsFake{}),
+			"/api/workflows/ghost/graph", http.StatusNotFound},
+		{"malformed uuid", newUI(defsFake{}, execsFake{}),
+			"/api/runs/not-a-uuid/graph", http.StatusBadRequest},
+		{"unknown run", newUI(defsFake{}, execsFake{err: errors.New("no rows")}),
 			"/api/runs/" + uuid.New().String() + "/graph", http.StatusNotFound},
-		{"ciclo gravado no testDB", newUI(defsFake{w: wf.Workflow{
-			Slug:  "ciclo",
+		{"cycle stored in the testDB", newUI(defsFake{w: wf.Workflow{
+			Slug:  "cycle",
 			Nodes: []wf.Node{{ID: "a", Run: "x"}, {ID: "b", Run: "y"}},
 			Edges: []wf.Edge{{From: "a", To: "b"}, {From: "b", To: "a"}},
-		}}, execsFake{}), "/api/workflows/ciclo/graph", http.StatusUnprocessableEntity},
+		}}, execsFake{}), "/api/workflows/cycle/graph", http.StatusUnprocessableEntity},
 	}
-	for _, c := range casos {
+	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			res, _ := request(t, c.ui, c.path)
 			if res.StatusCode != c.expected {
@@ -268,8 +266,8 @@ func fourStages() []postgres.Stage {
 	ms := int64(2400)
 	return []postgres.Stage{
 		{Name: "check", State: "done"},
-		{Name: "extract", State: "done", Ms: &ms, Numbers: map[string]any{"paginas": 300}},
-		{Name: "transform", State: "done", Numbers: map[string]any{"pulados": 13}},
+		{Name: "extract", State: "done", Ms: &ms, Numbers: map[string]any{"pages": 300}},
+		{Name: "transform", State: "done", Numbers: map[string]any{"skipped": 13}},
 		{Name: "load", State: "running"},
 	}
 }
@@ -291,23 +289,23 @@ func graphWithStages(t *testing.T, states map[string]postgres.NodeState) graph {
 
 // An SDK step becomes a GROUP, with the stages inside it. The DAG's edges stay
 // between steps, so the group takes a single column -- and "same column
-// significa runStep em paralelo" continua verdade.
+// means runStep in parallel" stays true.
 func TestAnSDKStepBecomesAGroupWithTheStagesInside(t *testing.T) {
 	g := graphWithStages(t, map[string]postgres.NodeState{
 		"b": {NodeID: "b", Status: "running", Stages: fourStages(), SdkVersion: "v0.44.1"},
 	})
 
-	pai := -1
+	parent := -1
 	var children []int
 	for i, n := range g.Nodes {
 		if n.ID == "b" {
-			pai = i
+			parent = i
 		}
 		if n.ParentID == "b" {
 			children = append(children, i)
 		}
 	}
-	if pai < 0 {
+	if parent < 0 {
 		t.Fatal("the step vanished from the graph")
 	}
 	if len(children) != 4 {
@@ -316,19 +314,19 @@ func TestAnSDKStepBecomesAGroupWithTheStagesInside(t *testing.T) {
 
 	// React Flow requires the parent BEFORE the children in the array.
 	for _, f := range children {
-		if f < pai {
+		if f < parent {
 			t.Fatal("a child came out before the parent; React Flow does not build the group")
 		}
 	}
 
-	height, ok := g.Nodes[pai].Style["height"].(float64)
+	height, ok := g.Nodes[parent].Style["height"].(float64)
 	if !ok || height <= 0 {
-		t.Fatalf("the group came out with no declared height: %v", g.Nodes[pai].Style)
+		t.Fatalf("the group came out with no declared height: %v", g.Nodes[parent].Style)
 	}
 	for _, f := range children {
 		n := g.Nodes[f]
-		if n.Type != "etapa" || n.Extent != "parent" {
-			t.Errorf("filho mal formado: %+v", n)
+		if n.Type != "phase" || n.Extent != "parent" {
+			t.Errorf("malformed child: %+v", n)
 		}
 		if n.Selectable == nil || *n.Selectable {
 			t.Errorf("a selectable stage would open an empty panel: %+v", n)
@@ -339,8 +337,8 @@ func TestAnSDKStepBecomesAGroupWithTheStagesInside(t *testing.T) {
 	}
 }
 
-// The real cost of nesting: the column was centred assuming a FIXED height, and
-// an expanded group ran over its neighbour.
+// The real cost of nesting: the column was centered assuming a FIXED height, and
+// an expanded group ran over its neighbor.
 //
 // Each node's height is measured by what it DRAWS -- the last stage inside it --
 // and not by the height it declares. Checking against the declared one would
@@ -353,35 +351,35 @@ func TestAColumnDoesNotOverlapWithAnExpandedNode(t *testing.T) {
 	})
 
 	// The bottom of each node, measured by the children it carries.
-	fundo := map[string]int{}
+	background := map[string]int{}
 	for _, n := range g.Nodes {
 		if n.ParentID == "" {
 			continue
 		}
-		if b := n.Position.Y + 26; b > fundo[n.ParentID] {
-			fundo[n.ParentID] = b
+		if b := n.Position.Y + 26; b > background[n.ParentID] {
+			background[n.ParentID] = b
 		}
 	}
 
 	height := func(id string) int {
-		if f := fundo[id]; f > 0 {
-			return f + 10 // a folga de rodape do grupo
+		if f := background[id]; f > 0 {
+			return f + 10 // the footer slack of the group
 		}
 		return 84 // a card with no stages
 	}
 
 	var b, c int
-	temB, temC := false, false
+	hasB, hasC := false, false
 	for _, n := range g.Nodes {
 		switch {
 		case n.ID == "b" && n.ParentID == "":
-			b, temB = n.Position.Y, true
+			b, hasB = n.Position.Y, true
 		case n.ID == "c" && n.ParentID == "":
-			c, temC = n.Position.Y, true
+			c, hasC = n.Position.Y, true
 		}
 	}
-	if !temB || !temC {
-		t.Fatal("b e c precisam estar no grafo")
+	if !hasB || !hasC {
+		t.Fatal("b and c must be in the graph")
 	}
 
 	// b and c are on the SAME level of the diamond: one has to end before the
@@ -391,7 +389,7 @@ func TestAColumnDoesNotOverlapWithAnExpandedNode(t *testing.T) {
 		top, bottom, topHeight = c, b, height("c")
 	}
 	if top+topHeight > bottom {
-		t.Errorf("os nos se sobrepoem: um vai de %d a %d, o outro comeca em %d",
+		t.Errorf("the nodes overlap: one runs from %d to %d, the other starts at %d",
 			top, top+topHeight, bottom)
 	}
 }
@@ -409,7 +407,7 @@ func TestTheSDKBadgeComesOutOnTheNode(t *testing.T) {
 				t.Errorf("the SDK step came out with no badge: %v", n.Data)
 			}
 		case "c":
-			if _, tem := n.Data["sdk"]; tem {
+			if _, has := n.Data["sdk"]; has {
 				t.Errorf("a step that announced nothing got a badge: %v", n.Data)
 			}
 		}
@@ -439,7 +437,7 @@ func TestAPlainStepGainsNoNesting(t *testing.T) {
 			t.Errorf("a card without the declared width: %+v", n.Style)
 		}
 		if n.Type != "brevis" {
-			t.Errorf("no comum mudou de tipo: %q", n.Type)
+			t.Errorf("the shared node changed type: %q", n.Type)
 		}
 	}
 }
@@ -638,13 +636,13 @@ func TestAnEdgeLabelReachesTheDrawing(t *testing.T) {
 	}
 }
 
-// An unlabelled edge carries no label, so the payload of every workflow written
+// An unlabeled edge carries no label, so the payload of every workflow written
 // before this feature is what it was.
 //
 // The first version of this test grepped the whole body for `"label"` and
 // failed: nodes have carried a `label` since the graph existed. Asserting on
 // the edges is the check it meant to be.
-func TestAnUnlabelledEdgeCarriesNoLabel(t *testing.T) {
+func TestAnUnlabeledEdgeCarriesNoLabel(t *testing.T) {
 	res, g := request(t, newUI(defsFake{w: diamond()}, execsFake{}), "/api/workflows/diamond/graph")
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d", res.StatusCode)
@@ -662,7 +660,7 @@ func TestAnUnlabelledEdgeCarriesNoLabel(t *testing.T) {
 	body := rawBody(t, newUI(defsFake{w: diamond()}, execsFake{}), "/api/workflows/diamond/graph")
 	edges := body[strings.Index(body, `"edges"`):]
 	if strings.Contains(edges, `"label"`) {
-		t.Errorf("an unlabelled edge emitted an empty label key:\n%s", edges)
+		t.Errorf("an unlabeled edge emitted an empty label key:\n%s", edges)
 	}
 }
 
@@ -676,8 +674,8 @@ func TestAMarkerSaysWhatItIs(t *testing.T) {
 	}
 	_, g := request(t, newUI(defsFake{w: w}, execsFake{}), "/api/workflows/markers/graph")
 	for _, n := range g.Nodes {
-		if n.ID == "start" && n.Data["acao"] != "marker" {
-			t.Errorf("the marker's subtitle is %v", n.Data["acao"])
+		if m, _ := n.Data["action"].(map[string]any); n.ID == "start" && m["k"] != "graph.marker" {
+			t.Errorf("the marker's subtitle is %v", n.Data["action"])
 		}
 	}
 }
@@ -689,72 +687,6 @@ func rawBody(t *testing.T, ui *api.UI, path string) string {
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
 	return rec.Body.String()
-}
-
-// TestTheIslandKnowsEveryNodeTypeTheAPIEmits.
-//
-// React Flow falls back to its DEFAULT node for a `type` it does not
-// recognise, and the default draws a plausible box with the step's name. So a
-// mismatch between the two sides of this contract does not break anything
-// visibly: it silently removes the status ring, the runtime chips, the SDK
-// badge, the instance count and the phases, and leaves a graph that still looks
-// like a graph.
-//
-// That happened. The rename from `bravis` to `brevis` on 2026-09-04 changed
-// internal/api/graph.go and not web/assets/dag.js, and for three days every
-// step rendered as a bare React Flow box with nothing on it. Nothing failed,
-// because nothing was checking.
-//
-// This is the check. It is cross-language and it is crude -- it reads the
-// island's source and looks for the keys -- and crude is the point: the two
-// files cannot share a constant, so the only thing that can hold them together
-// is something that reads both.
-func TestTheIslandKnowsEveryNodeTypeTheAPIEmits(t *testing.T) {
-	island, err := assets.FS.ReadFile("dag.js")
-	if err != nil {
-		t.Fatal(err)
-	}
-	registered := island[bytes.Index(island, []byte("var NODE_TYPES")):]
-	registered = registered[:bytes.IndexByte(registered, '\n')]
-
-	// A run that produces every type the API can emit: a step, a step with
-	// phases, and a group. It has to be a RUN graph, because phases only exist
-	// once something has announced them.
-	w := wf.Workflow{
-		Slug: "every_type",
-		Nodes: []wf.Node{
-			{ID: "a", Run: "echo a", Group: "loading"},
-			{ID: "b", Run: "echo b", Group: "loading"},
-		},
-		Edges: []wf.Edge{{From: "a", To: "b"}},
-	}
-	definition, err := json.Marshal(w)
-	if err != nil {
-		t.Fatal(err)
-	}
-	id := uuid.New()
-	ui := newUI(defsFake{w: w}, execsFake{
-		run: dom.Run{ID: id, WorkflowSlug: w.Slug, Status: dom.StatusRunning, Definition: definition},
-		states: map[string]postgres.NodeState{
-			"a": {NodeID: "a", Status: "success",
-				Stages: []postgres.Stage{{Name: "extract", State: "done"}}},
-		},
-	})
-	_, g := request(t, ui, "/api/runs/"+id.String()+"/graph")
-
-	seen := map[string]bool{}
-	for _, n := range g.Nodes {
-		seen[n.Type] = true
-	}
-	if len(seen) < 3 {
-		t.Fatalf("the fixture did not produce every type; it made %v", seen)
-	}
-	for kind := range seen {
-		if !bytes.Contains(registered, []byte(kind+":")) {
-			t.Errorf("the API emits node type %q and the island registers %s",
-				kind, registered)
-		}
-	}
 }
 
 // TestAGroupIsDrawnBehindItsSteps.
@@ -775,7 +707,7 @@ func TestAGroupIsDrawnBehindItsSteps(t *testing.T) {
 	}
 	_, g := request(t, newUI(defsFake{w: w}, execsFake{}), "/api/workflows/grouped/graph")
 
-	if g.Nodes[0].Type != "grupo" {
+	if g.Nodes[0].Type != "group" {
 		t.Fatalf("the first node is %q; a group drawn after its members covers them", g.Nodes[0].Type)
 	}
 	if g.Nodes[0].ParentID != "" {
@@ -793,14 +725,14 @@ func TestAGroupIsDrawnBehindItsSteps(t *testing.T) {
 			continue
 		}
 		inside := n.Position.X >= group.Position.X && n.Position.Y >= group.Position.Y
-		if n.Data["grupo"] == "sales" {
+		if n.Data["group"] == "sales" {
 			members++
 			if !inside {
 				t.Errorf("%s is in the group and outside its box", n.ID)
 			}
 		} else {
 			outsiders++
-			if n.Data["grupo"] != nil {
+			if n.Data["group"] != nil {
 				t.Errorf("%s carries a group it does not have", n.ID)
 			}
 		}
@@ -810,16 +742,16 @@ func TestAGroupIsDrawnBehindItsSteps(t *testing.T) {
 	}
 }
 
-// A workflow with no groups emits no group node and no `grupo` key, so its
+// A workflow with no groups emits no group node and no `group` key, so its
 // payload is byte for byte what it was.
 func TestAWorkflowWithNoGroupsIsUnchanged(t *testing.T) {
 	_, g := request(t, newUI(defsFake{w: diamond()}, execsFake{}), "/api/workflows/diamond/graph")
 	for _, n := range g.Nodes {
-		if n.Type == "grupo" {
+		if n.Type == "group" {
 			t.Errorf("a group node appeared in an ungrouped workflow")
 		}
-		if _, has := n.Data["grupo"]; has {
-			t.Errorf("%s carries a grupo key", n.ID)
+		if _, has := n.Data["group"]; has {
+			t.Errorf("%s carries a group key", n.ID)
 		}
 	}
 }
@@ -859,7 +791,7 @@ func TestAGroupsBoxNeverContainsAStepThatIsNotInIt(t *testing.T) {
 	type box struct{ x, y, w, h int }
 	boxes := map[string]box{}
 	for _, n := range g.Nodes {
-		if n.Type != "grupo" {
+		if n.Type != "group" {
 			continue
 		}
 		boxes[n.Data["label"].(string)] = box{
@@ -875,7 +807,7 @@ func TestAGroupsBoxNeverContainsAStepThatIsNotInIt(t *testing.T) {
 		if n.Type != "brevis" {
 			continue
 		}
-		mine, _ := n.Data["grupo"].(string)
+		mine, _ := n.Data["group"].(string)
 		for name, b := range boxes {
 			if name == mine {
 				continue

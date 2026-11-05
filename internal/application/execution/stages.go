@@ -9,7 +9,7 @@ import (
 // sdkMarker is the prefix the SDK uses to speak to the engine through stdout.
 //
 // The pipe already existed: the executor follows the pod's log while the
-// container lives, and this loop sees every line, one by one. Recognising it
+// container lives, and this loop sees every line, one by one. Recognizing it
 // here -- and not in the executor -- makes the LOCAL executor get the same for
 // free, because this code does not know which of them produced the event.
 const sdkMarker = "@brevis:"
@@ -22,9 +22,9 @@ const sdkMarker = "@brevis:"
 // is the cap of somebody who does not trust what came down the pipe.
 const stageCeiling = 60
 
-// Etapa is one phase of an SDK step, as it stands now.
+// Stage is one phase of an SDK step, as it stands now.
 //
-// Indice is what identifies it, and not Nome: a pipeline with two Map stages
+// Index is what identifies it, and not Name: a pipeline with two Map stages
 // announces `map` twice, and keying by name would make the second overwrite the
 // first -- three declared stages collapsing into two boxes on the screen, with
 // no warning.
@@ -33,17 +33,53 @@ const stageCeiling = 60
 // with: it is what a test outside this package needs to check what was
 // recorded.
 type Stage struct {
-	Index    int            `json:"indice"`
-	TaskName string         `json:"nome"`
-	State    string         `json:"estado"`
+	Index    int            `json:"index"`
+	TaskName string         `json:"name"`
+	State    string         `json:"state"`
 	Ms       *int64         `json:"ms,omitempty"`
-	At       string         `json:"em"`
-	Numbers  map[string]any `json:"numeros,omitempty"`
+	At       string         `json:"at"`
+	Numbers  map[string]any `json:"numbers,omitempty"`
+}
+
+// UnmarshalJSON reads both spellings of a recorded phase: rows written before
+// the keys went English carry indice, nome, estado, em and numeros.
+//
+// shortcut: it goes with postgres.Stage's reader, once no task_runs row can
+// hold the Portuguese keys.
+func (s *Stage) UnmarshalJSON(b []byte) error {
+	type plain Stage
+	aux := struct {
+		*plain
+		IndexOld   *int           `json:"indice"`
+		NameOld    *string        `json:"nome"`
+		StateOld   *string        `json:"estado"`
+		AtOld      *string        `json:"em"`
+		NumbersOld map[string]any `json:"numeros"`
+	}{plain: (*plain)(s)}
+	if err := json.Unmarshal(b, &aux); err != nil {
+		return err
+	}
+	if aux.IndexOld != nil && s.Index == 0 {
+		s.Index = *aux.IndexOld
+	}
+	if aux.NameOld != nil && s.TaskName == "" {
+		s.TaskName = *aux.NameOld
+	}
+	if aux.StateOld != nil && s.State == "" {
+		s.State = *aux.StateOld
+	}
+	if aux.AtOld != nil && s.At == "" {
+		s.At = *aux.AtOld
+	}
+	if s.Numbers == nil {
+		s.Numbers = aux.NumbersOld
+	}
+	return nil
 }
 
 // knownStages is a closed list on purpose: a phase this engine does not
 // know is ignored, rather than becoming a meaningless box on the screen.
-// RecordedStage is the shape an Etapa takes in the JSONB column.
+// RecordedStage is the shape a Stage takes in the JSONB column.
 type RecordedStage = Stage
 
 // knownStages is a closed list on purpose: a phase this engine does not
@@ -145,7 +181,7 @@ func (c *stageCollector) line(msg string) bool {
 	// "versao","em"}. From v0.48.0 on it speaks English: {"type":"stage","name",
 	// "state","version","at"}. An engine that only understood the new one would
 	// make an older fetcher's phases vanish from the screen -- no error, no log,
-	// just the grey box back.
+	// just the gray box back.
 	//
 	// The bridge goes away once no fetcher below v0.48.0 remains in
 	// production.
@@ -228,8 +264,8 @@ func (c *stageCollector) line(msg string) bool {
 		// a watermark's age -- reported through the pipe that already exists.
 		//
 		// It is COLLECTED here and recorded by the runner, which is what knows
-		// the workflow and the step. A metric labelled by the step itself would
-		// be labelled wrongly, and asking every language's library to know its
+		// the workflow and the step. A metric labeled by the step itself would
+		// be labeled wrongly, and asking every language's library to know its
 		// own workflow slug is asking for the one thing they cannot see.
 		if ev.TaskName != "" {
 			// A metric's value is a NUMBER. Anything else is a step confusing
@@ -266,12 +302,12 @@ func (c *stageCollector) line(msg string) bool {
 		// NAME -- there could be only one `transform`, so the name was the
 		// identity. Reusing that box's position keeps those drawing exactly as
 		// they did, instead of turning `running` and `done` into two boxes.
-		indice := c.positionFor(ev.TaskName)
+		index := c.positionFor(ev.TaskName)
 		if ev.Index != nil {
-			indice = *ev.Index
+			index = *ev.Index
 		}
 		c.apply(Stage{
-			Index: indice, TaskName: ev.TaskName, State: ev.State, Ms: ev.Ms, At: ev.At,
+			Index: index, TaskName: ev.TaskName, State: ev.State, Ms: ev.Ms, At: ev.At,
 			Numbers: numbersOf(body),
 		})
 		return true
@@ -282,19 +318,19 @@ func (c *stageCollector) line(msg string) bool {
 // positionFor is the position an unindexed phase belongs at: the one it already
 // occupies, or the next free one.
 func (c *stageCollector) positionFor(name string) int {
-	maior := -1
+	largest := -1
 	for _, e := range c.Stages {
 		if e.TaskName == name {
 			return e.Index
 		}
-		if e.Index > maior {
-			maior = e.Index
+		if e.Index > largest {
+			largest = e.Index
 		}
 	}
-	return maior + 1
+	return largest + 1
 }
 
-// aplicar replaces the phase at the same POSITION, keeping the pipeline's order.
+// apply replaces the phase at the same POSITION, keeping the pipeline's order.
 func (c *stageCollector) apply(e Stage) {
 	for i := range c.Stages {
 		if c.Stages[i].Index == e.Index {
@@ -306,7 +342,7 @@ func (c *stageCollector) apply(e Stage) {
 	sort.Slice(c.Stages, func(i, j int) bool { return c.Stages[i].Index < c.Stages[j].Index })
 }
 
-// reservedFields are the ones that become the Etapa's own columns; the rest of
+// reservedFields are the ones that become the Stage's own columns; the rest of
 // the object is numbers the phase produced.
 var reservedFields = map[string]bool{
 	"type": true, "name": true, "state": true, "ms": true, "at": true, "version": true,
@@ -316,19 +352,19 @@ var reservedFields = map[string]bool{
 }
 
 func numbersOf(body string) map[string]any {
-	var tudo map[string]any
-	if err := json.Unmarshal([]byte(body), &tudo); err != nil {
+	var all map[string]any
+	if err := json.Unmarshal([]byte(body), &all); err != nil {
 		return nil
 	}
-	for k := range tudo {
+	for k := range all {
 		if reservedFields[k] {
-			delete(tudo, k)
+			delete(all, k)
 		}
 	}
-	if len(tudo) == 0 {
+	if len(all) == 0 {
 		return nil
 	}
-	return tudo
+	return all
 }
 
 // translateOldType maps the old format's type. See stageCollector.line.
@@ -343,7 +379,7 @@ func translateOldType(pt string) string {
 // the phases so it can be stored as a row and read as a trend.
 //
 // Every field here already crossed the `@brevis:` pipe and is already in
-// `task_runs.etapas`. This does not measure anything new; it makes the numbers
+// `task_runs.stages`. This does not measure anything new; it makes the numbers
 // answerable without reading a year of JSONB.
 //
 // A table rather than a query over the JSONB, because it was measured: on a
@@ -382,7 +418,7 @@ func (c *stageCollector) LoadNumbers() (LoadNumbers, bool) {
 //
 // It takes the recorded shape rather than the collector because that is the
 // shape the other implementation of this rule works on: migration 00012
-// backfills the same numbers out of `task_runs.etapas`, in SQL, for history
+// backfills the same numbers out of `task_runs.stages`, in SQL, for history
 // this code never saw. Two implementations of one rule is the shape that
 // drifts, and having the Go one answerable from the stored shape is what lets a
 // test put the same phases through both and compare.

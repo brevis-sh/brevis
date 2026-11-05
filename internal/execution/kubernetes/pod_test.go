@@ -12,7 +12,7 @@ import (
 
 func task() execution.TaskExec {
 	return execution.TaskExec{
-		ExecutionID: "wf:passo",
+		ExecutionID: "wf:step",
 		NodeID:      "bronze_workspace",
 		Workflow:    "platform_workspace",
 		RunID:       "1f2e3d4c-0000-0000-0000-000000000000",
@@ -28,17 +28,17 @@ func task() execution.TaskExec {
 }
 
 func TestThePodCarriesImageCommandAndResources(t *testing.T) {
-	p, err := k8s.BuildPod(task(), k8s.Options{Namespace: "dados", ServiceAccount: "brevis"})
+	p, err := k8s.BuildPod(task(), k8s.Options{Namespace: "data", ServiceAccount: "brevis"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	c := p.Spec.Containers[0]
 	if c.Image != task().Image {
-		t.Errorf("imagem = %q", c.Image)
+		t.Errorf("image = %q", c.Image)
 	}
 	if len(c.Command) != 3 || c.Command[0] != "/bin/sh" || c.Command[1] != "-c" {
-		t.Errorf("comando = %v, want sh -c", c.Command)
+		t.Errorf("command = %v, want sh -c", c.Command)
 	}
 	if !strings.HasPrefix(c.Command[2], "dbt build") {
 		t.Errorf("command line = %q", c.Command[2])
@@ -49,7 +49,7 @@ func TestThePodCarriesImageCommandAndResources(t *testing.T) {
 	if c.Resources.Limits["memory"] != "2Gi" {
 		t.Errorf("limits = %v", c.Resources.Limits)
 	}
-	if _, temCPU := c.Resources.Limits["cpu"]; temCPU {
+	if _, hasCPU := c.Resources.Limits["cpu"]; hasCPU {
 		t.Error("an undeclared CPU limit must not be invented -- silent throttling is worse than no limit")
 	}
 
@@ -58,8 +58,8 @@ func TestThePodCarriesImageCommandAndResources(t *testing.T) {
 	if p.Spec.RestartPolicy != "Never" {
 		t.Errorf("restartPolicy = %q", p.Spec.RestartPolicy)
 	}
-	if p.Spec.ServiceAccountName != "brevis" || p.Metadata.Namespace != "dados" {
-		t.Errorf("identidade errada: sa=%q ns=%q", p.Spec.ServiceAccountName, p.Metadata.Namespace)
+	if p.Spec.ServiceAccountName != "brevis" || p.Metadata.Namespace != "data" {
+		t.Errorf("wrong identity: sa=%q ns=%q", p.Spec.ServiceAccountName, p.Metadata.Namespace)
 	}
 	if p.Spec.ActiveDeadlineSeconds == nil || *p.Spec.ActiveDeadlineSeconds != 1800 {
 		t.Errorf("deadline = %v, want 1800s", p.Spec.ActiveDeadlineSeconds)
@@ -71,15 +71,15 @@ func TestThePodCarriesImageCommandAndResources(t *testing.T) {
 func TestWithNoShellItUsesArgvDirectly(t *testing.T) {
 	tk := task()
 	tk.Shell = false
-	tk.Command = "/notify --canal dados"
+	tk.Command = "/notify --channel data"
 
 	p, err := k8s.BuildPod(tk, k8s.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	c := p.Spec.Containers[0].Command
-	if len(c) != 3 || c[0] != "/notify" || c[2] != "dados" {
-		t.Errorf("comando = %v, want argv direto", c)
+	if len(c) != 3 || c[0] != "/notify" || c[2] != "data" {
+		t.Errorf("command = %v, want argv as is", c)
 	}
 }
 
@@ -95,7 +95,7 @@ func TestEnvIsOrderedAndEnvFrom(t *testing.T) {
 	// A stable order: two pods with the same contents have to produce the same
 	// JSON, otherwise comparing two deploys becomes noise.
 	if len(c.Env) != 2 || c.Env[0].Name != "GOOGLE_PROJECT_ID" || c.Env[1].Name != "STAGE" {
-		t.Errorf("env = %v, want ordem alfabetica", c.Env)
+		t.Errorf("env = %v, want alphabetical order", c.Env)
 	}
 	if len(c.EnvFrom) != 2 || c.EnvFrom[0].SecretRef.Name != "brevis-bigquery" {
 		t.Errorf("envFrom = %+v", c.EnvFrom)
@@ -106,13 +106,13 @@ func TestEnvIsOrderedAndEnvFrom(t *testing.T) {
 // A pipeline's YAML must not get to choose the service account it runs as.
 func TestTheOptionsDoNotComeFromTheWorkflow(t *testing.T) {
 	p, _ := k8s.BuildPod(task(), k8s.Options{
-		ServiceAccount: "restrita",
+		ServiceAccount: "restricted",
 		PullSecrets:    []string{"registry"},
-		NodeSelector:   map[string]string{"pool": "dados"},
+		NodeSelector:   map[string]string{"pool": "data"},
 	})
-	if p.Spec.ServiceAccountName != "restrita" ||
+	if p.Spec.ServiceAccountName != "restricted" ||
 		p.Spec.ImagePullSecrets[0].Name != "registry" ||
-		p.Spec.NodeSelector["pool"] != "dados" {
+		p.Spec.NodeSelector["pool"] != "data" {
 		t.Errorf("the installation's options did not reach the pod: %+v", p.Spec)
 	}
 }
@@ -134,17 +134,17 @@ func TestThePodsNameIsStablePerAttempt(t *testing.T) {
 		t.Errorf("the same attempt produced %q and %q", a, b)
 	}
 
-	outra := task()
-	outra.Attempt = 1
-	if c := k8s.PodName(outra); c == a {
-		t.Error("attempts diferentes deveriam gerar pods diferentes")
+	other := task()
+	other.Attempt = 1
+	if c := k8s.PodName(other); c == a {
+		t.Error("different attempts should produce different pods")
 	}
 }
 
 func TestThePodsNameObeysKubernetesLimit(t *testing.T) {
 	tk := task()
-	tk.Workflow = strings.Repeat("workflow-de-nome-absurdamente-longo-", 3)
-	tk.NodeID = strings.Repeat("passo-tambem-enorme-", 3)
+	tk.Workflow = strings.Repeat("absurdly-long-workflow-name-", 3)
+	tk.NodeID = strings.Repeat("step-also-huge-", 3)
 
 	name := k8s.PodName(tk)
 	if len(name) > 63 {
@@ -152,7 +152,7 @@ func TestThePodsNameObeysKubernetesLimit(t *testing.T) {
 	}
 	for _, r := range name {
 		if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
-			t.Fatalf("caractere invalido %q em %q", r, name)
+			t.Fatalf("invalid character %q in %q", r, name)
 		}
 	}
 	if strings.HasPrefix(name, "-") || strings.HasSuffix(name, "-") {
@@ -160,9 +160,9 @@ func TestThePodsNameObeysKubernetesLimit(t *testing.T) {
 	}
 
 	// Two long names sharing a prefix must not collide after the trim.
-	outro := tk
-	outro.NodeID = strings.Repeat("passo-tambem-enorme-", 3) + "-b"
-	if k8s.PodName(outro) == name {
+	another := tk
+	another.NodeID = strings.Repeat("step-also-huge-", 3) + "-b"
+	if k8s.PodName(another) == name {
 		t.Error("the 63-character trim created a collision between two steps")
 	}
 }
@@ -173,7 +173,7 @@ func TestTheLabelsMakeTheRunsPodsFindable(t *testing.T) {
 		t.Error("without the management label there is no way to find Brevis's pods")
 	}
 	if p.Metadata.Labels["brevis.dev/workflow"] != "platform-workspace" {
-		t.Errorf("rotulo de workflow = %q (sanitizado)", p.Metadata.Labels["brevis.dev/workflow"])
+		t.Errorf("workflow label = %q (sanitized)", p.Metadata.Labels["brevis.dev/workflow"])
 	}
 	// The original value lives in the annotation: a label has a 63-character limit
 	// and a restricted alphabet, an annotation does not.

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"brevis.sh/brevis/web/i18n"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -59,7 +60,7 @@ type flowEdge struct {
 	Animated bool   `json:"animated"`
 
 	// Label is what the dependency means, and it is omitted when there is
-	// none -- which is most of them. An unlabelled edge's payload stays byte
+	// none -- which is most of them. An unlabeled edge's payload stays byte
 	// for byte what it was.
 	Label string `json:"label,omitempty"`
 }
@@ -104,7 +105,7 @@ const (
 	stagesFoot  = 12 // so the last phase does not touch the card's bottom
 
 	// Between two cards in the same column, and around a group's contents.
-	folgaVertical = 34
+	verticalSlack = 34
 	groupPadding  = 22
 	groupHeader   = 34
 	// Between two lanes. Bigger than the gap between cards, because it is what
@@ -119,7 +120,7 @@ const (
 // every card is what put a phase on top of a status line.
 func cardHeight(data map[string]any) int {
 	h := 2*cardPadding + headerRow + statusRow
-	if v, ok := data["acao"].(string); ok && v != "" {
+	if v := data["action"]; v != nil && v != "" {
 		h += commandRow
 	}
 	if _, ok := data["runtime"]; ok {
@@ -172,14 +173,14 @@ func (u *UI) workflowGraph(w http.ResponseWriter, r *http.Request) {
 // the definition alone.
 func (u *UI) workflowGraphOf(ctx context.Context, def wf.Workflow) (graphResponse, error) {
 	resp, err := buildGraph(def, nil, "", "")
-	if err != nil || u.leitura == nil {
+	if err != nil || u.reads == nil {
 		return resp, err
 	}
-	last, err := u.leitura.LastStepRuns(ctx, def.Slug)
+	last, err := u.reads.LastStepRuns(ctx, def.Slug)
 	if err != nil {
 		u.log.Warn("the steps' last runs are unavailable", "workflow", def.Slug, "error", err)
 	}
-	wrote, err := u.leitura.StepConnects(ctx, def.Slug, time.Now().Add(-connectsWindow))
+	wrote, err := u.reads.StepConnects(ctx, def.Slug, time.Now().Add(-connectsWindow))
 	if err != nil {
 		u.log.Warn("what the steps wrote is unavailable", "workflow", def.Slug, "error", err)
 	}
@@ -221,7 +222,7 @@ func (u *UI) stepsOf(ctx context.Context, def wf.Workflow, page *pages.WorkflowP
 	var steps []flowNode
 	columns := map[int]bool{}
 	for _, n := range resp.Nodes {
-		if n.ParentID != "" || n.Type == "grupo" {
+		if n.ParentID != "" || n.Type == "group" {
 			continue
 		}
 		steps = append(steps, n)
@@ -242,7 +243,9 @@ func (u *UI) stepsOf(ctx context.Context, def wf.Workflow, page *pages.WorkflowP
 	}
 	for _, n := range steps {
 		row := pages.StepItem{ID: n.ID, Needs: needs[n.ID]}
-		row.Command, _ = n.Data["acao"].(string)
+		if v := n.Data["action"]; v != nil && v != "" {
+			row.Command = i18n.Cat{v}
+		}
 		if rt, _ := n.Data["runtime"].(string); rt != "" {
 			row.Langs = append(row.Langs, rt)
 		}
@@ -283,7 +286,7 @@ func (u *UI) runGraph(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// A missing state is not an error: a freshly queued run has no step started
-	// yet, and the screen should show the whole graph in grey.
+	// yet, and the screen should show the whole graph in gray.
 	states, err := u.execs.NodeStates(ctx, id)
 	if err != nil {
 		u.log.Warn("node state unavailable", "run", id, "error", err)
@@ -306,40 +309,6 @@ func (u *UI) respondGraph(w http.ResponseWriter, def wf.Workflow,
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		u.log.Error("serializing the graph", "slug", def.Slug, "error", err)
 	}
-}
-
-// graphSeed is the graph a page embeds for its island (nav-latency NL5): the
-// same bytes /api/.../graph would send, so the canvas draws on mount instead
-// of after one more round trip -- which painted it empty, then popped the
-// graph in. "" when there is none to draw (an invalid graph); the island then
-// fetches, and says why, as before. json.Marshal escapes <, > and &, so the
-// bytes are safe inside a <script>.
-func graphSeed(def wf.Workflow, states map[string]postgres.NodeState, runID, status string) string {
-	resp, err := buildGraph(def, states, runID, status)
-	if err != nil {
-		return ""
-	}
-	b, err := json.Marshal(resp)
-	if err != nil {
-		return ""
-	}
-	return string(b)
-}
-
-// runSeed is a run's graph for its page: the snapshot that ran, with each
-// step's state as /api/runs/{id}/graph would draw it. A state that cannot be
-// read draws the graph grey, as the API does; a snapshot that cannot be read
-// embeds nothing, and the island fetches.
-func (u *UI) runSeed(ctx context.Context, run dom.Run) string {
-	var def wf.Workflow
-	if err := json.Unmarshal(run.Definition, &def); err != nil {
-		return ""
-	}
-	states, err := u.execs.NodeStates(ctx, run.ID)
-	if err != nil {
-		states = nil
-	}
-	return graphSeed(def, states, run.ID.String(), string(run.Status))
 }
 
 // buildGraph lays a definition out, with each step's state when there is a
@@ -384,8 +353,8 @@ func buildGraph(def wf.Workflow, states map[string]postgres.NodeState, runID, st
 		for _, id := range ids {
 			no := findNode(def.Nodes, id)
 			data := map[string]any{
-				"label": id,
-				"acao":  actionLabel(no),
+				"label":  id,
+				"action": actionLabel(no),
 				// From the domain, not a literal. The UI owned this string for
 				// as long as it existed -- and a state the screen knows and the
 				// engine does not is how the two drift.
@@ -395,8 +364,8 @@ func buildGraph(def wf.Workflow, states map[string]postgres.NodeState, runID, st
 			// count that is stored has to be kept in sync, and a wrong one
 			// outlives the fix. Omitted entirely when the step is not mapped.
 			if st := states[id]; st.Instances > 0 {
-				data["instancias"] = st.Instances
-				data["instancias_ok"] = st.Done
+				data["instances"] = st.Instances
+				data["instances_ok"] = st.Done
 			}
 			// The image the step runs in, its own or the workflow's. Omitted
 			// when there is none, like the chips below.
@@ -429,10 +398,10 @@ func buildGraph(def wf.Workflow, states map[string]postgres.NodeState, runID, st
 			e, hasState := states[id]
 			if hasState {
 				data["status"] = e.Status
-				data["duracao_ms"] = e.DurationMs
-				data["tentativa"] = e.Attempt
+				data["duration_ms"] = e.DurationMs
+				data["attempt"] = e.Attempt
 				if e.Err != "" {
-					data["erro"] = e.Err
+					data["error"] = e.Err
 				}
 				if e.ExitCode != nil {
 					data["exit_code"] = *e.ExitCode
@@ -479,7 +448,7 @@ func buildGraph(def wf.Workflow, states map[string]postgres.NodeState, runID, st
 			}
 
 			if no.Group != "" {
-				data["grupo"] = no.Group
+				data["group"] = no.Group
 			}
 
 			built[id] = data
@@ -514,7 +483,7 @@ func buildGraph(def wf.Workflow, states map[string]postgres.NodeState, runID, st
 			if len(e.Stages) > 0 {
 				step.Style["height"] = spot.h
 			}
-			if g, ok := data["grupo"].(string); ok {
+			if g, ok := data["group"].(string); ok {
 				boxes.add(g, spot.x, spot.y, spot.h)
 			}
 			resp.Nodes = append(resp.Nodes, step)
@@ -522,7 +491,7 @@ func buildGraph(def wf.Workflow, states map[string]postgres.NodeState, runID, st
 			// The children come AFTER the parent in the array: React Flow requires it.
 			for j, et := range e.Stages {
 				resp.Nodes = append(resp.Nodes, flowNode{
-					ID: id + "::" + et.Name, Type: "etapa",
+					ID: id + "::" + et.Name, Type: "phase",
 					ParentID: id, Extent: "parent",
 					// Under the card's own content, measured rather than
 					// guessed. A fixed offset put the first phase on top of the
@@ -540,12 +509,12 @@ func buildGraph(def wf.Workflow, states map[string]postgres.NodeState, runID, st
 					// one.
 					Selectable: &off, Draggable: &off,
 					Data: map[string]any{
-						"nome": et.Name, "estado": et.State,
-						"ms": et.Ms, "numeros": et.Numbers,
+						"name": et.Name, "state": et.State,
+						"ms": et.Ms, "numbers": et.Numbers,
 						// The label the screen shows. `extract` and `load` are
 						// the wire's names, kept for compatibility; what a
 						// person reads is what they mean.
-						"rotulo": stageLabel(et.Name),
+						"label": stageLabel(et.Name),
 					},
 				})
 			}
@@ -595,7 +564,7 @@ func layout(levels [][]string, built map[string]map[string]any,
 		return nodeHeight(built[id], len(states[id].Stages))
 	}
 	groupOf := func(id string) string {
-		g, _ := built[id]["grupo"].(string)
+		g, _ := built[id]["group"].(string)
 		return g
 	}
 
@@ -620,11 +589,11 @@ func layout(levels [][]string, built map[string]map[string]any,
 				groupOrder = append(groupOrder, g)
 			}
 			spans[g].last = level
-			perGroup[g] += height(id) + folgaVertical
+			perGroup[g] += height(id) + verticalSlack
 		}
 		for g, stack := range perGroup {
-			if stack-folgaVertical > spans[g].tallest {
-				spans[g].tallest = stack - folgaVertical
+			if stack-verticalSlack > spans[g].tallest {
+				spans[g].tallest = stack - verticalSlack
 			}
 		}
 	}
@@ -691,11 +660,11 @@ func layout(levels [][]string, built map[string]map[string]any,
 		stack := 0
 		for _, id := range ids {
 			if laneFor(level, id) == len(laneEnd) {
-				stack += height(id) + folgaVertical
+				stack += height(id) + verticalSlack
 			}
 		}
-		if stack-folgaVertical > loose {
-			loose = stack - folgaVertical
+		if stack-verticalSlack > loose {
+			loose = stack - verticalSlack
 		}
 	}
 	if loose > 0 {
@@ -707,11 +676,11 @@ func layout(levels [][]string, built map[string]map[string]any,
 		stack := 0
 		for _, id := range ids {
 			if laneFor(level, id) == 0 {
-				stack += height(id) + folgaVertical
+				stack += height(id) + verticalSlack
 			}
 		}
-		if stack-folgaVertical > laneHeight[0] {
-			laneHeight[0] = stack - folgaVertical
+		if stack-verticalSlack > laneHeight[0] {
+			laneHeight[0] = stack - verticalSlack
 		}
 	}
 
@@ -724,32 +693,32 @@ func layout(levels [][]string, built map[string]map[string]any,
 	if total > 0 {
 		total -= laneGap
 	}
-	// Centred on zero, so a graph with one lane looks exactly as it did.
+	// Centered on zero, so a graph with one lane looks exactly as it did.
 	for i := range laneTop {
 		laneTop[i] -= total / 2
 	}
 	out := map[string]spot{}
 	for level, ids := range levels {
 		// Where the next card goes in each lane of this column. A lane's stack
-		// is centred inside it, so a group with one member in this column does
+		// is centered inside it, so a group with one member in this column does
 		// not hug its box's top edge.
 		next := map[int]int{}
 		stacks := map[int]int{}
 		for _, id := range ids {
-			stacks[laneFor(level, id)] += height(id) + folgaVertical
+			stacks[laneFor(level, id)] += height(id) + verticalSlack
 		}
 		for lane, stack := range stacks {
 			if lane >= len(laneHeight) {
 				continue // a loose lane that ended up with nothing in it
 			}
-			next[lane] = laneTop[lane] + (laneHeight[lane]-(stack-folgaVertical))/2
+			next[lane] = laneTop[lane] + (laneHeight[lane]-(stack-verticalSlack))/2
 		}
 
 		for _, id := range ids {
 			lane := laneFor(level, id)
 			h := height(id)
 			out[id] = spot{x: level * levelWidth, y: next[lane], h: h}
-			next[lane] += h + folgaVertical
+			next[lane] += h + verticalSlack
 		}
 	}
 	return out
@@ -786,7 +755,7 @@ func (g *grouping) nodes() []flowNode {
 	for _, name := range g.order {
 		b := g.by[name]
 		out = append(out, flowNode{
-			ID: "grupo::" + name, Type: "grupo",
+			ID: "group::" + name, Type: "group",
 			Position: position{X: b.minX - groupPadding, Y: b.minY - groupPadding - groupHeader},
 			// Not selectable and not draggable: clicking the box behind a step
 			// must not open a details panel for something that is not a step.
@@ -806,12 +775,12 @@ func (g *grouping) nodes() []flowNode {
 // The wire keeps `extract` and `load` because renaming them would make an
 // already-published engine stop drawing an older fetcher's phases. The screen is
 // free to say what they mean.
-func stageLabel(name string) string {
+func stageLabel(name string) any {
 	switch name {
 	case "extract":
-		return "source"
+		return i18n.M("graph.stage.source")
 	case "load":
-		return "target"
+		return i18n.M("graph.stage.target")
 	}
 	return name
 }
@@ -826,12 +795,12 @@ func findNode(nodes []wf.Node, id string) wf.Node {
 }
 
 // actionLabel is the card's second line: what the node does, not what it is called.
-func actionLabel(n wf.Node) string {
+func actionLabel(n wf.Node) any {
 	// A marker runs nothing, and an empty subtitle would make it look like a
 	// step whose command failed to load. Saying what it is costs one line and
 	// stops somebody from opening the YAML to find out why it is blank.
 	if n.Marker {
-		return "marker"
+		return i18n.M("graph.marker")
 	}
 	if n.Action != "" {
 		return n.Action
@@ -880,13 +849,13 @@ func stepLineOf(def wf.Workflow, states map[string]postgres.NodeState) *pages.St
 			line.Runtime, _ = n.Data["runtime"].(string)
 			line.RuntimeInferred = fmt.Sprint(n.Data["runtime_source"]) == "inferred"
 			line.SDK, _ = n.Data["sdk"].(string)
-			line.DurationMs, _ = n.Data["duracao_ms"].(int64)
-		case n.ParentID == step.ID && n.Type == "etapa":
+			line.DurationMs, _ = n.Data["duration_ms"].(int64)
+		case n.ParentID == step.ID && n.Type == "phase":
 			cell := pages.StageCell{}
-			cell.Label, _ = n.Data["rotulo"].(string)
-			cell.State, _ = n.Data["estado"].(string)
+			cell.Label = i18n.Cat{n.Data["label"]}
+			cell.State, _ = n.Data["state"].(string)
 			cell.Ms, _ = n.Data["ms"].(*int64)
-			if nums, ok := n.Data["numeros"].(map[string]any); ok {
+			if nums, ok := n.Data["numbers"].(map[string]any); ok {
 				cell.Numbers = pages.StageNumbers(nums)
 				cell.Detail, _ = nums["detail"].(string)
 			}

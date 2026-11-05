@@ -1,14 +1,14 @@
 package pages
 
 import (
-	"brevis.sh/brevis/web/i18n"
-	"context"
 	"fmt"
 	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"brevis.sh/brevis/web/i18n"
 
 	"brevis.sh/brevis/internal/domain/catalog"
 	"brevis.sh/brevis/internal/infrastructure/postgres"
@@ -299,33 +299,6 @@ type LoadsView struct {
 	Missing string
 }
 
-// CloseHref is the list the drawer was opened from, as it was filtered.
-func (v LoadsView) CloseHref() string { return v.Filter.With("", "") }
-
-// keepFilter is a load's address with the list's filter after it, so that
-// closing its drawer comes back to the same list.
-func (v LoadsView) keepFilter(href string) string {
-	_, query, ok := strings.Cut(v.CloseHref(), "?")
-	if !ok {
-		return href
-	}
-	if strings.Contains(href, "?") {
-		return href + "&" + query
-	}
-	return href + "?" + query
-}
-
-// rowHref is where a row goes: its load's drawer, keeping the filter.
-func (v LoadsView) rowHref(t LoadTarget) string { return v.keepFilter(t.Href()) }
-
-// Count is how many loads a band choice would show: "" for all, "attention",
-// or a status.
-func (v LoadsView) Count(status string) int { return v.counts[status] }
-
-// loadStatuses are the band's statuses, in the Catalog's order, without the
-// gateway's: a step is never continuous, nor its destination unidentified.
-var loadStatuses = []catalog.Status{catalog.Stale, catalog.Late, catalog.OnTime, catalog.Paused, catalog.Unscheduled}
-
 // sourceOrder is the origin filter's order: the SDK's own kinds, somebody
 // else's driver, then none declared.
 var sourceOrder = []string{"http", "file", "database", "other", "none"}
@@ -385,14 +358,11 @@ func BuildLoads(entries []postgres.CatalogEntry, f DataFilter, now time.Time) Lo
 
 // loadSchedule is when a step runs, as its row says it: in words where they
 // are sure, the expression otherwise, "by hand" with none.
-func loadSchedule(ctx context.Context, t LoadTarget) string {
+func loadSchedule(t LoadTarget) i18n.Cat {
 	if !t.HasSchedule {
-		return i18n.T(ctx, "loads.manual")
+		return i18n.Cat{i18n.M("loads.manual")}
 	}
-	if words := CronTextIn(ctx, t.Cron); words != "" {
-		return words + zoneSuffix(t.Timezone)
-	}
-	return t.Cron
+	return cronWords(t.Cron, t.Timezone)
 }
 
 func containsString(list []string, s string) bool {
@@ -506,36 +476,19 @@ func ParseStreamFilter(q url.Values) StreamFilter {
 	return f
 }
 
-// With is the link to this filter with one field changed, the fields always
-// in the same order.
-func (f StreamFilter) With(field, value string) string {
-	switch field {
-	case "kind":
-		f.Kind = value
-	case "q":
-		f.Q = value
-	}
-	var parts []string
-	if f.Kind != "" {
-		parts = append(parts, "kind="+url.QueryEscape(f.Kind))
-	}
-	if f.Q != "" {
-		parts = append(parts, "q="+url.QueryEscape(f.Q))
-	}
-	if len(parts) == 0 {
-		return "/ingest/streams"
-	}
-	return "/ingest/streams?" + strings.Join(parts, "&")
-}
-
 // StreamsView is /ingest/streams as drawn (screen-streams): the streams the
 // filter keeps, one row each, and the counts of every stream whatever is
 // shown.
 type StreamsView struct {
 	Rows                            []Stream
 	Total, Gateways, WithDeadLetter int
-	Kinds                           []string
-	Filter                          StreamFilter
+	// HealthCounts is every stream's health state, whatever the filter shows.
+	HealthCounts map[string]int
+	// Healths is each stream's health by Stream.Key, the live one when the
+	// builder was given a source.
+	Healths map[string]StreamHealth
+	Kinds   []string
+	Filter  StreamFilter
 }
 
 // SearchText is what a search looks in, lower-cased: the gateway, the path,
@@ -551,16 +504,18 @@ func (s Stream) SearchText() string {
 // Key is the stream's identity as one string, for the page's markup.
 func (s Stream) Key() string { return s.Gateway + " " + s.Path }
 
-// BuildStreams is every stream under the filter, by gateway and path: the
-// kind and the search drop what they exclude, on the server, so a filtered
-// list is a link. The counts are every stream's.
-func BuildStreams(entries []postgres.CatalogEntry, f StreamFilter) StreamsView {
-	v := StreamsView{Filter: f}
+// BuildStreamsWith is BuildStreams with the health of each stream said by
+// health, which is how the live metrics reach the list and its counts.
+func BuildStreamsWith(entries []postgres.CatalogEntry, f StreamFilter, health func(Stream) StreamHealth) StreamsView {
+	v := StreamsView{Filter: f, HealthCounts: map[string]int{}, Healths: map[string]StreamHealth{}}
 	q := strings.ToLower(f.Q)
 	for _, g := range StreamsOf(entries) {
 		v.Gateways++
 		for _, s := range g.Streams {
 			v.Total++
+			h := health(s)
+			v.HealthCounts[h.State]++
+			v.Healths[s.Key()] = h
 			if s.DeadLetter != nil {
 				v.WithDeadLetter++
 			}
@@ -579,21 +534,21 @@ func BuildStreams(entries []postgres.CatalogEntry, f StreamFilter) StreamsView {
 
 // BatchIn is how a stream batches, as a row says it: "2 minutes or 2,000",
 // "30 seconds", "up to 500"; "" with no buffer declared.
-func (s Stream) BatchIn(ctx context.Context) string {
+func (s Stream) BatchIn() i18n.Cat {
 	every, records := s.Field("buffer.flush.every"), s.Field("buffer.flush.records")
-	count := ""
+	var count any = ""
 	if n, err := strconv.ParseInt(records, 10, 64); err == nil {
-		count = i18n.Number(ctx, n)
+		count = i18n.Num(n)
 	}
 	switch {
 	case every != "" && count != "":
-		return i18n.T(ctx, "streams.batch.both", "every", durationWords(ctx, every), "records", count)
+		return i18n.Cat{i18n.M("streams.batch.both", "every", durationWords(every), "records", count)}
 	case every != "":
-		return durationWords(ctx, every)
+		return i18n.Cat{durationWords(every)}
 	case count != "":
-		return i18n.T(ctx, "streams.batch.records", "records", count)
+		return i18n.Cat{i18n.M("streams.batch.records", "records", count)}
 	}
-	return ""
+	return nil
 }
 
 // DeadLetterShown is the dead letter as a row draws it: the catalog's, or --
@@ -640,33 +595,37 @@ func streamFlow(s Stream) *Flow {
 	f := FlowOf(s.Config, s.Sink.URI)
 	if f == nil {
 		f = &Flow{Nodes: []FlowNode{
-			{Kind: "source", Main: "POST " + s.Path},
-			{Kind: "destination", Main: s.Sink.URI, Detail: joinWords(" · ", s.Sink.Kind, s.Sink.Note),
-				mainIn: func(ctx context.Context) string { return placeName(ctx, s.Sink) }},
+			{Kind: "source", Main: plain("POST " + s.Path)},
+			{Kind: "destination", Main: placeWords(s.Sink), Detail: plain(joinWords(" · ", s.Sink.Kind, s.Sink.Note))},
 		}}
 	}
 	if dl := s.DeadLetterShown(); dl != nil {
 		place := *dl
-		f.DeadLetter = &FlowNode{Kind: "dead_letter", Main: place.URI,
-			mainIn: func(ctx context.Context) string { return placeName(ctx, place) },
-			detailIn: func(ctx context.Context) string {
-				return joinWords(" · ", i18n.T(ctx, "flow.refused"), place.Note)
-			}}
+		detail := i18n.Cat{i18n.M("flow.refused")}
+		if place.Note != "" {
+			detail = append(detail, " · ", place.Note)
+		}
+		f.DeadLetter = &FlowNode{Kind: "dead_letter", Main: placeWords(place), Detail: detail}
 	}
 	return f
 }
 
-// placeName is a destination's URI, or that its manifest could not name it.
-func placeName(ctx context.Context, p Place) string {
+// placeWords is a destination's URI, or that its manifest could not name it,
+// for the app to say.
+func placeWords(p Place) i18n.Cat {
 	if p.URI == "" {
-		return i18n.T(ctx, "streams.unidentified")
+		return i18n.Cat{i18n.M("streams.unidentified")}
 	}
-	return p.URI
+	return i18n.Cat{p.URI}
 }
 
 // StreamView is one stream's page.
 type StreamView struct {
 	Stream
+
+	// Live is the stream's health from the source, when there is one; the
+	// static Health is used otherwise.
+	Live *StreamHealth
 
 	// Configured is the stream's configuration card -- settings by section,
 	// the file's notes and the history of changes -- read from the sink's
@@ -722,45 +681,55 @@ func (v StreamView) Queryable() bool {
 func (v StreamView) QueryHref() string { return "/sql?target=" + url.QueryEscape(v.Sink.URI) }
 
 // Summary is one paragraph on what the stream does, from what it declares.
-func (v StreamView) Summary(ctx context.Context) string {
+func (v StreamView) Summary() i18n.Cat {
 	if v.Config != nil {
-		return Summary(ctx, v.Config)
+		return Summary(v.Config)
 	}
-	return i18n.T(ctx, "streams.page.summary.v1", "path", v.Path, "sink", placeName(ctx, v.Sink))
+	return i18n.Cat{i18n.M("streams.page.summary.v1", "path", v.Path, "sink", placeWords(v.Sink))}
 }
 
 // changeSaid is one publish in the history line: the first, or what it
 // changed.
-func changeSaid(ctx context.Context, ch ConfigChange) string {
+func changeSaid(ch ConfigChange) i18n.Msg {
 	switch {
 	case ch.First:
-		return i18n.T(ctx, "streamcfg.history.first")
+		return i18n.M("streamcfg.history.first")
 	case len(ch.Lines) == 0:
-		return i18n.T(ctx, "config.earlier")
+		return i18n.M("config.earlier")
 	}
 	paths := make([]string, len(ch.Lines))
 	for i, l := range ch.Lines {
 		paths[i] = l.Path
 	}
-	return i18n.T(ctx, "streamcfg.history.changed", "paths", strings.Join(paths, ", "))
+	return i18n.M("streamcfg.history.changed", "paths", strings.Join(paths, ", "))
 }
 
 // Lede is the page's one sentence under its name: what comes in, where it
 // goes, and that refusals are kept -- three pieces, so it does not repeat the
 // overview's sentence.
-func (v StreamView) Lede(ctx context.Context) string {
-	dest := components.LogoTitle(ctx, kindLogo(v.Sink.Kind))
-	if v.Sink.Kind == "" {
-		dest = i18n.T(ctx, "streams.page.dest_unknown")
+func (v StreamView) Lede() i18n.Cat {
+	var dest any = i18n.M("streams.page.dest_unknown")
+	if v.Sink.Kind != "" {
+		dest = kindName(v.Sink.Kind)
 	}
-	lede := i18n.T(ctx, "streams.page.lede", "dest", dest)
+	lede := i18n.Cat{i18n.M("streams.page.lede", "dest", dest)}
 	if f := v.Field("format"); f != "" {
-		lede = i18n.T(ctx, "streams.page.lede.format", "format", f, "dest", dest)
+		lede[0] = i18n.M("streams.page.lede.format", "format", f, "dest", dest)
 	}
 	if v.DeadLetter != nil {
-		lede += " " + i18n.T(ctx, "streams.page.lede.dead_letter")
+		lede = append(lede, " ", i18n.M("streams.page.lede.dead_letter"))
 	}
 	return lede
+}
+
+// kindName is a destination kind's name, as its logo is read: a brand is its
+// own name in every language; the two that are words are sentences the app says.
+func kindName(kind string) any {
+	key := kindLogo(kind)
+	if key == "file" || key == "gateway" {
+		return i18n.M("logo." + key)
+	}
+	return components.LogoTitle(key)
 }
 
 // Tables are the sink's tables for an auto_table, by the prefixes it
@@ -792,7 +761,7 @@ func (v StreamView) DeadLetterPanel() *DeadLetterView {
 	return v.Configured.Config.DeadLetter
 }
 
-// BuriedMetric is the gateway's counter of what this stream buried, labelled
+// BuriedMetric is the gateway's counter of what this stream buried, labeled
 // by the stream's name as the gateway labels it.
 func (v StreamView) BuriedMetric() string {
 	if n := v.Field("name"); n != "" {
@@ -895,36 +864,6 @@ func (v StreamView) TestCurlHead() string {
 		`' -H "Authorization: Bearer $GATEWAY_TOKEN" --data-binary @- <<'EOF'`
 }
 
-// TestCurl is the whole command for the example body; ui.js rebuilds it the
-// same way as the body is edited.
-func (v StreamView) TestCurl() string {
-	return v.TestCurlHead() + "\n" + v.TestBody() + "\nEOF"
-}
-
-// hashTabsCSS shows one panel of a hash-tabbed host (`#host`) from the first
-// paint: the one <html data-hash> names -- written by the head before the
-// body is drawn -- and the first when it names none of these. The tab bar's
-// marks follow, so the underline does not jump when ui.js catches up. Rules
-// per key, because CSS cannot match an attribute on <html> against one on
-// a panel; the keys are the page's own.
-func hashTabsCSS(host string, keys ...string) string {
-	if len(keys) == 0 {
-		return ""
-	}
-	first, h := keys[0], "#"+host
-	var b strings.Builder
-	b.WriteString(".js " + h + " [data-tab-panel]{display:none}")
-	b.WriteString(".js " + h + ` [data-tab-panel="` + first + `"]{display:block}`)
-	for _, k := range keys[1:] {
-		on := `.js[data-hash="` + k + `"] `
-		b.WriteString(on + h + ` [data-tab-panel="` + first + `"]{display:none}`)
-		b.WriteString(on + h + ` [data-tab-panel="` + k + `"]{display:block}`)
-		b.WriteString(on + h + ` [data-tab="` + first + `"]{border-color:transparent;color:var(--color-muted)}`)
-		b.WriteString(on + h + ` [data-tab="` + k + `"]{border-color:var(--color-ink);color:var(--color-ink)}`)
-	}
-	return b.String()
-}
-
 // RowsRead is how many rows a load's step read, from its stages in that
 // load's run (screen-load-v2 LV2): the landing records only what was
 // written. The first map's `in` is what entered the pipeline; with no map,
@@ -961,21 +900,16 @@ func wholeNumber(v any) (int64, bool) {
 
 // loadsCount says how many loads the bars draw, and that it is the last
 // loadsShown when the read was cut there: a count at the LIMIT is a floor.
-func loadsCount(ctx context.Context, n int) string {
+func loadsCount(n int) i18n.Msg {
 	if n >= loadsShown {
-		return i18n.T(ctx, "loads.drawer.recent.last", "n", fmt.Sprint(loadsShown))
+		return i18n.M("loads.drawer.recent.last", "n", fmt.Sprint(loadsShown))
 	}
-	return i18n.N(ctx, "loads.drawer.recent.count", n)
+	return i18n.MN("loads.drawer.recent.count", n)
 }
 
 // loadWhen is when a step runs, in words where they are sure and the
 // expression otherwise; the drawer writes the expression beside it anyway.
-func loadWhen(ctx context.Context, w *WriterView) string {
-	if words := CronTextIn(ctx, w.Cron); words != "" {
-		return words + zoneSuffix(w.Timezone)
-	}
-	return w.Cron
-}
+func loadWhen(w *WriterView) i18n.Cat { return cronWords(w.Cron, w.Timezone) }
 
 // ReadNothing is a last load that wrote nothing out of something read: a
 // merge that found every row already there, or a filter that kept none --
@@ -983,64 +917,3 @@ func loadWhen(ctx context.Context, w *WriterView) string {
 func (v LoadView) ReadNothing() bool {
 	return v.Row.LastRows != nil && *v.Row.LastRows == 0 && v.Read != nil && *v.Read > 0
 }
-
-// howStep, howTitle and howText are the "how it works" footer's words.
-func howStep(ctx context.Context, i int) string {
-	switch i {
-	case 0:
-		return i18n.T(ctx, "streams.how.1")
-	case 1:
-		return i18n.T(ctx, "streams.how.2")
-	}
-	return i18n.T(ctx, "streams.how.3")
-}
-
-func howTitle(ctx context.Context, step string) string {
-	switch step {
-	case "post":
-		return i18n.T(ctx, "streams.how.post")
-	case "batch":
-		return i18n.T(ctx, "streams.how.batch")
-	}
-	return i18n.T(ctx, "streams.how.write")
-}
-
-func howText(ctx context.Context, step string) string {
-	switch step {
-	case "post":
-		return i18n.T(ctx, "streams.how.post.text")
-	case "batch":
-		return i18n.T(ctx, "streams.how.batch.text")
-	}
-	return i18n.T(ctx, "streams.how.write.text")
-}
-
-// newStreamYAML and newStreamCommands are New stream's example: a stream as
-// the gateway's file declares one, and how it reaches the console. Every
-// stream has a dead letter -- the gateway refuses one without -- so the
-// example has one too.
-const newStreamYAML = `streams:
-  #: What this stream is for, shown under its path.
-  - name: orders
-    path: /v1/orders
-    format: json
-    identity:
-      provider: acme
-      entity: order
-      source_key: order_id
-      record_ts: created_at
-    buffer:
-      flush:
-        every: 1m
-        records: 2000
-    sink:
-      type: bigquery
-      project: acme-prod
-      dataset: bronze
-      table: orders
-    dead_letter:
-      type: files
-      path: gs://acme-dead-letter/orders/`
-
-const newStreamCommands = `gateway describe -out gateway.json gateway.yaml
-brevis gateway publish gateway.json`

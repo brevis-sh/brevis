@@ -4,6 +4,7 @@ import (
 	"time"
 
 	sch "brevis.sh/brevis/internal/domain/schedule"
+	"brevis.sh/brevis/web/i18n"
 )
 
 // Slot is one past slot of a schedule, and the window it processes: from the
@@ -44,3 +45,6 @@ func RecentSlots(cron, zone string, now time.Time, n int) []Slot {
 	}
 	return out
 }
+
+// SlotLabel is a slot as the Run drawer lists it, for the app's JSON.
+func SlotLabel(s Slot, zone string) i18n.Msg { return slotLabel(s, zone) }

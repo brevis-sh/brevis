@@ -16,8 +16,8 @@ func TestTheParamsPresentationKeysAreOnDiskWhenSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := `{"Nome":"date","Tipo":"string","Default":"","Descricao":"","Enum":null,"Pattern":""}`; string(plain) != want {
-		t.Errorf("a plain param = %s, want the document it always was: %s", plain, want)
+	if want := `{"Name":"date","Type":"string","Default":"","Description":"","Enum":null,"Pattern":""}`; string(plain) != want {
+		t.Errorf("a plain param = %s, want the document: %s", plain, want)
 	}
 
 	raw, err := json.Marshal(wf.Param{Name: "load_full", Type: wf.ParamBool,
@@ -38,8 +38,8 @@ func TestTheParamsPresentationKeysAreOnDiskWhenSet(t *testing.T) {
 	}
 }
 
-// A WORKFLOW PUBLISHED BEFORE THESE FIELDS reads with them empty, and nothing
-// else lost.
+// A WORKFLOW PUBLISHED BEFORE THESE FIELDS (and with the Portuguese keys) reads
+// with them empty, and nothing else lost.
 func TestAnOldParamDocumentReadsWithoutThem(t *testing.T) {
 	var p wf.Param
 	old := `{"Nome":"date","Tipo":"string","Default":"2026-01-01","Descricao":"the day","Enum":null,"Pattern":""}`
@@ -63,7 +63,7 @@ func TestThePresentationKeysAreCheckedForShape(t *testing.T) {
 		p    wf.Param
 		want string // "" when it is accepted
 	}{
-		{"all of them", wf.Param{Title: "Carga completa", Group: "Carga", Warn: "reprocessa tudo; custa caro", Uses: "big-query2"}, ""},
+		{"all of them", wf.Param{Title: "Full load", Group: "Load", Warn: "reprocesses everything; costs a lot", Uses: "big-query2"}, ""},
 		{"60 accented characters", wf.Param{Title: strings.Repeat("é", 60)}, ""},
 		{"a title of two lines", wf.Param{Title: "Full\nload"}, "title"},
 		{"a group of two lines", wf.Param{Group: "Load\r"}, "group"},

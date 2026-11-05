@@ -47,8 +47,26 @@ const keySize = 32
 // enough not to ask for a password in the middle of an investigation.
 const SessionLifetime = 12 * time.Hour
 
+// CodeSignInRequired is the error code of every 401 the gate answers: a session is missing or has expired.
+// The server speaks codes and never sentences; the app says it in the reader's language and goes to its login.
+const CodeSignInRequired = "sign_in_required"
+
 // CookieName is the session cookie's name.
-const CookieName = "brevis_sessao"
+const CookieName = "brevis_session"
+
+// LegacyCookieName is what releases before 0.43 called the session cookie ("sessao" is Portuguese for "session").
+// It is only READ: a session signed in under it stays valid until its own expiry, so upgrading signs nobody out,
+// and every new session is written under CookieName. shortcut: one session lifetime (SessionLifetime) after 0.43
+// every such cookie has expired; delete this and the two fallbacks below in the next release.
+const LegacyCookieName = "brevis_sessao"
+
+// sessionCookie is the request's session cookie, under its current name or, failing that, its legacy one.
+func sessionCookie(r *http.Request) (*http.Cookie, error) {
+	if c, err := r.Cookie(CookieName); err == nil {
+		return c, nil
+	}
+	return r.Cookie(LegacyCookieName)
+}
 
 // ---------------------------------------------------------------------------
 // Password hash
@@ -61,16 +79,16 @@ const CookieName = "brevis_sessao"
 // change: when we double the cost a few years from now, old hashes have to keep
 // verifying. A format that stores only the digest forces invalidating everyone.
 func GenerateHash(password string) (string, error) {
-	sal := make([]byte, 16)
-	if _, err := rand.Read(sal); err != nil {
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
 		return "", err
 	}
-	key, err := pbkdf2.Key(sha256.New, password, sal, iterations, keySize)
+	key, err := pbkdf2.Key(sha256.New, password, salt, iterations, keySize)
 	if err != nil {
 		return "", err
 	}
 	return fmt.Sprintf("pbkdf2-sha256$%d$%s$%s", iterations,
-		base64.RawStdEncoding.EncodeToString(sal),
+		base64.RawStdEncoding.EncodeToString(salt),
 		base64.RawStdEncoding.EncodeToString(key)), nil
 }
 
@@ -80,23 +98,23 @@ func GenerateHash(password string) (string, error) {
 // login path, and the only safe answer there is "did not get in". The
 // configuration error is caught at boot, by Credential.Validate.
 func CheckPassword(hash, password string) bool {
-	partes := strings.Split(hash, "$")
-	if len(partes) != 4 || partes[0] != "pbkdf2-sha256" {
+	parts := strings.Split(hash, "$")
+	if len(parts) != 4 || parts[0] != "pbkdf2-sha256" {
 		return false
 	}
-	iter, err := strconv.Atoi(partes[1])
+	iter, err := strconv.Atoi(parts[1])
 	if err != nil || iter <= 0 {
 		return false
 	}
-	sal, err := base64.RawStdEncoding.DecodeString(partes[2])
+	salt, err := base64.RawStdEncoding.DecodeString(parts[2])
 	if err != nil {
 		return false
 	}
-	expected, err := base64.RawStdEncoding.DecodeString(partes[3])
+	expected, err := base64.RawStdEncoding.DecodeString(parts[3])
 	if err != nil {
 		return false
 	}
-	got, err := pbkdf2.Key(sha256.New, password, sal, iter, len(expected))
+	got, err := pbkdf2.Key(sha256.New, password, salt, iter, len(expected))
 	if err != nil {
 		return false
 	}
@@ -163,10 +181,10 @@ func (c Credential) Validate() error {
 // because the naive construction is vulnerable to length extension.
 func (c Credential) issue(now time.Time) string {
 	body := c.User + "|" + strconv.FormatInt(now.Add(SessionLifetime).Unix(), 10)
-	return body + "|" + base64.RawURLEncoding.EncodeToString(c.assinar(body))
+	return body + "|" + base64.RawURLEncoding.EncodeToString(c.sign(body))
 }
 
-func (c Credential) assinar(body string) []byte {
+func (c Credential) sign(body string) []byte {
 	m := hmac.New(sha256.New, c.Secret)
 	m.Write([]byte(body))
 	return m.Sum(nil)
@@ -178,15 +196,15 @@ func (c Credential) checkSession(value string, now time.Time) bool {
 	if i < 0 {
 		return false
 	}
-	body, assinatura := value[:i], value[i+1:]
+	body, signature := value[:i], value[i+1:]
 
-	bruta, err := base64.RawURLEncoding.DecodeString(assinatura)
+	decoded, err := base64.RawURLEncoding.DecodeString(signature)
 	if err != nil {
 		return false
 	}
 	// The signature is checked BEFORE the deadline, and in constant time:
 	// reading a field of an unsigned cookie is already trusting it.
-	if !hmac.Equal(bruta, c.assinar(body)) {
+	if !hmac.Equal(decoded, c.sign(body)) {
 		return false
 	}
 
@@ -215,7 +233,7 @@ func (c Credential) checkSession(value string, now time.Time) bool {
 type Gate struct {
 	Cred     Credential
 	Next     http.Handler
-	Login    http.Handler // renderiza a tela de login
+	Login    http.Handler // renders the login screen
 	Insecure bool         // plain http: sends the cookie without the Secure flag
 
 	// Limit throttles Attempt; nil gets a default on first use.
@@ -227,36 +245,77 @@ type Gate struct {
 	once sync.Once
 }
 
-// livre lists what answers without a session.
+// free lists what answers without a session.
 func free(path string) bool {
 	switch path {
-	case "/health", "/ready", "/login", "/logout":
+	case "/health", "/ready":
+		return true
+	// THE LOGIN SCREEN, AND NOTHING ELSE OF THE CONSOLE. Each entry is the
+	// least the screen needs, and every one carries no operator data:
+	//   /login        the shell, so the browser can draw the form (the shell is
+	//                 one static HTML file; every other page stays gated and
+	//                 redirects here).
+	//   /api/login    the credential check itself, behind the Limiter.
+	//   /api/logout   so an expired or stale cookie can still be cleared.
+	//   /api/config   brand and version: the screen is branded.
+	//   /api/messages the catalog: the screen needs words. It is the same text
+	//                 every visitor of the public repository can read.
+	// /api/session is NOT here: it answers who you are, and an anonymous
+	// visitor gets the 401 that sends the app to this screen.
+	case "/login", "/api/login", "/api/logout", "/api/config", "/api/messages":
 		return true
 	}
-	// The assets are public by nature: the CSS, fonts and JS of the login screen
-	// itself. Protecting them would break the page that asks for the
-	// password.
-	return strings.HasPrefix(path, "/assets/")
+	// /static/ is the build's hashed JS and CSS: a bundle holds no secret (it
+	// is published with the source), and the shell above cannot run without
+	// it. /assets/ is the engine's own CSS, fonts and logo. Neither holds
+	// data, and protecting them would break the page that asks for the password.
+	return strings.HasPrefix(path, "/static/") || strings.HasPrefix(path, "/assets/")
 }
 
 func (p *Gate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
-	case !p.Cred.Enabled(), free(r.URL.Path):
+	case !p.Cred.Enabled():
 		p.Next.ServeHTTP(w, r)
+		return
+	case free(r.URL.Path):
+		// A public path is served either way, but the handler is told WHO is
+		// asking: a visitor with a valid session gets the operator in the
+		// context, an anonymous one is marked, so what a public endpoint says
+		// can differ (the config hides the engine's version from a stranger).
+		ctx := r.Context()
+		if cookie, err := sessionCookie(r); err == nil && p.Cred.checkSession(cookie.Value, time.Now()) {
+			ctx = IntoContext(ctx, p.Cred.User)
+		} else {
+			ctx = context.WithValue(ctx, anonymousKey{}, true)
+		}
+		p.Next.ServeHTTP(w, r.WithContext(ctx))
 		return
 	}
 
-	cookie, err := r.Cookie(CookieName)
+	cookie, err := sessionCookie(r)
 	if err == nil && p.Cred.checkSession(cookie.Value, time.Now()) {
 		p.Next.ServeHTTP(w, r.WithContext(IntoContext(r.Context(), p.Cred.User)))
 		return
 	}
 
+	// DATA IS NOT A PAGE. The app reads /api/* with fetch, and a redirect
+	// would be followed into a 200 HTML login page that looks like a broken
+	// response; a 401 with a JSON body is what the client acts on (it goes to
+	// its own login screen). Any method: a stale tab's POST gets the same.
+	if strings.HasPrefix(r.URL.Path, "/api/") {
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"` + CodeSignInRequired + `"}` + "\n"))
+		return
+	}
 	// A POST without a session does not become a redirect to the login: the
 	// browser would lose the body and the operator would resend blindly after
 	// signing in. A 401 tells the truth about what happened.
 	if r.Method != http.MethodGet {
-		http.Error(w, "session expired; sign in again", http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"` + CodeSignInRequired + `"}` + "\n"))
 		return
 	}
 	// `next` is the SAME name the login screen reads, and that is the whole
@@ -274,7 +333,7 @@ func (p *Gate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (p *Gate) verify(user, password string) bool {
 	// Both comparisons ALWAYS run, even with the wrong user: returning early
 	// makes an invalid user answer faster than a valid one, and the
-	// diferenca de tempo entrega quais nomes existem.
+	// time difference gives away which names exist.
 	userOK := subtle.ConstantTimeCompare([]byte(user), []byte(p.Cred.User)) == 1
 	check := p.Check
 	if check == nil {
@@ -324,13 +383,15 @@ func (p *Gate) setCookie(w http.ResponseWriter) {
 	})
 }
 
-// SignOut apaga o cookie.
+// SignOut deletes the cookie, under both names: a session that was signed in under the legacy one must end too.
 func (p *Gate) SignOut(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
-		Name: CookieName, Value: "", Path: "/",
-		HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: !p.Insecure,
-		MaxAge: -1,
-	})
+	for _, name := range []string{CookieName, LegacyCookieName} {
+		http.SetCookie(w, &http.Cookie{
+			Name: name, Value: "", Path: "/",
+			HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: !p.Insecure,
+			MaxAge: -1,
+		})
+	}
 }
 
 // NextParam is the query parameter carrying where the operator was going.
@@ -347,7 +408,7 @@ const NextParam = "next"
 //
 // IT CHECKED TWO SPELLINGS AND THERE ARE MORE. `//evil.com` was refused and
 // `/\evil.com` was not: it looks like a path and a browser does not read it
-// as one, because a BACKSLASH IS A SLASH in a URL. Normalised, that is
+// as one, because a BACKSLASH IS A SLASH in a URL. Normalized, that is
 // `//evil.com`, and the host is evil.com -- measured with `url.Parse`, not
 // reasoned about. Found by gosec, which this repository ran against the SDK
 // only, so the console it was pointed away from is where it was true.
@@ -405,8 +466,19 @@ func IntoContext(ctx context.Context, user string) context.Context {
 	return context.WithValue(ctx, key{}, user)
 }
 
-// De returns the request's operator, or empty when there is no session.
-func De(ctx context.Context) string {
+type anonymousKey struct{}
+
+// Anonymous reports that the console has a credential and this request has no
+// valid session, on a path the Gate lets through without one. False on an open
+// console (nobody is asked to sign in, so nobody is a stranger) and on every
+// request that did sign in.
+func Anonymous(ctx context.Context) bool {
+	v, _ := ctx.Value(anonymousKey{}).(bool)
+	return v
+}
+
+// OperatorOf returns the request's operator, or empty when there is no session.
+func OperatorOf(ctx context.Context) string {
 	u, _ := ctx.Value(key{}).(string)
 	return u
 }
