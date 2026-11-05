@@ -52,7 +52,21 @@ const SessionLifetime = 12 * time.Hour
 const CodeSignInRequired = "sign_in_required"
 
 // CookieName is the session cookie's name.
-const CookieName = "brevis_sessao"
+const CookieName = "brevis_session"
+
+// LegacyCookieName is what releases before 0.43 called the session cookie ("sessao" is Portuguese for "session").
+// It is only READ: a session signed in under it stays valid until its own expiry, so upgrading signs nobody out,
+// and every new session is written under CookieName. shortcut: one session lifetime (SessionLifetime) after 0.43
+// every such cookie has expired; delete this and the two fallbacks below in the next release.
+const LegacyCookieName = "brevis_sessao"
+
+// sessionCookie is the request's session cookie, under its current name or, failing that, its legacy one.
+func sessionCookie(r *http.Request) (*http.Cookie, error) {
+	if c, err := r.Cookie(CookieName); err == nil {
+		return c, nil
+	}
+	return r.Cookie(LegacyCookieName)
+}
 
 // ---------------------------------------------------------------------------
 // Password hash
@@ -269,7 +283,7 @@ func (p *Gate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// context, an anonymous one is marked, so what a public endpoint says
 		// can differ (the config hides the engine's version from a stranger).
 		ctx := r.Context()
-		if cookie, err := r.Cookie(CookieName); err == nil && p.Cred.checkSession(cookie.Value, time.Now()) {
+		if cookie, err := sessionCookie(r); err == nil && p.Cred.checkSession(cookie.Value, time.Now()) {
 			ctx = IntoContext(ctx, p.Cred.User)
 		} else {
 			ctx = context.WithValue(ctx, anonymousKey{}, true)
@@ -278,7 +292,7 @@ func (p *Gate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, err := r.Cookie(CookieName)
+	cookie, err := sessionCookie(r)
 	if err == nil && p.Cred.checkSession(cookie.Value, time.Now()) {
 		p.Next.ServeHTTP(w, r.WithContext(IntoContext(r.Context(), p.Cred.User)))
 		return
@@ -369,13 +383,15 @@ func (p *Gate) setCookie(w http.ResponseWriter) {
 	})
 }
 
-// SignOut deletes the cookie.
+// SignOut deletes the cookie, under both names: a session that was signed in under the legacy one must end too.
 func (p *Gate) SignOut(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
-		Name: CookieName, Value: "", Path: "/",
-		HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: !p.Insecure,
-		MaxAge: -1,
-	})
+	for _, name := range []string{CookieName, LegacyCookieName} {
+		http.SetCookie(w, &http.Cookie{
+			Name: name, Value: "", Path: "/",
+			HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: !p.Insecure,
+			MaxAge: -1,
+		})
+	}
 }
 
 // NextParam is the query parameter carrying where the operator was going.

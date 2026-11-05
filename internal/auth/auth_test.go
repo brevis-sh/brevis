@@ -308,3 +308,35 @@ func TestTheNextParameterKeepsAnOrdinaryPath(t *testing.T) {
 		}
 	}
 }
+
+// UPGRADING SIGNS NOBODY OUT: a session cookie written by a release before 0.43, under the old name, is still honored
+// until it expires, and signing out ends it too.
+func TestASessionUnderTheLegacyCookieNameStillSignsIn(t *testing.T) {
+	cred := credential(t, "operator", "long-test-password")
+	issuer := &auth.Gate{Cred: cred, Next: http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})}
+	rec := httptest.NewRecorder()
+	issuer.SignIn(rec, "operator", "long-test-password")
+	signed := rec.Result().Cookies()[0]
+	if signed.Name != auth.CookieName {
+		t.Fatalf("a new session is written as %q, want %q", signed.Name, auth.CookieName)
+	}
+
+	reached := false
+	gate := &auth.Gate{Cred: cred, Next: http.HandlerFunc(func(http.ResponseWriter, *http.Request) { reached = true })}
+	req := httptest.NewRequest("GET", "/runs", nil)
+	req.AddCookie(&http.Cookie{Name: auth.LegacyCookieName, Value: signed.Value})
+	gate.ServeHTTP(httptest.NewRecorder(), req)
+	if !reached {
+		t.Error("a session under the legacy cookie name was refused")
+	}
+
+	out := httptest.NewRecorder()
+	gate.SignOut(out)
+	cleared := map[string]bool{}
+	for _, c := range out.Result().Cookies() {
+		cleared[c.Name] = c.MaxAge < 0
+	}
+	if !cleared[auth.CookieName] || !cleared[auth.LegacyCookieName] {
+		t.Errorf("signing out clears %v, want both names", cleared)
+	}
+}
