@@ -113,6 +113,7 @@ for (const lang of LANGS) {
       await expect(page.locator("dialog[open], [role=dialog]").first()).toBeVisible();
       await read("palette");
       await page.keyboard.press("Escape");
+      await expect(page.locator("dialog[open], [role=dialog]")).toHaveCount(0);
       await page.keyboard.press("Shift+?");
       await expect(page.locator("dialog[open], [role=dialog]").first()).toBeVisible();
       await read("shortcuts");
