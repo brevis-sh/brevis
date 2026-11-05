@@ -1,0 +1,1 @@
+import{S as e,x as t}from"./errors-D6HUAiUY.js";function n(n,r){return t(n,e,r)}export{n as t};

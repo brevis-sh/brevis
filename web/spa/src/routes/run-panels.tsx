@@ -1,6 +1,7 @@
 import { lazy, Suspense, type ReactNode } from "react";
-import { useFormat, useT } from "../i18n";
+import { useFormat, useMsg, useT } from "../i18n";
 import type { Run, Stage, StepRow } from "../api/run";
+import { useAutoValue } from "../ui/format";
 import { Icon } from "../ui/icon";
 import { langLabel } from "../ui/lang";
 import { KV, Panel, PanelEmpty } from "../ui/panel";
@@ -129,7 +130,7 @@ const chip = "rounded-[4px] border border-line-strong px-1.5 font-mono text-[11p
 const STAGE_TONE: Record<string, string> = { done: "success", running: "running", failed: "failed", aborted: "canceled" };
 
 function StageItem({ st }: { st: Stage }) {
-  const { duration } = useFormat();
+  const { duration, number } = useFormat();
   return (
     <li className="min-w-0 bg-surface px-3.5 py-2">
       <div className="flex items-center gap-1.5 text-[12.5px]">
@@ -146,7 +147,7 @@ function StageItem({ st }: { st: Stage }) {
               </span>
             )}
             <span className="shrink-0">
-              <b className="font-mono font-medium text-ink-2">{x.value}</b> {x.key}
+              <b className="font-mono font-medium text-ink-2">{typeof x.value === "number" ? number(x.value) : x.value}</b> {x.key}
             </span>
           </span>
         ))}
@@ -205,10 +206,11 @@ function StepLine({ run }: { run: Run }) {
 function AlertLine({ a }: { a: Run["alerts"][number] }) {
   const { t, n } = useT();
   const { dateTime } = useFormat();
+  const say = useMsg();
   return (
     <>
       <Status kind={a.tone} />
-      <span className="min-w-0 truncate text-ink">{a.wording}</span>
+      <span className="min-w-0 truncate text-ink">{say(a.wording)}</span>
       <span className="font-mono text-[12px] text-muted">{a.channel}</span>
       {a.attempts > 0 && <span className="text-[11.5px] text-muted">{n("run.alert.tries", a.attempts)}</span>}
       <span className="ml-auto shrink-0 text-[11.5px] text-faint">{a.deliveredAt ? dateTime(a.deliveredAt) : `${t("run.alert.raised")} ${dateTime(a.createdAt)}`}</span>
@@ -275,11 +277,13 @@ const KVSkeleton = ({ cells }: { cells: number }) => (
 
 export function ParamsPanel({ run }: { run: Run | undefined }) {
   const { t } = useT();
+  const say = useMsg();
+  const value = useAutoValue();
   return (
     <>
       <section>
         <Panel title={t("run.params.auto")} count={t("run.params.auto_hint")}>
-          {run ? <KV items={run.auto} /> : <KVSkeleton cells={6} />}
+          {run ? <KV items={run.auto.map((a) => ({ key: a.key, value: value(a), note: say(a.note) }))} /> : <KVSkeleton cells={6} />}
           <p className="border-t border-line-soft px-3.5 py-2 text-[12px] text-faint">{t("run.params.auto_note")}</p>
         </Panel>
       </section>
@@ -306,6 +310,7 @@ function ContextBox({ title, aside, children }: { title: ReactNode; aside?: Reac
 
 export function ContextPanel({ run }: { run: Run | undefined }) {
   const { t, n } = useT();
+  const say = useMsg();
   if (!run)
     return (
       <ContextBox title={<Skeleton w="7rem" h="0.8rem" />}>
@@ -320,7 +325,7 @@ export function ContextPanel({ run }: { run: Run | undefined }) {
     <>
       {run.context.map((c) => (
         <ContextBox key={c.step} title={c.step} aside={c.json ? <span className="text-[11.5px] text-faint">{n("run.context.bytes", c.bytes)}</span> : undefined}>
-          {c.json ? <pre className="max-h-[24rem] overflow-auto px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-ink">{c.json}</pre> : <p className="px-3.5 py-2.5 text-[12.5px] text-muted">{c.note}</p>}
+          {c.json ? <pre className="max-h-[24rem] overflow-auto px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-ink">{c.json}</pre> : <p className="px-3.5 py-2.5 text-[12.5px] text-muted">{say(c.note)}</p>}
         </ContextBox>
       ))}
     </>

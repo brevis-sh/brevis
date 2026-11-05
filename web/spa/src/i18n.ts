@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getJSON } from "./api/client";
 import { useSession } from "./api/session";
+import { fixed } from "./fixed";
 import { category } from "./plural";
 
 type Message = string | { one: string; other: string; few?: string; many?: string };
@@ -63,7 +64,7 @@ export function useFormat() {
     /** 1.5s, 2m 05s, 1h 04m: a duration in milliseconds, as the server's Elapsed writes it. */
     duration: (ms: number) => {
       if (ms < 1000) return `${Math.round(ms)}ms`;
-      if (ms < 60_000) return `${new Intl.NumberFormat(lang, { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(ms / 1000)}s`;
+      if (ms < 60_000) return `${fixed(lang, ms / 1000, 1)}s`;
       const s = Math.floor(ms / 1000);
       const two = (v: number) => String(v).padStart(2, "0");
       if (ms < 3_600_000) return `${Math.floor(s / 60)}m ${two(s % 60)}s`;
@@ -94,11 +95,15 @@ const STAMPS: Record<string, Intl.DateTimeFormatOptions> = {
 function stamp(lang: string, iso: string, layout: string, zone: string): string {
   const opts = STAMPS[layout];
   if (!opts) return iso;
+  const say = (timeZone: string) => new Intl.DateTimeFormat(lang, { ...opts, timeZone }).format(new Date(iso));
+  let out: string;
   try {
-    return new Intl.DateTimeFormat(lang, { ...opts, timeZone: zone }).format(new Date(iso));
+    out = say(zone);
   } catch {
-    return new Intl.DateTimeFormat(lang, { ...opts, timeZone: "UTC" }).format(new Date(iso));
+    out = say("UTC");
   }
+  // English wrote "Oct 02 09:05", not "Oct 02, 09:05": the comma Intl adds before the time is not the console's.
+  return lang.startsWith("en") && opts.hour ? out.replace(",", "") : out;
 }
 
 // A MESSAGE FROM THE SERVER. The server has no language (web/i18n/msg.go): it sends the catalog key of a sentence and
