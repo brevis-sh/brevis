@@ -111,7 +111,7 @@ the code.
 ```bash
 brevis publish examples/hello.yaml   # writes the workflow and its schedule to the database
 brevis scheduler --concurrency 5     # materializes slots and runs them
-brevis backfill diario --from 2026-01-01 --to 2026-01-31
+brevis backfill daily-report --from 2026-01-01 --to 2026-01-31
 ```
 
 The scheduler **creates** runs; the queue **executes** them. The two loops are
@@ -160,7 +160,7 @@ steps:
 
 ```bash
 brevis run wf.yaml --param load_full=true
-brevis backfill diario --from 2026-01-01 --to 2026-01-31 --param load_full=true
+brevis backfill daily-report --from 2026-01-01 --to 2026-01-31 --param load_full=true
 ```
 
 In the UI, a workflow with params gets a form instead of the plain button.

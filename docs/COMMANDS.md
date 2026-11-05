@@ -364,11 +364,11 @@ run in parallel at the same level:
 
 ```
 workflow hello (dag, 4 steps) in examples
-  ▶ preparar
-    preparar | preparando
-  ✓ preparar
-  ▶ validar
-  ▶ extrair
+  ▶ prepare
+    prepare | preparing
+  ✓ prepare
+  ▶ validate
+  ▶ extract
 ```
 
 ---

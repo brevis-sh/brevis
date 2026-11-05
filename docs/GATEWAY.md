@@ -231,7 +231,7 @@ attached to every record:
   "host": "x.y",
   "ingestion_id": "84aaee4b-66af-5cc0-b97b-6856dec95b25",
   "_dead_letter_reason": "… rpc error: code = NotFound desc = Topic not found",
-  "_dead_letter_sink": "pubsub:brevis-local/nao-existe",
+  "_dead_letter_sink": "pubsub:brevis-local/does-not-exist",
   "_dead_letter_at": "2026-09-24T22:02:32Z",
   "_dead_letter_batch": "e7ff3a12136fb913514e0efd57eaa9c6",
   "_dead_letter_stream": "clicks"
@@ -550,7 +550,7 @@ inside `data`.
   "table_name": "app_orders",
   "unique_key": "id",
   "operation":  "INSERT",
-  "description": "Pedidos do app",
+  "description": "App orders",
   "data": {
     "id": "A-3",
     "total": 150,

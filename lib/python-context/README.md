@@ -47,8 +47,8 @@ Reading a step this one does not `depends_on` is an error pointing at the fix.
 
 ```python
 context.set(name="Daniel")
-context.set(label="Nome")
-# both survive: {"name": "Daniel", "label": "Nome"}
+context.set(label="Name")
+# both survive: {"name": "Daniel", "label": "Name"}
 ```
 
 Calls **merge**. Setting the same key twice keeps the last write; setting a
