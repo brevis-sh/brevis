@@ -40,6 +40,8 @@ type Metadata struct {
 	Namespace   string            `json:"namespace,omitempty"`
 	Labels      map[string]string `json:"labels,omitempty"`
 	Annotations map[string]string `json:"annotations,omitempty"`
+	// DeletionTimestamp is set while the pod is shutting down.
+	DeletionTimestamp string `json:"deletionTimestamp,omitempty"`
 }
 
 type PodSpec struct {
@@ -136,6 +138,7 @@ type Resources struct {
 
 type PodStatus struct {
 	Phase             string            `json:"phase,omitempty"`
+	PodIP             string            `json:"podIP,omitempty"`
 	Conditions        []Condition       `json:"conditions,omitempty"`
 	Reason            string            `json:"reason,omitempty"`
 	Message           string            `json:"message,omitempty"`
