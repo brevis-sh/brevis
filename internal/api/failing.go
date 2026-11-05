@@ -22,9 +22,11 @@ func CachedFailing(r FailingReader, ttl time.Duration, now func() time.Time) Fai
 }
 
 // freshTTL is how old the Overview's list may be. The query costs ~100 ms at
-// a hundred thousand runs and every open Overview asks every ten seconds, so
-// uncached, ten tabs are sixty reads a minute; three seconds makes it at most
-// twenty, and is still shorter than the poll that redraws the list.
+// a hundred thousand runs, and every open Overview reads it again whenever the
+// event stream says the runs changed (and on a timer only while the stream is
+// down), so ten tabs are ten reads per change, a burst of changes more. Three
+// seconds lets the tabs that wake together share one read, and is still shorter
+// than any change a person is waiting to see leave the list.
 const freshTTL = 3 * time.Second
 
 type cachedFailing struct {
