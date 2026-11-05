@@ -113,7 +113,7 @@ type Var struct {
 	ValueFrom *VarSource `json:"valueFrom,omitempty"`
 }
 
-// FonteVar points a variable at a key of a Secret. The value never passes
+// VarSource points a variable at a key of a Secret. The value never passes
 // through the engine: the kubelet reads it when starting the container.
 type VarSource struct {
 	SecretKeyRef *KeyRef `json:"secretKeyRef,omitempty"`

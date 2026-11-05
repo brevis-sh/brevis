@@ -150,8 +150,8 @@ func asMap(t *testing.T, p any) map[string]any {
 	return m
 }
 
-func containsAll(s string, partes ...string) bool {
-	for _, p := range partes {
+func containsAll(s string, parts ...string) bool {
+	for _, p := range parts {
 		if !bytes.Contains([]byte(s), []byte(p)) {
 			return false
 		}

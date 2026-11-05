@@ -88,11 +88,11 @@ func (g *fakeGCS) server(t *testing.T) *storage.Client {
 
 // extractMultipartBody takes the second part of the GCS multipart upload.
 func extractMultipartBody(b []byte) []byte {
-	partes := strings.Split(string(b), "\r\n\r\n")
-	if len(partes) < 3 {
+	parts := strings.Split(string(b), "\r\n\r\n")
+	if len(parts) < 3 {
 		return b
 	}
-	body := partes[2]
+	body := parts[2]
 	if i := strings.LastIndex(body, "\r\n--"); i >= 0 {
 		body = body[:i]
 	}

@@ -295,7 +295,7 @@ func TestIntegrationTheTypesComeFromTheServer(t *testing.T) {
 			'{"a":[1,2]}'::jsonb             AS document,
 			'178d0b49-dece-5738-b8eb-f5cae2221aea'::uuid AS identifier,
 			NULL::text                       AS empty,
-			ARRAY[1,2,3]                     AS numeros`}
+			ARRAY[1,2,3]                     AS numbers`}
 
 	seq, err := source.Read(context.Background(), sdk.ReadOptions{})
 	if err != nil {

@@ -113,7 +113,7 @@ const DefaultPerPage = 25
 // retry, is as unfinished as one whose step is going.
 var InFlight = []string{"running", "queued", "retrying"}
 
-// ProximaExecucao is a future trigger, already computed from the cron.
+// NextRun is a future trigger, already computed from the cron.
 type NextRun struct {
 	Workflow string
 	Cron     string

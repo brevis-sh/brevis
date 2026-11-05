@@ -84,19 +84,19 @@ func GenerateHash(password string) (string, error) {
 // login path, and the only safe answer there is "did not get in". The
 // configuration error is caught at boot, by Credential.Validate.
 func CheckPassword(hash, password string) bool {
-	partes := strings.Split(hash, "$")
-	if len(partes) != 4 || partes[0] != "pbkdf2-sha256" {
+	parts := strings.Split(hash, "$")
+	if len(parts) != 4 || parts[0] != "pbkdf2-sha256" {
 		return false
 	}
-	iter, err := strconv.Atoi(partes[1])
+	iter, err := strconv.Atoi(parts[1])
 	if err != nil || iter <= 0 {
 		return false
 	}
-	salt, err := base64.RawStdEncoding.DecodeString(partes[2])
+	salt, err := base64.RawStdEncoding.DecodeString(parts[2])
 	if err != nil {
 		return false
 	}
-	expected, err := base64.RawStdEncoding.DecodeString(partes[3])
+	expected, err := base64.RawStdEncoding.DecodeString(parts[3])
 	if err != nil {
 		return false
 	}

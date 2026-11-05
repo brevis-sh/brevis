@@ -52,7 +52,7 @@ func TestFilter(t *testing.T) {
 		{"no filter", pages.Filter{}, []string{"id_verification", "platform_workspace", "vendors_inmet", "protect_ad_hoc"}},
 		{"partial search", pages.Filter{Search: "verif"}, []string{"id_verification"}},
 		{"search ignores case", pages.Filter{Search: "PLATFORM"}, []string{"platform_workspace"}},
-		{"ultimo estado", pages.Filter{State: "failed"}, []string{"platform_workspace"}},
+		{"last state", pages.Filter{State: "failed"}, []string{"platform_workspace"}},
 		{"active", pages.Filter{Active: "active"}, []string{"id_verification", "platform_workspace"}},
 		// The case that motivated the test: "paused" is a schedule switched off,
 		// not the absence of one. Merging the two would hide the workflow somebody

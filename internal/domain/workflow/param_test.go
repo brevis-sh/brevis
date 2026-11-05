@@ -219,7 +219,7 @@ func TestAParamStoredWithPortugueseKeysStillReads(t *testing.T) {
 // what every param is from the form to the step's environment.
 func TestAListParamValidatesEachItem(t *testing.T) {
 	tables := wf.Param{Name: "tables", Type: "list|string"}
-	numeros := wf.Param{Name: "days", Type: "list|integer"}
+	numbers := wf.Param{Name: "days", Type: "list|integer"}
 
 	accepted := []struct {
 		p     wf.Param
@@ -230,7 +230,7 @@ func TestAListParamValidatesEachItem(t *testing.T) {
 		{tables, "users", "one item is still a list"},
 		{tables, "", "nobody filled it in"},
 		{tables, "users, orders", "the space after a comma is the form's, not the value's"},
-		{numeros, "1,7,30", "integers"},
+		{numbers, "1,7,30", "integers"},
 	}
 	for _, c := range accepted {
 		if err := c.p.Accepts(c.value); err != nil {
@@ -243,7 +243,7 @@ func TestAListParamValidatesEachItem(t *testing.T) {
 		value string
 		why   string
 	}{
-		{numeros, "1,x,30", "an item that is not an integer"},
+		{numbers, "1,x,30", "an item that is not an integer"},
 		{tables, "users,,orders", "an empty item"},
 		{tables, "users,users", "the same item twice"},
 		{tables, "users;rm -rf /", "a character the shell interprets"},

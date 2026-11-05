@@ -134,11 +134,11 @@ func inline(m map[string]string) string {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	partes := make([]string, len(keys))
+	parts := make([]string, len(keys))
 	for i, k := range keys {
-		partes[i] = k + "=" + m[k]
+		parts[i] = k + "=" + m[k]
 	}
-	return strings.Join(partes, " ")
+	return strings.Join(parts, " ")
 }
 
 // paramsFromFlags turns repeated `--param key=value` into a map.

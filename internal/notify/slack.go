@@ -221,8 +221,8 @@ func (s *Slack) classify(a Alert) (domain, pipeline string) {
 		}
 	}
 	if domain == "-" {
-		if partes := strings.SplitN(a.Workflow, "_", 2); len(partes) == 2 {
-			domain = partes[0]
+		if parts := strings.SplitN(a.Workflow, "_", 2); len(parts) == 2 {
+			domain = parts[0]
 		}
 	}
 	return domain, pipeline

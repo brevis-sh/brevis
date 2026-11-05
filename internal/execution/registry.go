@@ -93,7 +93,7 @@ func (r *Registry) Get(name string) (Task, bool) {
 	return t, ok
 }
 
-// Nomes lists what is registered, sorted. It serves the unknown-task error:
+// Names lists what is registered, sorted. It serves the unknown-task error:
 // saying what does exist saves a trip to the documentation.
 func (r *Registry) Names() []string {
 	r.mu.RLock()

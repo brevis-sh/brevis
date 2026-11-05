@@ -513,7 +513,7 @@ func edges(kind domain.Kind, steps []StepSpec) ([]domain.Edge, error) {
 	case domain.KindChain:
 		for _, st := range steps {
 			if len(st.DependsOn) > 0 {
-				return nil, fmt.Errorf("step %q usa `depends_on` num workflow `chain`; "+
+				return nil, fmt.Errorf("step %q uses `depends_on` in a `chain` workflow; "+
 					"in a chain the order is the file's -- use `type: dag` to declare dependencies", st.ID)
 			}
 		}

@@ -336,7 +336,7 @@ func TestRowErrorsNilStatus(t *testing.T) {
 	}
 }
 
-func TestSanitiseLabel(t *testing.T) {
+func TestSanitizeLabel(t *testing.T) {
 	// BigQuery takes lowercase letters, digits, dashes and underscores, up to
 	// 63 characters, starting with a letter. Anything else is dropped rather
 	// than failing the create.
