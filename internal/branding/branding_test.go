@@ -45,7 +45,7 @@ func TestMissingFieldsInheritTheDefault(t *testing.T) {
 	if m.Subtitle != branding.Default().Subtitle {
 		t.Errorf("subtitle lost: %q", m.Subtitle)
 	}
-	// The colours are the product's own, and an empty one says so: the
+	// The colors are the product's own, and an empty one says so: the
 	// stylesheet carries them, and nothing is written for a file that sets none.
 	if m.Theme != (branding.Theme{}) {
 		t.Errorf("a file with no colors changed the theme: %+v", m.Theme)
@@ -55,7 +55,7 @@ func TestMissingFieldsInheritTheDefault(t *testing.T) {
 	}
 }
 
-// ONE COLOUR REPAINTS THAT COLOUR (issue #142). The console's default is the
+// ONE COLOR REPAINTS THAT COLOR (issue #142). The console's default is the
 // dark theme in the stylesheet; a file that sets only an accent used to write
 // all fifteen variables, fourteen of them from a palette the stylesheet no
 // longer had, and the console came up on parchment.
@@ -78,7 +78,7 @@ func TestOneColourWritesOnlyThatColour(t *testing.T) {
 	}
 }
 
-// Every colour in the file reaches the page, the skipped state included: it
+// Every color in the file reaches the page, the skipped state included: it
 // is in the file's vocabulary and was never written.
 func TestEveryColourOfTheFileIsWritten(t *testing.T) {
 	m, err := branding.Load(writeFile(t, `
@@ -124,8 +124,8 @@ theme:
 }
 
 // The values go inside a <style>. A free string there could close the declaration
-// and inject CSS -- on an operations panel, enough to hide a state
-// de falha atras de um seletor.
+// and inject CSS -- on an operations panel, enough to hide a failure
+// state behind a selector.
 func TestAnInvalidColourIsRefused(t *testing.T) {
 	poisons := []string{
 		`theme: {ink: "red"}`,
@@ -195,7 +195,7 @@ func TestTheAttributionDoesNotComeFromConfiguration(t *testing.T) {
 
 // A LIGHT THEME OF THE CLIENT'S OWN IS WRITTEN FOR THE LIGHT THEME ONLY.
 //
-// `theme:` has always been the console's colours, and the console was dark;
+// `theme:` has always been the console's colors, and the console was dark;
 // a client's dark ground written into the light theme would be dark text on
 // dark. So `theme_light:` is its own block, under the attribute the server
 // writes on <html>, and the dark one never reaches it.

@@ -1,6 +1,6 @@
 # Brevis, from the chart a client installs.
 #
-# THE CHART AND NOT A COPY. `deployments/helm/brevis` is the artefact somebody
+# THE CHART AND NOT A COPY. `deployments/helm/brevis` is the artifact somebody
 # applies in their own cluster; a demo that deploys an edited version of it
 # demonstrates something nobody has.
 #

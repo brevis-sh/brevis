@@ -214,7 +214,7 @@ func Build(ctx context.Context, d dialect.Dialect, conn dialect.Conn,
 //
 // It never has to round-trip: this is printed and published, never parsed
 // back into SQL. So "whatever the driver said" is the honest answer, and
-// normalising it here would be this file deciding what a TIMESTAMP looks
+// normalizing it here would be this file deciding what a TIMESTAMP looks
 // like on two warehouses that do not agree.
 func asText(v any) string {
 	switch t := v.(type) {
@@ -258,7 +258,7 @@ func asInt(v any) int64 {
 
 // abandon removes what a failed build left aside. The first statement of the
 // part built before the swap is the one that clears the scratch table, so it
-// is also the cleanup; it runs detached from ctx because a cancelled or
+// is also the cleanup; it runs detached from ctx because a canceled or
 // timed-out build is exactly when the scratch table has to go. Best effort:
 // the next build begins with the same statement.
 func abandon(ctx context.Context, conn dialect.Conn, pre []string) {

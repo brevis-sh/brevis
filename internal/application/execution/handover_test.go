@@ -91,7 +91,7 @@ func TestAHandedOverStepStaysRunningAndSaysWhere(t *testing.T) {
 
 // And a handover nobody wrote down is not a handover. The next scheduler
 // could not find the step and would start it again beside itself, so it is
-// stopped instead -- #122's behaviour -- and ends canceled.
+// stopped instead -- #122's behavior -- and ends canceled.
 func TestAHandoverThatCannotBeRecordedStopsTheStep(t *testing.T) {
 	rows := &endings{spyPersister: &spyPersister{}}
 	exec := &handingOver{}

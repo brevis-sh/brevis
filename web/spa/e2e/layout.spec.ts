@@ -20,7 +20,7 @@ test("the page title sits at the same place on every screen", async ({ browser, 
     const ys = Object.values(at).map((v) => Number(v.split(" y")[1]));
     expect(xs.size, `${w}px: ${JSON.stringify(at)}`).toBe(1);
     // Desktop: exact. On a phone the Workflows head sits 4 px higher than the rest (known; its actions wrap
-    // differently), so that is the tolerance, not a licence for more.
+    // differently), so that is the tolerance, not a license for more.
     expect(Math.max(...ys) - Math.min(...ys), `${w}px: ${JSON.stringify(at)}`).toBeLessThanOrEqual(w < 600 ? 4 : 0);
   }
 });

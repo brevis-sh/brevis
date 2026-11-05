@@ -492,7 +492,7 @@ func (n Node) WhenOf() string {
 }
 
 // validateWhen refuses an unknown rule at publish, naming what is valid. A rule
-// nobody recognises would otherwise mean "the default" -- a step declaring
+// nobody recognizes would otherwise mean "the default" -- a step declaring
 // `when: on_failure` would run on SUCCESS, which is the opposite of what it
 // says, discovered the night it mattered.
 func validateWhen(slug string, n Node) error {
@@ -808,7 +808,7 @@ func validateVarName(name string) error {
 	return nil
 }
 
-// findCycle devolve o caminho do ciclo, ou vazio se o grafo for aciclico.
+// findCycle returns the path of the cycle, or empty if the graph is acyclic.
 //
 // It returns the PATH, not just a boolean: whoever wrote the DAG needs to know
 // which steps close the loop in order to fix it.

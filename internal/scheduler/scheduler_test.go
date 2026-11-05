@@ -447,7 +447,7 @@ func TestPruningKeepsTheScheduleOfASlugAnotherProjectStillPublishes(t *testing.T
 // calls `setLastSlot` before the cycle, so the null-marker path was never
 // exercised. In dev, 18 workflows sat registered for hours with not one
 // automatic run -- a `*/30` among them -- because `Slots` started from
-// proprio `agora`, o proximo horario do cron era sempre futuro, e o marcador
+// its own `now`, the next cron time was always in the future, and the marker
 // never left NULL to break the circle.
 func TestANewScheduleStartsFiring(t *testing.T) {
 	s, runs, _, _ := build(t, "*/30 * * * *", false)
@@ -508,7 +508,7 @@ func TestTheFirstRunMarkerIsPlantedOnlyOnce(t *testing.T) {
 //
 // `brevis backfill` printed `N backfill run(s) queued`, and N is correct: a
 // slot that already has a run is not created twice, which is the right
-// behaviour and the reason the number can be small. What it did not say is
+// behavior and the reason the number can be small. What it did not say is
 // how small out of WHAT.
 //
 // Run the same January twice and the second prints `0 backfill run(s)

@@ -80,7 +80,7 @@ func TestWhatIsNotAReference(t *testing.T) {
 // `raw.orders` are ONE relation and a model reading both has one edge.
 //
 // Pinned here and not added to the corpus, for two reasons. The corpus was
-// labelled before any candidate existed and that provenance is the only
+// labeled before any candidate existed and that provenance is the only
 // reason its score means anything — growing it now would spend that. And a
 // mutation proved this needed its own test: deleting the folding rule from
 // the extractor leaves all thirty cases green, while the spike measured that

@@ -102,7 +102,7 @@ func TestTheMergeStillRefusesAnIncompatibleTypeAcrossSpellings(t *testing.T) {
 // S3 — CheckDestination's own filter, the one that lets EvolveAdditive reach
 // its only case. Before the fold it kept `createdat` out of `declared` for
 // the wrong reason and the check below then never saw it either, so the two
-// bugs cancelled. A mutation of one alone would have survived.
+// bugs canceled. A mutation of one alone would have survived.
 func TestCheckDestinationCountsAFoldedColumnAsPresent(t *testing.T) {
 	kept := declaredThatTheTableHas([]string{"id", "createdat", "nacionalidade"}, theirTable())
 	if strings.Join(kept, ",") != "id,createdat" {

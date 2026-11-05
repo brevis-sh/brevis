@@ -126,11 +126,11 @@ func TestAnInvalidPatternFailsAtPublishTime(t *testing.T) {
 
 func TestAnInvalidDeclarationIsRefused(t *testing.T) {
 	cases := []wf.Param{
-		{Name: "Load_Full", Type: wf.ParamBool},           // maiuscula
+		{Name: "Load_Full", Type: wf.ParamBool},           // uppercase
 		{Name: "2days", Type: wf.ParamInteger},            // starts with a digit
-		{Name: "ok", Type: "float"},                       // tipo inexistente
+		{Name: "ok", Type: "float"},                       // nonexistent type
 		{Name: "ok"},                                      // no type
-		{Name: "ok", Type: wf.ParamString, Pattern: "[("}, // regex quebrada
+		{Name: "ok", Type: wf.ParamString, Pattern: "[("}, // broken regex
 	}
 	for _, p := range cases {
 		if err := p.Validate(); err == nil {

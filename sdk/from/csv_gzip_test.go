@@ -139,7 +139,7 @@ func TestFilesWithADelimiter(t *testing.T) {
 }
 
 // comoMapa narrows the payload. Every source yields the same record model, so
-// there is nothing to normalise -- this only fails loudly if that stops being
+// there is nothing to normalize -- this only fails loudly if that stops being
 // true.
 func asMap(t *testing.T, p any) map[string]any {
 	t.Helper()

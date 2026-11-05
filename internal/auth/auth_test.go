@@ -175,7 +175,7 @@ func TestAValidSessionPassesAndCarriesTheUser(t *testing.T) {
 }
 
 // A forged cookie must not count. If the signature were not checked, the
-// cliente escreveria o proprio nome de usuario e a propria validade.
+// client would write its own username and its own expiry.
 func TestAForgedCookieDoesNotGetIn(t *testing.T) {
 	cred := credential(t, "operador", "senha-de-teste-longa")
 	gate := &auth.Gate{
@@ -247,12 +247,12 @@ func TestAHalfCredentialIsRefused(t *testing.T) {
 }
 
 // `?next=` CANNOT LEAVE THIS SITE, including by the spelling a browser
-// normalises on the way out.
+// normalizes on the way out.
 //
 // `escapeTarget` refused `//evil.com` and `https://evil.com` and let
 // `/\evil.com` through. It looks like a path and it is not one: a backslash
 // is a SLASH in a URL, so the browser reads `//evil.com` and the host is
-// evil.com. Measured, not reasoned about -- `url.Parse` on the normalised
+// evil.com. Measured, not reasoned about -- `url.Parse` on the normalized
 // string reports `Host: evil.com`.
 //
 // What that buys an attacker is the thing this function's own comment says
@@ -280,7 +280,7 @@ func TestTheNextParameterCannotLeaveThisSite(t *testing.T) {
 			t.Errorf("Target(%q) = %q, which can leave this site", away, got)
 		}
 		// AND A BROWSER'S READING OF IT, which is the only reading that
-		// matters: normalise the backslashes the way a URL parser does and
+		// matters: normalize the backslashes the way a URL parser does and
 		// ask whether a host appeared.
 		u, err := url.Parse(strings.ReplaceAll(auth.Target(away), `\`, "/"))
 		if err != nil {

@@ -572,7 +572,7 @@ type accumulatedGroup struct {
 	order  int
 }
 
-// apply drena o fluxo, agrega e devolve as rows resultantes.
+// apply drains the stream, aggregates and returns the resulting rows.
 func (d *Reduce) apply(rows iter.Seq2[Envelope, error]) iter.Seq2[Envelope, error] {
 	return func(yield func(Envelope, error) bool) {
 		groups, seen, err := d.fold(rows)

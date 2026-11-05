@@ -102,7 +102,7 @@ func TestMoreKeyDoesNotReplaceTheSafetyNet(t *testing.T) {
 
 // TestAnAbsentMoreKeyIsNotTheEndOfPagination: treating absent as the end would
 // make pagination stop at the first page in silence, which is worse than not
-// having the optimisation.
+// having the optimization.
 func TestAnAbsentMoreKeyIsNotTheEndOfPagination(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = fmt.Fprint(w, `{"results":[{"n":1}]}`)

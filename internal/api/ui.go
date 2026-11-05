@@ -598,7 +598,7 @@ func inFlight(counts map[string]int) (n int) {
 // validState refuses any state outside §7's machine.
 //
 // This is not about SQL -- the value already goes parameterised. It is about the
-// screen: `?estado=xpto` would return an empty list with every chip greyed out,
+// screen: `?estado=xpto` would return an empty list with every chip grayed out,
 // and the operator would read that as "there are no runs" rather than "that
 // filter does not exist".
 func validState(s string) string {
@@ -1031,7 +1031,7 @@ func (u *UI) trigger(w http.ResponseWriter, r *http.Request) {
 	next := "/runs/" + id.String()
 	if id == uuid.Nil {
 		// The idempotency key collided: two clicks in the same second become
-		// one run. Going back is the right behaviour -- there is no new run to
+		// one run. Going back is the right behavior -- there is no new run to
 		// go to.
 		u.log.Info("trigger ignored by idempotency", "workflow", slug)
 		next = backTo(r)

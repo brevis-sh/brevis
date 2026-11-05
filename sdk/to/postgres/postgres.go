@@ -185,7 +185,7 @@ func (t Table) Write(ctx context.Context, envelopes []core.Envelope, opt core.Wr
 	} else if err := t.evolve(ctx, conn, opt, types); err != nil {
 		return fail(err)
 	} else if len(opt.Schema) > 0 {
-		// The catalogue is re-read after an ALTER, for the same reason it is
+		// The catalog is re-read after an ALTER, for the same reason it is
 		// after a CREATE: the column list and the types below drive the COPY.
 		tableColumns, types, err = columnsOf(ctx, conn, schema, table)
 		if err != nil {

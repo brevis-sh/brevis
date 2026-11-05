@@ -202,7 +202,7 @@ func TestTheRunGraphAppliesStatePerNode(t *testing.T) {
 	if byID["c"]["error"] != "boom" || byID["c"]["exit_code"] != float64(2) {
 		t.Errorf("node c lost its error/exit code: %v", byID["c"])
 	}
-	// d never ran; it has to stay grey rather than inherit the parent's state.
+	// d never ran; it has to stay gray rather than inherit the parent's state.
 	if byID["d"]["status"] != "pending" {
 		t.Errorf("no d: %v", byID["d"])
 	}
@@ -337,8 +337,8 @@ func TestAnSDKStepBecomesAGroupWithTheStagesInside(t *testing.T) {
 	}
 }
 
-// The real cost of nesting: the column was centred assuming a FIXED height, and
-// an expanded group ran over its neighbour.
+// The real cost of nesting: the column was centered assuming a FIXED height, and
+// an expanded group ran over its neighbor.
 //
 // Each node's height is measured by what it DRAWS -- the last stage inside it --
 // and not by the height it declares. Checking against the declared one would
@@ -636,7 +636,7 @@ func TestAnEdgeLabelReachesTheDrawing(t *testing.T) {
 	}
 }
 
-// An unlabelled edge carries no label, so the payload of every workflow written
+// An unlabeled edge carries no label, so the payload of every workflow written
 // before this feature is what it was.
 //
 // The first version of this test grepped the whole body for `"label"` and

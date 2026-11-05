@@ -24,7 +24,7 @@ func testKey(t *testing.T) string {
 func readyStore(t *testing.T) (FileStore, string) {
 	t.Helper()
 	// t.TempDir comes back 0755 on this platform, and the store refuses a loose
-	// directory -- which is the requested behaviour, so the test adjusts to it.
+	// directory -- which is the requested behavior, so the test adjusts to it.
 	dir := t.TempDir()
 	if err := os.Chmod(dir, 0o700); err != nil {
 		t.Fatal(err)
@@ -223,7 +223,7 @@ func TestAKeyOfTheWrongLength(t *testing.T) {
 }
 
 // TestWithNoDirectoryItTurnsOffInsteadOfFailing: with no Dir and no env var, the
-// behaviour is exactly what it was before the feature -- and that is how it stays
+// behavior is exactly what it was before the feature -- and that is how it stays
 // a shortcut, not a
 // requisito.
 func TestWithNoDirectoryItTurnsOffInsteadOfFailing(t *testing.T) {
@@ -322,7 +322,7 @@ func TestAnUnreadableFileFallsBackToTheSeed(t *testing.T) {
 // so um encode.
 func TestASwappedKeyDoesNotDecrypt(t *testing.T) {
 	// t.TempDir comes back 0755 on this platform, and the store refuses a loose
-	// directory -- which is the requested behaviour, so the test adjusts to it.
+	// directory -- which is the requested behavior, so the test adjusts to it.
 	dir := t.TempDir()
 	if err := os.Chmod(dir, 0o700); err != nil {
 		t.Fatal(err)

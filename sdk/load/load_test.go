@@ -116,7 +116,7 @@ func TestStrategyForCountsBytesToo(t *testing.T) {
 		{"at the byte ceiling", 10, 32 << 20, 5000, 32 << 20, "inline"},
 		{"one byte past", 10, (32 << 20) + 1, 5000, 32 << 20, "gcs"},
 		// Off is off: without a byte ceiling the row count decides alone, and
-		// that is the behaviour every caller has today.
+		// that is the behavior every caller has today.
 		{"ceiling off", 10, 1 << 30, 5000, 0, "inline"},
 		// Either ceiling is enough on its own.
 		{"rows past, bytes fine", 5001, 1 << 10, 5000, 32 << 20, "gcs"},
@@ -667,7 +667,7 @@ func TestDedupMergeRequiresTheIngestionIDColumn(t *testing.T) {
 		}
 	}
 
-	// Declarada, passa.
+	// Declared, it passes.
 	if _, err := resolveConfig(&core.LoadConfig{
 		ProjectID: "p", Dataset: "d", Table: "t", Format: "ndjson",
 		Dedup: core.DedupMerge, Columns: []string{"ingestion_id", "sku"},

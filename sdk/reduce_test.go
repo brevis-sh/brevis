@@ -275,7 +275,7 @@ func generateGroups(n, g int) iter.Seq2[Envelope, error] {
 	}
 }
 
-// heapPeak mede o maior heap vivo DURANTE o fold.
+// heapPeak measures the largest live heap DURING the fold.
 //
 // Measuring afterwards does not work, and that cost one version of this test:
 // by the time the first row comes out, the groups' state is already dead -- the
@@ -337,7 +337,7 @@ func heapPeak(t *testing.T, n, groups int, agg map[string]Aggregator) uint64 {
 // Reduce's promise is not "the sum is right": it is that MEMORY does not grow
 // with the input.
 //
-// Cem grupos fixos, a entrada crescendo 100x. Se o teto se mantiver, a promessa
+// A hundred fixed groups, the input growing 100x. If the ceiling holds, the promise
 // is in the code and not only in the documentation -- and this is the feature's
 // most likely regression: somebody adding an aggregator that keeps rows.
 func TestMemoryDoesNotGrowWithTheInput(t *testing.T) {

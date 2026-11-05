@@ -1,6 +1,6 @@
 # Publishing the workflows, as a sync.
 #
-# The folder is the artefact -- a ConfigMap with the YAMLs and a Job that
+# The folder is the artifact -- a ConfigMap with the YAMLs and a Job that
 # applies them -- and `deployments/kubernetes/publish-job.yaml` spells out the
 # three commands somebody runs by hand to do it:
 #

@@ -378,14 +378,14 @@ func TestIngestionIDReadsItAfterTheRename(t *testing.T) {
 		t.Errorf("the error must list what the row has: %v", err)
 	}
 
-	// Com o nome novo, funciona.
+	// With the new name, it works.
 	if _, err := IngestionID("provider", "entity", "source_key", "observed_at")(renamed); err != nil {
 		t.Errorf("with the new name it should work: %v", err)
 	}
 }
 
 // TestRenameDoesNotChain guards a trap the move to in-place writing created,
-// and that the previous behaviour did not have.
+// and that the previous behavior did not have.
 //
 // Before, Rename built a new map by walking the record once, so {a: b, b: c}
 // over a record holding only `a` always produced {b: …}. Applying the swaps one

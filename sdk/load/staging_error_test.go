@@ -19,7 +19,7 @@ import (
 // "close gcs writer: googleapi: Error 404: The specified bucket does not
 // exist". It said neither which bucket, nor that the default changed in
 // v0.25.0, nor
-// as duas saidas. Este teste fixa as quatro coisas.
+// the two ways out. This test pins the four things.
 func TestStagingErrorNamesTheBucketAndTheWayOut(t *testing.T) {
 	l := &Loader{cfg: &core.LoadConfig{
 		StagingBucket:   "projeto-brevis-staging",
@@ -38,10 +38,10 @@ func TestStagingErrorNamesTheBucketAndTheWayOut(t *testing.T) {
 			msg := l.stagingError(context.Background(), cause.err, 12000).Error()
 
 			for _, required := range []string{
-				"projeto-brevis-staging", // qual bucket
+				"projeto-brevis-staging", // which bucket
 				"12000",                  // why it staged
-				"InlineLimit",            // saida 1
-				"create the bucket",      // saida 2
+				"InlineLimit",            // way out 1
+				"create the bucket",      // way out 2
 				"v0.25.0",                // why the name changed
 				"StagingBucket",          // how to choose another
 			} {
@@ -219,7 +219,7 @@ func TestNoHintForABucketSomebodyNamed(t *testing.T) {
 }
 
 // The probe never fails the error it is decorating: no client is the case every
-// unit test above has, and a cancelled run still gets the full message.
+// unit test above has, and a canceled run still gets the full message.
 func TestTheProbeNeverBreaksTheError(t *testing.T) {
 	l := &Loader{cfg: &core.LoadConfig{StagingBucket: "projeto-brevis-staging", ThresholdForGCS: 5000}}
 	if msg := l.stagingError(context.Background(), storage.ErrBucketNotExist, 5156).Error(); !strings.Contains(msg, "InlineLimit") {

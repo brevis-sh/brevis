@@ -12,7 +12,7 @@ import (
 	"brevis.sh/brevis/sdk/from"
 )
 
-// fonteFalsa entrega N registros, ou falha.
+// fakeSource delivers N records, or fails.
 type fakeSource struct {
 	name     string
 	lines    int

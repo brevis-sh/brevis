@@ -4,7 +4,7 @@ What this chart refuses to render.
 Every check here is a misconfiguration that Kubernetes would ACCEPT and that
 would then be wrong at runtime — the failure mode this project treats as the
 expensive one. A rejected install costs a minute; a scheduler quietly
-materialising duplicate runs costs a day of somebody's data.
+materializing duplicate runs costs a day of somebody's data.
 
 They live in one file because a validation buried next to the resource it
 guards is a validation nobody knows exists.
@@ -40,7 +40,7 @@ guards is a validation nobody knows exists.
 {{- end -}}
 
 {{/*
-The one value the chart refuses to honour rather than merely validate.
+The one value the chart refuses to honor rather than merely validate.
 
 The schema accepts the key only so this message can exist: "Additional property
 replicas is not allowed" would say what happened and not what it costs.

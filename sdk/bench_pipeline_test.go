@@ -13,10 +13,10 @@ import (
 	"brevis.sh/brevis/sdk/from"
 )
 
-// BenchmarkExtractTransform mede o caminho quente inteiro: decodificar a
+// BenchmarkExtractTransform measures the whole hot path: decoding the
 // response, apply the transformers and compose the ingestion_id -- which is
 // where a
-// fetcher passa o tempo dele.
+// fetcher spends its time.
 func BenchmarkExtractTransform(b *testing.B) {
 	var body strings.Builder
 	body.WriteString(`{"results":[`)

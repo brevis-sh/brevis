@@ -156,7 +156,7 @@ metrics.inc("vendor_rejected_total")       # a counter: it adds up
 metrics.inc("bytes_discarded_total", 4096)
 ```
 
-They come out of the **engine's** `/metrics`, on the scheduler's port, labelled
+They come out of the **engine's** `/metrics`, on the scheduler's port, labeled
 with the workflow and the step:
 
 ```

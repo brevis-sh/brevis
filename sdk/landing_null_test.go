@@ -18,7 +18,7 @@ import (
 //	  Array specified for non-repeated field: vehicle_fuel.
 //
 // The table has 0 rows. Every batch holding one such record goes to the dead
-// letter and takes its neighbours with it. Over 90 days `vehicle_fuel` was
+// letter and takes its neighbors with it. Over 90 days `vehicle_fuel` was
 // null 786 times and an array 62 times, so it would keep happening — and
 // there is no STRING → JSON migration to undo it with.
 //

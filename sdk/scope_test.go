@@ -195,7 +195,7 @@ func TestAChosenNamespaceIsDeterministic(t *testing.T) {
 // countingTarget records every batch it receives.
 type countingTarget struct {
 	batches [][]int
-	failAt  int // > 0: a leva N falha
+	failAt  int // > 0: batch N fails
 }
 
 func (d *countingTarget) Describe() string { return "destino de teste" }

@@ -307,7 +307,7 @@ func TestMalformedStreamTerminates(t *testing.T) {
 }
 
 // TestBodyStreamsFully is a regression test: the per-attempt context was
-// cancelled as soon as client.Do returned, which killed the response body
+// canceled as soon as client.Do returned, which killed the response body
 // mid-read for any payload the transport had not already buffered.
 func TestBodyStreamsFully(t *testing.T) {
 	const rows = 5000

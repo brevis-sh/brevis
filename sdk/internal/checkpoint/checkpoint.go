@@ -11,7 +11,7 @@
 //	{At}/{run_id}/{pipeline}/part-00001.ndjson
 //	{At}/{run_id}/{pipeline}/_complete
 //
-// `_complete` is written LAST, and it is what authorises a resume. Without it
+// `_complete` is written LAST, and it is what authorizes a resume. Without it
 // the depot is an interrupted extract, and resuming from an interrupted extract
 // would load half the data in silence -- the worst way to fail.
 package checkpoint
@@ -319,7 +319,7 @@ func (d *Depot) Writer() *Write {
 }
 
 // Add puts a record in the buffer. It only fails when the payload does not
-// serialise, and then the record did NOT go in -- the distinction matters to
+// serialize, and then the record did NOT go in -- the distinction matters to
 // whoever degrades, who needs to know whether this record still has to be
 // yielded.
 func (e *Write) Add(env core.Envelope) error {

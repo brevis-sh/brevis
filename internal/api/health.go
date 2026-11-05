@@ -29,7 +29,7 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 // ready responde readiness: o processo consegue atender de fato.
 //
 // Here it does consult the dependencies. A failure takes the pod out of the load
-// balancer without killing it, which is the correct behaviour when the database
+// balancer without killing it, which is the correct behavior when the database
 // is down.
 func (s *Server) ready(w http.ResponseWriter, r *http.Request) {
 	checks := make(map[string]string, len(s.checkers))

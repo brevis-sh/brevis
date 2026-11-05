@@ -16,8 +16,7 @@ import (
 )
 
 // sdkSpeaker is a step that speaks the way the SDK speaks: one marked line
-// per
-// transicao, no meio da saida normal.
+// per transition, in the middle of the normal output.
 type sdkSpeaker struct{ lines []string }
 
 func (sdkSpeaker) Name() string                         { return "falador" }
@@ -256,13 +255,13 @@ func TestStagesArriveThroughTheStepsLog(t *testing.T) {
 	if strings.Contains(spy.log, "@brevis:") {
 		t.Errorf("the marked line ended up in the step's log:\n%s", spy.log)
 	}
-	// Nem na tela do CLI.
+	// Nor on the CLI's screen.
 	for _, l := range screen.lines {
 		if strings.Contains(l, "@brevis:") {
 			t.Errorf("the marked line went to the Report: %q", l)
 		}
 	}
-	// E a saida de verdade continua inteira.
+	// And the real output is still intact.
 	for _, expected := range []string{"buscando a pagina 1", "pronto"} {
 		if !strings.Contains(spy.log, expected) {
 			t.Errorf("the program's output was lost with it: %q is missing from\n%s", expected, spy.log)
@@ -594,7 +593,7 @@ func TestAStepWithAHostGoesToThatHost(t *testing.T) {
 //
 // `image:` degrades to local mode with a warning, because a container and a
 // process are the same command in two wrappers. A host is not: it is where the
-// licence lives, or the GPU, or the data. Running the command somewhere else is
+// license lives, or the GPU, or the data. Running the command somewhere else is
 // the worst of the three outcomes, and the message has to carry what the
 // installation actually offers -- "unknown host" alone sends somebody hunting a
 // typo that may be in the configuration instead.

@@ -76,7 +76,7 @@ func (Dialect) ExpireSchema(schema string) string {
 // warehouses.
 //
 // Anything that is not a VIEW is reported as a table, deliberately: an
-// external or materialised view is not something this tool made, and
+// external or materialized view is not something this tool made, and
 // answering "nothing is there" would send a CREATE at it.
 func (Dialect) KindOf(ref string) string {
 	schema, name, _ := strings.Cut(ref, ".")

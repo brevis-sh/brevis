@@ -83,7 +83,7 @@ func TestInsertSQLReservedWord(t *testing.T) {
 	}
 }
 
-// TestSplitName cobre o banco implicito.
+// TestSplitName covers the implicit database.
 func TestSplitName(t *testing.T) {
 	if b, tb := splitName("landing.pedidos"); b != "landing" || tb != "pedidos" {
 		t.Errorf("= (%q, %q)", b, tb)

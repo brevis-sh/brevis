@@ -160,7 +160,7 @@ func TestRetryGivesUpAfterTheLimit(t *testing.T) {
 	}
 }
 
-// Cancelling the context stops the DAG and fires no retry -- retrying against a
+// Canceling the context stops the DAG and fires no retry -- retrying against a
 // cancelamento e desperdicio.
 func TestCancellingFiresNoRetry(t *testing.T) {
 	reg := execution.NewRegistry()
@@ -310,7 +310,7 @@ func TestStderrOnASucceedingStepIsNotAFailure(t *testing.T) {
 	}
 }
 
-// O dbt imprime "Parsing Error" em STDOUT. Capturar so stderr deixava a falha
+// dbt prints "Parsing Error" on STDOUT. Capturing only stderr left the failure
 // as "exited with code 2", without the cause that was on the screen all along.
 func TestAFailureWithNoStderrUsesStdout(t *testing.T) {
 	exec, err := local.New("local")

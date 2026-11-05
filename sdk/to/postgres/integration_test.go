@@ -1197,8 +1197,8 @@ func TestTheDocumentColumnIsQueryableJSON(t *testing.T) {
 //
 // BigQuery refuses one, because there the row is marshalled whole and the
 // string becomes a JSON string literal. Postgres parses it, and has always
-// done so. This pins that difference: a refusal generalised to every
-// destination would break loads that are correct today, and the generalising
+// done so. This pins that difference: a refusal generalized to every
+// destination would break loads that are correct today, and the generalizing
 // is the tempting move.
 func TestAStringIntoAJSONColumnIsFineHere(t *testing.T) {
 	conn := connect(t)
@@ -1407,7 +1407,7 @@ func TestEvolutionAddsFlattenedColumns(t *testing.T) {
 // `asset_asset` was created from a record with `"vehicle_fuel": null`. The
 // column became STRING and the next batch carried an array, so the load job
 // refused it and every batch holding one went to the dead letter with its
-// neighbours. The table had 0 rows. Over 90 days the field was null 786 times
+// neighbors. The table had 0 rows. Over 90 days the field was null 786 times
 // and an array 62 times.
 func TestANullDoesNotTypeAColumnTheArrayCannotFit(t *testing.T) {
 	conn := connect(t)

@@ -117,7 +117,8 @@ steps:
 
 // TestASpaceInTheVariablesNameDoesNotGetThrough: `TOKEN : x` with a space before
 // the
-// pontos e YAML valido, e o espaco iria junto no nome -- o pod sobe, o binario
+// dots and is valid YAML, and the space would travel with the name -- the pod
+// starts, the binary
 // does not find the variable, and nothing along the way says why.
 func TestASpaceInTheVariablesNameDoesNotGetThrough(t *testing.T) {
 	yaml := "name: x\ntype: chain\nsteps:\n  - id: a\n    run: echo\n    env:\n      ' TOKEN ': value\n"

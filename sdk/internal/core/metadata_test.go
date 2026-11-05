@@ -140,7 +140,7 @@ func TestEnvIntRenamedAcceptsTheOldName(t *testing.T) {
 // DedupKey defaults to ingestion_id and refuses anything that could not be a
 // column name.
 //
-// It reaches SQL -- `ON CONFLICT (…)` and a catalogue query -- and it comes
+// It reaches SQL -- `ON CONFLICT (…)` and a catalog query -- and it comes
 // from a config file, so it is validated rather than quoted and hoped:
 // quoting makes `"; DROP TABLE x; --` a legal identifier, which is not the
 // failure anybody wants to find out about.

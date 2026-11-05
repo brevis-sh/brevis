@@ -3,7 +3,7 @@
 #
 # `helm lint` only says the templates parse. What breaks an installation is a
 # rendered manifest that Kubernetes ACCEPTS and that is wrong at runtime -- two
-# scheduler replicas materialising duplicate runs, a Role without `pods/log` so
+# scheduler replicas materializing duplicate runs, a Role without `pods/log` so
 # every log stays empty, migrations racing the API instead of preceding it. Each
 # of those is asserted below, on the rendered output.
 #
@@ -71,7 +71,7 @@ done
 tem() { grep -q -- "$2" "$1"; }
 
 # One scheduler, and a rollout that does not overlap it. Two replicas would
-# materialise the same slots; RollingUpdate would briefly run two.
+# materialize the same slots; RollingUpdate would briefly run two.
 python3 - "$rendered" <<'PY' || erro "the scheduler is not exactly one replica with strategy Recreate"
 import re, sys
 doc = open(sys.argv[1]).read()

@@ -1,9 +1,9 @@
 import { useT } from "../i18n";
 
 // THE CONSOLE'S ONE VOCABULARY OF STATE, as web/components/status.go draws it:
-// a mark in a shape and the word, both in the state's colour. Filled is settled,
+// a mark in a shape and the word, both in the state's color. Filled is settled,
 // a ring is waiting, a spinning ring is working, a diamond needs a person. The
-// mark itself (.st, .st-<shape>) is the server stylesheet's; the colour is the
+// mark itself (.st, .st-<shape>) is the server stylesheet's; the color is the
 // token's text class, written out whole so it stays in the sheet.
 const LOOK: Record<string, [shape: string, colour: string]> = {
   success: ["dot", "text-state-success"],
@@ -25,7 +25,7 @@ const LOOK: Record<string, [shape: string, colour: string]> = {
   live: ["pulse", "text-state-success"],
   // Nothing to report is a dashed ring, the vocabulary's shape for "no information" (as unidentified and never_ran).
   unknown: ["ring-dashed", "text-muted"],
-  // A stream's measured health. Four shapes, so colour never carries it alone: settled dot, quiet ring, warning
+  // A stream's measured health. Four shapes, so color never carries it alone: settled dot, quiet ring, warning
   // triangle (as "late"), failed diamond (as "failed").
   healthy: ["dot", "text-state-success"],
   quiet: ["ring", "text-muted"],

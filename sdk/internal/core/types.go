@@ -305,7 +305,7 @@ type LoadConfig struct {
 	//
 	// EvolveNone -- the zero value -- refuses any difference, which is what
 	// this path did before, silently. The Postgres and MySQL destinations have
-	// honoured this field for a while; BigQuery ignored it, and `auto_table`
+	// honored this field for a while; BigQuery ignored it, and `auto_table`
 	// declared EvolveAdditive on every destination regardless.
 	//
 	// The result: adding a fixed column to the gateway broke every BigQuery

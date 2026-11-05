@@ -107,7 +107,7 @@ func TestAcceptanceCriterion_100Runs_Concurrency5(t *testing.T) {
 	wg.Add(1)
 	go func() { defer wg.Done(); _ = d.Run(ctxD) }()
 
-	// Espera o estado estabilizar em maxConc em voo.
+	// Wait for the state to settle at maxConc in flight.
 	deadline := time.After(10 * time.Second)
 	for running.Load() < maxConc {
 		select {
@@ -116,7 +116,7 @@ func TestAcceptanceCriterion_100Runs_Concurrency5(t *testing.T) {
 		case <-time.After(20 * time.Millisecond):
 		}
 	}
-	time.Sleep(300 * time.Millisecond) // deixa o dispatcher tentar pegar mais
+	time.Sleep(300 * time.Millisecond) // lets the dispatcher try to take more
 
 	count, err := repo.CountByStatus(ctx)
 	if err != nil {
@@ -218,7 +218,7 @@ func TestEnqueueIsIdempotent(t *testing.T) {
 }
 
 // Two competing dispatchers must not receive the same item -- which is what
-// FOR UPDATE SKIP LOCKED garante.
+// FOR UPDATE SKIP LOCKED guarantees.
 func TestClaimDoesNotHandOutTheSameItemTwice(t *testing.T) {
 	pool := testDB(t)
 	ctx := context.Background()
@@ -457,7 +457,7 @@ func TestTheAlertGoesOutOnceWhenTheAttemptsRunOut(t *testing.T) {
 
 	go func() { _ = d.Run(ctx) }()
 
-	// Espera o run esgotar as tentativas.
+	// Wait for the run to exhaust its attempts.
 	deadline := time.Now().Add(15 * time.Second)
 	for time.Now().Before(deadline) {
 		current, _ := repo.Get(ctx, r.ID)
@@ -654,7 +654,7 @@ func TestThePerWorkflowLimitHoldsTheRestBack(t *testing.T) {
 }
 
 // A limit greater than 1 hands out exactly the limit -- no fewer (which would
-// be serialisation), and no more.
+// be serialization), and no more.
 func TestALimitOfThreeHandsOutThree(t *testing.T) {
 	pool := testDB(t)
 	repo := postgres.NewRunRepo(pool)
@@ -692,7 +692,7 @@ func TestAWorkflowAtItsLimitDoesNotBlockTheOthers(t *testing.T) {
 	}
 }
 
-// With no limit declared (0) nothing changes -- the old behaviour stays the
+// With no limit declared (0) nothing changes -- the old behavior stays the
 // default.
 func TestWithNoLimitItHandsOutEverythingThatFits(t *testing.T) {
 	pool := testDB(t)
@@ -837,7 +837,7 @@ func TestTheAlertCarriesTheStepAndTheLog(t *testing.T) {
 //
 // `Run` waits for in-flight work before returning, and that promise was empty:
 // everything after `executar` used the RUN's context, which the signal had
-// already cancelled, so `Transition` and `Done` failed in silence. The run
+// already canceled, so `Transition` and `Done` failed in silence. The run
 // came out marked SUCCESS with its item still claimed, and the visibility sweep
 // returned it fifteen minutes later and counted it as a FAILED attempt of a run
 // that had succeeded.

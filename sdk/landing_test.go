@@ -59,7 +59,7 @@ func TestTheLandingIDIsFrozen(t *testing.T) {
 	}
 }
 
-// Map iteration is randomised, so a fingerprint that is not canonical gives a
+// Map iteration is randomized, so a fingerprint that is not canonical gives a
 // different id on every call for the same record. That is the one thing it
 // exists to prevent.
 func TestTheLandingIDDoesNotMoveBetweenCalls(t *testing.T) {

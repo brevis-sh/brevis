@@ -83,7 +83,7 @@ func TestTheCounterWindowRolls(t *testing.T) {
 			ctx := context.Background()
 			key := fmt.Sprintf("rolls:%s:%d", b.name, time.Now().UnixNano())
 
-			// The timing separates the two behaviours rather than merely
+			// The timing separates the two behaviors rather than merely
 			// outlasting both, which the first version of this did and so
 			// passed against the bug.
 			//

@@ -13,7 +13,7 @@ import { describe, expect, it } from "vitest";
 //
 // Scope, and why: JSX text and JSX attributes only. The ghost fixtures at the top
 // of the screens (GHOST rows with "Source label") are plain object properties
-// drawn as grey bars, never read by a person, so properties are not scanned.
+// drawn as gray bars, never read by a person, so properties are not scanned.
 
 const ATTRS = new Set(["title", "aria-label", "placeholder", "alt", "label", "text", "aria-description"]);
 

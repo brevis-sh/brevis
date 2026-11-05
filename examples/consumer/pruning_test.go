@@ -72,7 +72,7 @@ func TestReadingALocalFileCompilesNoCloud(t *testing.T) {
 		{"from on its own does not bring Google in", []string{
 			"brevis.sh/brevis/sdk/from"}, "cloud.google.com", false},
 
-		// Os controles: quem pede o backend recebe o backend.
+		// The controls: whoever asks for a backend gets that backend.
 		{"store/s3 traz a AWS", []string{
 			"brevis.sh/brevis/sdk/store/s3"}, "aws-sdk-go", true},
 		{"store/gcs traz o Google", []string{

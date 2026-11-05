@@ -110,7 +110,7 @@ func TestCanonicalJSONDoesNotEscapeHTML(t *testing.T) {
 	}
 	// The assertion is about the ABSENCE of the escape: encoding/json writes
 	// \u003c, and Python writes the character. Written the other way round, it
-	// failed precisely when the behaviour was right.
+	// failed precisely when the behavior was right.
 	if strings.Contains(string(got), `\u003c`) {
 		t.Errorf("escaped HTML the way encoding/json does: %s", got)
 	}

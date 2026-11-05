@@ -232,7 +232,7 @@ func (t Table) check() error {
 	return nil
 }
 
-// EncodeNDJSON serialises the batch into the format COPY reads.
+// EncodeNDJSON serializes the batch into the format COPY reads.
 //
 // Exported so it is testable without a cluster, and written with a single
 // growing buffer: a batch of hundreds of thousands of rows must not allocate a
@@ -242,7 +242,7 @@ func EncodeNDJSON(envelopes []core.Envelope, columns []string) ([]byte, error) {
 	// A rough estimate, only to avoid the first few growths.
 	buf.Grow(len(envelopes) * 128)
 
-	// The keys are the same on every row, so they are serialised ONCE.
+	// The keys are the same on every row, so they are serialized ONCE.
 	// Handing a map[string]any to json.Encoder per record cost five allocations
 	// per row -- the encoder sorts the keys and boxes every value, and none of
 	// that changes between records.

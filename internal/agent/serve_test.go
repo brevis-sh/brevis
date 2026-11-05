@@ -101,7 +101,7 @@ func TestServeWithNothingRunningStopsAtOnce(t *testing.T) {
 	}
 }
 
-// Past the timeout what is left is cancelled -- the whole group, as /cancel
+// Past the timeout what is left is canceled -- the whole group, as /cancel
 // does, so nothing goes on running out of anybody's reach -- and said.
 func TestADrainPastItsTimeoutCancelsTheWholeGroup(t *testing.T) {
 	s := serve(t, 300*time.Millisecond)

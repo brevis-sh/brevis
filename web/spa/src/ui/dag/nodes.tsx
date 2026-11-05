@@ -12,7 +12,7 @@ export type NodeData = Record<string, any>;
 type P = NodeProps & { data: NodeData };
 
 const known = new Set(["success", "failed", "running", "retrying", "queued", "canceled", "pending", "skipped"]);
-/** A step's state as the colour token it is drawn in. */
+/** A step's state as the color token it is drawn in. */
 export const tone = (s: string | undefined) => (s && known.has(s) ? s : "pending");
 // A stage's state reuses the steps' palette: `done` is the same green as `success`.
 const STAGE_TONE: Record<string, string> = { done: "success", running: "running", failed: "failed", aborted: "canceled" };

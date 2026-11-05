@@ -116,7 +116,7 @@ func TestThereIsNoInstantAFinishingExecutionCannotBeResumed(t *testing.T) {
 	}
 }
 
-// Cancelling what already finished asked for something already true. It was
+// Canceling what already finished asked for something already true. It was
 // answered, without --state-dir, with an error saying the process "may still
 // be running" -- of a process that had exited.
 func TestCancellingAFinishedExecutionIsHonestlyANoOp(t *testing.T) {

@@ -8,10 +8,10 @@ import (
 	"brevis.sh/brevis/internal/execution"
 )
 
-// TestALocalSecretComesFromTheEnginesEnvironment: em Kubernetes a coordenada aponta um
+// TestALocalSecretComesFromTheEnginesEnvironment: in Kubernetes the coordinate points at a
 // Secret; in local there is no Secret at all, so the engine reads the variable of
 // the same
-// nome do proprio ambiente.
+// name from its own environment.
 func TestALocalSecretComesFromTheEnginesEnvironment(t *testing.T) {
 	t.Setenv("GABRIEL_SESSION_COOKIE", "session=abc==")
 

@@ -16,11 +16,11 @@ import (
 // fakeAPI stands in for the API server: a sequence of phases, the log and a
 // record of what was asked. Testing the whole cycle with no cluster is what makes
 // this
-// caminho verificavel na CI.
+// path verifiable in CI.
 type fakeAPI struct {
 	mu sync.Mutex
 
-	phases    []k8s.Pod // devolvidas em ordem, a ultima repete
+	phases    []k8s.Pod // returned in order, the last one repeats
 	read      int
 	log       string
 	logErr    error
@@ -297,7 +297,7 @@ func TestTheNameChangesWithTheRunsAttempt(t *testing.T) {
 }
 
 // KeepFailedPod keeps a pod that FINISHED failing, for somebody to read. A pod
-// whose run was cancelled has not finished -- it is still running its step --
+// whose run was canceled has not finished -- it is still running its step --
 // and keeping it keeps that step running beside the run's next attempt, which
 // is the duplicate execution #121 exists to end. It is deleted.
 func TestACancelledPodIsDeletedEvenWhenFailedOnesAreKept(t *testing.T) {

@@ -510,7 +510,7 @@ func TestCancelReachesTheAgent(t *testing.T) {
 }
 
 // An unreachable agent is a REAL STATE and the error names it: the step is
-// cancelled here and may still be running there. A spinner that never resolves
+// canceled here and may still be running there. A spinner that never resolves
 // is what this replaces.
 func TestAnUnreachableAgentSaysTheProcessMaySurvive(t *testing.T) {
 	agent := &fakeAgent{cancelErr: errors.New("connection refused")}
@@ -603,7 +603,7 @@ func (h *holdingAgent) Cancel(ctx context.Context, instance, execID string) erro
 	return nil
 }
 
-// A run whose context is cancelled -- the scheduler shutting down, or the
+// A run whose context is canceled -- the scheduler shutting down, or the
 // claim lost to the sweep (#121) -- stops its process on the host, not only
 // the engine's reading of it. Until this, nothing called Agent.Cancel on that
 // path, and the process ran on undisturbed beside the run's next attempt.
@@ -634,7 +634,7 @@ func TestACancelledRunCancelsItsProcessOnTheHost(t *testing.T) {
 	}
 }
 
-// A step that FINISHED is not cancelled afterwards: its process is gone, and a
+// A step that FINISHED is not canceled afterwards: its process is gone, and a
 // cancel for it would be a request about nothing -- or, with a recycled
 // execution id, about something else.
 func TestAFinishedStepIsNotCancelledWhenItsContextEnds(t *testing.T) {

@@ -752,7 +752,7 @@ func (h *harness) incrementalFirstBuild(t *testing.T) {
 
 // NOTHING NEW CHANGES NOTHING. The whole point: a second build of an
 // unchanged source is not a rebuild, and a dialect that re-ran the model in
-// full would pass every count here and cost the money this materialisation
+// full would pass every count here and cost the money this materialization
 // exists to save.
 func (h *harness) incrementalNothingNew(t *testing.T) {
 	h.incBuild(t, false)
@@ -823,7 +823,7 @@ func (h *harness) incrementalAddsTheNewRow(t *testing.T) {
 //
 // The changed row carries a LATER watermark, which is not a detail of the
 // test: a watermark is how the model knows a row is new, so a correction
-// written with yesterday's timestamp is a correction this materialisation
+// written with yesterday's timestamp is a correction this materialization
 // cannot see. That is the bargain, and it is why `lookback` exists elsewhere.
 func (h *harness) incrementalUpdatesInPlace(t *testing.T) {
 	h.incSource(t, rows(

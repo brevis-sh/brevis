@@ -119,7 +119,7 @@ func transformAll(upstream iter.Seq2[Envelope, error], fns []Transformer, origin
 // record: six maps per row, on a load of millions.
 //
 // The copy lives HERE, in one place, and not inside each transformer -- which is
-// what makes the saving structural instead of an optimisation to be remembered
+// what makes the saving structural instead of an optimization to be remembered
 // in every new driver.
 func applyAll(fns []Transformer, payload any) (any, bool, error) {
 	if obj, isObject := payload.(map[string]any); isObject && len(fns) > 0 {
@@ -261,7 +261,7 @@ func Rename(names map[string]string) (tr Transformer) {
 		// {a: b, b: c} over a record that only has `a` move the value to `c` or
 		// stop at `b`, depending on the order the map was walked in. Reading
 		// everything before writing gives the same result as building a new map
-		// -- which was the previous behaviour.
+		// -- which was the previous behavior.
 		type swap struct {
 			to    string
 			value any

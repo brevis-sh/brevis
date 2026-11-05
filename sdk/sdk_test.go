@@ -148,7 +148,7 @@ func TestRejectIf(t *testing.T) {
 
 // An HTML error page served with a 200 -- a portal under maintenance, a WAF, a
 // proxy -- is exactly the case the guard exists for, and was the only one it
-// deixava passar.
+// let through.
 func TestRejectIfDoesNotLetANonJSONBodyThrough(t *testing.T) {
 	err := RejectIf("error")(resp(200, `<html><body>Em manutenção</body></html>`))
 	if err == nil {
@@ -282,7 +282,7 @@ func TestExtractRecordsRefusesBeforeDecoding(t *testing.T) {
 	}
 }
 
-// --- Erros tipados ---------------------------------------------------------
+// --- Typed errors ---------------------------------------------------------
 
 func TestSourceErrorOnAMissingHost(t *testing.T) {
 	_, err := Extract(context.Background(), Source{
@@ -832,7 +832,7 @@ func TestTargetCarriesTheDedupKey(t *testing.T) {
 	}
 }
 
-// Empty is today's behaviour, exactly: the drivers default to ingestion_id.
+// Empty is today's behavior, exactly: the drivers default to ingestion_id.
 func TestAnEmptyDedupKeyChangesNothing(t *testing.T) {
 	d := Target{To: fakeTarget{}, Columns: []string{"ingestion_id", "id"}, Dedup: DedupMerge}
 	if err := d.validate(); err != nil {

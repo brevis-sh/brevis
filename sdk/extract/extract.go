@@ -677,7 +677,7 @@ func fetchPage(ctxTotal context.Context, client *http.Client, source core.Source
 	var resp *http.Response
 	// release cancels the context of the attempt that produced resp. The body
 	// is still streaming under that context, so it must stay alive until the
-	// page is drained -- cancelling it early truncates the response.
+	// page is drained -- canceling it early truncates the response.
 	release := func() {}
 
 	for attempt := 0; attempt < source.RetryConfig.MaxAttempts; attempt++ {
@@ -860,7 +860,7 @@ func fetchPage(ctxTotal context.Context, client *http.Client, source core.Source
 // A MISSING field is not "there are no more": either the API changed shape or
 // the path is wrong. Treating missing as the end would make pagination stop at
 // the first page in silence -- which is worse than not having the
-// optimisation.
+// optimization.
 func readHasMore(body []byte, path string) (bool, error) {
 	var current any
 	if err := json.Unmarshal(body, &current); err != nil {

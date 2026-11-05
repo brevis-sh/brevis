@@ -156,7 +156,7 @@ func TestWithNoStateDirARestartStillForgets(t *testing.T) {
 	}
 }
 
-// Cancelling what was restored is the honest no-op cancelling a finished one
+// Canceling what was restored is the honest no-op canceling a finished one
 // always was: what was asked for is already true.
 func TestCancellingARestoredExecutionIsANoOp(t *testing.T) {
 	dir := t.TempDir()

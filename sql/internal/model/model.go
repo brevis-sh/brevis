@@ -17,7 +17,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Materialisation is what a model becomes in the warehouse.
+// Materialization is what a model becomes in the warehouse.
 type Materialisation string
 
 const (
@@ -114,7 +114,7 @@ func Parse(path string, content []byte) (Model, error) {
 	var h header
 	dec := yaml.NewDecoder(strings.NewReader(raw))
 	// Strict, and this format can afford it: nothing exists that was written
-	// before these fields did. `materialised:` with an s is a typo the author
+	// before these fields did. `materialized:` with an s is a typo the author
 	// finds now rather than a model that silently stays a view.
 	dec.KnownFields(true)
 	if err := dec.Decode(&h); err != nil && err.Error() != "EOF" {

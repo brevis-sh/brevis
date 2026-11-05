@@ -100,7 +100,7 @@ func TestPhasesFollowThePipelineShape(t *testing.T) {
 
 // The announcement carries the version, because a badge that only says "SDK" is
 // true and useless: the version is what answers "why does this step behave
-// differently from its neighbour" without anybody opening the Dockerfile.
+// differently from its neighbor" without anybody opening the Dockerfile.
 func TestTheAnnouncementCarriesTheVersion(t *testing.T) {
 	var box []Envelope
 	events, err := stagesOf(t, testPipeline(countedSource{

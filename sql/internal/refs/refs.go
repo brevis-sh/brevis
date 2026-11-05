@@ -14,7 +14,7 @@
 // that builds its SQL at runtime. A model that hits one declares the edge
 // with `depends_on:` in its header, which is why that field exists.
 //
-// The thirty cases in testdata were labelled by hand BEFORE any candidate
+// The thirty cases in testdata were labeled by hand BEFORE any candidate
 // ran, and the extractor was written afterwards -- so passing them is not
 // evidence that it works, it is the floor that says it has not regressed.
 // The evidence is in spikes/sql-parser/VERDICT.md, against SQL nobody chose.

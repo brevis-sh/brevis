@@ -1112,7 +1112,7 @@ func TestIntegrationProvenanceLabelsTheTable(t *testing.T) {
 // why it went unnoticed.
 //
 // It loads twice on purpose: the first pass proves the JSON lands, the second
-// proves the MERGE still recognises it and ignores it.
+// proves the MERGE still recognizes it and ignores it.
 func TestIntegrationMergeIntoAJSONColumn(t *testing.T) {
 	env := requireIntegration(t)
 	ctx := context.Background()
@@ -1194,7 +1194,7 @@ func TestIntegrationMergeIntoAJSONColumn(t *testing.T) {
 
 // TestIntegrationChainWritesEverything is the proof of §6 of the spec: the
 // six-column landing table, loaded by a fetcher with NO metadata block, with
-// DedupMerge — e o ingestion_id lido de volta e conferido.
+// DedupMerge -- and the ingestion_id read back and checked.
 //
 // If the id changed, every previous load of every consumer would stop matching.
 func TestIntegrationChainWritesEverything(t *testing.T) {

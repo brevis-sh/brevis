@@ -10,7 +10,7 @@ import (
 	core "brevis.sh/brevis/sdk/internal/core"
 )
 
-// Target says where records land, and what every destination honours.
+// Target says where records land, and what every destination honors.
 //
 // The destination itself is To -- bigquery.Table, postgres.Table, to.Files.
 // What lives here instead of in the driver is what is true of all of them: the
@@ -135,7 +135,7 @@ type Target struct {
 	//
 	// A read over thousands of sources does not necessarily fit in memory: the
 	// whole batch stays alive, and the destination builds a SECOND copy of it to
-	// serialise. With FlushEvery the ceiling is N records plus the copy of N.
+	// serialize. With FlushEvery the ceiling is N records plus the copy of N.
 	//
 	// What that costs, and it has to be said:
 	//

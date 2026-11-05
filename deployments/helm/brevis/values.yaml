@@ -195,7 +195,7 @@ slack:
   existingSecret: ""
 uiURL: ""
 
-# Title, subtitle, phrase and palette, as brand.yaml. The colours override CSS
+# Title, subtitle, phrase and palette, as brand.yaml. The colors override CSS
 # variables at runtime, so a theme change recompiles nothing.
 brand:
   enabled: false

@@ -360,7 +360,7 @@ func TestARunLongerThanTheWindowRunsOnce(t *testing.T) {
 	}
 }
 
-// The heartbeat lives exactly as long as executar: renewing during it, and not
+// The heartbeat lives exactly as long as execute: renewing during it, and not
 // a single renewal after it returns.
 func TestTheHeartbeatRenewsOnlyWhileTheRunRuns(t *testing.T) {
 	pool := testDB(t)
@@ -445,7 +445,7 @@ func heldBy(t *testing.T, pool *postgres.Pool, id uuid.UUID) string {
 	return *by
 }
 
-// untilExecuted runs the dispatcher until executar has returned once, then
+// untilExecuted runs the dispatcher until execute has returned once, then
 // stops it -- Run waits for the bookkeeping, so whatever the attempt was going
 // to write has been written when this returns.
 func untilExecuted(t *testing.T, d *scheduler.Dispatcher, returned <-chan struct{}) {
@@ -484,7 +484,7 @@ func assertUntouched(t *testing.T, pool *postgres.Pool, id uuid.UUID) {
 }
 
 // AC4: the sweep took the claim while the run ran. The heartbeat finds out,
-// the attempt is cancelled -- its pod or process stops -- and it writes nothing.
+// the attempt is canceled -- its pod or process stops -- and it writes nothing.
 func TestALostClaimCancelsTheRunAndWritesNothing(t *testing.T) {
 	pool := testDB(t)
 	repo := postgres.NewRunRepo(pool)
@@ -521,7 +521,7 @@ func TestALostClaimCancelsTheRunAndWritesNothing(t *testing.T) {
 	assertUntouched(t, pool, id)
 }
 
-// The claim can be lost after the last renewal and before executar returns,
+// The claim can be lost after the last renewal and before execute returns,
 // which the heartbeat cannot see. The last write is fenced too: one more
 // renewal, and nothing written if it says the claim is gone -- whatever the
 // run's outcome was.

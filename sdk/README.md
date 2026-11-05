@@ -75,7 +75,7 @@ at all. **A driver with a vendor SDK behind it lives in its own package**, which
 is why BigQuery is `to/bigquery` and the object stores are `store/s3` and
 `store/gcs`.
 
-`Source` and `Target` hold what every driver honours: the preview and counters
+`Source` and `Target` hold what every driver honors: the preview and counters
 on one side, the declared columns, metadata and deduplication on the other.
 
 **The columns come from `Transform` and are declared in `Target.Columns`.**
@@ -802,7 +802,7 @@ computes it has to run *after*:
 
 ```go
 Stages: []sdk.Stage{
-    sdk.Map(normalise),
+    sdk.Map(normalize),
     sdk.Aggregate(sdk.Reduce{By: sdk.GroupBy("area", "year"), Agg: ...}),
     sdk.Map(sdk.IngestionID()),   // last, over the row that lands
 },
@@ -1036,7 +1036,7 @@ Imitating it would be a bet placed inside a key.
 every number as `float64`, so `{"id": 19}` and `{"id": 19.0}` arrive identical —
 and in Python the first was an `int` (`"19"`) and the second a `float`
 (`"19.0"`). With it, the literal survives as a `json.Number` and the decision is
-the one Python's `json` makes. `Response.JSON` and `Response.Object` honour it
+the one Python's `json` makes. `Response.JSON` and `Response.Object` honor it
 too, so a fetcher that decodes the body itself through `Records` does not have
 to remember `UseNumber`.
 
@@ -1100,7 +1100,7 @@ config file. Anything a literal cannot say — `NUMERIC(18,2)`, a sequence, an
 index — is `CreateSQL`, which runs your DDL instead.
 
 **A column with a default may be absent from the row.** That is what declaring
-one means, and the column check honours it.
+one means, and the column check honors it.
 
 ### Evolution
 
@@ -1139,7 +1139,7 @@ supply the implementation — so a fetcher that counted something published it
 **nowhere** unless it imported `sdk/metrics/otelmeter` and ran a collector.
 
 `StdoutMeter` writes to the pipe the engine already reads, and the numbers come
-out of the engine's own `/metrics`, labelled with the workflow and the step:
+out of the engine's own `/metrics`, labeled with the workflow and the step:
 
 ```
 brevis_step_rows_loaded{workflow="daily_sales",step="load"} 48213
@@ -1566,7 +1566,7 @@ sdk.Target{
 
 ```
    ingestion_id                          order_id  client_id    total  status
-0  b70c5149-8f66-5bbe-aa67-288694a107b6  O00001    C0022      1274.26  cancelled
+0  b70c5149-8f66-5bbe-aa67-288694a107b6  O00001    C0022      1274.26  canceled
 1  7bf901d3-703b-50b3-8b84-4614cc207724  O00002    C0029       311.02  shipped
 
 [5 of 2000 rows · 5 columns · 10ms]
@@ -1587,7 +1587,7 @@ From the command line, without a rebuild:
 ./my-fetcher -preview-target 5
 ```
 
-Not to be confused with two neighbours: `-preview` samples the **source**, and
+Not to be confused with two neighbors: `-preview` samples the **source**, and
 `-dry-run` prints **instead of** writing. This one prints *and* writes, which is
 what an operator watching a real load wants.
 

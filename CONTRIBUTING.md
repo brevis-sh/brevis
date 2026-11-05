@@ -31,7 +31,7 @@ dated specs for that reason.
 ## What a change has to carry
 
 **A test that would fail without it.** For a bug fix, the test is the proof the
-bug existed — not "added tests", but which behaviour it pins down.
+bug existed — not "added tests", but which behavior it pins down.
 
 **Proof that the test bites.** Revert your fix and check the test goes red. A
 test that cannot fail is worse than no test: it buys confidence it has not
@@ -67,7 +67,7 @@ Before opening a pull request:
 
 ```bash
 golangci-lint run ./...                     # in both modules
-./.github/scripts/generated-check.sh        # web/ artefacts are current
+./.github/scripts/generated-check.sh        # web/ artifacts are current
 ./.github/scripts/engine-weight.sh          # the engine stays lean
 ./.github/scripts/pruning-check.sh          # a consumer only compiles what it imports
 ./.github/scripts/repo-language-check.sh    # comments and messages are English

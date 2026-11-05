@@ -392,7 +392,7 @@ const NextParam = "next"
 //
 // IT CHECKED TWO SPELLINGS AND THERE ARE MORE. `//evil.com` was refused and
 // `/\evil.com` was not: it looks like a path and a browser does not read it
-// as one, because a BACKSLASH IS A SLASH in a URL. Normalised, that is
+// as one, because a BACKSLASH IS A SLASH in a URL. Normalized, that is
 // `//evil.com`, and the host is evil.com -- measured with `url.Parse`, not
 // reasoned about. Found by gosec, which this repository ran against the SDK
 // only, so the console it was pointed away from is where it was true.

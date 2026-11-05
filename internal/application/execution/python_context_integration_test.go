@@ -358,7 +358,7 @@ with open(os.environ["READINGS"], "w") as f:
 // Every piece of this is tested on its own -- the library's line, the
 // collector's parse, the registry's instrument, the exposition's format -- and
 // none of those would catch the two joins that actually break: a marker the
-// engine does not recognise, and a metric recorded against the wrong step.
+// engine does not recognize, and a metric recorded against the wrong step.
 func TestIntegrationAPythonStepsMetricReachesTheExposition(t *testing.T) {
 	python, err := exec.LookPath("python3")
 	if err != nil {

@@ -150,7 +150,7 @@ func rowsOf(t *testing.T, res run.Result) int64 {
 //
 // THE PROOF IS NOT THE COUNT. Three rows after a run that rebuilt everything
 // is the same three a correct incremental build leaves -- indistinguishable
-// from outside, which is how this materialisation ships broken and saves
+// from outside, which is how this materialization ships broken and saves
 // nobody anything. So a row in the target is changed BY HAND between runs and
 // has to survive: a rebuild erases it, an incremental build does not.
 func TestThreeRunsProcessOnlyWhatIsNew(t *testing.T) {

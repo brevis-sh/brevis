@@ -52,7 +52,7 @@ bottleneck in the wrong place.
 the body, pairs the hourly arrays by index, stamps provenance and identity, and
 writes CSV.
 
-**`summarise-weather`** reads that CSV and folds it into one row per day. Its
+**`summarize-weather`** reads that CSV and folds it into one row per day. Its
 `Stages` are the point:
 
 ```go

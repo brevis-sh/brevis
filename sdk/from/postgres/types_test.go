@@ -146,7 +146,7 @@ func TestNumericLosesNoPrecision(t *testing.T) {
 	// And the proof of the opposite, measured at run time: through a float64 the
 	// value changes. Written with a variable and not a constant on purpose --
 	// as a constant Go compares at compile time with arbitrary
-	// arbitraria, e a demonstracao vira sempre verdadeira.
+	// precision, and the demonstration is always true.
 	exact := int64(9007199254740993)
 	byFloat := int64(float64(exact))
 	if byFloat == exact {

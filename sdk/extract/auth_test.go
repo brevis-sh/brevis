@@ -103,7 +103,7 @@ func TestRefreshRenewsTheCookieForThePages(t *testing.T) {
 
 // TestARefreshThatFailsStopsTheRun: carrying on after a refused refresh sends
 // every page with a credential the API just denied, and the error
-// aparece culpando o endpoint de dados.
+// shows up blaming the data endpoint.
 func TestARefreshThatFailsStopsTheRun(t *testing.T) {
 	var askedForData atomic.Bool
 	mux := http.NewServeMux()
@@ -246,7 +246,7 @@ func TestAuthDoesNotMutateTheCallersHeader(t *testing.T) {
 
 // TestRefreshRetries: the pages get three attempts; the refresh had one. A
 // network blip on the refresh killed the whole run while the
-// mesma queda no endpoint de dados custava um retry.
+// same blip on the data endpoint cost one retry.
 func TestRefreshRetries(t *testing.T) {
 	var attempts atomic.Int32
 

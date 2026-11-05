@@ -210,7 +210,7 @@ func TestAValidStateRefusesAnUnknownOne(t *testing.T) {
 	if validState("success") != "success" {
 		t.Error("a legitimate state was refused")
 	}
-	// `?state=xpto` would return an empty list with every chip greyed out, and the
+	// `?state=xpto` would return an empty list with every chip grayed out, and the
 	// operator would read that as "there are no runs".
 	if validState("xpto") != "" || validState("' OR 1=1") != "" {
 		t.Error("an unknown state should become 'no filter'")

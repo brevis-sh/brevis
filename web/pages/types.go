@@ -66,7 +66,7 @@ type WorkflowStats struct {
 	Load []postgres.LoadDay
 }
 
-// alertTone borrows the run states' palette rather than inventing colours for a
+// alertTone borrows the run states' palette rather than inventing colors for a
 // second vocabulary. The words stay the alert's own.
 func alertTone(state string) string {
 	switch state {

@@ -321,7 +321,7 @@ func TestOutsideTheEngineNothingIsPrinted(t *testing.T) {
 }
 
 // One line, one Write. stdout is shared with whatever else the step prints, and
-// a marker split across two writes is a marker the engine will not recognise --
+// a marker split across two writes is a marker the engine will not recognize --
 // the executor's scanner breaks on lines.
 func TestTheMarkerIsASingleWrite(t *testing.T) {
 	reset(t, "{}")

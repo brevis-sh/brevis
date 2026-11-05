@@ -45,7 +45,7 @@ the bootstrap means pointing them apart is a flag away instead.
 
 ## The chart, not a copy of it
 
-`brevis.yaml` deploys `deployments/helm/brevis` — the artefact a client
+`brevis.yaml` deploys `deployments/helm/brevis` — the artifact a client
 installs, including its RBAC. A demo that deployed an edited version of it
 would demonstrate something nobody has.
 

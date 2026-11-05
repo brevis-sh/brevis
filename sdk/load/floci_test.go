@@ -368,7 +368,7 @@ func TestIntegrationBigQueryEvolvesAdditively(t *testing.T) {
 }
 
 // And it stays OFF unless asked. EvolveNone is the zero value, so a caller who
-// never heard of this keeps the old behaviour: the table is left alone and the
+// never heard of this keeps the old behavior: the table is left alone and the
 // declaration is checked against it.
 func TestIntegrationBigQueryDoesNotEvolveUnlessAsked(t *testing.T) {
 	cfg := &core.LoadConfig{
@@ -1109,7 +1109,7 @@ func TestIntegrationBigQueryADeclaredNullDoesNotRefuseTheLoad(t *testing.T) {
 // What is true: for a Schema caller with evolve ON this check is redundant,
 // and with evolve OFF it would be a NEW refusal -- possibly an improvement,
 // since the alternative is BigQuery answering `no such field` after the whole
-// extract, and definitely a behaviour change that deserves its own slice.
+// extract, and definitely a behavior change that deserves its own slice.
 //
 // So: an existing table, a Schema that declares a column it does not have,
 // evolve OFF. Today the check does not run. The day somebody switches the

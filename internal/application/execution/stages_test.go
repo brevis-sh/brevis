@@ -122,7 +122,7 @@ func TestTheCeilingProtectsTheDatabase(t *testing.T) {
 //
 // The SDK spoke Portuguese up to v0.47.0 and English from v0.48.0 on. An engine
 // that only understood the new one would make an old fetcher's stages vanish
-// from the screen -- with no error, no log, just the grey box back.
+// from the screen -- with no error, no log, just the gray box back.
 func TestBothFormatsOfTheProtocol(t *testing.T) {
 	cases := map[string]string{
 		"ingles (v0.48+)":         `@brevis:{"type":"stage","name":"extract","state":"done","ms":2400,"at":"agora","paginas":300}`,

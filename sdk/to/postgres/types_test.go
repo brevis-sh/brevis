@@ -133,10 +133,9 @@ func TestToColumnElidesALongValue(t *testing.T) {
 // TestNumericGoesTypedAndNotAsText pins a measured gain, so it does not
 // come back in silence.
 //
-// Passando a string crua, o pgx tenta um plano de encode string->numeric, ele
+// Passing the raw string, pgx tries a string->numeric encode plan, it
 // fails, and pgx builds an error just to fall through to the next plan -- once
-// per
-// row. On a 10-thousand-row load that was ~30% of the allocations, all in
+// per row. On a 10-thousand-row load that was ~30% of the allocations, all in
 // newEncodeError and fmt.Errorf: work spent producing an error nobody reads.
 //
 // Measured against the server: 290,529 allocations became 190,506, memory

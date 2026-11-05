@@ -228,7 +228,7 @@ func TestIntegrationAFieldTheTableLacksIsRefused(t *testing.T) {
 	}
 }
 
-// TestIntegrationTheReadIsStreamed falha se o driver bufferizar.
+// TestIntegrationTheReadIsStreamed fails if the driver buffers.
 func TestIntegrationTheReadIsStreamed(t *testing.T) {
 	db := open(t)
 	name := table(t, db, "i INT, texto TEXT")
@@ -1044,7 +1044,7 @@ func TestTheModeWithNothingToCompleteIsRefusedBeforeTheExtract(t *testing.T) {
 // marker it declared `meta LONGTEXT` where a gateway declares `meta JSON`.
 // Measured, before the fix:
 //
-//	colunas criadas: map[... meta:longtext tags:longtext ...]
+//	columns created: map[... meta:longtext tags:longtext ...]
 //
 // On a shared table that is a wall, not a cosmetic difference: the second
 // writer is refused with "meta is json in the table and string in the

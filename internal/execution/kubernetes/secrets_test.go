@@ -148,7 +148,7 @@ func TestWithNoListNoSecretGetsThrough(t *testing.T) {
 
 // TestWithNoSecretsInTheYAMLNothingChanges: a workflow that does not use
 // `secrets:` must not
-// passar a exigir configuracao nova.
+// start requiring new configuration.
 func TestWithNoSecretsInTheYAMLNothingChanges(t *testing.T) {
 	task := taskWithSecret()
 	task.Secrets = nil
