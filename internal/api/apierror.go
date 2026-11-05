@@ -17,7 +17,7 @@ type apiCode string
 
 const (
 	// The session endpoints (login_api.go).
-	codeInvalidCredentials apiCode = "invalid_credentials" // a wrong user and a wrong password alike
+	codeInvalidCredentials apiCode = "invalid_credentials" // #nosec G101 -- the name of an error code, not a credential; a wrong user and a wrong password alike
 	codeTooManyAttempts    apiCode = "too_many_attempts"   // locked, with retryAfter
 	codeMalformedRequest   apiCode = "malformed_request"
 	codeCrossSiteRefused   apiCode = "cross_site_refused"
