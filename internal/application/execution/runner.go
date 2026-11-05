@@ -903,7 +903,7 @@ func stepStatus(err error) string {
 	return "failed"
 }
 
-// ocupar takes a slot and returns the function that frees it.
+// acquire takes a slot and returns the function that frees it.
 //
 // It blocks until there is room, and that is the asked-for behavior: with ten
 // ready steps and five slots, five run and the rest wait, entering as slots
@@ -1194,7 +1194,7 @@ func codeHint(c int) string {
 // screen.
 const contextLines = 5
 
-// tentar runs the step once and returns the complete output (capped) along with
+// tryNode runs the step once and returns the complete output (capped) along with
 // the outcome. The output comes back on success too: a step that finished fine
 // but produced very little is a signal, and it is only visible in the log.
 func (r Runner) tryNode(ctx context.Context, w wf.Workflow, n wf.Node, inst instance, attempt int,
@@ -1212,7 +1212,7 @@ func (r Runner) tryNode(ctx context.Context, w wf.Workflow, n wf.Node, inst inst
 		return "", nil
 	}
 
-	// Asked once per attempt, and not inside montar, because building a task
+	// Asked once per attempt, and not inside build, because building a task
 	// must not do I/O. A retry of the same run does not reopen the first
 	// execution: if attempt 1 wrote a row, StepHasSucceeded already answers
 	// yes; if it failed, this is still the first, which is right.
@@ -1678,7 +1678,6 @@ func (r Runner) firstRun(ctx context.Context, slug, nodeID string) bool {
 	return !alreadyHad
 }
 
-// montar escolhe o executor e monta a task.
 // instanceSuffix is empty for an unmapped step, so every pod name and every
 // execution id in the system is byte for byte what it was.
 // executionID names ONE execution: this step, this instance, this run, these
@@ -1713,6 +1712,7 @@ func elementValue(raw json.RawMessage) string {
 	return string(raw)
 }
 
+// build chooses the executor and builds the task.
 func (r Runner) build(w wf.Workflow, n wf.Node, inst instance, attempt int, first bool) (execution.Executor, execution.TaskExec, error) {
 	image := w.ImageFor(n)
 	resources := w.ResourcesFor(n)

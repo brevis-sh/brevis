@@ -24,10 +24,10 @@ steps:
     run: dbt build
 `
 
-// TestEnvIsInheritedFromTheWorkflowAndTheStepOverrides: mesma regra de `image` e
+// TestEnvIsInheritedFromTheWorkflowAndTheStepOverrides: the same rule as `image` and
 // `resources`, and name by name -- a step that changes the log level does not
 // lose the
-// outras variaveis do workflow.
+// workflow's other variables.
 func TestEnvIsInheritedFromTheWorkflowAndTheStepOverrides(t *testing.T) {
 	w, err := Parse("gabriel.yaml", []byte(gabrielsFile))
 	if err != nil {
@@ -93,7 +93,7 @@ func TestSecretsRefusesWhatIsNotACoordinate(t *testing.T) {
 
 // TestEnvAndSecretsCannotCollide: the same variable with a literal value and
 // coming from a secret is ambiguous, and any tie-break would be a rule nobody
-// lembra.
+// remembers.
 func TestEnvAndSecretsCannotCollide(t *testing.T) {
 	yaml := `
 name: x

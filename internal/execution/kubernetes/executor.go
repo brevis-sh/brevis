@@ -294,7 +294,7 @@ func copyOut(r io.Reader, nodeID string, events chan<- execution.Event) {
 	}
 }
 
-// limpar deletes the pod, honoring the option to keep the failed ones.
+// cleanUp deletes the pod, honoring the option to keep the failed ones.
 func (e *Executor) cleanUp(name string, succeeded bool) {
 	if !succeeded && e.opts.KeepFailedPod {
 		return

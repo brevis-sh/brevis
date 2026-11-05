@@ -13,7 +13,7 @@ import (
 	dom "brevis.sh/brevis/internal/domain/run"
 )
 
-// RunRepo persiste Runs e TaskRuns.
+// RunRepo persists Runs and TaskRuns.
 type RunRepo struct{ pool *Pool }
 
 func NewRunRepo(p *Pool) *RunRepo { return &RunRepo{pool: p} }

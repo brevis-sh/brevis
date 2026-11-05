@@ -194,7 +194,7 @@ func TestWithNoRunIDItInventsNoManagedRun(t *testing.T) {
 	// The SDK decides it is under the engine by the PRESENCE of the id, so
 	// injecting the zero UUID would make a hand-run fetcher log "running under
 	// Brevis" with
-	// um id inventado.
+	// an invented id.
 	task := runStep(t, app.Runner{
 		Params:  map[string]string{"create_table": "true"},
 		History: &history{alreadyHad: false},
@@ -248,7 +248,7 @@ func TestTheDispatchersPath(t *testing.T) {
 		t.Error("the tasks' configured environment has to keep arriving")
 	}
 
-	// E o contexto do run chega junto.
+	// And the run's context arrives with it.
 	expected := map[string]string{
 		"BREVIS_RUN_ID":           id.String(),
 		"BREVIS_RUN_FIRST":        "true",

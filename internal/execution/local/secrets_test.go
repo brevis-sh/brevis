@@ -31,7 +31,7 @@ func TestALocalSecretComesFromTheEnginesEnvironment(t *testing.T) {
 	}
 }
 
-// TestAMissingSecretFailsBeforeRunning: string vazia viraria um cookie vazio e
+// TestAMissingSecretFailsBeforeRunning: an empty string would become an empty cookie and
 // a 401 further down, blaming the API for a variable nobody exported.
 func TestAMissingSecretFailsBeforeRunning(t *testing.T) {
 	cases := map[string]func(*testing.T){

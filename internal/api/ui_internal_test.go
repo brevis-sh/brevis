@@ -199,7 +199,7 @@ func TestSlicingAPage(t *testing.T) {
 	equal(t, slugs(clip(ws, f)), []string{"d", "e", "f"})
 
 	// A page past the end happens when filtering while on a high page; it has to
-	// voltar vazia em vez de estourar o slice.
+	// come back empty instead of overflowing the slice.
 	if r := clip(ws, pages.Filter{Page: 9, PerPage: 3}); r != nil {
 		t.Errorf("a page out of range returned %d rows", len(r))
 	}

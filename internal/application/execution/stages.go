@@ -330,7 +330,7 @@ func (c *stageCollector) positionFor(name string) int {
 	return largest + 1
 }
 
-// aplicar replaces the phase at the same POSITION, keeping the pipeline's order.
+// apply replaces the phase at the same POSITION, keeping the pipeline's order.
 func (c *stageCollector) apply(e Stage) {
 	for i := range c.Stages {
 		if c.Stages[i].Index == e.Index {

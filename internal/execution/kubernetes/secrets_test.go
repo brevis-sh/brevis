@@ -51,8 +51,8 @@ func TestASecretBecomesASecretKeyRef(t *testing.T) {
 	}
 }
 
-// TestJSONDoPodNaoManda value VAZIO junto de valueFrom: o servidor recusa as
-// two keys on the same variable, and the refusal talks about a container field,
+// TestThePodsJSONSendsNoEmptyValueAlongsideValueFrom: an EMPTY value next to
+// valueFrom: the server refuses the two keys on the same variable, and the refusal talks about a container field,
 // not about a line of YAML.
 func TestThePodsJSONSendsNoEmptyValueAlongsideValueFrom(t *testing.T) {
 	pod, err := BuildPod(taskWithSecret(), optionsAllowing())
@@ -70,7 +70,7 @@ func TestThePodsJSONSendsNoEmptyValueAlongsideValueFrom(t *testing.T) {
 
 // TestTheSecretDoesNotLeakInThePodsJSON: the manifest goes to the server, shows
 // up in
-// `kubectl get pod -o yaml` e costuma acabar em log de deploy.
+// `kubectl get pod -o yaml` and tends to end up in a deploy log.
 func TestTheSecretDoesNotLeakInThePodsJSON(t *testing.T) {
 	task := taskWithSecret()
 	task.Secrets["GABRIEL_SESSION_COOKIE"] = "gabriel-session/cookie"
@@ -112,11 +112,11 @@ func TestThePodsEnvironmentIsDeterministic(t *testing.T) {
 	}
 }
 
-// TestTheYAMLDoesNotChooseWhichSecretToMount: `secrets:` inverte quem escolhe --
+// TestTheYAMLDoesNotChooseWhichSecretToMount: `secrets:` inverts who chooses --
 // EnvFromSecrets comes from the scheduler's environment, `secrets:` comes from
 // the file, and the file is written by somebody else. Without the list, a
 // workflow could mount
-// qualquer Secret do namespace, inclusive o do testDB do proprio Brevis, e
+// any Secret in the namespace, Brevis's own database one included,
 // and would run an arbitrary command with it in hand.
 func TestTheYAMLDoesNotChooseWhichSecretToMount(t *testing.T) {
 	task := taskWithSecret()

@@ -47,7 +47,7 @@ type Client struct {
 	// tokens EXPIRE and the kubelet rewrites them in place; keeping the value
 	// from boot makes the process start getting 401s after an hour — a failure
 	// that shows up
-	// tarde e parece problema de RBAC.
+	// late and looks like an RBAC problem.
 	mu        sync.Mutex
 	token     string
 	tokenLido time.Time

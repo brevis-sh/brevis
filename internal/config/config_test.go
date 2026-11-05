@@ -148,7 +148,7 @@ func TestLoadReadsTheEnvironmentForEveryField(t *testing.T) {
 // pipelines that write into the data warehouse; open on the internet it is a
 // remote control for the warehouse. A warning in the log would not do -- nobody
 // reads the log of a process that
-// funciona.
+// works.
 func TestOutsideLocalACredentialIsRequired(t *testing.T) {
 	t.Setenv("BREVIS_DATABASE_URL", "postgres://x/y")
 	t.Setenv("BREVIS_ENV", "prod")
@@ -202,7 +202,7 @@ func TestUnsetEnvIsProductionAndRefusesWithoutCredential(t *testing.T) {
 // In local the interface may stay open: there the server listens on the
 // developer's own machine, and asking for a password on every `make up` would
 // push the team into switching
-// a autenticacao de vez.
+// authentication off for good.
 func TestLocalStartsWithNoCredential(t *testing.T) {
 	t.Setenv("BREVIS_DATABASE_URL", "postgres://x/y")
 	t.Setenv("BREVIS_ENV", "local")

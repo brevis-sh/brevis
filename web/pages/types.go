@@ -9,13 +9,13 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// Workflows — a lista de DAGs
+// Workflows — the list of DAGs
 // ---------------------------------------------------------------------------
 
 // Filter holds the search bar's state. It lives in the URL, not in memory: that
 // way an applied filter can be pasted into the on-call chat and opens the same
 // on the other
-// lado.
+// side.
 type Filter struct {
 	Search string
 	// State is one of the segment's questions (failing, running, paused,
@@ -137,7 +137,7 @@ type RunFilter struct {
 	Workflow string
 	From     string // YYYY-MM-DDTHH, the same format the chart emits
 	To       string
-	Label    string // descricao legivel do periodo, montada no servidor
+	Label    string // readable description of the period, built on the server
 
 	Page    int
 	PerPage int

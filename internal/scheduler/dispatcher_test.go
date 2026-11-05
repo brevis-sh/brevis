@@ -51,9 +51,9 @@ func testDB(t *testing.T) *postgres.Pool {
 
 func noLog() *slog.Logger { return slog.New(slog.NewTextHandler(io.Discard, nil)) }
 
-// CRITERIO DE ACEITE DA PHASE 2 (secao 37):
+// ACCEPTANCE CRITERION OF PHASE 2 (section 37):
 //
-//	100 runs enfileiradas, concorrencia maxima 5
+//	100 queued runs, maximum concurrency 5
 //	-> 5 RUNNING, 95 QUEUED, nothing lost.
 func TestAcceptanceCriterion_100Runs_Concurrency5(t *testing.T) {
 	pool := testDB(t)
@@ -328,7 +328,7 @@ func TestRecoveringOrphansPutsTheRunBackInTheQueue(t *testing.T) {
 	}
 	// The worker did get as far as marking running before dying -- the exact
 	// state in which
-	// a run ficava pendurada.
+	// a run used to hang.
 	if err := repo.Transition(ctx, r.ID, dom.StatusQueued); err != nil {
 		t.Fatal(err)
 	}
@@ -623,7 +623,7 @@ func TestThePerWorkflowLimitHoldsTheRestBack(t *testing.T) {
 
 	enqueue(t, repo, queue, "id_verification_today", 5, 1)
 
-	items, err := queue.Claim(ctx, "w", 10) // dez vagas globais
+	items, err := queue.Claim(ctx, "w", 10) // ten global slots
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -774,7 +774,7 @@ func TestASucceedingRetryDoesNotAlert(t *testing.T) {
 // Without this it only says something failed, and whoever is on call at 4am
 // opens the screen to find out what -- which is exactly the work the alert was
 // supposed to
-// poupar.
+// save.
 func TestTheAlertCarriesTheStepAndTheLog(t *testing.T) {
 	pool := testDB(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)

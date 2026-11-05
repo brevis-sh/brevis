@@ -196,7 +196,7 @@ var technologyTags = map[string]bool{
 	"dbt": true, "python": true, "go": true, "sql": true, "spark": true,
 }
 
-// classificar derives domain and pipeline from the tags, with the slug as a
+// classify derives domain and pipeline from the tags, with the slug as a
 // fallback.
 //
 // The convention is the one the data repository uses: the first tag is the

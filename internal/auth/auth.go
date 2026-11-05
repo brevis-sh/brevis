@@ -219,7 +219,7 @@ func (c Credential) checkSession(value string, now time.Time) bool {
 type Gate struct {
 	Cred     Credential
 	Next     http.Handler
-	Login    http.Handler // renderiza a tela de login
+	Login    http.Handler // renders the login screen
 	Insecure bool         // plain http: sends the cookie without the Secure flag
 
 	// Limit throttles Attempt; nil gets a default on first use.
@@ -319,7 +319,7 @@ func (p *Gate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (p *Gate) verify(user, password string) bool {
 	// Both comparisons ALWAYS run, even with the wrong user: returning early
 	// makes an invalid user answer faster than a valid one, and the
-	// diferenca de tempo entrega quais nomes existem.
+	// time difference gives away which names exist.
 	userOK := subtle.ConstantTimeCompare([]byte(user), []byte(p.Cred.User)) == 1
 	check := p.Check
 	if check == nil {
@@ -369,7 +369,7 @@ func (p *Gate) setCookie(w http.ResponseWriter) {
 	})
 }
 
-// SignOut apaga o cookie.
+// SignOut deletes the cookie.
 func (p *Gate) SignOut(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name: CookieName, Value: "", Path: "/",

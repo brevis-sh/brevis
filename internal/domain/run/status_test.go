@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// O caminho feliz da secao 7: created -> queued -> running -> success.
+// The happy path of section 7: created -> queued -> running -> success.
 func TestTheHappyPath(t *testing.T) {
 	r := &Run{Status: StatusCreated}
 	now := time.Now()
@@ -21,7 +21,7 @@ func TestTheHappyPath(t *testing.T) {
 	}
 }
 
-// O ciclo de retry: failed -> retrying -> queued, e de volta a running.
+// The retry cycle: failed -> retrying -> queued, and back to running.
 func TestTheRetryCycle(t *testing.T) {
 	r := &Run{Status: StatusRunning}
 	now := time.Now()

@@ -37,7 +37,7 @@ func TestTheHashAcceptsTheRightPassword(t *testing.T) {
 
 // Two hashes of the SAME password have to differ: with no salt, equal hashes in
 // the database
-// entregam quais operadores escolheram a mesma senha.
+// reveal which operators chose the same password.
 func TestTheHashUsesARandomSalt(t *testing.T) {
 	a, _ := auth.GenerateHash("mesma-senha-aqui")
 	b, _ := auth.GenerateHash("mesma-senha-aqui")
@@ -127,8 +127,7 @@ func TestAnAnonymousGETGoesToTheLoginCarryingWhereItWasGoing(t *testing.T) {
 }
 
 // Kubernetes's probes have to get through: a /health asking for a password takes
-// the
-// pod em ciclo, e o operador procura o problema no lugar errado.
+// the pod in a loop, and the operator looks for the problem in the wrong place.
 func TestProbesAndAssetsPassWithNoSession(t *testing.T) {
 	var arrived []string
 	gate := &auth.Gate{
@@ -198,7 +197,7 @@ func TestAForgedCookieDoesNotGetIn(t *testing.T) {
 	}
 }
 
-// Trocar o segredo derruba as sessoes — e a alavanca de emergencia.
+// Changing the secret invalidates the sessions -- and it is the emergency lever.
 func TestChangingTheSecretInvalidatesSessions(t *testing.T) {
 	cred := credential(t, "operador", "senha-de-teste-longa")
 	issuer := &auth.Gate{Cred: cred, Next: http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})}

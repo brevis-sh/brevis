@@ -16,8 +16,8 @@ open http://localhost:8080
 Within about twenty seconds:
 
 ```
-out/<run-id>/raw/parte-….csv      216 hourly readings
-out/<run-id>/daily/parte-….csv      9 daily summaries
+out/<run-id>/raw/part-….csv      216 hourly readings
+out/<run-id>/daily/part-….csv      9 daily summaries
 ```
 
 Tear it down with `docker compose down -v`.

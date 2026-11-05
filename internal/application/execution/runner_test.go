@@ -28,7 +28,7 @@ func (c *collector) Event(e execution.Event) {
 	c.events = append(c.events, e)
 }
 
-// CRITERIO DE ACEITE DA PHASE 3 (secao 37):
+// ACCEPTANCE CRITERION OF PHASE 3 (section 37):
 //
 //	Task A -> (Task B + Task C) -> Task D, with parallelism.
 func TestAcceptanceCriterion_GoDAGWithParallelism(t *testing.T) {
@@ -95,7 +95,7 @@ func TestAcceptanceCriterion_GoDAGWithParallelism(t *testing.T) {
 	}
 	duration := time.Since(start)
 
-	// b e c rodaram JUNTAS: em serie o total passaria de 300ms
+	// b and c ran TOGETHER: in series the total would pass 300ms
 	if picoBC.Load() < 2 {
 		t.Errorf("concurrency peak = %d; b and c should run in parallel", picoBC.Load())
 	}
@@ -161,7 +161,7 @@ func TestRetryGivesUpAfterTheLimit(t *testing.T) {
 }
 
 // Canceling the context stops the DAG and fires no retry -- retrying against a
-// cancelamento e desperdicio.
+// cancellation is waste.
 func TestCancellingFiresNoRetry(t *testing.T) {
 	reg := execution.NewRegistry()
 	var attempts atomic.Int32

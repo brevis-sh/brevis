@@ -31,7 +31,7 @@ type Workflow struct {
 	Slug     string
 	Name     string
 	Kind     Kind
-	Schedule string // cron; vazio = so disparo manual
+	Schedule string // cron; empty = manual trigger only
 
 	// Description is what this workflow is FOR, in the author's own words.
 	//
@@ -350,7 +350,7 @@ func (w Workflow) EnvOf(n Node) map[string]string { return overlay(w.Env, n.Env)
 // SecretsOf resolves a step's effective secrets, by the same rule.
 func (w Workflow) SecretsOf(n Node) map[string]string { return overlay(w.Secrets, n.Secrets) }
 
-// sobrepor returns base with cima on top, mutating neither: the maps come from
+// overlay returns base with up on top, mutating neither: the maps come from
 // the published workflow and are read by every step at the same time.
 func overlay(base, up map[string]string) map[string]string {
 	if len(base) == 0 && len(up) == 0 {
@@ -877,7 +877,7 @@ func formatCycle(ids []string) string {
 // in two files and greps for, so nothing a shell or a URL would mangle.
 var groupName = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,62}$`)
 
-// quantidade is Kubernetes's format: an integer or a decimal with an optional
+// quantity is Kubernetes's format: an integer or a decimal with an optional
 // suffix (m for CPU; Ki/Mi/Gi/K/M/G for memory).
 var quantity = regexp.MustCompile(`^[0-9]+(\.[0-9]+)?(m|[KMGTPE]i?)?$`)
 

@@ -252,8 +252,7 @@ func TestAFailedPodMayBeKeptForInspection(t *testing.T) {
 // `Pending` is not an error to Kubernetes: a pod that fits on no node stays there
 // forever. Without a cutoff the stage waits along with it -- no failure and no
 // retry -- which is how a CPU request larger than the pool's free capacity hung a
-// run
-// inteira em dev.
+// whole run in dev.
 func TestAPodThatDoesNotStartFailsWithTheSchedulersReason(t *testing.T) {
 	stuck := phase("Pending")
 	stuck.Status.Conditions = []k8s.Condition{{

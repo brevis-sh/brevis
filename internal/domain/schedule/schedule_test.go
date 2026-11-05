@@ -29,7 +29,7 @@ func TestCatchupTruePreencheALacuna(t *testing.T) {
 	if truncated {
 		t.Error("it should not truncate")
 	}
-	if len(slots) != 4 { // 02, 03, 04, 05 de janeiro
+	if len(slots) != 4 { // January 2nd, 3rd, 4th and 5th
 		t.Fatalf("slots = %d (%v), wanted 4", len(slots), slots)
 	}
 	if !slots[0].Equal(inUTC("2026-01-02T02:00:00Z")) {
@@ -57,8 +57,7 @@ func TestCatchupFalseKeepsOnlyTheMostRecent(t *testing.T) {
 }
 
 // A workflow stopped for a long time with catchup=true would drown the queue. The
-// limit
-// corta e SINALIZA, em vez de truncar em silencio.
+// limit cuts and SIGNALS, instead of truncating in silence.
 func TestTheLimitTruncatesAndSaysSo(t *testing.T) {
 	s := Schedule{
 		Cron: "0 * * * *", Timezone: "UTC", Catchup: true, Active: true,
@@ -163,7 +162,7 @@ func TestTheCronFromTheAuthorsExample(t *testing.T) {
 
 // REGRESSION: with catchup=false and a gap larger than the per-cycle limit,
 // the
-// retorno antecipado da truncagem pulava o filtro e devolvia `limite` slots —
+// early return of the truncation skipped the filter and returned `limit` slots --
 // making catchup=false behave like true. Found by an end-to-end test that created
 // 1,100 runs where it should have created 1.
 func TestCatchupFalseIsNotBypassedByTheTruncation(t *testing.T) {

@@ -95,7 +95,7 @@ func TestTheSchedulerCreatesARunAndEnqueuesIt(t *testing.T) {
 
 // The point of the idempotency: re-running the cycle at the same instant must
 // not
-// duplicar. E o caso da secao 29 — o scheduler cai e sobe de novo.
+// duplicate. And the section 29 case -- the scheduler dies and comes back up.
 func TestARepeatedCycleDoesNotDuplicate(t *testing.T) {
 	s, runs, _, pool := build(t, "0 2 * * *", true)
 	ctx := context.Background()
@@ -198,7 +198,7 @@ func TestABackfillDoesNotAdvanceTheMarker(t *testing.T) {
 }
 
 // Republishing a workflow must not make the scheduler recreate slots already
-// materializados.
+// materialized.
 func TestRepublishingPreservesTheMarker(t *testing.T) {
 	_, _, _, pool := build(t, "0 2 * * *", false)
 	ctx := context.Background()
@@ -259,7 +259,7 @@ func TestPublishingWithNoCronRemovesTheSchedule(t *testing.T) {
 
 // A one-day backfill with an hourly cron has to give 24 slots, not 23: `Next(t)`
 // returns the next one strictly after `t`, so starting exactly at
-// `de` excluiria o slot da meia-noite.
+// `from` would exclude the midnight slot.
 func TestABackfillIncludesTheEdgeSlot(t *testing.T) {
 	s, _, _, pool := build(t, "0 * * * *", false)
 	ctx := context.Background()

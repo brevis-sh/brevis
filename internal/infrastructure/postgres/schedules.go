@@ -104,7 +104,7 @@ func (r *WorkflowRepo) Publish(ctx context.Context, w wf.Workflow, project uuid.
 	return tx.Commit(ctx)
 }
 
-// Definition le o grafo publicado.
+// Definition reads the published graph.
 func (r *WorkflowRepo) Definition(ctx context.Context, slug string) (wf.Workflow, error) {
 	var raw []byte
 	if err := r.pool.QueryRow(ctx,
@@ -237,7 +237,7 @@ func (r *WorkflowRepo) Prune(ctx context.Context, project uuid.UUID, manter []st
 	return removed, nil
 }
 
-// ScheduleRepo le e atualiza agendas.
+// ScheduleRepo reads and updates schedules.
 type ScheduleRepo struct{ pool *Pool }
 
 func NewScheduleRepo(p *Pool) *ScheduleRepo { return &ScheduleRepo{pool: p} }

@@ -289,7 +289,7 @@ func graphWithStages(t *testing.T, states map[string]postgres.NodeState) graph {
 
 // An SDK step becomes a GROUP, with the stages inside it. The DAG's edges stay
 // between steps, so the group takes a single column -- and "same column
-// significa runStep em paralelo" continua verdade.
+// means runStep in parallel" stays true.
 func TestAnSDKStepBecomesAGroupWithTheStagesInside(t *testing.T) {
 	g := graphWithStages(t, map[string]postgres.NodeState{
 		"b": {NodeID: "b", Status: "running", Stages: fourStages(), SdkVersion: "v0.44.1"},

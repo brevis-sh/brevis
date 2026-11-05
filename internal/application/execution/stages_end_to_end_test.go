@@ -251,7 +251,7 @@ func TestStagesArriveThroughTheStepsLog(t *testing.T) {
 
 	// The marker must NOT become a log line: whoever is watching wants the
 	// stages, not the JSON that
-	// as transportou.
+	// carried them.
 	if strings.Contains(spy.log, "@brevis:") {
 		t.Errorf("the marked line ended up in the step's log:\n%s", spy.log)
 	}

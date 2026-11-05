@@ -26,7 +26,7 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, healthResponse{Status: "ok"})
 }
 
-// ready responde readiness: o processo consegue atender de fato.
+// ready answers readiness: the process can actually serve.
 //
 // Here it does consult the dependencies. A failure takes the pod out of the load
 // balancer without killing it, which is the correct behavior when the database

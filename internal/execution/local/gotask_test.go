@@ -74,7 +74,7 @@ func TestTheGoExecutorListsTheAvailableTasksForAnUnknownOne(t *testing.T) {
 }
 
 // A task runs in the SAME process, unlike a pod: a panic must not
-// derrubar o orquestrador junto.
+// bring the orchestrator down with it.
 func TestTheGoExecutorContainsAPanic(t *testing.T) {
 	reg := execution.NewRegistry()
 	reg.MustRegister(execution.FuncTask{TaskName: "explode", Fn: func(context.Context, execution.Input) error {

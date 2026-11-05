@@ -28,10 +28,9 @@ func TestTheWindowRespectsTheCeiling(t *testing.T) {
 	}
 }
 
-// As duas pontas precisam sobreviver: o comeco traz o comando e a configuracao,
+// Both ends must survive: the start carries the command and the configuration,
 // the end carries the reason for the failure. Keeping only one of them loses
-// half the
-// diagnostico.
+// half the diagnosis.
 func TestTheWindowKeepsBothEnds(t *testing.T) {
 	var j window
 	j.Write("COMECO-DA-SAIDA")

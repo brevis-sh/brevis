@@ -161,7 +161,7 @@ func paramsFromFlags(entries []string) (map[string]string, error) {
 	return out, nil
 }
 
-// expandir resolves files and directories into a list of YAMLs, in a stable
+// expand resolves files and directories into a list of YAMLs, in a stable
 // order. The order matters: publishing the same folder twice has to produce the
 // same log, or the difference between two deploys becomes noise.
 func expand(targets []string) ([]string, error) {
@@ -247,8 +247,7 @@ func cmdValidate() *cobra.Command {
 	}
 }
 
-// readAll parses every file into workflows, as a set.
-// avisar prints what the decoder ignored, to STDERR.
+// warnAbout prints what the decoder ignored, to STDERR.
 //
 // stderr and not stdout because `validate`'s stdout is a report somebody
 // greps and redirects, and a warning that disappears into a pipe is a warning
@@ -260,6 +259,7 @@ func warnAbout(path string, content []byte) {
 	}
 }
 
+// readAll parses every file into workflows, as a set.
 func readAll(files []string) ([]wfdom.Workflow, error) {
 	out := make([]wfdom.Workflow, 0, len(files))
 	for _, a := range files {

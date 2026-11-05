@@ -28,7 +28,7 @@ func TestParseExampleDailyReport(t *testing.T) {
 	if len(w.Nodes) != 3 {
 		t.Fatalf("nodes = %d, wanted 3", len(w.Nodes))
 	}
-	// chain vira arestas: o motor so ve DAG
+	// chain becomes edges: the engine only sees a DAG
 	if len(w.Edges) != 2 {
 		t.Fatalf("edges = %d, wanted 2 (a 3-step chain)", len(w.Edges))
 	}
