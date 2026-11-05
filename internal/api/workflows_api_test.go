@@ -264,12 +264,6 @@ func TestTheWorkflowJSONCarriesTheLoadTrendWhenThereIsHistory(t *testing.T) {
 	}
 }
 
-// schedule is the key of the row's schedule sentence, which the app says.
-func schedule(row map[string]any) any {
-	m, _ := row["schedule"].(map[string]any)
-	return m["k"]
-}
-
 func TestAOneStepWorkflowIsOneStepInTheList(t *testing.T) {
 	def := wf.Workflow{Slug: "solo", Nodes: []wf.Node{{ID: "only", Run: "python x.py"}}}
 	_, body := getJSON(t, detailUI(def, nil), "/api/workflows/solo", nil)
