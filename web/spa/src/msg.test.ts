@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderMsg, type Msg } from "./i18n";
+import { renderCat, renderMsg, type Cat, type Msg } from "./i18n";
 
 // A catalog and a formatter stand in for the hooks: the rule is which value goes where.
 const cat: Record<string, string> = {
@@ -32,5 +32,13 @@ describe("renderMsg", () => {
 
   it("leaves a missing value visible, as the catalog's fill does", () => {
     expect(renderMsg({ k: "run.why.step", a: { step: "load" } }, say)).toBe("Stopped at load (exit {code})");
+  });
+});
+
+describe("renderCat", () => {
+  it("says messages and strings one after the other, alone or as a value", () => {
+    const c: Cat = { $: "cat", v: [{ k: "inner" }, ", ", "b", " ", { k: "run.why.step", a: { step: "s", code: 1 } }] };
+    expect(renderCat(c, say)).toBe("inner, b Stopped at s (exit 1)");
+    expect(renderMsg({ k: "x", a: { n: 1, d: "d", t: "t", inner: c } }, say)).toBe("1 in d at t: inner, b Stopped at s (exit 1)");
   });
 });

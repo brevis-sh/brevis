@@ -141,7 +141,7 @@ func TestTheTargetJSONSaysWhyAndWhoReadsIt(t *testing.T) {
 		t.Errorf("row = %v", body["row"])
 	}
 	w := body["writers"].([]any)[0].(map[string]any)
-	if w["name"] != "vendors · fetch" || w["status"] != "stale" || w["reason"].([]any)[0].(map[string]any)["k"] != "catalog.why.missed" ||
+	if w["name"] != "vendors · fetch" || w["status"] != "stale" || first(w["reason"])["k"] != "catalog.why.missed" ||
 		w["href"] != "/ingest/loads/vendors/fetch" || w["cron"] == "" {
 		t.Errorf("writer = %v", w)
 	}

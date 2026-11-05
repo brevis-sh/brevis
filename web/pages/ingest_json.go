@@ -1,19 +1,16 @@
 package pages
 
 import (
-	"context"
+	"brevis.sh/brevis/web/i18n"
 	"strconv"
 	"strings"
 	"time"
-
-	"brevis.sh/brevis/web/i18n"
 )
 
-// The Ingest screens as JSON, for the React app. The server decides (a status,
-// a verdict) and sends the data; where words are meant it sends an i18n.Msg,
-// the sentence's catalog key and its values, and the app says it in the
-// reader's language. A "said" field is a string (a name the data owns) or a
-// Msg. Lists are never nil.
+// The Ingest screens as JSON, for the React app. Everything that is a
+// decision or a sentence the server writes (a status, a schedule in words,
+// a summary, a flow's detail) is finished here, in the reader's language; the
+// app only lays it out. Lists are never nil.
 
 func ptrTime(t time.Time) *time.Time {
 	if t.IsZero() {
@@ -44,14 +41,18 @@ func placeJSON(p Place) PlaceJSON {
 type SourceJSON struct {
 	Kind   string `json:"kind"`
 	Driver string `json:"driver"`
-	Label  string `json:"label"`
-	Where  string `json:"where"`
+	// Label is the origin's own name, the same in every language (a database,
+	// a driver); LabelMsg says it where the console has words for it (http,
+	// files): the app says one or the other.
+	Label    string    `json:"label"`
+	LabelMsg *i18n.Msg `json:"labelMsg"`
+	Where    string    `json:"where"`
 }
 
-func sourceJSON(ctx context.Context, s Source) SourceJSON {
+func sourceJSON(s Source) SourceJSON {
 	out := SourceJSON{Kind: s.Kind, Driver: s.Driver, Where: s.Where}
 	if s.Kind != "" {
-		out.Label = originLabel(ctx, s)
+		out.LabelMsg, out.Label = originLabel(s)
 	}
 	return out
 }
@@ -66,11 +67,16 @@ type LoadRowJSON struct {
 	Status     string     `json:"status"`
 	LastLoaded *time.Time `json:"lastLoaded"`
 	Rows       *int64     `json:"rows"`
-	Schedule   string     `json:"schedule"`
-	Manual     bool       `json:"manual"`
+	Schedule   i18n.Cat   `json:"schedule"`
 	Source     SourceJSON `json:"source"`
 	Recent     []*int64   `json:"recent"`
 	Fixing     *string    `json:"fixing"`
+}
+
+// SourceChoiceJSON is one origin the loads filter offers: its key and its words.
+type SourceChoiceJSON struct {
+	Key   string   `json:"key"`
+	Label i18n.Msg `json:"label"`
 }
 
 // ChoiceJSON is one choice of a filter: its key and its words.
@@ -90,17 +96,17 @@ type LoadsFilterJSON struct {
 // LoadsJSON is /api/ingest/loads. Summary counts every load the page holds,
 // Counts each band choice ("" for all) under the other filters.
 type LoadsJSON struct {
-	Rows      []LoadRowJSON   `json:"rows"`
-	Total     int             `json:"total"`
-	Workflows int             `json:"workflows"`
-	Summary   map[string]int  `json:"summary"`
-	Counts    map[string]int  `json:"counts"`
-	Sources   []ChoiceJSON    `json:"sources"`
-	HasLegacy bool            `json:"hasLegacy"`
-	Filter    LoadsFilterJSON `json:"filter"`
+	Rows      []LoadRowJSON      `json:"rows"`
+	Total     int                `json:"total"`
+	Workflows int                `json:"workflows"`
+	Summary   map[string]int     `json:"summary"`
+	Counts    map[string]int     `json:"counts"`
+	Sources   []SourceChoiceJSON `json:"sources"`
+	HasLegacy bool               `json:"hasLegacy"`
+	Filter    LoadsFilterJSON    `json:"filter"`
 }
 
-func loadRowJSON(ctx context.Context, t LoadTarget) LoadRowJSON {
+func loadRowJSON(t LoadTarget) LoadRowJSON {
 	recent := t.Recent
 	if recent == nil {
 		recent = []*int64{}
@@ -108,19 +114,19 @@ func loadRowJSON(ctx context.Context, t LoadTarget) LoadRowJSON {
 	return LoadRowJSON{
 		Workflow: t.Workflow, Step: t.Step, Href: t.Href(), Target: placeJSON(t.Place),
 		Legacy: t.Legacy, Status: string(t.Status), LastLoaded: ptrTime(t.LastLoaded), Rows: t.Rows,
-		Schedule: loadSchedule(ctx, t), Manual: !t.HasSchedule, Source: sourceJSON(ctx, t.Source), Recent: recent, Fixing: t.Fixing(),
+		Schedule: loadSchedule(t), Source: sourceJSON(t.Source), Recent: recent, Fixing: t.Fixing(),
 	}
 }
 
 // LoadsAsJSON lays the loads list out for the app.
-func LoadsAsJSON(ctx context.Context, v LoadsView) LoadsJSON {
+func LoadsAsJSON(v LoadsView) LoadsJSON {
 	out := LoadsJSON{
 		Rows: make([]LoadRowJSON, 0, len(v.Rows)), Total: v.Total, Workflows: v.Workflows,
-		Summary: map[string]int{}, Counts: map[string]int{}, Sources: []ChoiceJSON{}, HasLegacy: v.HasLegacy,
+		Summary: map[string]int{}, Counts: map[string]int{}, Sources: []SourceChoiceJSON{}, HasLegacy: v.HasLegacy,
 		Filter: LoadsFilterJSON{Status: v.Filter.Status, Source: v.Filter.Source, Q: v.Filter.Q, Legacy: v.Filter.Legacy},
 	}
 	for _, r := range v.Rows {
-		out.Rows = append(out.Rows, loadRowJSON(ctx, r))
+		out.Rows = append(out.Rows, loadRowJSON(r))
 	}
 	for s, n := range v.Summary {
 		out.Summary[string(s)] = n
@@ -129,7 +135,7 @@ func LoadsAsJSON(ctx context.Context, v LoadsView) LoadsJSON {
 		out.Counts[k] = n
 	}
 	for _, s := range v.Sources {
-		out.Sources = append(out.Sources, ChoiceJSON{Key: s, Label: sourceChoice(ctx, s)})
+		out.Sources = append(out.Sources, SourceChoiceJSON{Key: s, Label: sourceChoice(s)})
 	}
 	return out
 }
@@ -168,13 +174,11 @@ func rowJSON(r ConfigRow) RowJSON {
 	return o
 }
 
-// FlowNodeJSON and FlowJSON are a writer's flow, its words finished.
+// FlowNodeJSON and FlowJSON are a writer's flow, its words for the app to say.
 type FlowNodeJSON struct {
-	Kind   string `json:"kind"`
-	Main   any    `json:"main"`
-	Detail any    `json:"detail"`
-	// Note is the destination's own comment, written after Detail.
-	Note string `json:"note,omitempty"`
+	Kind   string   `json:"kind"`
+	Main   i18n.Cat `json:"main"`
+	Detail i18n.Cat `json:"detail"`
 }
 
 type FlowJSON struct {
@@ -182,12 +186,12 @@ type FlowJSON struct {
 	DeadLetter *FlowNodeJSON  `json:"deadLetter"`
 }
 
-func flowJSON(ctx context.Context, f *Flow) *FlowJSON {
+func flowJSON(f *Flow) *FlowJSON {
 	if f == nil {
 		return nil
 	}
 	node := func(n FlowNode) FlowNodeJSON {
-		return FlowNodeJSON{Kind: n.Kind, Main: n.MainIn(ctx), Detail: n.DetailIn(ctx)}
+		return FlowNodeJSON(n)
 	}
 	out := &FlowJSON{Nodes: make([]FlowNodeJSON, 0, len(f.Nodes))}
 	for _, n := range f.Nodes {
@@ -210,16 +214,16 @@ type ChangeJSON struct {
 }
 
 type ChangeLineJSON struct {
-	Path string `json:"path"`
-	Text string `json:"text"`
+	Path string   `json:"path"`
+	Text i18n.Cat `json:"text"`
 }
 
-func changesJSON(ctx context.Context, cs []ConfigChange) []ChangeJSON {
+func changesJSON(cs []ConfigChange) []ChangeJSON {
 	out := make([]ChangeJSON, 0, len(cs))
 	for _, c := range cs {
 		o := ChangeJSON{At: c.At, RunID: c.RunID, First: c.First, Earlier: !c.First && len(c.Lines) == 0, Lines: []ChangeLineJSON{}}
 		for _, l := range c.Lines {
-			o.Lines = append(o.Lines, ChangeLineJSON{Path: l.Path, Text: l.TextIn(ctx)})
+			o.Lines = append(o.Lines, ChangeLineJSON{Path: l.Path, Text: l.ChangeText()})
 		}
 		out = append(out, o)
 	}
@@ -229,7 +233,7 @@ func changesJSON(ctx context.Context, cs []ConfigChange) []ChangeJSON {
 // StepConfigJSON is a step's configuration as its load's page shows it, in the
 // tabs' grouping.
 type StepConfigJSON struct {
-	Summary string        `json:"summary"`
+	Summary i18n.Cat      `json:"summary"`
 	Note    string        `json:"note"`
 	Flow    *FlowJSON     `json:"flow"`
 	Stage   StageJSON     `json:"stage"`
@@ -262,8 +266,11 @@ type StageJSON struct {
 	Dedup          string `json:"dedup"`
 }
 
+// SectionJSON is a block of settings: its key, and its heading where the
+// console has words for it (else the app makes one of the key).
 type SectionJSON struct {
-	Title string    `json:"title"`
+	Key   string    `json:"key"`
+	Title *i18n.Msg `json:"title"`
 	Rows  []RowJSON `json:"rows"`
 }
 
@@ -287,16 +294,16 @@ type IdentityJSON struct {
 }
 
 type SchemaColJSON struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-	Role string `json:"role"`
+	Name string   `json:"name"`
+	Type string   `json:"type"`
+	Role i18n.Cat `json:"role"`
 }
 
 // StepConfigAsJSON is the described configuration of a step.
-func StepConfigAsJSON(ctx context.Context, c WriterConfigView, target TargetView) StepConfigJSON {
+func StepConfigAsJSON(c WriterConfigView, target TargetView) StepConfigJSON {
 	t := LoadConfigTabs(c.Config)
 	out := StepConfigJSON{
-		Summary: c.Config.SummaryIn(ctx), Note: c.Config.Note, Flow: flowJSON(ctx, c.Flow),
+		Summary: c.Config.SummaryOf(), Note: c.Config.Note, Flow: flowJSON(c.Flow),
 		Other:      []SectionJSON{},
 		SourceHead: rowsJSON(t.SourceHead), SourceCount: t.SourceCount, Common: rowsJSON(t.Common),
 		Varying: append([]string{}, t.Varying...), Sources: []SourceRowsJS{},
@@ -305,7 +312,7 @@ func StepConfigAsJSON(ctx context.Context, c WriterConfigView, target TargetView
 		HasSchema: len(t.SchemaRows) > 0,
 	}
 	for _, s := range t.Other {
-		out.Other = append(out.Other, SectionJSON{Title: s.TitleIn(ctx), Rows: rowsJSON(s.Rows)})
+		out.Other = append(out.Other, SectionJSON{Key: s.Key, Title: s.TitleMsg(), Rows: rowsJSON(s.Rows)})
 	}
 	for _, s := range t.Sources {
 		line := SourceRowsJS{Index: s.Index, Cells: make([]*RowJSON, len(s.Cells))}
@@ -321,7 +328,7 @@ func StepConfigAsJSON(ctx context.Context, c WriterConfigView, target TargetView
 		out.Transform = append(out.Transform, TransformJSON{Index: op.Index, Rows: rowsJSON(op.Rows)})
 	}
 	for _, col := range t.Schema {
-		out.Schema = append(out.Schema, SchemaColJSON{Name: col.Name, Type: col.Type, Role: schemaRole(ctx, col.Role)})
+		out.Schema = append(out.Schema, SchemaColJSON{Name: col.Name, Type: col.Type, Role: schemaRole(col.Role)})
 	}
 	out.Stage = StageJSON{
 		SourceDriver: rowValue(t.SourceHead, "driver"), SourceCount: t.SourceCount,
@@ -375,11 +382,11 @@ type LoadChoiceJSON struct {
 // LoadDetailJSON is the open load.
 type LoadDetailJSON struct {
 	Status      string           `json:"status"`
-	Reason      []i18n.Msg       `json:"reason"`
+	Reason      i18n.Cat         `json:"reason"`
 	Source      SourceJSON       `json:"source"`
 	Target      PlaceJSON        `json:"target"`
 	HasSchedule bool             `json:"hasSchedule"`
-	When        string           `json:"when"`
+	When        i18n.Cat         `json:"when"`
 	Cron        string           `json:"cron"`
 	Timezone    string           `json:"timezone"`
 	Legacy      bool             `json:"legacy"`
@@ -412,7 +419,7 @@ type LoadJSON struct {
 }
 
 // LoadAsJSON lays one load out for the app.
-func LoadAsJSON(ctx context.Context, l LoadView) LoadJSON {
+func LoadAsJSON(l LoadView) LoadJSON {
 	out := LoadJSON{Workflow: l.Workflow, Step: l.Step, Choices: []LoadChoiceJSON{}, Choosing: l.Choosing()}
 	for _, c := range l.Choices {
 		out.Choices = append(out.Choices, LoadChoiceJSON{URI: c.URI, Current: c.Current})
@@ -420,18 +427,18 @@ func LoadAsJSON(ctx context.Context, l LoadView) LoadJSON {
 	if out.Choosing {
 		return out
 	}
-	d := &LoadDetailJSON{Reason: []i18n.Msg{},
-		Status: string(l.Row.Status), Source: sourceJSON(ctx, l.Source), Target: placeJSON(Place{URI: l.Row.Target, Kind: l.Row.Kind}),
+	d := &LoadDetailJSON{
+		Status: string(l.Row.Status), Source: sourceJSON(l.Source), Target: placeJSON(Place{URI: l.Row.Target, Kind: l.Row.Kind}),
 		LastLoaded: l.Row.LastWhen, LastRows: l.Row.LastRows, Read: l.Read, ReadNothing: l.ReadNothing(),
 		Bars: make([]BarJSON, 0, len(l.Bars)), Missed: l.Missed, Loads: make([]LoadRecordJSON, 0, len(l.Loads)),
 		LoadsCount: loadsCount(len(l.Loads)), Changes: []ChangeJSON{}, ReadBy: readersJSON(l.ReadBy),
 		Run: l.Run, Legacy: l.Row.Legacy,
 	}
 	if w := l.Writer(); w != nil {
-		d.Reason, d.Fixing = append([]i18n.Msg{}, w.Reason()...), w.RunInFlight
+		d.Reason, d.Fixing = w.Reason(), w.RunInFlight
 		d.HasSchedule, d.Cron, d.Timezone = w.HasSchedule, w.Cron, w.Timezone
 		if w.HasSchedule {
-			d.When = loadWhen(ctx, w)
+			d.When = loadWhen(w)
 		}
 	}
 	d.Manual = !d.HasSchedule
@@ -447,9 +454,9 @@ func LoadAsJSON(ctx context.Context, l LoadView) LoadJSON {
 	if c, ok := l.StepConfig(); ok {
 		d.Described = c.Described
 		if c.Described {
-			cfg := StepConfigAsJSON(ctx, c, l.TargetView)
+			cfg := StepConfigAsJSON(c, l.TargetView)
 			d.Config = &cfg
-			d.Changes = changesJSON(ctx, c.Config.Changes)
+			d.Changes = changesJSON(c.Config.Changes)
 		}
 	}
 	out.Detail = d
@@ -463,7 +470,7 @@ type StreamRowJSON struct {
 	Href    string    `json:"href"`
 	Note    string    `json:"note"`
 	Sink    PlaceJSON `json:"sink"`
-	Batch   any       `json:"batch"`
+	Batch   i18n.Cat  `json:"batch"`
 	// BatchEvery and BatchRecords are the same batch as the declared values ("2m", 2000), for a
 	// compact cell that reads the same in every language; Batch is the sentence for a tooltip.
 	BatchEvery   string     `json:"batchEvery"`
@@ -488,9 +495,9 @@ type StreamsJSON struct {
 	} `json:"filter"`
 }
 
-func streamRowJSON(ctx context.Context, s Stream, h StreamHealth) StreamRowJSON {
+func streamRowJSON(s Stream, h StreamHealth) StreamRowJSON {
 	out := StreamRowJSON{Gateway: s.Gateway, Path: s.Path, Href: s.Href(), Note: s.Note(),
-		Sink: placeJSON(s.Sink), Batch: s.Batch(), BatchEvery: s.Field("buffer.flush.every"), Health: h}
+		Sink: placeJSON(s.Sink), Batch: s.BatchIn(), BatchEvery: s.Field("buffer.flush.every"), Health: h}
 	if n, err := strconv.ParseInt(s.Field("buffer.flush.records"), 10, 64); err == nil {
 		out.BatchRecords = &n
 	}
@@ -502,7 +509,7 @@ func streamRowJSON(ctx context.Context, s Stream, h StreamHealth) StreamRowJSON 
 }
 
 // StreamsAsJSON lays the streams list out for the app.
-func StreamsAsJSON(ctx context.Context, v StreamsView) StreamsJSON {
+func StreamsAsJSON(v StreamsView) StreamsJSON {
 	out := StreamsJSON{Rows: make([]StreamRowJSON, 0, len(v.Rows)), Total: v.Total, Gateways: v.Gateways,
 		WithDeadLetter: v.WithDeadLetter, HealthCounts: v.HealthCounts, Kinds: append([]string{}, v.Kinds...)}
 	out.Filter.Kind, out.Filter.Q = v.Filter.Kind, v.Filter.Q
@@ -511,32 +518,32 @@ func StreamsAsJSON(ctx context.Context, v StreamsView) StreamsJSON {
 		if !ok {
 			h = s.Health()
 		}
-		out.Rows = append(out.Rows, streamRowJSON(ctx, s, h))
+		out.Rows = append(out.Rows, streamRowJSON(s, h))
 	}
 	return out
 }
 
 // ExplainedRowJSON and CardJSON are the stream's settings in cards.
 type ExplainedRowJSON struct {
-	Path    string `json:"path"`
-	Label   string `json:"label"`
-	Value   string `json:"value"`
-	Default bool   `json:"default"`
-	Note    string `json:"note"`
+	Path    string    `json:"path"`
+	Label   *i18n.Msg `json:"label"`
+	Value   string    `json:"value"`
+	Default bool      `json:"default"`
+	Note    string    `json:"note"`
 }
 
 type CardJSON struct {
 	Key   string             `json:"key"`
-	Title string             `json:"title"`
+	Title i18n.Msg           `json:"title"`
 	Rows  []ExplainedRowJSON `json:"rows"`
 }
 
 // DeadLetterJSON is the dead letter panel: where it is and the commands.
 type DeadLetterJSON struct {
-	Where    string `json:"where"`
-	Commands string `json:"commands"`
-	Readable bool   `json:"readable"`
-	Write    string `json:"write"`
+	Where    i18n.Cat `json:"where"`
+	Commands string   `json:"commands"`
+	Readable bool     `json:"readable"`
+	Write    string   `json:"write"`
 }
 
 // TestEventJSON is the example event and the curl that sends it.
@@ -552,13 +559,10 @@ type TestEventJSON struct {
 	Dataset string   `json:"dataset"`
 }
 
-// StreamChangeJSON is one publish in a stream's history line: the first, one
-// whose changes were not kept (Earlier), or the settings it changed (Paths).
+// StreamChangeJSON is one publish in a stream's history line: the first, or what it changed.
 type StreamChangeJSON struct {
-	At      time.Time `json:"at"`
-	First   bool      `json:"first"`
-	Earlier bool      `json:"earlier"`
-	Paths   []string  `json:"paths"`
+	At   time.Time `json:"at"`
+	Text i18n.Msg  `json:"text"`
 }
 
 // StreamJSON is /api/ingest/streams/{gateway}/{path...}.
@@ -570,8 +574,8 @@ type StreamJSON struct {
 	PublishedAt  *time.Time         `json:"publishedAt"`
 	Format       string             `json:"format"`
 	Health       StreamHealth       `json:"health"`
-	Lede         []i18n.Msg         `json:"lede"`
-	Summary      any                `json:"summary"`
+	Lede         i18n.Cat           `json:"lede"`
+	Summary      i18n.Cat           `json:"summary"`
 	Flow         *FlowJSON          `json:"flow"`
 	Tables       []string           `json:"tables"`
 	CatalogHref  string             `json:"catalogHref"`
@@ -587,10 +591,10 @@ type StreamJSON struct {
 }
 
 // StreamAsJSON lays one stream's page out for the app.
-func StreamAsJSON(ctx context.Context, v StreamView) StreamJSON {
+func StreamAsJSON(v StreamView) StreamJSON {
 	out := StreamJSON{
 		Gateway: v.Gateway, Path: v.Path, Sink: placeJSON(v.Sink), PublishedAt: ptrTime(v.PublishedAt),
-		Format: v.Field("format"), Health: v.healthNow(), Lede: v.Lede(), Summary: v.Summary(ctx), Flow: streamFlowJSON(ctx, v.Stream),
+		Format: v.Field("format"), Health: v.healthNow(), Lede: v.Lede(), Summary: v.Summary(), Flow: flowJSON(streamFlow(v.Stream)),
 		Tables: append([]string{}, v.Tables()...), ReadBy: readersJSON(v.ReadBy), HasConfig: v.Config != nil,
 		Cards: []CardJSON{}, Changes: []StreamChangeJSON{}, BuriedMetric: v.BuriedMetric(),
 		TestEvent: TestEventJSON{Format: v.TestFormat(), Body: v.TestBody(), CurlHead: v.TestCurlHead(),
@@ -609,24 +613,20 @@ func StreamAsJSON(ctx context.Context, v StreamView) StreamJSON {
 	if v.Config != nil {
 		out.YAML = ConfigYAML(v.Config)
 		for _, c := range ExplainConfig(v.Config) {
-			card := CardJSON{Key: c.Key, Title: cardTitle(ctx, c.Key), Rows: make([]ExplainedRowJSON, 0, len(c.Rows))}
+			card := CardJSON{Key: c.Key, Title: cardTitle(c.Key), Rows: make([]ExplainedRowJSON, 0, len(c.Rows))}
 			for _, r := range c.Rows {
-				card.Rows = append(card.Rows, ExplainedRowJSON{Path: r.Path, Label: r.LabelIn(ctx), Value: r.Value, Default: r.Default, Note: r.Note})
+				card.Rows = append(card.Rows, ExplainedRowJSON{Path: r.Path, Label: r.LabelMsg(), Value: r.Value, Default: r.Default, Note: r.Note})
 			}
 			out.Cards = append(out.Cards, card)
 		}
 	}
 	if v.Configured != nil {
 		for _, ch := range v.Configured.Config.Changes {
-			c := StreamChangeJSON{At: ch.At, First: ch.First, Earlier: !ch.First && len(ch.Lines) == 0, Paths: []string{}}
-			for _, l := range ch.Lines {
-				c.Paths = append(c.Paths, l.Path)
-			}
-			out.Changes = append(out.Changes, c)
+			out.Changes = append(out.Changes, StreamChangeJSON{At: ch.At, Text: changeSaid(ch)})
 		}
 	}
 	if p := v.DeadLetterPanel(); p != nil {
-		out.DeadPanel = &DeadLetterJSON{Where: p.WhereIn(ctx), Commands: p.Commands(), Readable: p.Readable, Write: p.Write}
+		out.DeadPanel = &DeadLetterJSON{Where: p.Where, Commands: p.Commands(), Readable: p.Readable, Write: p.Write}
 	}
 	return out
 }

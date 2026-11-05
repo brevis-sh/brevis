@@ -1,1 +1,0 @@
-import{b as e,x as t}from"./errors-CkPmtRP3.js";function n(n,r){return e(n,t,r)}export{n as t};

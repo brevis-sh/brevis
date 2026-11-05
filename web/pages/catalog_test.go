@@ -10,6 +10,7 @@ import (
 
 	"brevis.sh/brevis/internal/domain/catalog"
 	"brevis.sh/brevis/internal/infrastructure/postgres"
+	"brevis.sh/brevis/web/i18n"
 )
 
 // catalogNow is a fixed 11:20 UTC, and catalogFixture a destination in every
@@ -149,7 +150,9 @@ func TestAWritersReasonNamesItsSentence(t *testing.T) {
 		got := []WriterView{missed, paused, manual, unreadable, gateway}[i].Reason()
 		var keys []string
 		for _, m := range got {
-			keys = append(keys, m.K)
+			if msg, ok := m.(i18n.Msg); ok {
+				keys = append(keys, msg.K)
+			}
 		}
 		if !reflect.DeepEqual(keys, want) {
 			t.Errorf("reason %d says %v, want %v", i, keys, want)

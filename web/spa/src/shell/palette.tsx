@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { getJSON } from "../api/client";
-import { useSaid, type Said } from "../api/said";
-import { useT } from "../i18n";
+import { useMsg, useT, type Msg } from "../i18n";
 import { Icon } from "../ui/icon";
 import { openDialog, useOpenDialog } from "./dialogs";
 import { Kbd } from "./kbd";
@@ -14,7 +13,7 @@ import { chooseLang, toggleTheme } from "./prefs";
 // fuzzy: the label starting with the query, then a word in it, then anywhere.
 // The server sends what each entry is (a name, or a sentence as a message); what a search looks in is built here from
 // what is said, in the reader's language.
-type Wire = { action?: string; group: string; label: Said; hint?: Said; href: string; icon: string };
+type Wire = { action?: string; group: string; label: string | Msg; hint?: string | Msg; href: string; icon: string };
 type Item = { action?: string; group: string; groupLabel: string; label: string; hint?: string; href: string; icon: string; text: string };
 
 const ORDER = ["Runs", "Sections", "Workflows", "Destinations", "Endpoints", "Projects"];
@@ -62,7 +61,8 @@ export function Palette() {
     queryFn: async () => (await getJSON<{ items: Wire[] }>("/api/palette")).items,
   });
 
-  const say = useSaid();
+  const msg = useMsg();
+  const say = (v: string | Msg | undefined) => (typeof v === "string" ? v : msg(v));
   const items = useMemo(
     () =>
       index.data?.map((w): Item => {

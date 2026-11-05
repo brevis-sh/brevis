@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"brevis.sh/brevis/internal/infrastructure/postgres"
+	"brevis.sh/brevis/web/i18n"
 	"brevis.sh/brevis/web/pages"
 )
 
@@ -26,7 +27,7 @@ type endpointRowView struct {
 	Reads     []string     `json:"reads"`
 	Rebuilt   *rebuiltView `json:"rebuilt"`
 	// TTL is the cache's time to live, a string or an i18n.Msg (pages.DurationMsg); null with no cache on record.
-	TTL         any       `json:"ttl"`
+	TTL         i18n.Cat  `json:"ttl"`
 	Params      int       `json:"params"`
 	Required    int       `json:"required"`
 	PublishedAt time.Time `json:"publishedAt"`
@@ -50,7 +51,7 @@ func endpointRowOf(r pages.EndpointRow) endpointRowView {
 		Reads: append([]string{}, r.Reads...), Params: len(r.Params), Required: len(r.Required), PublishedAt: r.PublishedAt,
 	}
 	if r.TTL != "" {
-		v.TTL = pages.DurationMsg(r.TTL)
+		v.TTL = pages.DurationCat(r.TTL)
 	}
 	if d := r.Read; d != nil && d.LastWhen != nil {
 		v.Rebuilt = &rebuiltView{At: *d.LastWhen, By: pages.WriterLine(*d)}

@@ -109,14 +109,14 @@ func BuildTarget(d postgres.TargetDetail, now time.Time) TargetView {
 }
 
 // Reason is why a writer stands where it does, in its own schedule's
-// timezone: sentences for the app to say, read as one passage; none for a
+// timezone: sentences for the app to say, one after the other; none for a
 // writer that stands where it should.
-func (w WriterView) Reason() []i18n.Msg {
+func (w WriterView) Reason() i18n.Cat {
 	if g := w.Gateway; g != nil {
-		why := []i18n.Msg{i18n.M("catalog.why.gateway", "gateway", g.Name, "stream", g.Stream, "role", g.Role,
+		why := i18n.Cat{i18n.M("catalog.why.gateway", "gateway", g.Name, "stream", g.Stream, "role", g.Role,
 			"at", stampIn(g.PublishedAt.UTC()))}
 		if g.Note != "" {
-			why = append(why, i18n.M("catalog.why.unnamed", "note", g.Note))
+			why = append(why, " ", i18n.M("catalog.why.unnamed", "note", g.Note))
 		}
 		return why
 	}
@@ -128,15 +128,15 @@ func (w WriterView) Reason() []i18n.Msg {
 	switch w.Verdict.Status {
 	case catalog.Late, catalog.Stale:
 		grace := w.Verdict.Grace
-		return []i18n.Msg{i18n.M("catalog.why.missed", "workflow", w.Workflow, "slot", stampIn(w.Verdict.Missed.In(loc)),
+		return i18n.Cat{i18n.M("catalog.why.missed", "workflow", w.Workflow, "slot", stampIn(w.Verdict.Missed.In(loc)),
 			"by", stampIn(w.Verdict.Missed.Add(grace).In(loc)), "grace", i18n.Dur(grace))}
 	case catalog.Paused:
-		return []i18n.Msg{i18n.M("catalog.why.paused")}
+		return i18n.Cat{i18n.M("catalog.why.paused")}
 	case catalog.Unscheduled:
 		if w.HasSchedule {
-			return []i18n.Msg{i18n.M("catalog.why.unreadable")}
+			return i18n.Cat{i18n.M("catalog.why.unreadable")}
 		}
-		return []i18n.Msg{i18n.M("catalog.why.manual")}
+		return i18n.Cat{i18n.M("catalog.why.manual")}
 	}
 	return nil
 }

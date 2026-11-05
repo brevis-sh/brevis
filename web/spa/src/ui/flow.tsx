@@ -1,6 +1,5 @@
-import type { Flow, FlowNode } from "../api/ingest";
-import { useSaid } from "../api/said";
-import { useT } from "../i18n";
+import type { Flow } from "../api/ingest";
+import { useMsg, useT } from "../i18n";
 import { Icon } from "./icon";
 
 const ICON: Record<string, string> = { source: "plug", buffer: "rows-3", dead_letter: "triangle-alert" };
@@ -8,14 +7,12 @@ const ICON: Record<string, string> = { source: "plug", buffer: "rows-3", dead_le
 /**
  * How data reaches a destination, as the configuration declares it: nodes left
  * to right (top to bottom on a phone), the destination marked, and the dead
- * letter as a dashed branch under it. Words arrive finished from the server.
+ * letter as a dashed branch under it. Words arrive as keys and data (a Cat), said here.
  */
 export function FlowDiagram({ flow }: { flow: Flow }) {
   const { t } = useT();
-  const say = useSaid();
+  const msg = useMsg();
   const title = (kind: string) => t(`flow.${kind}`);
-  // What a step does, then the destination's own comment.
-  const detail = (n: FlowNode) => [say(n.detail), n.note ?? ""].filter(Boolean).join(" · ");
   return (
     <div className="flow-ground px-4 py-4 sm:px-6">
       <ol className="flex flex-col gap-3 min-[700px]:flex-row min-[700px]:items-stretch">
@@ -30,8 +27,8 @@ export function FlowDiagram({ flow }: { flow: Flow }) {
               <Icon name={ICON[n.kind] ?? "database"} className="h-3.5 w-3.5" />
               {i + 1} · {title(n.kind)}
             </p>
-            <p className="mt-1 font-mono text-[0.78rem] break-all text-ink">{say(n.main)}</p>
-            {detail(n) !== "" && <p className="mt-0.5 text-[0.72rem] text-muted">{detail(n)}</p>}
+            <p className="mt-1 font-mono text-[0.78rem] break-all text-ink">{msg(n.main)}</p>
+            {n.detail && <p className="mt-0.5 text-[0.72rem] text-muted">{msg(n.detail)}</p>}
           </li>
         ))}
       </ol>
@@ -42,8 +39,8 @@ export function FlowDiagram({ flow }: { flow: Flow }) {
               <Icon name="triangle-alert" className="h-3.5 w-3.5" />
               {title(flow.deadLetter.kind)}
             </p>
-            <p className="mt-1 font-mono text-[0.78rem] break-all text-ink">{say(flow.deadLetter.main)}</p>
-            <p className="mt-0.5 text-[0.72rem] text-state-failed">{detail(flow.deadLetter)}</p>
+            <p className="mt-1 font-mono text-[0.78rem] break-all text-ink">{msg(flow.deadLetter.main)}</p>
+            <p className="mt-0.5 text-[0.72rem] text-state-failed">{msg(flow.deadLetter.detail)}</p>
           </div>
         </div>
       )}

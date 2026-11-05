@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getJSON } from "./api/client";
 import { useSession } from "./api/session";
+import { fixed } from "./fixed";
 import { category } from "./plural";
 
 type Message = string | { one: string; other: string; few?: string; many?: string };
@@ -63,7 +64,7 @@ export function useFormat() {
     /** 1.5s, 2m 05s, 1h 04m: a duration in milliseconds, as the server's Elapsed writes it. */
     duration: (ms: number) => {
       if (ms < 1000) return `${Math.round(ms)}ms`;
-      if (ms < 60_000) return `${new Intl.NumberFormat(lang, { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(ms / 1000)}s`;
+      if (ms < 60_000) return `${fixed(lang, ms / 1000, 1)}s`;
       const s = Math.floor(ms / 1000);
       const two = (v: number) => String(v).padStart(2, "0");
       if (ms < 3_600_000) return `${Math.floor(s / 60)}m ${two(s % 60)}s`;
@@ -94,11 +95,15 @@ const STAMPS: Record<string, Intl.DateTimeFormatOptions> = {
 function stamp(lang: string, iso: string, layout: string, zone: string): string {
   const opts = STAMPS[layout];
   if (!opts) return iso;
+  const say = (timeZone: string) => new Intl.DateTimeFormat(lang, { ...opts, timeZone }).format(new Date(iso));
+  let out: string;
   try {
-    return new Intl.DateTimeFormat(lang, { ...opts, timeZone: zone }).format(new Date(iso));
+    out = say(zone);
   } catch {
-    return new Intl.DateTimeFormat(lang, { ...opts, timeZone: "UTC" }).format(new Date(iso));
+    out = say("UTC");
   }
+  // English wrote "Oct 02 09:05", not "Oct 02, 09:05": the comma Intl adds before the time is not the console's.
+  return lang.startsWith("en") && opts.hour ? out.replace(",", "") : out;
 }
 
 // A MESSAGE FROM THE SERVER. The server has no language (web/i18n/msg.go): it sends the catalog key of a sentence and
@@ -113,7 +118,11 @@ export type MsgArg =
   | Msg
   | { $: "num"; v: number }
   | { $: "dur"; ms: number }
-  | { $: "at"; v: string; layout: string; zone: string };
+  | { $: "at"; v: string; layout: string; zone: string }
+  | Cat;
+
+/** Words put together by the app: messages and plain strings (data, a separator), said one after the other. */
+export type Cat = { $: "cat"; v: (string | Msg)[] };
 
 type Say = {
   t: (key: string, vars?: Vars) => string;
@@ -122,6 +131,14 @@ type Say = {
 };
 
 const isMsg = (v: MsgArg): v is Msg => typeof v === "object" && v !== null && "k" in v;
+
+/** A Cat of plain strings: placeholder data for a screen drawn before its data arrives. */
+export const cat = (...v: (string | Msg)[]): Cat => ({ $: "cat", v });
+
+/** Says a Cat: each message in turn, each string as it is. */
+export function renderCat(c: Cat, say: Say): string {
+  return c.v.map((p) => (typeof p === "string" ? p : renderMsg(p, say))).join("");
+}
 
 /** Says a message: pure, so the rule is tested without a component. */
 export function renderMsg(m: Msg, say: Say): string {
@@ -134,6 +151,7 @@ export function renderMsg(m: Msg, say: Say): string {
     else if (v.$ === "num") vars[name] = say.fmt.number(v.v);
     else if (v.$ === "dur") vars[name] = say.fmt.duration(v.ms);
     else if (v.$ === "at") vars[name] = say.fmt.stamp(v.v, v.layout, v.zone);
+    else if (v.$ === "cat") vars[name] = renderCat(v, say);
   }
   return m.n === undefined ? say.t(m.k, vars) : say.n(m.k, m.n, vars);
 }
@@ -142,5 +160,8 @@ export function renderMsg(m: Msg, say: Say): string {
 export function useMsg() {
   const { t, n } = useT();
   const fmt = useFormat();
-  return (m: Msg | null | undefined): string => (m ? renderMsg(m, { t, n, fmt }) : "");
+  return (m: Msg | Cat | null | undefined): string => {
+    if (!m) return "";
+    return "$" in m ? renderCat(m, { t, n, fmt }) : renderMsg(m, { t, n, fmt });
+  };
 }

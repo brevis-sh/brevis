@@ -1,14 +1,14 @@
 import { useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { useData } from "../api/live";
-import { useSaid } from "../api/said";
 import type { Change, Load, LoadDetail, Place } from "../api/ingest";
-import { useFormat, useT } from "../i18n";
+import { cat, useFormat, useMsg, useT } from "../i18n";
 import { useSince } from "../ui/format";
 import { Drawer } from "../ui/drawer";
 import { Icon } from "../ui/icon";
 import { btn, ButtonLink, Card, ShortStamp, linkUnderline } from "../ui/kit";
 import { Logo, useLogoTitle } from "../ui/logo";
+import { useSourceLabel } from "../ui/place";
 import { LoadBars } from "../ui/sparkline";
 import { Freshness } from "../ui/status";
 import { StepConfigPanel } from "./load-config";
@@ -32,11 +32,11 @@ const GHOST: Load = {
   choosing: false,
   detail: {
     status: "on_time",
-    reason: [],
-    source: { kind: "http", driver: "", label: "Source label", where: "https://api.example.com/path" },
+    reason: null,
+    source: { kind: "http", driver: "", label: "Source label", labelMsg: null, where: "https://api.example.com/path" },
     target: GHOST_PLACE,
     hasSchedule: true,
-    when: "every hour",
+    when: cat("every hour"),
     cron: "0 * * * *",
     timezone: "UTC",
     manual: false,
@@ -62,6 +62,7 @@ const gh = (ghost: boolean) => (ghost ? "sk-ghost" : "");
 
 function Changes({ changes, ghost }: { changes: Change[]; ghost: boolean }) {
   const { t } = useT();
+  const msg = useMsg();
   return (
     <Card title={t("config.changes.title")} count={ghost ? undefined : String(changes.length)}>
       <ol aria-hidden={ghost || undefined} className={`divide-y divide-line-soft ${gh(ghost)}`}>
@@ -81,7 +82,7 @@ function Changes({ changes, ghost }: { changes: Change[]; ghost: boolean }) {
                 {c.lines.map((l) => (
                   <li key={l.path}>
                     <span className="font-mono text-muted">{l.path}</span>{" "}
-                    <span className="ml-2 font-mono break-all text-ink">{l.text}</span>
+                    <span className="ml-2 font-mono break-all text-ink">{msg(l.text)}</span>
                   </li>
                 ))}
               </ul>
@@ -97,6 +98,8 @@ function Changes({ changes, ghost }: { changes: Change[]; ghost: boolean }) {
 function Facts({ step, d, ghost }: { step: string; d: LoadDetail; ghost: boolean }) {
   const { t, n } = useT();
   const { number } = useFormat();
+  const msg = useMsg();
+  const sourceLabel = useSourceLabel();
   const since = useSince();
   const kindName = useLogoTitle();
   return (
@@ -111,7 +114,7 @@ function Facts({ step, d, ghost }: { step: string; d: LoadDetail; ghost: boolean
           <>
             <span className="flex items-center gap-1.5 text-ink-2">
               {(d.source.kind === "http" || d.source.kind === "file") && <Logo k={d.source.kind} />}
-              {d.source.label}
+              {sourceLabel(d.source)}
             </span>
             {d.source.where !== "" && <p className="mt-0.5 font-mono text-[12px] break-all text-ink">{d.source.where}</p>}
           </>
@@ -142,7 +145,7 @@ function Facts({ step, d, ghost }: { step: string; d: LoadDetail; ghost: boolean
       <dd aria-hidden={ghost || undefined} className={`text-ink ${gh(ghost)}`}>
         {d.hasSchedule ? (
           <>
-            {d.when} <span className="ml-1 font-mono text-[11.5px] text-muted">{d.cron} {d.timezone}</span>
+            {msg(d.when)} <span className="ml-1 font-mono text-[11.5px] text-muted">{d.cron} {d.timezone}</span>
           </>
         ) : (
           t("loads.manual")
@@ -165,12 +168,12 @@ function Facts({ step, d, ghost }: { step: string; d: LoadDetail; ghost: boolean
 function Body({ workflow, step, d, ghost }: { workflow: string; step: string; d: LoadDetail; ghost: boolean }) {
   const { t } = useT();
   const { number } = useFormat();
-  const say = useSaid();
+  const msg = useMsg();
   return (
     <div className="space-y-3">
-      {d.reason.length > 0 && (
+      {d.reason && (
         <p aria-hidden={ghost || undefined} className={`rounded-card border border-line bg-surface-2 px-3 py-2 text-[12.5px] text-ink-2 ${gh(ghost)}`}>
-          {say(d.reason)}
+          {msg(d.reason)}
         </p>
       )}
       <Facts step={step} d={d} ghost={ghost} />
@@ -206,7 +209,7 @@ function Body({ workflow, step, d, ghost }: { workflow: string; step: string; d:
 
       {d.changes.length > 0 && <Changes changes={d.changes} ghost={ghost} />}
 
-      <Card title={t("loads.drawer.recent")} count={ghost ? undefined : say(d.loadsCount)}>
+      <Card title={t("loads.drawer.recent")} count={ghost ? undefined : msg(d.loadsCount)}>
         <div className="max-h-[28rem] overflow-auto">
           <table className="ct w-full text-[12.5px]">
             <thead className="sticky top-0 bg-surface">

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -21,15 +20,15 @@ type paramRowView struct {
 	Type     string `json:"type"`
 	Required bool   `json:"required"`
 	Note     string `json:"note"`
-	// Accepts is a string (the values it lists) or an i18n.Msg (what its type takes).
-	Accepts any    `json:"accepts"`
-	Default string `json:"default"`
+	// Accepts is the values it lists, or what its type takes.
+	Accepts i18n.Cat `json:"accepts"`
+	Default string   `json:"default"`
 }
 
-// originView is where a table's data starts: Main and Sub are strings (a name the data owns) or an i18n.Msg.
+// originView is where a table's data starts: Main and Sub are said by the app.
 type originView struct {
-	Main any `json:"main"`
-	Sub  any `json:"sub"`
+	Main i18n.Cat `json:"main"`
+	Sub  i18n.Cat `json:"sub"`
 }
 
 type lineageWriterView struct {
@@ -48,20 +47,20 @@ type lineageView struct {
 	Origin *originView        `json:"origin"`
 	Writer *lineageWriterView `json:"writer"`
 	SQL    bool               `json:"sql"`
-	// CacheTTL is a string or an i18n.Msg (see pages.DurationMsg).
-	CacheTTL any `json:"cacheTtl"`
+	// CacheTTL is the cache's time to live, null with no cache.
+	CacheTTL i18n.Cat `json:"cacheTtl"`
 }
 
 type staleView struct {
-	Reason []i18n.Msg `json:"reason"`
-	Target string     `json:"target"`
+	Reason i18n.Cat `json:"reason"`
+	Target string   `json:"target"`
 }
 
 type cacheView struct {
 	// State is "set" (a cache is on record), "none" (the API has no cache) or
 	// "unknown" (its API was published before its settings were kept).
 	State    string   `json:"state"`
-	TTL      any      `json:"ttl"`
+	TTL      i18n.Cat `json:"ttl"`
 	Type     string   `json:"type"`
 	AddrFrom string   `json:"addrFrom"`
 	Reads    []string `json:"reads"`
@@ -69,8 +68,8 @@ type cacheView struct {
 }
 
 type limitsView struct {
-	Timeout any `json:"timeout"`
-	MaxRows int `json:"maxRows"`
+	Timeout i18n.Cat `json:"timeout"`
+	MaxRows int      `json:"maxRows"`
 	// MaxBytes is the byte ceiling; 0 is no ceiling.
 	MaxBytes int64 `json:"maxBytes"`
 }
@@ -108,28 +107,28 @@ type endpointDetailView struct {
 }
 
 // epAccepts is what a parameter accepts: the values it lists, or a sentence for the app to say.
-func epAccepts(p pages.ParamView) any {
+func epAccepts(p pages.ParamView) i18n.Cat {
 	switch {
 	case p.Accepts != "":
-		return p.Accepts
+		return i18n.Cat{p.Accepts}
 	case p.Type == "string" && p.MaxLen > 0:
-		return i18n.M("endpoint.accepts.text", "n", i18n.Num(p.MaxLen))
+		return i18n.Cat{i18n.M("endpoint.accepts.text", "n", i18n.Num(p.MaxLen))}
 	case p.Type == "int" && p.Min != nil && p.Max != nil:
-		return i18n.M("endpoint.accepts.range", "min", i18n.Num(*p.Min), "max", i18n.Num(*p.Max))
+		return i18n.Cat{i18n.M("endpoint.accepts.range", "min", i18n.Num(*p.Min), "max", i18n.Num(*p.Max))}
 	case p.Type == "int" && p.Min != nil:
-		return i18n.M("endpoint.accepts.min", "min", i18n.Num(*p.Min))
+		return i18n.Cat{i18n.M("endpoint.accepts.min", "min", i18n.Num(*p.Min))}
 	case p.Type == "int" && p.Max != nil:
-		return i18n.M("endpoint.accepts.max", "max", i18n.Num(*p.Max))
+		return i18n.Cat{i18n.M("endpoint.accepts.max", "max", i18n.Num(*p.Max))}
 	case p.Type == "bool":
-		return i18n.M("endpoint.accepts.bool")
+		return i18n.Cat{i18n.M("endpoint.accepts.bool")}
 	}
-	return ""
+	return nil
 }
 
 // epOrigin is where a table's data starts, as a writer declared it.
 func epOrigin(l pages.LineageRow) *originView {
 	if l.Writer != nil && l.Writer.Gateway != nil {
-		return &originView{Main: "POST " + l.Writer.Gateway.Stream, Sub: i18n.M("loads.source.http")}
+		return &originView{Main: i18n.Cat{"POST " + l.Writer.Gateway.Stream}, Sub: i18n.Cat{i18n.M("loads.source.http")}}
 	}
 	if l.Source.Kind == "" {
 		return nil
@@ -141,9 +140,9 @@ func epOrigin(l pages.LineageRow) *originView {
 	case "file":
 		main = i18n.M("loads.source.file")
 	case "database":
-		main = components.LogoTitle(context.Background(), l.Source.Logo)
+		main = components.LogoTitle(l.Source.Logo)
 	}
-	return &originView{Main: main, Sub: l.Source.Where}
+	return &originView{Main: i18n.Cat{main}, Sub: i18n.Cat{l.Source.Where}}
 }
 
 // loadEndpoint reads what one endpoint's page needs, as the page did: the
@@ -187,13 +186,13 @@ func (u *UI) apiEndpoint(w http.ResponseWriter, r *http.Request) {
 		Freshness: v.Row.Freshness, PublishedAt: v.Row.PublishedAt,
 		Lineage: make([]lineageView, 0, len(v.Lineage)), Params: make([]paramRowView, 0, len(v.Params)),
 		ParamCount: len(v.Row.Params), Required: len(v.Row.Required), Form: []formFieldView{},
-		Limits:   limitsView{Timeout: pages.DurationMsg(v.Limits.Timeout), MaxRows: v.Limits.MaxRows, MaxBytes: v.Limits.MaxBytesBilled},
+		Limits:   limitsView{Timeout: pages.DurationCat(v.Limits.Timeout), MaxRows: v.Limits.MaxRows, MaxBytes: v.Limits.MaxBytesBilled},
 		CurlHead: pages.CurlHead, CurlBase: v.CurlBase(), CanRun: u.canRun(e.API),
 	}
 	if l := v.StaleLine(); l != nil {
-		s := &staleView{Target: l.Target, Reason: []i18n.Msg{}}
+		s := &staleView{Target: l.Target}
 		if l.Writer != nil {
-			s.Reason = append(s.Reason, l.Writer.Reason()...)
+			s.Reason = l.Writer.Reason()
 		}
 		out.Stale = s
 	}
@@ -214,13 +213,13 @@ func (u *UI) apiEndpoint(w http.ResponseWriter, r *http.Request) {
 			lv.Writer = &lineageWriterView{Name: catWriterName(l.Writer.CatalogWriter), Href: l.WriterHref()}
 		}
 		if c := v.Manifest.Cache; c != nil {
-			lv.CacheTTL = pages.DurationMsg(c.TTL)
+			lv.CacheTTL = pages.DurationCat(c.TTL)
 		}
 		out.Lineage = append(out.Lineage, lv)
 	}
 	switch c := v.Manifest.Cache; {
 	case c != nil:
-		out.Cache = cacheView{State: "set", TTL: pages.DurationMsg(c.TTL), Type: c.Type, AddrFrom: c.AddrFrom,
+		out.Cache = cacheView{State: "set", TTL: pages.DurationCat(c.TTL), Type: c.Type, AddrFrom: c.AddrFrom,
 			Reads: append([]string{}, v.Row.Reads...), Bump: v.BumpCommand()}
 		if c.Type == "redis" {
 			out.Cache.Type = "Redis"

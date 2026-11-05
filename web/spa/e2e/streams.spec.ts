@@ -2,10 +2,10 @@ import { expect, test } from "./support";
 
 // The Streams list answers three questions per row (which stream, where it goes, is it healthy), the whole
 // row is one link, and on a phone each row is a card. The answer is mocked: the demo stack has two streams.
-const place = (kind: string, where: string, what: string) => ({ uri: where + what, kind, kindTitle: "", where, what, note: "" });
+const place = (kind: string, where: string, what: string) => ({ uri: where + what, kind, where, what, note: "" });
 const row = (i: number, dead: boolean) => ({
   gateway: "events_gateway", path: `/v1/stream_${i}`, href: `/ingest/streams/${i}`, note: "Clicks go to a topic. And a second sentence.",
-  sink: place("postgres", "postgres://warehouse/sales.", `events_${i}`), batch: "1 second or 500", batchEvery: "1s", batchRecords: 500,
+  sink: place("postgres", "postgres://warehouse/sales.", `events_${i}`), batch: { $: "cat", v: ["1 second or 500"] }, batchEvery: "1s", batchRecords: 500,
   deadLetter: dead ? place("file", "file:///var/dead-letter/", String(i)) : null,
 });
 const answer = { rows: [row(0, true), row(1, false), row(2, true)], total: 3, gateways: 1, withDeadLetter: 2, kinds: ["postgres"], filter: { kind: "", q: "" } };

@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useData } from "../api/live";
-import { useSaid } from "../api/said";
 import type { Place, Streams, StreamRow } from "../api/ingest";
-import { useFormat, useT } from "../i18n";
+import { cat, useFormat, useMsg, useT } from "../i18n";
 import { useDrawer } from "../ui/drawer";
 import { HowDrawer, HowSteps } from "../ui/how";
 import { Icon } from "../ui/icon";
@@ -93,20 +92,20 @@ function Destination({ p }: { p: Place }) {
 // "2m · 2,000": the declared values read the same in every language; the sentence stays as the tooltip and the spoken label.
 function useCompactBatch() {
   const { number } = useFormat();
-  const say = useSaid();
+  const msg = useMsg();
   return (s: StreamRow) => {
     const count = s.batchRecords == null ? "" : number(s.batchRecords);
-    if (s.batchEvery === undefined) return say(s.batch);
+    if (s.batchEvery === undefined) return msg(s.batch);
     return s.batchEvery && count ? `${s.batchEvery} · ${count}` : s.batchEvery || (count ? `≤ ${count}` : "");
   };
 }
 
 function Rows({ rows, gateway }: { rows: StreamRow[]; gateway: boolean }) {
   const { t } = useT();
+  const msg = useMsg();
   const navigate = useNavigate();
   const kindName = useLogoTitle();
   const compact = useCompactBatch();
-  const say = useSaid();
   return (
     <>
       {rows.map((s) => {
@@ -136,9 +135,9 @@ function Rows({ rows, gateway }: { rows: StreamRow[]; gateway: boolean }) {
             </Td>
             <Td>
               {batch ? (
-                <span className="stl-batch" title={say(s.batch)}>
+                <span className="stl-batch" title={msg(s.batch)}>
                   <span aria-hidden="true">{batch}</span>
-                  <span className="sr-only">{say(s.batch)}</span>
+                  <span className="sr-only">{msg(s.batch)}</span>
                 </span>
               ) : (
                 <span className="text-faint">—</span>
@@ -170,8 +169,8 @@ function Rows({ rows, gateway }: { rows: StreamRow[]; gateway: boolean }) {
 type Shape = { n: number; total: number; gateways: number; withDeadLetter: number; kinds: number };
 const FIRST: Shape = { n: 2, total: 2, gateways: 1, withDeadLetter: 1, kinds: 2 };
 const shapeOf = (v: Streams): Shape => ({ n: v.rows.length, total: v.total, gateways: v.gateways, withDeadLetter: v.withDeadLetter, kinds: v.kinds.length });
-const PLACE = { uri: "", kind: "postgres", where: "postgres://warehouse/", what: "table_name", note: "" };
-const GHOST_ROW: StreamRow = { gateway: "events_gateway", path: "/v1/stream_path", href: "", note: "What this stream is for", sink: PLACE, batch: "1 second or 500", batchEvery: "1s", batchRecords: 500, deadLetter: PLACE };
+const PLACE = { uri: "", kind: "postgres", kindTitle: "", where: "postgres://warehouse/", what: "table_name", note: "" };
+const GHOST_ROW: StreamRow = { gateway: "events_gateway", path: "/v1/stream_path", href: "", note: "What this stream is for", sink: PLACE, batch: cat("1 second or 500"), batchEvery: "1s", batchRecords: 500, deadLetter: PLACE };
 const ghostOf = (s: Shape): Streams => ({
   rows: Array.from({ length: s.n }, (_, i) => ({ ...GHOST_ROW, href: `#${i}` })),
   total: s.total,

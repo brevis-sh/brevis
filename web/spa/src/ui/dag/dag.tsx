@@ -7,7 +7,7 @@ import { useFallbackInterval, useLive } from "../../live/hooks";
 import { useFormat, useT } from "../../i18n";
 import { Skeleton } from "../skeleton";
 import { dagHeight, rememberDagHeight } from "./height";
-import { langLabel, NODE_TYPES, stageTone, tone, type NodeData } from "./nodes";
+import { langLabel, NODE_TYPES, stageTone, tone, useWords, type NodeData } from "./nodes";
 import "./dag.css";
 import { useErrorText } from "../../api/errors";
 
@@ -99,6 +99,7 @@ function ties(edges: Edge[]) {
 
 function Inspector({ node, stages, close }: { node: GNode; stages: GNode[]; close: () => void }) {
   const { t } = useT();
+  const words = useWords();
   const { duration } = useFormat();
   const d = node.data;
   const ctx = d.context ? Object.entries(d.context as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)) : [];
@@ -106,7 +107,7 @@ function Inspector({ node, stages, close }: { node: GNode; stages: GNode[]; clos
   const rows: [string, string][] = [
     ["step", node.id],
     ["state", t(`state.${tone(d.status)}`)],
-    ...(d.acao ? [["command", d.acao] as [string, string]] : []),
+    ...(d.acao ? [["command", words(d.acao)] as [string, string]] : []),
     ...(d.duracao_ms ? [["duration", duration(d.duracao_ms)] as [string, string]] : []),
     ...(typeof d.tentativa === "number" ? [["attempt", String(d.tentativa + 1)] as [string, string]] : []),
     ...(typeof d.exit_code === "number" ? [["exit code", String(d.exit_code)] as [string, string]] : []),
@@ -142,7 +143,7 @@ function Inspector({ node, stages, close }: { node: GNode; stages: GNode[]; clos
           <h4>{d.sdk ? `Stages · SDK ${d.sdk}` : "Stages"}</h4>
           {stages.map((s) => (
             <div key={s.id} className="stage-row" style={{ color: `var(--st-${stageTone(s.data.estado)})` }}>
-              <b>{s.data.rotulo || s.data.nome}</b>
+              <b>{words(s.data.rotulo || s.data.nome)}</b>
               <span className="muted">{s.data.ms !== null && s.data.ms !== undefined ? duration(s.data.ms) : "—"}</span>
               {Object.entries((s.data.numeros ?? {}) as Record<string, unknown>).map(([k, v]) => (
                 <span key={k} className="mono" style={{ color: "var(--fg)" }}>

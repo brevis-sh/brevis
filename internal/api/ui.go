@@ -630,25 +630,6 @@ func instant(s string) *time.Time {
 	return &t
 }
 
-// periodLabel describes the window in the reader's own timezone. Without it
-// the filter chip would show "2026-09-01T02:00:00Z", which is not the time the
-// person saw on the chart.
-func periodLabel(de, ate *time.Time) string {
-	switch {
-	case de != nil && ate != nil:
-		l := de.Local()
-		if ate.Sub(*de) == time.Hour {
-			return l.Format("02/01 15h") + "–" + ate.Local().Format("15h")
-		}
-		return l.Format("Jan 02 15:04") + " → " + ate.Local().Format("Jan 02 15:04")
-	case de != nil:
-		return "from " + de.Local().Format("Jan 02 15:04")
-	case ate != nil:
-		return "until " + ate.Local().Format("Jan 02 15:04")
-	}
-	return ""
-}
-
 // contar is how many workflows each state would show: the same filter with
 // that one field swapped, run through filtrar, so a count cannot disagree
 // with the list its link opens.

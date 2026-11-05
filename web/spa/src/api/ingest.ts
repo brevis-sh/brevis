@@ -1,12 +1,12 @@
 // The Ingest endpoints' shapes (internal/api/*_api.go, web/pages/ingest_json.go).
 // Lists are always arrays; a missing value is null; times are RFC 3339.
-// `Said` is words: a string the data owns, or a message (a catalog key and its values) the app says in the reader's
-// language (api/said.ts).
-import type { Msg } from "../i18n";
-import type { Said } from "./said";
+// Words are never sentences: a Msg is a catalog key and its values, a Cat messages and strings put together; the app
+// says them with useMsg().
+import type { Cat, Msg } from "../i18n";
 
 export type Place = { uri: string; kind: string; where: string; what: string; note: string };
-export type Source = { kind: string; driver: string; label: string; where: string };
+/** `label` is the origin's own name (a database, a driver); `labelMsg` says it where the console has words (http, files). */
+export type Source = { kind: string; driver: string; label: string; labelMsg: Msg | null; where: string };
 export type Choice = { key: string; label: string };
 
 export type LoadRow = {
@@ -18,9 +18,7 @@ export type LoadRow = {
   status: string;
   lastLoaded: string | null;
   rows: number | null;
-  /** When it runs, in words (empty for a step that runs by hand: `manual`). */
-  schedule: string;
-  manual: boolean;
+  schedule: Cat | null;
   source: Source;
   recent: (number | null)[];
   fixing: string | null;
@@ -32,7 +30,7 @@ export type Loads = {
   workflows: number;
   summary: Record<string, number>;
   counts: Record<string, number>;
-  sources: Choice[];
+  sources: { key: string; label: Msg }[];
   hasLegacy: boolean;
   filter: { status: string; source: string; q: string; legacy: boolean };
 };
@@ -47,7 +45,7 @@ export type CfgRow = {
   before: { label: string; text: string }[];
 };
 
-export type FlowNode = { kind: string; main: Said; detail: Said; /** The destination's own comment, after the detail. */ note?: string };
+export type FlowNode = { kind: string; main: Cat | null; detail: Cat | null };
 export type Flow = { nodes: FlowNode[]; deadLetter: FlowNode | null };
 
 export type Change = {
@@ -55,11 +53,11 @@ export type Change = {
   runId: string;
   first: boolean;
   earlier: boolean;
-  lines: { path: string; text: string }[];
+  lines: { path: string; text: Cat }[];
 };
 
 export type StepConfig = {
-  summary: string;
+  summary: Cat | null;
   note: string;
   flow: Flow | null;
   stage: {
@@ -71,7 +69,7 @@ export type StepConfig = {
     targetDriver: string;
     dedup: string;
   };
-  other: { title: string; rows: CfgRow[] }[];
+  other: { key: string; title: Msg | null; rows: CfgRow[] }[];
   sourceHead: CfgRow[];
   sourceCount: number;
   common: CfgRow[];
@@ -80,7 +78,7 @@ export type StepConfig = {
   transform: { index: string; rows: CfgRow[] }[];
   identity: { kind: string; legacy: boolean; where: string; object: string };
   destination: CfgRow[];
-  schema: { name: string; type: string; role: string }[];
+  schema: { name: string; type: string; role: Cat | null }[];
   schemaExtra: CfgRow[];
   hasSchema: boolean;
 };
@@ -89,12 +87,12 @@ export type Reader = { api: string; name: string; path: string; href: string };
 
 export type LoadDetail = {
   status: string;
-  /** Why the writer stands where it does: sentences that read as one passage (none when it is where it should be). */
-  reason: Msg[];
+  /** Why the writer stands where it does (null when it is where it should be). */
+  reason: Cat | null;
   source: Source;
   target: Place;
   hasSchedule: boolean;
-  when: string;
+  when: Cat | null;
   cron: string;
   timezone: string;
   manual: boolean;
@@ -153,8 +151,7 @@ export type StreamRow = {
   href: string;
   note: string;
   sink: Place;
-  /** How the stream batches, in words: null with no buffer declared. */
-  batch: Said;
+  batch: Cat | null;
   // The declared values behind `batch` ("2m", 2000): optional so an older server still draws the sentence.
   batchEvery?: string;
   batchRecords?: number | null;
@@ -181,20 +178,18 @@ export type Stream = {
   deadLetter: Place | null;
   publishedAt: string | null;
   format: string;
-  /** The sentences under the stream's name; they read as one passage. */
-  lede: Msg[];
-  summary: Said;
+  lede: Cat | null;
+  summary: Cat | null;
   flow: Flow | null;
   tables: string[];
   catalogHref: string;
   query: string;
   readBy: Reader[];
   hasConfig: boolean;
-  cards: { key: string; title: string; rows: { path: string; label: string; value: string; default: boolean; note: string }[] }[];
+  cards: { key: string; title: Msg; rows: { path: string; label: Msg | null; value: string; default: boolean; note: string }[] }[];
   yaml: string;
-  /** `first`: the first publish; `earlier`: one whose changes were not kept; otherwise the settings it changed. */
-  changes: { at: string; first: boolean; earlier: boolean; paths: string[] }[];
-  deadLetterPanel: { where: string; commands: string; readable: boolean; write: string } | null;
+  changes: { at: string; text: Msg }[];
+  deadLetterPanel: { where: Cat | null; commands: string; readable: boolean; write: string } | null;
   buriedMetric: string;
   testEvent: { format: string; body: string; curlHead: string; lands: string; table: string; allow: string[]; dataset: string };
 };
