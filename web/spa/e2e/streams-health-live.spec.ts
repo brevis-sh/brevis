@@ -23,7 +23,12 @@ const detail = (health: Health) => ({
   testEvent: { format: "json", body: "{}", curlHead: "", lands: "", table: "", allow: [], dataset: "" },
 });
 const win = (o: Record<string, number> = {}) => ({ received: 0, rejected: 0, dropped: 0, deadLetter: 0, delivered: 0, retried: 0, buried: 0, saturated: 0, ...o });
-const SINCE = new Date(Date.now() - 12 * 60_000).toISOString();
+// A FIXED CLOCK, at the hour the time is widest ("11:18 AM": four digits): "since 9:07 PM" is a character
+// shorter and wraps one line less, so the spec passed or failed with the hour it ran at.
+const NOW = new Date("2026-11-04T11:30:00Z");
+const SINCE = new Date(NOW.getTime() - 12 * 60_000).toISOString();
+test.use({ timezoneId: "UTC", locale: "en-US" });
+test.beforeEach(({ page }) => page.clock.setFixedTime(NOW));
 
 const H = {
   healthy: { state: "healthy", reason: "delivering", windowMinutes: 5, window: win({ received: 900, delivered: 5 }) },

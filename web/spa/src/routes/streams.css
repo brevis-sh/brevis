@@ -63,7 +63,9 @@
   .stl-sub { white-space: nowrap; }
 }
 
-/* The stream page's health row keeps the room of its longest sentence (three lines and the word on a phone, one beside it on a
-   screen), so a state that says more or less never moves the strip under it. `lh` is not a unit Tailwind's classes take. */
-.stp-health { flex-basis: 100%; min-height: 4lh; }
+/* The stream page's health row keeps the room of its longest sentence (four lines and the word on a phone, one beside it on a
+   screen), so a state that says more or less never moves the strip under it. Four, not three: the longest sentence with its
+   "since" and "getting better" suffixes wraps to a fourth line when the time reads "12:01 AM" instead of "9:07 PM", and the
+   spec caught it only at that hour. `lh` is not a unit Tailwind's classes take. */
+.stp-health { flex-basis: 100%; min-height: 5lh; }
 @media (min-width: 640px) { .stp-health { min-height: 1lh; } }
