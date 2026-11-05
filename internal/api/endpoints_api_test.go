@@ -84,7 +84,7 @@ func TestTheEndpointsJSONListsAreArrays(t *testing.T) {
 	}
 }
 
-// AN ENDPOINT'S DATA is its contract, in words where the server writes them:
+// AN ENDPOINT'S DATA is its contract, with sentences as keys and values where the server would write them:
 // parameters with what they accept, limits, the tables it reads with the
 // catalog's verdict, the stale warning with the writer's reason.
 func TestTheEndpointJSONIsItsContractAndItsLineage(t *testing.T) {
@@ -98,16 +98,16 @@ func TestTheEndpointJSONIsItsContractAndItsLineage(t *testing.T) {
 		t.Fatalf("%d %v", code, body)
 	}
 	stale := body["stale"].(map[string]any)
-	if !strings.Contains(stale["reason"].(string), "missed its") || stale["target"] != "bigquery://acme/bronze/old" {
+	if stale["reason"].([]any)[0].(map[string]any)["k"] != "catalog.why.missed" || stale["target"] != "bigquery://acme/bronze/old" {
 		t.Errorf("stale = %v", stale)
 	}
 	l := body["lineage"].([]any)[0].(map[string]any)
 	if l["known"] != true || l["status"] != "stale" || l["what"] != "old" || l["kind"] != "bigquery" ||
-		l["writer"].(map[string]any)["href"] != "/ingest/loads/vendors/fetch" || l["cacheTtl"] != "6 hours" {
+		l["writer"].(map[string]any)["href"] != "/ingest/loads/vendors/fetch" || l["cacheTtl"].(map[string]any)["k"] != "summary.unit.hour" {
 		t.Errorf("lineage = %v", l)
 	}
 	c := body["cache"].(map[string]any)
-	if c["state"] != "set" || c["ttl"] != "6 hours" || c["type"] != "Redis" || !strings.Contains(c["bump"].(string), "bronze.old") {
+	if c["state"] != "set" || c["ttl"].(map[string]any)["n"] != float64(6) || c["type"] != "Redis" || !strings.Contains(c["bump"].(string), "bronze.old") {
 		t.Errorf("cache = %v", c)
 	}
 	p := body["params"].([]any)
@@ -115,7 +115,7 @@ func TestTheEndpointJSONIsItsContractAndItsLineage(t *testing.T) {
 		t.Errorf("params = %v", p)
 	}
 	lim := body["limits"].(map[string]any)
-	if lim["timeout"] != "10 seconds" || lim["maxRows"] != float64(500) || lim["maxBytes"] != float64(1<<30) {
+	if lim["timeout"].(map[string]any)["k"] != "summary.unit.second" || lim["maxRows"] != float64(500) || lim["maxBytes"] != float64(1<<30) {
 		t.Errorf("limits = %v", lim)
 	}
 	if body["canRun"] != false || len(body["form"].([]any)) != 0 || body["keyed"] != true {

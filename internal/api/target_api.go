@@ -27,10 +27,10 @@ type targetWriterView struct {
 	Status      string      `json:"status"`
 	Cron        string      `json:"cron"`
 	RunInFlight *string     `json:"runInFlight"`
-	// Reason is why the writer stands where it does, in the reader's language
-	// and in the writer's own timezone.
-	Reason string `json:"reason"`
-	Href   string `json:"href"`
+	// Reason is why the writer stands where it does, in the writer's own
+	// timezone: sentences for the app to say, read as one passage.
+	Reason []i18n.Msg `json:"reason"`
+	Href   string     `json:"href"`
 }
 
 type loadBarView struct {
@@ -95,7 +95,7 @@ func (u *UI) apiCatalogTarget(w http.ResponseWriter, r *http.Request) {
 	for _, wr := range t.Row.Writers {
 		tw := targetWriterView{
 			Name: catWriterName(wr.CatalogWriter), Workflow: wr.Workflow, Node: wr.Node,
-			Status: string(wr.Verdict.Status), RunInFlight: wr.RunInFlight, Reason: wr.Reason(ctx),
+			Status: string(wr.Verdict.Status), RunInFlight: wr.RunInFlight, Reason: append([]i18n.Msg{}, wr.Reason()...),
 		}
 		if g := wr.Gateway; g != nil {
 			tw.Gateway = &gatewayRef{Name: g.Name, Stream: g.Stream}

@@ -15,7 +15,9 @@ import (
 // the reader's language, and a failure is {"error": "<code>"} with a status, never HTML.
 
 // ingestCtx is the request's context in the reader's language, for the
-// sentences the server finishes.
+// sentences the config screens' producers (cron words, summaries, flow nodes,
+// section titles) still finish on the server: THE SEAM with the config slice,
+// which turns them into messages; this goes when the last of them does.
 func ingestCtx(r *http.Request) context.Context {
 	return i18n.WithLang(r.Context(), i18n.Negotiate(r))
 }

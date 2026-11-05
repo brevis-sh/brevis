@@ -240,7 +240,7 @@ func TestTheStreamsListCarriesTheBatchAndTheDeadLetter(t *testing.T) {
 		t.Fatalf("no rows: %v", body)
 	}
 	row := rows[0].(map[string]any)
-	if row["gateway"] != "edge" || row["path"] != "/v1/clicks" || row["href"] != "/ingest/streams/edge/v1/clicks" || row["batch"] != "1 minute" {
+	if row["gateway"] != "edge" || row["path"] != "/v1/clicks" || row["href"] != "/ingest/streams/edge/v1/clicks" || row["batch"].(map[string]any)["k"] != "summary.unit.minute" {
 		t.Errorf("row = %v", row)
 	}
 	if row["sink"].(map[string]any)["uri"] == "" {
