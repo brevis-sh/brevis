@@ -31,8 +31,11 @@ The engine's tag is `vX.Y.Z`, with no prefix; the SDK's carries `sdk/`.
   optional `brevis.sh/metrics-port` (default `9090`) and `brevis.sh/metrics-path`
   (default `/metrics`). One pod is one replica; a pod scaled down leaves at once
   and does not stay as a silent replica. The address is the pod IP from the API
-  server's answer, never from a request. Outside Kubernetes discovery is off and
-  the console says no pod announced itself (the compose demo has no live volume).
+  server's answer, never from a request; a pod on the host network is refused
+  and the port must be one the pod declares as a `containerPort`, so a pod
+  that announces itself needs its metrics port declared. Outside Kubernetes
+  discovery is off and the console says no pod announced itself (the compose
+  demo has no live volume).
 - **One collector, in the scheduler.** It runs under a Postgres advisory lock
   (two schedulers never both collect; the second takes over when the first dies)
   and writes one transaction per scrape round. The API processes no longer

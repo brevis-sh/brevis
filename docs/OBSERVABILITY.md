@@ -79,7 +79,15 @@ How it works, and what follows from it:
   that does not parse (a bad port or path, an unknown kind) is skipped.
 - **No address comes from a request.** The pod's IP is taken only from the
   Kubernetes API server's answer; loopback, link-local and unspecified addresses
-  are refused. An address is never logged or returned.
+  are refused, and so is a pod on the host network (`hostNetwork`, or a pod IP
+  equal to its node's). The port has to be one the pod **declares** as a
+  `containerPort`: the annotation picks among the pod's own listeners and cannot
+  aim the scheduler at another service. An address is never logged or returned.
+- **Who can add a source.** Whoever can create pods in the scheduler's namespace
+  can announce one, the same trust that namespace already gets (the scheduler
+  creates pods there on a workflow's say-so). A pod that restarts in a loop is a
+  new address each time: at most 64 retired pods are kept for their history,
+  the oldest dropped first, and at most 64 are scraped.
 - **Outside Kubernetes** (no service account) discovery is off: the console says
   no pod announced itself, and the compose demo has no live volume.
 - **Retention.** `BREVIS_RETENTION_METRICS_HOURS` (default `3`, floor `3` which

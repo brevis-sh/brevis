@@ -223,7 +223,7 @@ func (c *Collector) SetTargets(ts []Target) {
 		}
 		kept = append(kept, t)
 	}
-	c.targets = kept
+	c.targets = capRetired(kept)
 	for _, t := range ts { // in the caller's order, which is stable
 		if _, ok := want[t.key()]; !ok {
 			continue
@@ -237,6 +237,37 @@ func (c *Collector) SetTargets(ts []Target) {
 	for k := range changed {
 		c.seq[k].Add(1) // the console redraws: the set of replicas changed
 	}
+}
+
+// maxRetired bounds the retired targets kept for their history. A pod that
+// restarts in a loop is a new address every time, and each one keeps a full
+// state for the retention window: without a bound, churn is memory.
+const maxRetired = maxTargets
+
+// capRetired drops the oldest retired targets beyond maxRetired and keeps the
+// live ones and the order of the rest.
+func capRetired(ts []*targetState) []*targetState {
+	var retired []*targetState
+	for _, t := range ts {
+		if !t.retired.IsZero() {
+			retired = append(retired, t)
+		}
+	}
+	if len(retired) <= maxRetired {
+		return ts
+	}
+	sort.Slice(retired, func(i, j int) bool { return retired[i].retired.Before(retired[j].retired) })
+	drop := make(map[*targetState]bool, len(retired)-maxRetired)
+	for _, t := range retired[:len(retired)-maxRetired] {
+		drop[t] = true
+	}
+	out := ts[:0]
+	for _, t := range ts {
+		if !drop[t] {
+			out = append(out, t)
+		}
+	}
+	return out
 }
 
 // Interval is how often each source is read, after the clamp.

@@ -3,6 +3,7 @@ package metrics
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"strings"
@@ -21,6 +22,9 @@ func pod(name, ip string, ready bool, ann map[string]string) k8s.Pod {
 	return k8s.Pod{
 		Metadata: k8s.Metadata{Name: name, Annotations: ann},
 		Status:   &k8s.PodStatus{Phase: "Running", PodIP: ip, Conditions: []k8s.Condition{{Type: "Ready", Status: st}}},
+		// The ports the cases below ask for are declared; the undeclared ones
+		// have their own pod.
+		Spec: k8s.PodSpec{Containers: []k8s.Container{{Name: "c", Ports: []k8s.ContainerPort{{ContainerPort: 9090}, {ContainerPort: 8081}}}}},
 	}
 }
 
@@ -38,6 +42,10 @@ func TestTargetsFromPods(t *testing.T) {
 	terminating := pod("p-term", "10.0.0.8", true, gw("g"))
 	terminating.Metadata.DeletionTimestamp = "2026-01-01T00:00:00Z"
 	noStatus := k8s.Pod{Metadata: k8s.Metadata{Name: "p-nostatus", Annotations: gw("g")}}
+	hostNet := pod("host-net", "10.0.0.7", true, gw("g"))
+	hostNet.Spec.HostNetwork = true
+	sameAsHost := pod("same-as-host", "10.0.0.7", true, gw("g"))
+	sameAsHost.Status.HostIP = "10.0.0.7"
 	pods := []k8s.Pod{
 		pod("b", "10.0.0.2", true, gw("zarv_ingestion")),
 		pod("a", "10.0.0.1", true, gw("zarv_ingestion")),
@@ -51,6 +59,9 @@ func TestTargetsFromPods(t *testing.T) {
 		pod("path-host", "10.0.0.7", true, gw("g", AnnotationPath, "//evil/metrics")),
 		pod("path-query", "10.0.0.7", true, gw("g", AnnotationPath, "/metrics?x=1")),
 		pod("path-relative", "10.0.0.7", true, gw("g", AnnotationPath, "metrics")),
+		pod("undeclared-port", "10.0.0.7", true, gw("g", AnnotationPort, "6379")),
+		hostNet,
+		sameAsHost,
 		pod("loopback", "127.0.0.1", true, gw("g")),
 		pod("metadata", "169.254.169.254", true, gw("g")),
 		pod("no-ip", "", true, gw("g")),
@@ -132,6 +143,33 @@ func TestSetTargetsKeepsBaselineAndCaps(t *testing.T) {
 	}
 	if live != maxTargets {
 		t.Fatalf("%d live targets, want the cap %d", live, maxTargets)
+	}
+}
+
+// A pod that restarts in a loop is a new address every round: the retired ones
+// are bounded, the oldest go first, and the live ones are never touched.
+func TestRetiredTargetsAreBounded(t *testing.T) {
+	c, ck := newTest()
+	addr := func(i int) Target {
+		return Target{Kind: Gateway, Owner: "g", url: fmt.Sprintf("http://10.1.%d.%d:9090/metrics", i/250, i%250)}
+	}
+	for i := range 3 * maxRetired {
+		ck.t = ck.t.Add(time.Second)
+		c.SetTargets([]Target{addr(i)}) // each round the previous address is retired
+	}
+	retired, live := 0, 0
+	for _, tg := range c.targets {
+		if tg.retired.IsZero() {
+			live++
+		} else {
+			retired++
+		}
+	}
+	if live != 1 || retired > maxRetired {
+		t.Fatalf("%d live, %d retired; want 1 live and at most %d retired", live, retired, maxRetired)
+	}
+	if want := addr(3*maxRetired - 1).url; c.targets[len(c.targets)-1].url != want {
+		t.Fatalf("the live target was not kept")
 	}
 }
 

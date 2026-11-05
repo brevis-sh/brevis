@@ -62,6 +62,12 @@ func targetOf(p k8s.Pod) (Target, bool) {
 	if st == nil || st.Phase != "Running" || p.Metadata.DeletionTimestamp != "" || !ready(st) {
 		return Target{}, false
 	}
+	// A pod on the node's network answers on the node's address: scraping it is
+	// scraping the node. Refused by the spec and by the address, in case a
+	// spec is not what the kubelet ran.
+	if p.Spec.HostNetwork || (st.HostIP != "" && st.HostIP == st.PodIP) {
+		return Target{}, false
+	}
 	ip, err := netip.ParseAddr(st.PodIP)
 	if err != nil || !ip.IsValid() || ip.IsLoopback() || ip.IsUnspecified() || ip.IsLinkLocalUnicast() || ip.IsMulticast() {
 		return Target{}, false
@@ -72,6 +78,11 @@ func targetOf(p k8s.Pod) (Target, bool) {
 			return Target{}, false
 		}
 	}
+	// Only a port the pod declares: an annotation picks among the pod's own
+	// listeners and cannot aim this process at another service of the pod's IP.
+	if !declares(p.Spec, port) {
+		return Target{}, false
+	}
 	path := "/metrics"
 	if v, set := a[AnnotationPath]; set {
 		path = v
@@ -81,6 +92,17 @@ func targetOf(p k8s.Pod) (Target, bool) {
 		}
 	}
 	return Target{Kind: kind, Owner: owner, url: "http://" + net.JoinHostPort(ip.String(), strconv.Itoa(port)) + path}, true
+}
+
+func declares(spec k8s.PodSpec, port int) bool {
+	for _, c := range spec.Containers {
+		for _, cp := range c.Ports {
+			if cp.ContainerPort == port {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func ready(st *k8s.PodStatus) bool {
