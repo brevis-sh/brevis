@@ -12,7 +12,7 @@ import { linkClass } from "../ui/card";
 import { CodeBlock } from "../ui/copy";
 import { Drawer, useDrawer } from "../ui/drawer";
 import { Icon } from "../ui/icon";
-import { Logo } from "../ui/logo";
+import { Logo, useLogoTitle } from "../ui/logo";
 import { PageFrame } from "../ui/page-frame";
 import { Pagination } from "../ui/pagination";
 import { recalled, remember } from "../ui/remembered";
@@ -103,14 +103,16 @@ const Tag = ({ tag, to }: { tag: string; to: string }) => (
 
 function Row({ w, links, busy, onToggle, onRun }: { w: WorkflowRow; links: Links; busy: boolean; onToggle: () => void; onRun: (slug: string, opener: HTMLElement) => void }) {
   const { t, n } = useT();
-  const msg = useMsg();
   const { dateTime } = useFormat();
   const since = useAgo();
+  const say = useMsg();
+  const logoTitle = useLogoTitle();
+  const schedule = say(w.schedule);
   const navigate = useNavigate();
   const paused = w.hasSchedule && !w.active;
   const href = `/workflows/${encodeURIComponent(w.slug)}`;
   const langs = w.runsIn.map((l) => l.key);
-  const langNames = w.runsIn.slice(0, 2).map((l) => l.name).join(" + ") + (w.runsIn.length > 2 ? ` +${w.runsIn.length - 2}` : "");
+  const langNames = w.runsIn.slice(0, 2).map((l) => logoTitle(l.key)).join(" + ") + (w.runsIn.length > 2 ? ` +${w.runsIn.length - 2}` : "");
   // The whole row opens the workflow; the controls inside it keep their own click.
   const open = (e: MouseEvent) => {
     if (!(e.target as HTMLElement).closest("a, button, input, label, form")) void navigate(href);
@@ -163,10 +165,10 @@ function Row({ w, links, busy, onToggle, onRun }: { w: WorkflowRow; links: Links
             {paused ? (
               <p className="text-xs text-muted">
                 {t("workflows.paused")}
-                {w.schedule && <> · {t("workflows.was", { schedule: msg(w.schedule) })}</>}
+                {schedule && <> · {t("workflows.was", { schedule })}</>}
               </p>
             ) : (
-              w.schedule && <p className="text-xs text-ink">{msg(w.schedule)}{zoneSuffix(w.timezone)}</p>
+              schedule && <p className="text-xs text-ink">{schedule}{zoneSuffix(w.timezone)}</p>
             )}
             <p className="mt-0.5 font-mono text-[0.7rem] text-faint">
               {w.cron}
@@ -212,7 +214,7 @@ function Row({ w, links, busy, onToggle, onRun }: { w: WorkflowRow; links: Links
 // inside a .sk-ghost body, so its height is the loaded row's by construction.
 const GHOST: WorkflowRow = {
   slug: "workflow_name", project: "default", steps: 3, failing: false, inFlight: false, hasParams: false,
-  runsIn: [{ key: "python", name: "Python" }], connects: [{ key: "postgres", name: "PostgreSQL" }], hasSchedule: true, active: true,
+  runsIn: [{ key: "python" }], connects: [{ key: "postgres" }], hasSchedule: true, active: true,
   cron: "0 * * * *", schedule: { k: "cron.hourly", a: { m: "00" } }, timezone: "UTC", catchup: false, nextRun: "2026-01-01T00:00:00Z", lastRunAt: null, totalRuns: 10,
   recent: Array.from({ length: 5 }, (_, i) => ({ id: `ghost-${i}`, status: "success", at: "2026-01-01T00:00:00Z" })), tags: ["tag"],
 };
@@ -245,11 +247,12 @@ function WorkflowFilters({ data, links }: { data?: WorkflowsList; links: Links }
   const tags = f ? f.tags : links.sp.getAll("tag");
   const q = f ? f.q : (links.sp.get("q") ?? "");
   const legacyState = state !== "" && !(STATES as readonly string[]).includes(state);
-  const langName = (key: string) => data?.langs.find((l) => l.key === key)?.name ?? key;
+  const logoTitle = useLogoTitle();
+  const langName = (key: string) => logoTitle(key);
   const filters: FilterDef[] = [
     {
       id: "lang", label: t("workflows.filter.lang"), allLabel: t("workflows.lang.all"), pending: !data,
-      options: (data?.langs ?? []).map((l: LogoRef & { count: number }) => ({ key: l.key, label: l.name, icon: <Logo k={l.key} />, count: l.count })),
+      options: (data?.langs ?? []).map((l: LogoRef & { count: number }) => ({ key: l.key, label: logoTitle(l.key), icon: <Logo k={l.key} />, count: l.count })),
       value: lang ? [lang] : [], onChange: (v) => go({ lang: v[0] ?? null }),
     },
     {

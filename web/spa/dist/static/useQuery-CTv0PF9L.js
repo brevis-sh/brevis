@@ -1,1 +1,0 @@
-import{S as e,x as t}from"./errors-BJYc5YBS.js";function n(n,r){return t(n,e,r)}export{n as t};

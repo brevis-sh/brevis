@@ -255,13 +255,19 @@ func TestTheWorkflowJSONCarriesTheLoadTrendWhenThereIsHistory(t *testing.T) {
 	_, body := getJSON(t, withLoad, "/api/workflows/solo", nil)
 	load, _ := body["load"].(map[string]any)
 	series, _ := load["series"].([]any)
-	if len(series) != 4 || load["window"] == "" {
+	if len(series) != 4 || load["from"] == "" || load["to"] == "" {
 		t.Fatalf("load = %v", body["load"])
 	}
 	first := series[0].(map[string]any)
-	if first["label"] != "Rows per run" || first["latest"] != "2.0k" || first["delta"] != "+100%" || len(first["points"].([]any)) != 2 {
+	if first["key"] != "rows" || first["unit"] != "count" || first["latest"] != 2000.0 || first["delta"] != "pct" || first["pct"] != 100.0 || len(first["points"].([]any)) != 2 {
 		t.Errorf("first series = %v", first)
 	}
+}
+
+// schedule is the key of the row's schedule sentence, which the app says.
+func schedule(row map[string]any) any {
+	m, _ := row["schedule"].(map[string]any)
+	return m["k"]
 }
 
 func TestAOneStepWorkflowIsOneStepInTheList(t *testing.T) {

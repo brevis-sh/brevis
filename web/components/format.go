@@ -23,20 +23,3 @@ func Duration(d *time.Duration) string {
 	}
 	return i18n.Elapsed(context.Background(), *d)
 }
-
-// UTCStamp is the full date in UTC, for values that are UTC by contract.
-//
-// The slot and the auto params are stored, injected and read in UTC -- a step
-// gets `2026-03-11T01:00:00Z` in $BREVIS_AUTO_ADJUSTED_AT. Rendering those in
-// the server's local time made the screen show `2026-03-10 22:00:00` beside a
-// `date` of `2026-03-11`: one day apart, in the same grid, with nothing saying
-// why, and a third answer for anyone who checked the environment.
-//
-// The screen agreeing with the contract is worth more than the screen agreeing
-// with the clock of whoever ran the deployment.
-func UTCStamp(t *time.Time) string {
-	if t == nil {
-		return "—"
-	}
-	return t.UTC().Format("2006-01-02 15:04:05 UTC")
-}
