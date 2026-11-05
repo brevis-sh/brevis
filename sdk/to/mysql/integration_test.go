@@ -295,14 +295,14 @@ func TestIntegrationTheReadIsStreamed(t *testing.T) {
 func TestIntegrationTheTypesComeFromTheServer(t *testing.T) {
 	db := open(t)
 	name := table(t, db, `
-		numeric DECIMAL(20,2),
+		amount DECIMAL(20,2),
 		data DATE,
 		instant DATETIME(6),
 		document JSON,
 		bytes VARBINARY(16),
-		integer BIGINT,
+		whole BIGINT,
 		text VARCHAR(32),
-		empty VARCHAR(8)`)
+		blank VARCHAR(8)`)
 	if _, err := db.Exec(fmt.Sprintf(`INSERT INTO %s VALUES
 		('123456789012345678.99', '2026-09-05', '2026-09-05 12:30:00',
 		 '{"a":[1,2]}', 0xDEADBEEF, 42, 'hello', NULL)`, name)); err != nil {
@@ -326,12 +326,12 @@ func TestIntegrationTheTypesComeFromTheServer(t *testing.T) {
 	}
 
 	expected := map[string]any{
-		"numeric": "123456789012345678.99",
+		"amount":  "123456789012345678.99",
 		"data":    "2026-09-05",
 		"instant": "2026-09-05T12:30:00Z",
-		"integer": int64(42),
+		"whole":   int64(42),
 		"text":    "hello",
-		"empty":   nil,
+		"blank":   nil,
 	}
 	for field, want := range expected {
 		if got := line[field]; got != want {
