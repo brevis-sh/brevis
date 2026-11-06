@@ -17,7 +17,7 @@ and the versions follow [SemVer](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [0.8.0] — 2026-11-06
 
 ### Added: `max_in_flight_per_tenant`
 

@@ -13,8 +13,8 @@ GET /v1/orders?period=today  →  key → tenant  →  {{ x }} as $1, never as t
 docker run -p 8080:8080 \
   -v ./api:/etc/brevis:ro \
   -e WAREHOUSE_DSN=postgres://reader:...@db:5432/warehouse \
-  -e BREVIS_API_KEYS="$(echo "$KEY" | docker run -i --rm brevissh/brevis-sql-api:0.7.0 key hash --tenant acme)" \
-  brevissh/brevis-sql-api:0.7.0 \
+  -e BREVIS_API_KEYS="$(echo "$KEY" | docker run -i --rm brevissh/brevis-sql-api:0.8.0 key hash --tenant acme)" \
+  brevissh/brevis-sql-api:0.8.0 \
   serve --config /etc/brevis/api.yaml --connections /etc/brevis/brevis.yaml --addr :8080
 ```
 
@@ -22,6 +22,7 @@ docker run -p 8080:8080 \
 
 | tag | carries |
 |---|---|
+| `0.8.0` | `max_in_flight_per_tenant`: how many requests one tenant may have waiting on the warehouse (4 by default) |
 | `0.7.0` | the first under `brevissh/` (up to 0.6.0: `areteacademy/brevis-sql-api`); the module is `brevis.sh/brevis/sql` |
 | `0.6.0` | hooks: a before and an after per endpoint, in a binary of your own (this image has none) |
 | `0.5.0` | Postgres and BigQuery, the Redis cache, Prometheus |
