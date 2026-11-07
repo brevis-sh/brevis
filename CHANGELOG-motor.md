@@ -18,6 +18,19 @@ The engine's tag is `vX.Y.Z`, with no prefix; the SDK's carries `sdk/`.
 
 ## [Unreleased]
 
+## [0.45.1] — 2026-11-07
+
+### Fixed: runner detection for steps using `host:` and workflow tags
+
+- **`host:` executor runner detection**: Steps executing with `host: go`, `host: python`, `host: dbt`, etc. (or runner names such as `runner-go`, `dlt-runner-01`) now reliably detect their runtime and tools even when invoking compiled binaries without interpreter or extension.
+- **Workflow tags fallback**: Workflows whose steps execute opaque binaries with no host or image fall back to checking workflow `tags` for canonical runtime and tool marks.
+- **Marks shown across all UI views**: Workflows list ("Language" column), Runs list cards, Run header, Overview next triggers, and DAG step cards now correctly display the Go logo (and other host runtimes/tools).
+
+### Changed: Workflows list icons and hover tooltips
+
+- **Workflows list Language column**: Displays only the runner marks/icons without text label beside them, keeping table columns clean.
+- **Tooltips on hover**: Hovering over any language, tool, or connector icon (database, storage, etc.) displays a tooltip with its full label.
+
 ## [0.45.0] — 2026-11-07
 
 ### Added: runner icons for Go, Node.js, PHP, Java, Rust, Ruby, .NET, SQL and Airbyte

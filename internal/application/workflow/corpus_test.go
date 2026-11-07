@@ -81,7 +81,7 @@ func TestTheRepositorysWorkflowsDetectAsExpected(t *testing.T) {
 				key := e.Name() + "::" + n.ID
 				seen[key] = true
 
-				d := rt.Resolve(n.Runtime, n.Tools, rt.Detect(n.Run, w.ImageFor(n), n.Action))
+				d := rt.Resolve(n.Runtime, n.Tools, rt.Detect(n.Run, w.ImageFor(n), n.Action, n.Host))
 				got := d.Runtime
 				if len(d.Tools) > 0 {
 					got += " [" + strings.Join(d.Tools, " ") + "]"

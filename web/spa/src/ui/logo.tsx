@@ -51,11 +51,11 @@ export function Logo({ k, size = 18, title: given }: { k: string; size?: 18 | 28
   const title = given ?? name;
   if (mark) {
     return (
-      <span className={`cg cg-${size} ${mark[1]}`} role="img" aria-label={title} title={title} dangerouslySetInnerHTML={{ __html: marks?.[k] ?? "" }} />
+      <span className={`cg cg-${size} ${mark[1]}`} role="img" aria-label={title} data-tip={title} dangerouslySetInnerHTML={{ __html: marks?.[k] ?? "" }} />
     );
   }
   return (
-    <span className={`cg cg-mono cg-${size}`} role="img" aria-label={title} title={title}>
+    <span className={`cg cg-mono cg-${size}`} role="img" aria-label={title} data-tip={title}>
       {mono?.[1] ?? letters}
     </span>
   );

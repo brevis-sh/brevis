@@ -28,7 +28,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: api
-          image: brevissh/brevis:0.45.0
+          image: brevissh/brevis:0.45.1
           args: ["serve"]
           # TWO ports, and only `http` belongs in the Ingress below.
           #

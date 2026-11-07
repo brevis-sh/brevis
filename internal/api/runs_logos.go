@@ -30,11 +30,20 @@ func runsIn(def wf.Workflow, max int) []string {
 		}
 	}
 	for _, no := range def.Nodes {
-		tc := runtimes.Resolve(no.Runtime, no.Tools, runtimes.Detect(no.Run, def.ImageFor(no), no.Action))
+		tc := runtimes.Resolve(no.Runtime, no.Tools, runtimes.Detect(no.Run, def.ImageFor(no), no.Action, no.Host))
 		for _, t := range tc.Tools {
 			add(t)
 		}
 		add(tc.Runtime)
+	}
+	if len(keys) == 0 {
+		for _, tag := range def.Tags {
+			if t, ok := runtimes.Tool(tag); ok {
+				add(t)
+			} else if r, ok := runtimes.Runtime(tag); ok {
+				add(r)
+			}
+		}
 	}
 	return keys
 }

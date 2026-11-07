@@ -1,1 +1,0 @@
-import{D as e,O as t}from"./errors-CwiDIB6y.js";function n(n,r){return e(n,t,r)}export{n as t};
