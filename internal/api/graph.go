@@ -381,7 +381,7 @@ func buildGraph(def wf.Workflow, states map[string]postgres.NodeState, runID, st
 			// Omitted entirely when there is nothing to say, so an unknown
 			// step's payload is byte-identical to the one before this feature.
 			if tc := runtimes.Resolve(no.Runtime, no.Tools,
-				runtimes.Detect(no.Run, def.ImageFor(no), no.Action)); !tc.Empty() {
+				runtimes.Detect(no.Run, def.ImageFor(no), no.Action, no.Host)); !tc.Empty() {
 				if tc.Runtime != "" {
 					data["runtime"] = tc.Runtime
 				}

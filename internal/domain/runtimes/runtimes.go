@@ -107,6 +107,30 @@ func IsRuntime(id string) bool { return contains(Runtimes, id) }
 // IsTool reports whether id names a known tool.
 func IsTool(id string) bool { return contains(Tools, id) }
 
+// Tool returns the canonical tool for an id or alias, or ("", false).
+func Tool(id string) (string, bool) {
+	id = strings.ToLower(strings.TrimSpace(id))
+	if t, ok := imageTools[id]; ok {
+		return t, true
+	}
+	if IsTool(id) {
+		return id, true
+	}
+	return "", false
+}
+
+// Runtime returns the canonical runtime for an id or alias, or ("", false).
+func Runtime(id string) (string, bool) {
+	id = strings.ToLower(strings.TrimSpace(id))
+	if r, ok := imageRuntimes[id]; ok {
+		return r, true
+	}
+	if IsRuntime(id) {
+		return id, true
+	}
+	return "", false
+}
+
 // Detection is what a step runs in.
 //
 // The zero value means "nothing is known", and it is a normal outcome: a step
@@ -145,23 +169,26 @@ func (d Detection) Empty() bool { return d.Runtime == "" && len(d.Tools) == 0 }
 // Telling a real in-process task from a dispatch one needs the executor's
 // registry, and this function is pure on purpose. Blank is the honest answer.
 //
-// What is left is a reading of `run` and `image`, and the two are not equal.
+// What is left is a reading of `run`, `image` and `host`, and they are not equal.
 // The command wins for the runtime, because the command is what executes; the
-// image only supplies one when the command supplied none. Tools come from both.
-// An image named `python:3.12` running `dbt build` is a dbt step.
-func Detect(run, image, action string) Detection {
+// image or host only supplies one when the command supplied none. Tools come from
+// all of them. An image named `python:3.12` running `dbt build` is a dbt step.
+func Detect(run, image, action string, host ...string) Detection {
 	_ = action
 
 	fromRun := fromCommand(run)
 	fromImage := fromImageRef(image)
-
-	d := Detection{Runtime: fromRun.Runtime}
-	if d.Runtime == "" {
-		d.Runtime = fromImage.Runtime
+	var fromHost Detection
+	if len(host) > 0 && host[0] != "" {
+		fromHost = fromHostRef(host[0])
 	}
 
+	d := Detection{Runtime: fromRun.Runtime}
+	d.Runtime = strongest(d.Runtime, fromImage.Runtime)
+	d.Runtime = strongest(d.Runtime, fromHost.Runtime)
+
 	tools := map[string]bool{}
-	for _, t := range append(fromRun.Tools, fromImage.Tools...) {
+	for _, t := range append(append(fromRun.Tools, fromImage.Tools...), fromHost.Tools...) {
 		tools[t] = true
 	}
 	for t := range tools {
@@ -472,10 +499,44 @@ func fromImageRef(image string) Detection {
 	for _, part := range strings.FieldsFunc(name, func(r rune) bool {
 		return r == '-' || r == '_' || r == '.'
 	}) {
-		if t, ok := imageTools[part]; ok {
+		if t, ok := Tool(part); ok {
 			tools[t] = true
 		}
-		if rt, ok := imageRuntimes[part]; ok && d.Runtime == "" {
+		if rt, ok := Runtime(part); ok && d.Runtime == "" {
+			d.Runtime = rt
+		}
+	}
+
+	for t := range tools {
+		d.Tools = append(d.Tools, t)
+	}
+	sort.Strings(d.Tools)
+	return d
+}
+
+// ---------------------------------------------------------------------------
+// The host
+// ---------------------------------------------------------------------------
+
+// fromHostRef reads what a host names: a runtime (e.g. `go`, `python`, `node`),
+// or a tool (e.g. `dbt`, `dlt`).
+//
+// Matches each segment when split by `-`, `_`, `.`, `/`.
+func fromHostRef(host string) Detection {
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return Detection{}
+	}
+
+	var d Detection
+	tools := map[string]bool{}
+	for _, part := range strings.FieldsFunc(host, func(r rune) bool {
+		return r == '-' || r == '_' || r == '.' || r == '/'
+	}) {
+		if t, ok := Tool(part); ok {
+			tools[t] = true
+		}
+		if rt, ok := Runtime(part); ok && d.Runtime == "" {
 			d.Runtime = rt
 		}
 	}
@@ -514,6 +575,7 @@ var imageRuntimes = map[string]string{
 var imageTools = map[string]string{
 	"dbt": DBT, "spark": Spark, "pyspark": Spark, "airbyte": Airbyte,
 	"soda": Soda, "sqlmesh": SQLMesh, "meltano": Meltano, "duckdb": DuckDB,
+	"dlt": DLT, "pandas": Pandas, "polars": Polars,
 	"airflow": Airflow, "terraform": Terraform,
 }
 

@@ -225,6 +225,110 @@ func TestDetectReadsTheCommand(t *testing.T) {
 	}
 }
 
+func TestDetectReadsTheHost(t *testing.T) {
+	cases := []struct {
+		name    string
+		run     string
+		image   string
+		action  string
+		host    string
+		runtime string
+		tools   []string
+	}{
+		{name: "bare host go", host: "go", runtime: rt.Go},
+		{name: "host runner-go", host: "runner-go", runtime: rt.Go},
+		{name: "host go-runner", host: "go-runner", runtime: rt.Go},
+		{name: "host python", host: "python", runtime: rt.Python},
+		{name: "host runner-python", host: "runner-python", runtime: rt.Python},
+		{name: "host dbt", host: "dbt", tools: []string{rt.DBT}},
+		{name: "host runner-dbt", host: "runner-dbt", tools: []string{rt.DBT}},
+		{name: "host dlt-runner-01", host: "dlt-runner-01", tools: []string{rt.DLT}},
+		{name: "host node", host: "node", runtime: rt.Node},
+		{name: "host rust", host: "rust", runtime: rt.Rust},
+		{name: "host php", host: "php", runtime: rt.PHP},
+		{name: "host ruby", host: "ruby", runtime: rt.Ruby},
+		{name: "host dotnet", host: "dotnet", runtime: rt.DotNet},
+		{
+			name:    "compiled binary on host go",
+			run:     "/usr/local/bin/push_citizen --dataset alerts --hours 24",
+			host:    "go",
+			runtime: rt.Go,
+		},
+		{
+			name:    "shell preamble on host go still reports go",
+			run:     "set -e && /usr/local/bin/push_citizen",
+			host:    "go",
+			runtime: rt.Go,
+		},
+		{
+			name:    "concrete command runtime beats host",
+			run:     "python transform.py",
+			host:    "go",
+			runtime: rt.Python,
+		},
+		{
+			name:    "command tool and host runtime combine",
+			run:     "dbt build",
+			host:    "python",
+			runtime: rt.Python,
+			tools:   []string{rt.DBT},
+		},
+		{name: "unknown host says nothing", host: "custom-box-42"},
+		{name: "empty host says nothing", host: ""},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := rt.Detect(c.run, c.image, c.action, c.host)
+
+			if got.Runtime != c.runtime {
+				t.Errorf("runtime = %q, want %q", got.Runtime, c.runtime)
+			}
+			if !sameTools(got.Tools, c.tools) {
+				t.Errorf("tools = %v, want %v", got.Tools, c.tools)
+			}
+
+			wantSource := rt.SourceInferred
+			if c.runtime == "" && len(c.tools) == 0 {
+				wantSource = ""
+			}
+			if got.Source != wantSource {
+				t.Errorf("source = %q, want %q", got.Source, wantSource)
+			}
+		})
+	}
+}
+
+func TestToolAndRuntimeHelpers(t *testing.T) {
+	t.Run("Tool", func(t *testing.T) {
+		for _, name := range []string{"dbt", "DBT", "dlt", "spark", "pyspark", "duckdb", "pandas", "polars"} {
+			if _, ok := rt.Tool(name); !ok {
+				t.Errorf("Tool(%q) = false, want true", name)
+			}
+		}
+		if _, ok := rt.Tool("unknown"); ok {
+			t.Errorf("Tool(unknown) = true, want false")
+		}
+	})
+
+	t.Run("Runtime", func(t *testing.T) {
+		for alias, want := range map[string]string{
+			"go": rt.Go, "golang": rt.Go, "GO": rt.Go,
+			"python": rt.Python, "py": rt.Python,
+			"node": rt.Node, "nodejs": rt.Node,
+			"java": rt.Java, "openjdk": rt.Java,
+			"rust": rt.Rust, "php": rt.PHP, "ruby": rt.Ruby, "dotnet": rt.DotNet,
+		} {
+			if got, ok := rt.Runtime(alias); !ok || got != want {
+				t.Errorf("Runtime(%q) = (%q, %v), want (%q, true)", alias, got, ok, want)
+			}
+		}
+		if _, ok := rt.Runtime("unknown"); ok {
+			t.Errorf("Runtime(unknown) = true, want false")
+		}
+	})
+}
+
 // Precedence is a property of this package, not a line in an HTTP handler.
 func TestResolvePrefersWhatTheAuthorDeclared(t *testing.T) {
 	inferred := rt.Detect("python wrapper.py", "", "")
