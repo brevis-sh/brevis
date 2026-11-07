@@ -18,6 +18,21 @@ The engine's tag is `vX.Y.Z`, with no prefix; the SDK's carries `sdk/`.
 
 ## [Unreleased]
 
+## [0.45.0] — 2026-11-07
+
+### Added: runner icons for Go, Node.js, PHP, Java, Rust, Ruby, .NET, SQL and Airbyte
+
+- **Runner icons are displayed across all views**: DAG step cards, Workflows list, Run header, Runs list, and single-step run panels.
+
+### Changed: Overview next triggers limit and modal
+
+- **Next triggers shows at most 4 items** to match the height of the runs chart, with a "Ver mais (N)…" link that opens a modal with the full list of triggers.
+
+### Fixed: Runs sidebar live counters and Runs live switch
+
+- **Sidebar running and failing counters update in real time via SSE**: removed stale caching on `/api/nav/runs` so state changes reflect immediately.
+- **Runs Live button style**: border and background removed by default, shown only on hover.
+
 ## [0.44.0] — 2026-11-05
 
 ### Changed: the live volume finds its sources by pod annotation, and is collected by the scheduler

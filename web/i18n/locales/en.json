@@ -570,6 +570,7 @@
   "overview.kpi.success": "Success rate",
   "overview.lede": "Everything that runs: what needs you, how the data is flowing and what fires next.",
   "overview.next.all": "All workflows",
+  "overview.next.more": "View more ({count})…",
   "overview.next.none": "No active schedule.",
   "overview.next.title": "Next triggers",
   "overview.open_catalog": "Open in catalog",

@@ -671,6 +671,7 @@
   "overview.kpi.success": "Доля успеха",
   "overview.lede": "Всё, что запускается: что требует вашего внимания, как текут данные и что запустится дальше.",
   "overview.next.all": "Все Workflows",
+  "overview.next.more": "Показать ещё ({count})…",
   "overview.next.none": "Нет активного расписания.",
   "overview.next.title": "Ближайшие запуски",
   "overview.open_catalog": "Открыть в каталоге",

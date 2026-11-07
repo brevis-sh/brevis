@@ -661,6 +661,7 @@
   "overview.kpi.success": "성공률",
   "overview.lede": "실행되는 모든 것: 확인이 필요한 항목, 데이터 흐름 상태, 다음에 실행될 항목.",
   "overview.next.all": "모든 workflows",
+  "overview.next.more": "더 보기 ({count})…",
   "overview.next.none": "활성 스케줄 없음.",
   "overview.next.title": "다음 트리거",
   "overview.open_catalog": "카탈로그에서 열기",

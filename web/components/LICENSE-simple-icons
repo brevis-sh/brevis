@@ -1,8 +1,9 @@
 The one-colour marks in logos/ -- BigQuery, Pub/Sub, Cloud Storage, Google
 Cloud, Google Maps, dbt, Redshift, S3, MySQL, Snowflake, ClickHouse, Kafka,
-SQS, Spark, Polars, DuckDB, Airflow, Terraform, Kubernetes, Docker and Bash --
-come from Simple Icons (https://simpleicons.org), whose SVG files are released
-under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/
+SQS, Spark, Polars, DuckDB, Airflow, Terraform, Kubernetes, Docker, Bash,
+Go, Node.js, PHP, Rust, Ruby, .NET and Airbyte -- come from Simple Icons
+(https://simpleicons.org), whose SVG files are released under CC0 1.0 Universal:
+https://creativecommons.org/publicdomain/zero/1.0/
 
 CC0 covers the files, not the marks. Each is a trademark of its owner; they
 are drawn here to say which service a step or a stream connects to, and that

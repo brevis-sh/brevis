@@ -6,15 +6,15 @@ import { useFormat, useT } from "../i18n";
 type Badges = { failing: number; running: number; attention: number };
 
 // The sidebar's live numbers (JSON sibling of /nav/runs). Refetched when the
-// server reports the `nav` topic; the slow fallback only runs while the event
-// stream is down. Nothing is drawn until the first answer, and a failed read
-// keeps the last numbers: this is decoration.
+// server reports the `nav` or `runs` topic; the slow fallback only runs while
+// the event stream is down. Nothing is drawn until the first answer, and a
+// failed read keeps the last numbers: this is decoration.
 export const useBadges = () => {
-  useLive(["nav"], [["nav"]]);
+  useLive(["nav", "runs"], [["nav", "runs"], ["nav"]]);
   return useQuery({
     queryKey: ["nav", "runs"],
     queryFn: () => getJSON<Badges>("/api/nav/runs"),
-    refetchInterval: useFallbackInterval(),
+    refetchInterval: useFallbackInterval(10_000),
     refetchOnWindowFocus: true,
     staleTime: 0,
   }).data;

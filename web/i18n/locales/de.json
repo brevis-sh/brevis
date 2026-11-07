@@ -661,6 +661,7 @@
   "overview.kpi.success": "Erfolgsquote",
   "overview.lede": "Alles, was läuft: was Ihr Eingreifen erfordert, wie die Daten fließen und was als Nächstes auslöst.",
   "overview.next.all": "Alle Workflows",
+  "overview.next.more": "Mehr anzeigen ({count})…",
   "overview.next.none": "Kein aktiver Zeitplan.",
   "overview.next.title": "Nächste Trigger",
   "overview.open_catalog": "Im Katalog öffnen",

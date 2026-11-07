@@ -6,14 +6,14 @@ import { useT } from "../i18n";
 // .cg classes. Paint says how the mark meets the theme.
 type Paint = "cg-one" | "cg-multi" | "cg-dark" | "cg-light" | "cg-brand text-accent-strong" | "cg-multi cg-on-white";
 const MARKS: Record<string, [title: string, paint: Paint]> = {
-  airflow: ["Apache Airflow", "cg-one"], bigquery: ["Google BigQuery", "cg-one"], brevissql: ["brevis-sql", "cg-brand text-accent-strong"],
-  clickhouse: ["ClickHouse", "cg-light"], dbt: ["dbt", "cg-one"], docker: ["Docker", "cg-one"], duckdb: ["DuckDB", "cg-light"],
-  gcs: ["Google Cloud Storage", "cg-light"], geocoding: ["Google Maps", "cg-one"], go: ["Go", "cg-multi"], kafka: ["Apache Kafka", "cg-dark"],
-  kubernetes: ["Kubernetes", "cg-one"], mysql: ["MySQL", "cg-one"], node: ["Node.js", "cg-multi"], pandas: ["pandas", "cg-multi cg-on-white"],
+  airbyte: ["Airbyte", "cg-one"], airflow: ["Apache Airflow", "cg-one"], bigquery: ["Google BigQuery", "cg-one"], brevissql: ["brevis-sql", "cg-brand text-accent-strong"],
+  clickhouse: ["ClickHouse", "cg-light"], dbt: ["dbt", "cg-one"], docker: ["Docker", "cg-one"], dotnet: [".NET", "cg-one"], duckdb: ["DuckDB", "cg-light"],
+  gcs: ["Google Cloud Storage", "cg-light"], geocoding: ["Google Maps", "cg-one"], go: ["Go", "cg-one"], java: ["Java", "cg-multi"], kafka: ["Apache Kafka", "cg-dark"],
+  kubernetes: ["Kubernetes", "cg-one"], mysql: ["MySQL", "cg-one"], node: ["Node.js", "cg-one"], pandas: ["pandas", "cg-multi cg-on-white"], php: ["PHP", "cg-one"],
   polars: ["Polars", "cg-one"], postgres: ["PostgreSQL", "cg-multi"], pubsub: ["Google Pub/Sub", "cg-light"], python: ["Python", "cg-multi"],
-  redis: ["Redis", "cg-multi"], redshift: ["Amazon Redshift", "cg-one"], s3: ["Amazon S3", "cg-one"], shell: ["GNU Bash", "cg-one"],
-  snowflake: ["Snowflake", "cg-one"], spark: ["Apache Spark", "cg-one"], sqs: ["Amazon SQS", "cg-one"], terraform: ["Terraform", "cg-one"],
-  vision: ["Google Cloud", "cg-one"],
+  redis: ["Redis", "cg-multi"], redshift: ["Amazon Redshift", "cg-one"], ruby: ["Ruby", "cg-one"], rust: ["Rust", "cg-one"], s3: ["Amazon S3", "cg-one"],
+  shell: ["GNU Bash", "cg-one"], snowflake: ["Snowflake", "cg-one"], spark: ["Apache Spark", "cg-one"], sql: ["SQL", "cg-one"], sqs: ["Amazon SQS", "cg-one"],
+  terraform: ["Terraform", "cg-one"], vision: ["Google Cloud", "cg-one"],
 };
 const MONOGRAMS: Record<string, [title: string, mono: string]> = {
   file: ["Local files", "FS"], http: ["HTTP", "{}"], gateway: ["Brevis gateway", "→"], kinesis: ["Amazon Kinesis", "KS"], sftp: ["SFTP", "SF"],

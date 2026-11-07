@@ -661,6 +661,7 @@
   "overview.kpi.success": "Taux de succès",
   "overview.lede": "Tout ce qui s'exécute : ce qui demande votre attention, comment circulent les données et ce qui se déclenche ensuite.",
   "overview.next.all": "Tous les workflows",
+  "overview.next.more": "Voir plus ({count})…",
   "overview.next.none": "Aucune planification active.",
   "overview.next.title": "Prochains déclenchements",
   "overview.open_catalog": "Ouvrir dans le catalogue",

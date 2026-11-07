@@ -661,6 +661,7 @@
   "overview.kpi.success": "Tingkat keberhasilan",
   "overview.lede": "Semua yang berjalan: apa yang butuh perhatian Anda, bagaimana data mengalir, dan apa yang berjalan berikutnya.",
   "overview.next.all": "Semua workflows",
+  "overview.next.more": "Lihat lainnya ({count})…",
   "overview.next.none": "Tidak ada jadwal aktif.",
   "overview.next.title": "Pemicu berikutnya",
   "overview.open_catalog": "Buka di katalog",
