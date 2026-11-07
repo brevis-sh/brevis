@@ -307,8 +307,7 @@ func NewUI(l Reads, d Definitions, e RunsChart, a Actions, al AlertsReader,
 ) *UI {
 	u := &UI{reads: l, defs: d, execs: e, actions: a, alerts: al, catalog: c, brand: m, log: log}
 	if l != nil {
-		// Every page and every open tab's 10 s poll draws the badge.
-		u.inFlight = CachedInFlight(l.CountRunsInFlight, 5*time.Second, time.Now)
+		u.inFlight = l.CountRunsInFlight
 	}
 	return u
 }

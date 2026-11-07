@@ -4,6 +4,7 @@ import type { Run, Stage, StepRow } from "../api/run";
 import { useAutoValue } from "../ui/format";
 import { Icon } from "../ui/icon";
 import { langLabel } from "../ui/lang";
+import { Logo } from "../ui/logo";
 import { KV, Panel, PanelEmpty } from "../ui/panel";
 import { Skeleton } from "../ui/skeleton";
 import { dagHeight } from "../ui/dag/height";
@@ -174,6 +175,7 @@ function StepLine({ run }: { run: Run }) {
       <Panel title={t("run.tab.steps")} count="1">
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 px-3.5 py-2.5 text-[12.5px]">
           {s.status === "" ? <span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-full border border-line-strong" /> : <StatusMark kind={s.status} />}
+          {s.runtime && <Logo k={s.runtime} size={18} />}
           <span className="font-mono font-medium text-ink">{s.name}</span>
           {s.action && (
             <span title={s.action} className="max-w-[28rem] min-w-0 truncate font-mono text-[12px] text-muted">

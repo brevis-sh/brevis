@@ -17,7 +17,7 @@ type navBadges struct {
 func (u *UI) navRunsJSON(w http.ResponseWriter, r *http.Request) {
 	var out navBadges
 	if u.failing != nil {
-		f, err := u.failing.FailingWorkflows(r.Context())
+		f, err := u.freshFailing(r.Context())
 		if err != nil {
 			u.log.Error("counting the failing workflows", "path", r.URL.Path, "error", err)
 			fail(w, http.StatusInternalServerError, codeUnavailable)

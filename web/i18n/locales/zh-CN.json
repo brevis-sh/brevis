@@ -661,6 +661,7 @@
   "overview.kpi.success": "成功率",
   "overview.lede": "所有在运行的内容：需要你处理的事项、数据流动情况及下一个触发。",
   "overview.next.all": "所有 workflows",
+  "overview.next.more": "查看更多 ({count})…",
   "overview.next.none": "没有启用的调度。",
   "overview.next.title": "接下来的触发",
   "overview.open_catalog": "在目录中打开",

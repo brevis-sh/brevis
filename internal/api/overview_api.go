@@ -138,7 +138,7 @@ func (u *UI) overviewAPI(w http.ResponseWriter, r *http.Request) {
 	for _, b := range buckets {
 		out.Buckets = append(out.Buckets, bucketView{Start: b.Start, Succeeded: b.Succeeded, Failed: b.Failed, Running: b.Running, Queued: b.Queued})
 	}
-	for _, n := range u.withLogos(ctx, nextRuns(schedules, now, 8, u.log)) {
+	for _, n := range u.withLogos(ctx, nextRuns(schedules, now, 50, u.log)) {
 		out.Next = append(out.Next, nextRunView{
 			Workflow: n.Workflow, Cron: n.Cron, CronText: pages.CronMsg(n.Cron),
 			Timezone: n.Timezone, When: n.When, Logos: orEmpty(n.Logos),

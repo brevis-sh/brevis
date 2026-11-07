@@ -661,6 +661,7 @@
   "overview.kpi.success": "सफलता दर",
   "overview.lede": "जो कुछ भी चलता है: क्या आपका ध्यान चाहता है, डेटा कैसे बह रहा है और आगे क्या चलेगा।",
   "overview.next.all": "सभी Workflows",
+  "overview.next.more": "और देखें ({count})…",
   "overview.next.none": "कोई सक्रिय शेड्यूल नहीं।",
   "overview.next.title": "अगले trigger",
   "overview.open_catalog": "कैटलॉग में खोलें",

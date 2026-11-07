@@ -118,7 +118,7 @@ function LiveSwitch({ on, onChange }: { on: boolean; onChange: (on: boolean) => 
       type="button"
       aria-pressed={on}
       onClick={() => onChange(!on)}
-      className="inline-flex h-8 items-center gap-2 rounded-card border border-line bg-surface px-3 text-[0.82rem] text-muted transition-colors duration-150 hover:text-ink aria-pressed:border-state-success/50 aria-pressed:bg-state-success/10 aria-pressed:text-state-success"
+      className="inline-flex h-8 items-center gap-2 rounded-card border border-transparent bg-transparent px-3 text-[0.82rem] text-muted transition-colors duration-150 hover:border-line hover:bg-surface hover:text-ink aria-pressed:text-state-success"
     >
       <span className={`h-2 w-2 rounded-full ${on ? "bg-state-success live-dot-on" : "bg-line-strong"}`} />
       {t("runs.live")}

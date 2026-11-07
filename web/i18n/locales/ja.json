@@ -661,6 +661,7 @@
   "overview.kpi.success": "成功率",
   "overview.lede": "実行されるすべて：対応が必要なもの、データの流れ、次に実行されるもの。",
   "overview.next.all": "すべてのWorkflows",
+  "overview.next.more": "もっと見る ({count})…",
   "overview.next.none": "有効なスケジュールはありません。",
   "overview.next.title": "次のトリガー",
   "overview.open_catalog": "カタログで開く",

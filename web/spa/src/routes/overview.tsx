@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getJSON } from "../api/client";
@@ -118,10 +118,98 @@ function Kpis({ window, o }: { window: WindowKey; o?: Overview }) {
   return <Stats items={[success, failures, running, next]} />;
 }
 
+const MAX_NEXT_SHOWN = 4;
+
+function NextTriggersModal({ o, open, onClose }: { o: Overview; open: boolean; onClose: () => void }) {
+  const { t } = useT();
+  const until = useUntil();
+  const say = useMsg();
+  const ref = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    if (open && !d.open) d.showModal();
+    else if (!open && d.open) d.close();
+  }, [open]);
+
+  return (
+    <dialog
+      ref={ref}
+      onClose={onClose}
+      onClick={(e) => e.target === ref.current && onClose()}
+      aria-labelledby="next-triggers-title"
+      className="w-[min(560px,92vw)] rounded-card border border-line bg-surface p-0 text-ink shadow-warm backdrop:bg-ink/40 backdrop:backdrop-blur-[2px]"
+    >
+      <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-3.5">
+        <div className="flex items-center gap-2">
+          <h2 id="next-triggers-title" className="text-[15px] font-semibold text-ink">
+            {t("overview.next.title")}
+          </h2>
+          <span className="rounded-full bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-muted">
+            {o.next.length}
+          </span>
+        </div>
+        <button
+          type="button"
+          autoFocus
+          aria-label={t("dialog.close")}
+          onClick={onClose}
+          className="flex h-7 w-7 items-center justify-center rounded-card text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+        >
+          ✕
+        </button>
+      </div>
+      <ul className="divide-y divide-line-soft max-h-[60vh] overflow-y-auto">
+        {o.next.map((p) => {
+          const wait = new Date(p.when).getTime() - new Date(o.now).getTime();
+          return (
+            <li key={p.workflow} className="px-5 py-3 transition-colors hover:bg-surface-2/40">
+              <div className="flex items-center gap-2">
+                <Logos keys={p.logos} />
+                <Link
+                  to={`/workflows/${encodeURIComponent(p.workflow)}`}
+                  onClick={onClose}
+                  className="min-w-0 truncate font-mono text-[13px] text-ink hover:underline"
+                >
+                  {p.workflow}
+                </Link>
+                <span
+                  title={new Date(p.when).toISOString()}
+                  className={`ml-auto shrink-0 text-[12.5px] whitespace-nowrap ${wait < 120_000 ? "font-medium text-state-success" : "text-ink"}`}
+                >
+                  {t("time.in", { span: until(wait) })}
+                </span>
+              </div>
+              <div className="mt-1 flex items-baseline justify-between gap-3 text-[12px]">
+                <span className="min-w-0 truncate text-muted">{say(p.cronText)}</span>
+                <span className="shrink-0 font-mono text-[11.5px] text-faint">{p.cron}</span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="flex justify-end border-t border-line px-5 py-2.5">
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-card border border-line px-3 py-1 text-xs text-muted transition-colors hover:border-line-strong hover:text-ink"
+        >
+          {t("dialog.close_word")}
+        </button>
+      </div>
+    </dialog>
+  );
+}
+
 function NextTriggers({ o }: { o?: Overview }) {
   const until = useUntil();
   const { t } = useT();
   const say = useMsg();
+  const [modalOpen, setModalOpen] = useState(false);
+  const shown = o ? o.next.slice(0, MAX_NEXT_SHOWN) : undefined;
+  const hasMore = Boolean(o && o.next.length > MAX_NEXT_SHOWN);
+
   return (
     <section data-next-triggers>
       <Panel title={t("overview.next.title")} action={<Link to="/workflows" className={linkClass}>{t("overview.next.all")} →</Link>}>
@@ -146,29 +234,43 @@ function NextTriggers({ o }: { o?: Overview }) {
             <Empty text={t("overview.next.none")} hint="brevis publish file.yaml" />
           </div>
         ) : (
-          <ul className="divide-y divide-line-soft">
-            {o.next.map((p) => {
-              const wait = new Date(p.when).getTime() - new Date(o.now).getTime();
-              return (
-                <li key={p.workflow} className="px-3.5 py-2.5">
-                  <div className="flex items-center gap-2">
-                    <Logos keys={p.logos} />
-                    <Link to={`/workflows/${encodeURIComponent(p.workflow)}`} className="min-w-0 truncate font-mono text-[13px] text-ink hover:underline">{p.workflow}</Link>
-                    <span
-                      title={new Date(p.when).toISOString()}
-                      className={`ml-auto shrink-0 text-[12.5px] whitespace-nowrap ${wait < 120_000 ? "font-medium text-state-success" : "text-ink"}`}
-                    >
-                      {t("time.in", { span: until(wait) })}
-                    </span>
-                  </div>
-                  <div className="mt-0.5 flex items-baseline justify-between gap-3 text-[12px]">
-                    <span className="min-w-0 truncate text-muted">{say(p.cronText)}</span>
-                    <span className="shrink-0 font-mono text-[11.5px] text-faint">{p.cron}</span>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            <ul className="divide-y divide-line-soft">
+              {shown?.map((p) => {
+                const wait = new Date(p.when).getTime() - new Date(o.now).getTime();
+                return (
+                  <li key={p.workflow} className="px-3.5 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <Logos keys={p.logos} />
+                      <Link to={`/workflows/${encodeURIComponent(p.workflow)}`} className="min-w-0 truncate font-mono text-[13px] text-ink hover:underline">{p.workflow}</Link>
+                      <span
+                        title={new Date(p.when).toISOString()}
+                        className={`ml-auto shrink-0 text-[12.5px] whitespace-nowrap ${wait < 120_000 ? "font-medium text-state-success" : "text-ink"}`}
+                      >
+                        {t("time.in", { span: until(wait) })}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex items-baseline justify-between gap-3 text-[12px]">
+                      <span className="min-w-0 truncate text-muted">{say(p.cronText)}</span>
+                      <span className="shrink-0 font-mono text-[11.5px] text-faint">{p.cron}</span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            {hasMore && (
+              <div className="border-t border-line-soft px-3.5 py-2.5 text-center">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(true)}
+                  className="text-[12.5px] font-medium text-accent-strong hover:underline"
+                >
+                  {t("overview.next.more", { count: o.next.length })}
+                </button>
+              </div>
+            )}
+            <NextTriggersModal o={o} open={modalOpen} onClose={() => setModalOpen(false)} />
+          </>
         )}
       </Panel>
     </section>

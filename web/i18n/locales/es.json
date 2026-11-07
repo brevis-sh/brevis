@@ -571,6 +571,7 @@
   "overview.kpi.success": "Tasa de éxito",
   "overview.lede": "Todo lo que se ejecuta: lo que te necesita, cómo fluyen los datos y lo que se dispara a continuación.",
   "overview.next.all": "Todos los workflows",
+  "overview.next.more": "Ver más ({count})…",
   "overview.next.none": "Ninguna programación activa.",
   "overview.next.title": "Próximos disparos",
   "overview.open_catalog": "Abrir en el catálogo",
