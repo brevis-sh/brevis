@@ -106,13 +106,11 @@ function Row({ w, links, busy, onToggle, onRun }: { w: WorkflowRow; links: Links
   const { dateTime } = useFormat();
   const since = useAgo();
   const say = useMsg();
-  const logoTitle = useLogoTitle();
   const schedule = say(w.schedule);
   const navigate = useNavigate();
   const paused = w.hasSchedule && !w.active;
   const href = `/workflows/${encodeURIComponent(w.slug)}`;
   const langs = w.runsIn.map((l) => l.key);
-  const langNames = w.runsIn.slice(0, 2).map((l) => logoTitle(l.key)).join(" + ") + (w.runsIn.length > 2 ? ` +${w.runsIn.length - 2}` : "");
   // The whole row opens the workflow; the controls inside it keep their own click.
   const open = (e: MouseEvent) => {
     if (!(e.target as HTMLElement).closest("a, button, input, label, form")) void navigate(href);
@@ -142,12 +140,9 @@ function Row({ w, links, busy, onToggle, onRun }: { w: WorkflowRow; links: Links
       </td>
       <td className="py-3 pr-3 max-[640px]:hidden" data-fade>
         {langs.length > 0 ? (
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1">
-              {langs.slice(0, 4).map((k) => <Logo key={k} k={k} />)}
-            </span>
-            <span className="text-xs whitespace-nowrap text-ink-2">{langNames}</span>
-          </div>
+          <span className="inline-flex items-center gap-1">
+            {langs.slice(0, 4).map((k) => <Logo key={k} k={k} />)}
+          </span>
         ) : (
           <span className="text-muted">—</span>
         )}
