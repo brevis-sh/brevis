@@ -69,7 +69,7 @@ services:
   # Installs Argo CD and exits. The only imperative step in the whole design:
   # everything after this is a commit.
   bootstrap:
-    image: alpine/k8s:1.37.1
+    image: alpine/k8s:1.37.2
     depends_on:
       k3s:
         condition: service_healthy
