@@ -74,3 +74,14 @@ main table { position: relative; }
   main[data-fill][data-fill] { overflow: hidden; }
   main[data-fill][data-fill] > :last-child { flex: 1; }
 }
+
+/* ANSI colors in the log, on the state tokens: each one already holds AA as text on both grounds,
+   so the log follows the theme with no second palette. Bright variants share the hue (bold carries the rest). */
+.ansi-0, .ansi-8 { color: var(--color-muted); }
+.ansi-1, .ansi-9 { color: var(--color-state-failed); }
+.ansi-2, .ansi-10 { color: var(--color-state-success); }
+.ansi-3, .ansi-11 { color: var(--color-state-queued); }
+.ansi-4, .ansi-12 { color: var(--color-state-running); }
+.ansi-5, .ansi-13 { color: var(--color-state-skipped); }
+.ansi-6, .ansi-14 { color: var(--color-state-retrying); }
+.ansi-7, .ansi-15 { color: var(--color-ink); }
