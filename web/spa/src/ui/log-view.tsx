@@ -3,6 +3,7 @@ import { useFormat, useT } from "../i18n";
 import type { RunLog } from "../api/run";
 import "./bar.css";
 import { FilterBar, Segmented, SearchField } from "./filters";
+import { ansiClass, parseAnsi, stripAnsi } from "./ansi";
 import { Icon } from "./icon";
 import { Skeleton } from "./skeleton";
 import { useStatusWord } from "./status";
@@ -102,12 +103,12 @@ export function LogView({ log, live, downloadHref, gotoCause = 0 }: Props) {
   }, [gotoCause]);
 
   const visible = useMemo(
-    () => blocks.map((b) => b.items.filter((it) => it.gap || ((level === "all" || it.level === level) && (!needle || (it.text ?? "").toLowerCase().includes(needle))))),
+    () => blocks.map((b) => b.items.filter((it) => it.gap || ((level === "all" || it.level === level) && (!needle || stripAnsi(it.text ?? "").toLowerCase().includes(needle))))),
     [blocks, level, needle],
   );
 
   const copy = () => {
-    const text = blocks.flatMap((_, i) => (visible[i] ?? []).filter((it) => !it.gap).map((it) => it.text ?? "")).join("\n");
+    const text = blocks.flatMap((_, i) => (visible[i] ?? []).filter((it) => !it.gap).map((it) => stripAnsi(it.text ?? ""))).join("\n");
     void navigator.clipboard?.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
@@ -192,7 +193,11 @@ export function LogView({ log, live, downloadHref, gotoCause = 0 }: Props) {
                         {it.n}
                       </span>
                       <span data-text className="whitespace-pre">
-                        <Marked text={it.text ?? ""} q={needle} />
+                        {parseAnsi(it.text ?? "").map((sp, k) => (
+                          <span key={k} className={ansiClass(sp)}>
+                            <Marked text={sp.text} q={needle} />
+                          </span>
+                        ))}
                       </span>
                     </div>
                   ),
