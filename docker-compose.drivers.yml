@@ -282,7 +282,7 @@ services:
 
   mongo:
     profiles: [docstore, all]
-    image: mongo:7
+    image: mongo:9
     ports:
       - "57017:27017"
     environment:
