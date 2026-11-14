@@ -275,6 +275,13 @@ func TestMySQLDoublesBackslashesInLiterals(t *testing.T) {
 	if !strings.Contains(my, `'a\\'`) {
 		t.Errorf("mysql default not escaped: %s", my)
 	}
+	rs, err := s.CreateTable(Redshift, "t")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(rs, `'a\\'`) {
+		t.Errorf("redshift default not escaped: %s", rs)
+	}
 	pg, err := s.CreateTable(Postgres, "t")
 	if err != nil {
 		t.Fatal(err)
