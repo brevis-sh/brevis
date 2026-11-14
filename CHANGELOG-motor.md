@@ -18,10 +18,21 @@ The engine's tag is `vX.Y.Z`, with no prefix; the SDK's carries `sdk/`.
 
 ## [Unreleased]
 
-### Changed: a run hides a table's silence only while it looks like the table's own
+## [0.46.0] — 2026-11-16
 
-- A step that ran well keeps its table on time (above), but no longer for ever: past 7 days without data **and** twice the longest gap between the table's last 30 landings, the table is stale even though the step runs. A cache table that is quiet for weeks by nature keeps its own pace; a fetcher that exits 0 and never writes is caught. Paused schedules stay paused.
-- The overview says so in its own words, "*workflow* runs, but its last data landed *when*" (`overview.target.nodata`, in all 11 catalogs), because "missed its run" was not true. Added by a model, not reviewed by a native speaker.
+### Added: colors in the run log
+
+- **ANSI colors**: the run log reads SGR sequences (dbt's `OK` and `PASS`, for one) and colors them with the console's state tokens, so contrast holds in dark and light. Search, the level filter and Copy work on the text without the escape codes.
+
+### Fixed: hardening from an audit
+
+- **A retry no longer runs beside its crashed predecessor**: pods carry `brevis.dev/run-attempt`, and before a retry creates its pod the executor deletes the pods of older attempts of the same run and step. Pods made by older releases have no label and are left alone.
+- **SQL API**: a Postgres read stops at the response size instead of buffering every row first; the followers of a panicked cache leader get an error instead of an empty 200; bad JSON in a request body answers `invalid_request`, not `statement_too_long`.
+- **Password hash**: `BREVIS_AUTH_PASSWORD_HASH` is validated whole at boot, so a truncated hash fails at start instead of locking everyone out.
+- **Live stream**: it re-checks the session on every keepalive, and one client holds at most 8 streams (503 `busy` past that; it applies when `BREVIS_AUTH_CLIENT_IP_HEADER` is set).
+- **Backfill** is capped at 50,000 slots per call and honors cancellation: split a larger range. The slots already made are kept.
+- **Manual trigger**: the idempotency key carries the params, so two clicks in the same second with different params are two runs.
+- **Python mark**: drawn with flat fills, so it shows in every tile (it vanished from the recent runs when the first copy of its gradient sat in a hidden element).
 
 ### Fixed: the catalog calls a table stale only when its step did not run
 
@@ -35,6 +46,15 @@ The engine's tag is `vX.Y.Z`, with no prefix; the SDK's carries `sdk/`.
 - **Migration 00035** adds `task_runs.skip_cause` (`design` or `upstream`),
   written when a step is skipped. Runs from before it have none and count as
   before.
+
+### Changed: a run hides a table's silence only while it looks like the table's own
+
+- A step that ran well keeps its table on time (above), but no longer for ever: past 7 days without data **and** twice the longest gap between the table's last 30 landings, the table is stale even though the step runs. A cache table that is quiet for weeks by nature keeps its own pace; a fetcher that exits 0 and never writes is caught. Paused schedules stay paused.
+- The overview says so in its own words, "*workflow* runs, but its last data landed *when*" (`overview.target.nodata`, in all 11 catalogs), because "missed its run" was not true. Added by a model, not reviewed by a native speaker.
+
+### Changed: dependencies
+
+- `mongo` 7 to 9, `mysql` 8 to 26, `rancher/k3s` 1.37.2 and `floci-gcp` in the drivers compose; `alpine/k8s` 1.37.2; the Go minor and patch groups of the engine, the gateway, the SQL API and the SDK.
 
 ## [0.45.1] — 2026-11-07
 
