@@ -239,9 +239,21 @@ func TestAHalfCredentialIsRefused(t *testing.T) {
 	if err := (auth.Credential{Hash: "pbkdf2-sha256$1$a$b"}).Validate(); err == nil {
 		t.Error("a hash with no user was accepted")
 	}
-	short := auth.Credential{User: "o", Hash: "pbkdf2-sha256$1$a$b", Secret: []byte("short")}
+	good, err := auth.GenerateHash("pw")
+	if err != nil {
+		t.Fatal(err)
+	}
+	short := auth.Credential{User: "o", Hash: good, Secret: []byte("short")}
 	if err := short.Validate(); err == nil {
 		t.Error("a secret that is too short was accepted")
+	}
+	// A truncated paste has the prefix but cannot verify anything: it has to fail at boot, not on every login.
+	cut := auth.Credential{User: "o", Hash: "pbkdf2-sha256$600000$abc", Secret: make([]byte, 32)}
+	if err := cut.Validate(); err == nil {
+		t.Error("a truncated hash was accepted")
+	}
+	if err := (auth.Credential{User: "o", Hash: good, Secret: make([]byte, 32)}).Validate(); err != nil {
+		t.Errorf("a generated hash was refused: %v", err)
 	}
 }
 

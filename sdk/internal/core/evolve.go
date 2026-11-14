@@ -220,12 +220,12 @@ func (s Schema) AlterTable(d Dialect, table string, changes []Change) ([]string,
 			// statement.
 			if col.Note != "" && !d.NoComment {
 				if d.InlineComment {
-					add += " COMMENT " + sqlQuote(col.Note)
+					add += " COMMENT " + d.stringLiteral(col.Note)
 					out = append(out, add)
 				} else {
 					out = append(out, add,
 						"COMMENT ON COLUMN "+qualified(d, table)+"."+d.quote(col.Name)+
-							" IS "+sqlQuote(col.Note))
+							" IS "+d.stringLiteral(col.Note))
 				}
 			} else {
 				out = append(out, add)
@@ -289,14 +289,4 @@ func (d Dialect) alterType(table, column, sqlType string) string {
 	}
 	return "ALTER TABLE " + qualified(d, table) + " ALTER COLUMN " +
 		d.quote(column) + " TYPE " + sqlType
-}
-
-// sqlQuote renders a string literal.
-//
-// Doubling the quote is the whole of it, and it is here rather than left to
-// a driver's parameters because DDL takes no parameters: an ALTER is text or
-// it is nothing. A note carrying an apostrophe -- "it's from a batch" -- would
-// otherwise end the literal, and everything after it would be SQL.
-func sqlQuote(s string) string {
-	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
 }

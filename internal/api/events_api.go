@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
+	"brevis.sh/brevis/internal/auth"
 	"brevis.sh/brevis/internal/events"
 	"brevis.sh/brevis/internal/infrastructure/postgres"
 )
@@ -36,6 +38,9 @@ const (
 	// client that stops reading would pin this goroutine until TCP gives up.
 	// Each write gets a fresh deadline instead.
 	writeBudget = 10 * time.Second
+	// maxStreamsPerClient keeps one client from taking the whole hub; a tab
+	// holds one stream, so 8 covers a busy operator.
+	maxStreamsPerClient = 8
 )
 
 // eventsHandler serves the stream. keepalive is a parameter for the tests.
@@ -47,6 +52,16 @@ func (u *UI) eventsHandler(keepalive time.Duration) http.HandlerFunc {
 			return
 		}
 		rc := http.NewResponseController(w)
+		// shortcut: per pod, and only where a trusted client-IP header tells
+		// clients apart (auth.ClientOf is empty otherwise); same limit as the login throttle.
+		if client := auth.ClientOf(r.Context()); client != "" {
+			if !u.streams.take(client) {
+				w.Header().Set("Retry-After", "5")
+				eventsError(w, http.StatusServiceUnavailable, codeBusy)
+				return
+			}
+			defer u.streams.release(client)
+		}
 		sub, err := u.hub.Subscribe(r.Context(), topics)
 		if err != nil {
 			if errors.Is(err, events.ErrFull) {
@@ -89,7 +104,9 @@ func (u *UI) eventsHandler(keepalive time.Duration) http.HandlerFunc {
 			case <-r.Context().Done():
 				return
 			case <-tick.C:
-				if !write(": keepalive\n\n") {
+				// The cookie is checked once at connect; a session that expired
+				// (or whose secret rotated) must not keep the stream.
+				if !auth.StillSignedIn(r.Context()) || !write(": keepalive\n\n") {
 					return
 				}
 			case t, ok := <-sub.C:
@@ -103,6 +120,33 @@ func (u *UI) eventsHandler(keepalive time.Duration) http.HandlerFunc {
 				}
 			}
 		}
+	}
+}
+
+// streamCounts is the open streams per client.
+type streamCounts struct {
+	mu sync.Mutex
+	n  map[string]int
+}
+
+func (c *streamCounts) take(k string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.n[k] >= maxStreamsPerClient {
+		return false
+	}
+	if c.n == nil {
+		c.n = map[string]int{}
+	}
+	c.n[k]++
+	return true
+}
+
+func (c *streamCounts) release(k string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.n[k]--; c.n[k] <= 0 {
+		delete(c.n, k)
 	}
 }
 

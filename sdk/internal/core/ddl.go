@@ -216,6 +216,15 @@ func qualified(d Dialect, table string) string {
 // Only what a DEFAULT legitimately holds. A type this does not know is refused
 // naming the type, rather than falling through to fmt.Sprintf -- which would
 // turn a struct into `{1 2}` and put it in a DDL.
+// stringLiteral quotes a string for this dialect. MySQL also treats a backslash
+// as an escape, so a value ending in one would otherwise eat the closing quote.
+func (d Dialect) stringLiteral(v string) string {
+	if d.Name == "mysql" {
+		v = strings.ReplaceAll(v, `\`, `\\`)
+	}
+	return "'" + strings.ReplaceAll(v, "'", "''") + "'"
+}
+
 func (d Dialect) literal(c Column) (string, error) {
 	switch v := c.Default.(type) {
 	case Expression:
@@ -229,7 +238,7 @@ func (d Dialect) literal(c Column) (string, error) {
 	case string:
 		// Single quotes doubled. The same reason as the identifier: a Schema
 		// can come from a file somebody else wrote.
-		return "'" + strings.ReplaceAll(v, "'", "''") + "'", nil
+		return d.stringLiteral(v), nil
 	case bool:
 		if d.Name == "mysql" {
 			// TINYINT(1) takes 0 and 1. `DEFAULT TRUE` parses, and then

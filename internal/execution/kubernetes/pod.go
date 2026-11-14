@@ -9,6 +9,7 @@ import (
 	"net"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -492,6 +493,7 @@ func BuildPod(t execution.TaskExec, o Options) (Pod, error) {
 	}
 	if t.RunID != "" {
 		labels["brevis.dev/run"] = labelValue(t.RunID)
+		labels[runAttemptLabel] = strconv.Itoa(t.RunAttempt)
 	}
 	if t.Workflow != "" {
 		labels["brevis.dev/workflow"] = labelValue(t.Workflow)
@@ -558,6 +560,9 @@ var invalidInName = regexp.MustCompile(`[^a-z0-9-]+`)
 //
 // The kubelet truncates it at 4096 bytes, which is where runcontext.MaxBytes
 // comes from. Inheriting the platform's ceiling is stronger than enforcing one.
+// runAttemptLabel lets a new attempt of a run find the pods an older one left.
+const runAttemptLabel = "brevis.dev/run-attempt"
+
 const terminationMessagePath = "/dev/termination-log"
 
 // PodName produces a valid and STABLE name for the same attempt.

@@ -1,6 +1,14 @@
 package autotable
 
-import "brevis.sh/brevis/sdk"
+import (
+	"fmt"
+
+	"brevis.sh/brevis/sdk"
+)
+
+// maxFields bounds the columns one record may ask for, so a producer cannot
+// turn a landing table into a thousand-column one with a single event.
+const maxFields = 500
 
 // columns gives each of the record's fields a column of its own.
 //
@@ -40,6 +48,9 @@ var FieldName = sdk.LandingFieldName
 // buffered. See the shaper interface for the batch this did not exist to
 // protect.
 func (c columns) validate(record map[string]any) error {
+	if len(record) > maxFields {
+		return fmt.Errorf("a record may have at most %d fields; this one has %d", maxFields, len(record))
+	}
 	if err := sdk.LandingFieldNames(record); err != nil {
 		return err
 	}

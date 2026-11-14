@@ -347,6 +347,12 @@ type Request struct {
 	// the petabyte. A row ceiling bounds the screen and bounds nothing else.
 	MaxBytes int64
 
+	// MaxResultBytes bounds what a dialect that reads the rows into memory may hold before it stops
+	// and sets Result.Truncated: the size of the answer, where MaxBytes is the warehouse's bill. Zero is
+	// no bound, and a dialect that streams or bills instead may ignore it. The size is an estimate
+	// (the text and bytes of each value), enough to keep a few huge rows from pinning the process.
+	MaxResultBytes int64
+
 	// Args are the values the query's placeholders stand for, in the order
 	// their placeholders were numbered. See Binder.
 	//

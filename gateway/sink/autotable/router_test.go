@@ -550,3 +550,40 @@ func TestARefusedNameIsStillRefusedOnRetry(t *testing.T) {
 		r.invalidate(ctx, "app_c")
 	}
 }
+
+// A producer inventing a new field set per event must hit a ceiling: every
+// shape is a cached sink and an ALTER TABLE.
+func TestADistinctShapeCeilingStopsAFieldInventingProducer(t *testing.T) {
+	r := build(t, gateway.Sink{
+		Type:  gateway.SinkAutoTable,
+		Shape: ShapeColumns,
+		Into:  &gateway.Sink{Type: "probe", Write: gateway.WriteAppend},
+	})
+	ctx := context.Background()
+
+	var refused bool
+	for i := 0; i < maxShapesPerTable+5; i++ {
+		rec := sdk.Schema{{Name: fmt.Sprintf("f%d", i), Type: sdk.TypeString}}
+		if _, err := r.sinkFor(ctx, "app_orders", rec); err != nil {
+			refused = true
+		}
+	}
+	if !refused {
+		t.Error("a table was built for more distinct shapes than the ceiling")
+	}
+}
+
+func TestAdmitRefusesARecordWithTooManyFields(t *testing.T) {
+	r := build(t, gateway.Sink{
+		Type:  gateway.SinkAutoTable,
+		Shape: ShapeColumns,
+		Into:  &gateway.Sink{Type: "probe"},
+	})
+	rec := map[string]any{}
+	for i := 0; i <= maxFields; i++ {
+		rec[fmt.Sprintf("f%d", i)] = "x"
+	}
+	if err := r.Admit(map[string]any{FieldTable: "app_orders", FieldData: rec}); err == nil {
+		t.Error("a record with more fields than the cap was admitted")
+	}
+}

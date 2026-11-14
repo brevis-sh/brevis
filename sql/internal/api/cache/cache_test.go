@@ -186,3 +186,45 @@ func TestConcurrentMissesOnOneKeyRunOnce(t *testing.T) {
 		}
 	}
 }
+
+// A PANIC IN THE LEADER IS AN ERROR FOR THE WAITERS, NOT AN EMPTY SUCCESS. The zero value of the
+// answer has status 0, and the handler wrote it as a 200 with no body.
+func TestAFollowerOfAPanickedLeaderGetsAnError(t *testing.T) {
+	var g Group[[]byte]
+	release := make(chan struct{})
+	go func() {
+		defer func() { _ = recover() }()
+		_, _ = g.Do("k", func() ([]byte, error) {
+			<-release
+			panic("boom")
+		})
+	}()
+	for {
+		g.mu.Lock()
+		c := g.calls["k"]
+		g.mu.Unlock()
+		if c != nil {
+			break
+		}
+		runtime.Gosched()
+	}
+	done := make(chan error, 1)
+	go func() {
+		_, err := g.Do("k", func() ([]byte, error) { return []byte("never"), nil })
+		done <- err
+	}()
+	for {
+		g.mu.Lock()
+		c := g.calls["k"]
+		arrived := c != nil && c.dups == 1
+		g.mu.Unlock()
+		if arrived {
+			break
+		}
+		runtime.Gosched()
+	}
+	close(release)
+	if err := <-done; err == nil {
+		t.Fatal("a follower of a panicked leader got a success")
+	}
+}

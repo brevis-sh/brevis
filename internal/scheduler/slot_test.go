@@ -9,6 +9,10 @@ import (
 	"github.com/google/uuid"
 
 	dom "brevis.sh/brevis/internal/domain/run"
+	wf "brevis.sh/brevis/internal/domain/workflow"
+	"brevis.sh/brevis/internal/infrastructure/postgres"
+	"brevis.sh/brevis/internal/queue"
+	"brevis.sh/brevis/internal/scheduler"
 )
 
 func at(t time.Time) *time.Time { return &t }
@@ -160,5 +164,48 @@ func TestATriggerWithNoSlotHasNoLogicalDate(t *testing.T) {
 	}
 	if r.LogicalDate != nil || r.IdempotencyKey != "daily:manual:2026-10-29T15:20:07Z" {
 		t.Errorf("logical date = %v, key = %q", r.LogicalDate, r.IdempotencyKey)
+	}
+}
+
+// Two clicks in the same second with different params are two requests: the
+// second must not come back as the first one's run.
+func TestTwoTriggersInOneSecondWithDifferentParamsAreTwoRuns(t *testing.T) {
+	_, _, _, pool := build(t, "0 4 * * *", false)
+	ctx := context.Background()
+	var project uuid.UUID
+	if err := pool.QueryRow(ctx, `SELECT id FROM projects WHERE slug = 'p'`).Scan(&project); err != nil {
+		t.Fatal(err)
+	}
+	wRepo := postgres.NewWorkflowRepo(pool)
+	if err := wRepo.Publish(ctx, wf.Workflow{
+		Slug: "tuned", Name: "tuned", Kind: wf.KindChain,
+		Params: []wf.Param{{Name: "mode", Type: wf.ParamString, Default: "a"}},
+		Nodes:  []wf.Node{{ID: "a", Run: "echo ok"}},
+	}, project, "test"); err != nil {
+		t.Fatal(err)
+	}
+	s := scheduler.NewScheduler(postgres.NewScheduleRepo(pool), wRepo, postgres.NewRunRepo(pool),
+		queue.New(pool.Pool), noLog(), scheduler.SchedulerOptions{})
+	now := inUTC("2026-10-29T15:20:07Z")
+	first, err := s.Trigger(ctx, "tuned", now, map[string]string{"mode": "b"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := s.Trigger(ctx, "tuned", now, map[string]string{"mode": "c"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Trigger(ctx, "tuned", now, map[string]string{"mode": "b"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if first == second {
+		t.Error("different params in the same second returned the same run")
+	}
+	var n int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM runs WHERE workflow_slug = 'tuned'`).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	if n != 2 {
+		t.Errorf("%d runs, want 2: the repeated click with the same params is a double click", n)
 	}
 }

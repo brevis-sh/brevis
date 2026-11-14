@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -178,7 +179,15 @@ func (c *conn) Read(ctx context.Context, req dialect.Request) (dialect.Result, e
 	for _, f := range fields {
 		out.Columns = append(out.Columns, f.Name)
 	}
+	// THE ANSWER'S SIZE, ESTIMATED: the row ceiling alone lets 10,000 rows of a multi-megabyte jsonb sit in
+	// memory before the response cap cuts them, once per request in flight. The cap is checked after the
+	// row is read, so one row may cross it; what it prevents is thousands.
+	var size int64
 	for len(out.Rows) < req.Limit && rows.Next() {
+		if req.MaxResultBytes > 0 && size > req.MaxResultBytes {
+			out.Truncated = true
+			break
+		}
 		// Values() rather than Scan(&any): pgx decides the Go type from the
 		// column's OID, which is what keeps a NULL arriving as nil instead
 		// of as an empty string -- the one distinction the grid cannot
@@ -202,6 +211,9 @@ func (c *conn) Read(ctx context.Context, req dialect.Request) (dialect.Result, e
 		// path and stays forbidden.
 		for i := range vals {
 			vals[i] = sdkpg.ToJSONWithOID(vals[i], fields[i].DataTypeOID)
+		}
+		for _, v := range vals {
+			size += valueSize(v)
 		}
 		out.Rows = append(out.Rows, vals)
 	}
@@ -309,4 +321,25 @@ func (c *conn) Columns(ctx context.Context, r dialect.Relation) ([]dialect.Colum
 		out = append(out, col)
 	}
 	return out, rows.Err()
+}
+
+// valueSize is what a converted value costs on the wire, near enough: its text or bytes, and a flat
+// few bytes for the rest. A jsonb arrives as a Go value (a map or slice), so it is measured as JSON.
+func valueSize(v any) int64 {
+	switch x := v.(type) {
+	case nil:
+		return 4
+	case string:
+		return int64(len(x))
+	case []byte:
+		return int64(len(x))
+	case bool, int, int32, int64, float32, float64:
+		return 8
+	default:
+		b, err := json.Marshal(x)
+		if err != nil {
+			return 32
+		}
+		return int64(len(b))
+	}
 }
