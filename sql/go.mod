@@ -41,9 +41,9 @@ module brevis.sh/brevis/sql
 go 1.26.0
 
 require (
-	github.com/andybalholm/brotli v1.2.7
+	github.com/andybalholm/brotli v1.2.8
 	github.com/jackc/pgx/v5 v5.12.0
-	golang.org/x/oauth2 v0.37.0
+	golang.org/x/oauth2 v0.38.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
