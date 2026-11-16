@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"brevis.sh/brevis/internal/auth"
 	"brevis.sh/brevis/internal/events"
 )
 
@@ -198,4 +199,65 @@ func tooMany() string {
 		l = append(l, "workflow:w"+strings.Repeat("x", i))
 	}
 	return strings.Join(l, ",")
+}
+
+func TestEventsStreamEndsWhenTheSessionStopsValidating(t *testing.T) {
+	var ok atomic.Bool
+	ok.Store(true)
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	hub := events.NewHub(ctx, func(string) events.Detector {
+		return events.DetectorFunc(func(context.Context) (string, error) { return "v", nil })
+	}, events.Options{Interval: 10 * time.Millisecond})
+	u := &UI{hub: hub}
+	h := u.eventsHandler(30 * time.Millisecond)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r = r.WithContext(auth.WithRecheck(r.Context(), ok.Load))
+		h(w, r)
+	}))
+	t.Cleanup(srv.Close)
+	_, r, _ := open(t, srv.URL+"?topics=runs")
+	block(t, r) // ready
+	ok.Store(false)
+	done := make(chan error, 1)
+	go func() { _, err := io.ReadAll(r); done <- err }()
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("the stream stayed open after the session stopped validating")
+	}
+}
+
+func TestEventsStreamCapsOneClient(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	hub := events.NewHub(ctx, func(string) events.Detector {
+		return events.DetectorFunc(func(context.Context) (string, error) { return "v", nil })
+	}, events.Options{Interval: 10 * time.Millisecond})
+	h := (&UI{hub: hub}).eventsHandler(time.Minute)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h(w, r.WithContext(auth.WithClient(r.Context(), r.Header.Get("X-C"))))
+	}))
+	t.Cleanup(srv.Close)
+	get := func(c string) *http.Response {
+		req, _ := http.NewRequest("GET", srv.URL+"?topics=runs", nil)
+		req.Header.Set("X-C", c)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = resp.Body.Close() })
+		return resp
+	}
+	for i := 0; i < maxStreamsPerClient; i++ {
+		if got := get("a").StatusCode; got != 200 {
+			t.Fatalf("stream %d = %d, want 200", i, got)
+		}
+	}
+	if got := get("a").StatusCode; got != http.StatusServiceUnavailable {
+		t.Errorf("one past the cap = %d, want 503", got)
+	}
+	if got := get("b").StatusCode; got != 200 {
+		t.Errorf("another client = %d, want 200", got)
+	}
 }

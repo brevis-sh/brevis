@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -21,6 +22,8 @@ type API interface {
 	GetPod(ctx context.Context, name string) (Pod, error)
 	Logs(ctx context.Context, name string, follow bool) (io.ReadCloser, error)
 	DeletePod(ctx context.Context, name string) error
+	// ListStepPods returns the pods of one step of one run, whatever the attempt.
+	ListStepPods(ctx context.Context, run, node string) ([]Pod, error)
 }
 
 // Executor runs each step as a pod.
@@ -61,6 +64,8 @@ func (e *Executor) Execute(ctx context.Context, t execution.TaskExec) (<-chan ex
 		return nil, err
 	}
 
+	e.reapOlderAttempts(ctx, t)
+
 	created, err := e.api.CreatePod(ctx, spec)
 	if err != nil {
 		// AlreadyExists is not an error: the name is deterministic per attempt,
@@ -89,6 +94,27 @@ func (e *Executor) Execute(ctx context.Context, t execution.TaskExec) (<-chan ex
 		e.follow(ctx, name, t, events)
 	}()
 	return events, nil
+}
+
+// reapOlderAttempts deletes the pods an earlier attempt of the same run left
+// behind. The pod name hashes the run attempt, so after a worker died the retry
+// gets a new name and would never find (or stop) the old pod: the same step
+// would run twice at once. Best effort: a failed list must not block the run.
+func (e *Executor) reapOlderAttempts(ctx context.Context, t execution.TaskExec) {
+	if t.RunID == "" {
+		return
+	}
+	pods, err := e.api.ListStepPods(ctx, labelValue(t.RunID), labelValue(t.NodeID))
+	if err != nil {
+		return
+	}
+	for _, p := range pods {
+		// A pod without the label is from a release that did not set it: unknown, left alone.
+		n, err := strconv.Atoi(p.Metadata.Labels[runAttemptLabel])
+		if err == nil && n < t.RunAttempt {
+			e.deletePod(p.Metadata.Name)
+		}
+	}
 }
 
 func (e *Executor) follow(ctx context.Context, name string, t execution.TaskExec, events chan<- execution.Event) {

@@ -28,6 +28,11 @@ type fakeAPI struct {
 
 	created []k8s.Pod
 	deleted []string
+	step    []k8s.Pod // what ListStepPods returns
+}
+
+func (a *fakeAPI) ListStepPods(_ context.Context, _, _ string) ([]k8s.Pod, error) {
+	return a.step, nil
 }
 
 func (a *fakeAPI) CreatePod(_ context.Context, p k8s.Pod) (k8s.Pod, error) {

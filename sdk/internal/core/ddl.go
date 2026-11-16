@@ -18,6 +18,11 @@ type Dialect struct {
 	// Name appears in errors: "postgres has no equivalent for json".
 	Name string
 
+	// BackslashEscapes is true when a string literal reads `\` as an escape, so
+	// a value must have its backslashes doubled or a trailing one eats the
+	// closing quote. Set it on every dialect that behaves this way.
+	BackslashEscapes bool
+
 	// Types maps every declared type to this dialect's spelling. A type that is
 	// absent is refused by name rather than rendered as something close.
 	Types map[ColumnType]string
@@ -100,7 +105,8 @@ var (
 	}
 
 	MySQL = Dialect{
-		Name: "mysql",
+		Name:             "mysql",
+		BackslashEscapes: true,
 		Types: map[ColumnType]string{
 			TypeString: "LONGTEXT", TypeInt64: "BIGINT", TypeFloat64: "DOUBLE",
 			TypeNumeric: "DECIMAL(38,9)", TypeBool: "TINYINT(1)", TypeTimestamp: "DATETIME(6)",
@@ -117,7 +123,8 @@ var (
 	}
 
 	Redshift = Dialect{
-		Name: "redshift",
+		Name:             "redshift",
+		BackslashEscapes: true,
 		Types: map[ColumnType]string{
 			TypeString: "VARCHAR(65535)", TypeInt64: "BIGINT", TypeFloat64: "DOUBLE PRECISION",
 			TypeNumeric: "DECIMAL(38,9)", TypeBool: "BOOLEAN", TypeTimestamp: "TIMESTAMPTZ",
@@ -211,6 +218,16 @@ func qualified(d Dialect, table string) string {
 	return strings.Join(parts, ".")
 }
 
+// stringLiteral quotes a string for this dialect. A dialect with
+// BackslashEscapes (MySQL, Redshift) would otherwise let a value ending in a
+// backslash eat the closing quote.
+func (d Dialect) stringLiteral(v string) string {
+	if d.BackslashEscapes {
+		v = strings.ReplaceAll(v, `\`, `\\`)
+	}
+	return "'" + strings.ReplaceAll(v, "'", "''") + "'"
+}
+
 // literal renders a Go value as a SQL literal for this dialect.
 //
 // Only what a DEFAULT legitimately holds. A type this does not know is refused
@@ -229,7 +246,7 @@ func (d Dialect) literal(c Column) (string, error) {
 	case string:
 		// Single quotes doubled. The same reason as the identifier: a Schema
 		// can come from a file somebody else wrote.
-		return "'" + strings.ReplaceAll(v, "'", "''") + "'", nil
+		return d.stringLiteral(v), nil
 	case bool:
 		if d.Name == "mysql" {
 			// TINYINT(1) takes 0 and 1. `DEFAULT TRUE` parses, and then

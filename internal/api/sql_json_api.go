@@ -178,7 +178,12 @@ func sqlBodyOf(w http.ResponseWriter, r *http.Request) (sqlBody, bool) {
 	var b sqlBody
 	r.Body = http.MaxBytesReader(w, r.Body, statementCeiling)
 	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
-		fail(w, http.StatusBadRequest, codeStatementTooLong)
+		// Only a body over the ceiling is "too long"; bad JSON is a bad request.
+		code := codeInvalidRequest
+		if errors.As(err, new(*http.MaxBytesError)) {
+			code = codeStatementTooLong
+		}
+		fail(w, http.StatusBadRequest, code)
 		return b, false
 	}
 	b.Q = strings.TrimSpace(b.Q)

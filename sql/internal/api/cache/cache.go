@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -192,6 +193,8 @@ type call[T any] struct {
 	dups int
 }
 
+var errLeaderPanicked = errors.New("the request this one was waiting on failed")
+
 // Do runs fn for key, or waits for the run already going.
 func (g *Group[T]) Do(key string, fn func() (T, error)) (T, error) {
 	g.mu.Lock()
@@ -209,12 +212,18 @@ func (g *Group[T]) Do(key string, fn func() (T, error)) (T, error) {
 	g.calls[key] = c
 	g.mu.Unlock()
 
+	finished := false
 	defer func() {
+		// A panic in fn leaves c.val at zero: followers must see an error, not an empty success.
+		if !finished {
+			c.err = errLeaderPanicked
+		}
 		g.mu.Lock()
 		delete(g.calls, key)
 		g.mu.Unlock()
 		c.wg.Done()
 	}()
 	c.val, c.err = fn()
+	finished = true
 	return c.val, c.err
 }

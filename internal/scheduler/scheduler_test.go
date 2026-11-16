@@ -142,6 +142,21 @@ func TestCatchupFalseDoesNotRedoThePast(t *testing.T) {
 	}
 }
 
+// A BACKFILL OVER THE CAP STOPS AND SAYS SO: `--from 2020-01-01` on a minute cron must not queue a million runs.
+func TestABackfillOverTheCapStops(t *testing.T) {
+	s, _, _, pool := build(t, "0 2 * * *", false)
+	setLastSlot(t, pool, inUTC("2026-03-01T02:00:00Z"))
+	defer scheduler.SetMaxBackfillSlots(3)()
+
+	n, err := s.Backfill(context.Background(), "daily", inUTC("2026-01-01T00:00:00Z"), inUTC("2026-01-05T23:59:00Z"), nil)
+	if err == nil {
+		t.Fatal("a 5-slot backfill over a cap of 3 was not refused")
+	}
+	if n.Created != 3 {
+		t.Errorf("created %d runs before stopping, wanted 3", n.Created)
+	}
+}
+
 // A backfill enters the queue like any run, with its own trigger and a lower
 // priority -- section 12 requires it to respect concurrency and priority.
 func TestABackfillEntersTheQueueWithLowerPriority(t *testing.T) {

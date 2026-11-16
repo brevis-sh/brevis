@@ -346,7 +346,7 @@ func (s *Server) answer(parent context.Context, endpoint, tenant, query string, 
 	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()
 	asked := time.Now()
-	res, status, why := s.read(ctx, query, args, ceiling, maxBytes)
+	res, status, why := s.read(ctx, query, args, ceiling, maxBytes, maxResponse)
 	took := time.Since(asked)
 	if status != 0 {
 		if ctx.Err() == context.DeadlineExceeded {
@@ -473,7 +473,7 @@ func (s *Server) cached(r *http.Request, w http.ResponseWriter, line *record, e 
 // expensive query before the money is spent. One with a read-only guard
 // (Postgres) reads inside it. One that offers neither is refused, because
 // the only thing left between a template and a write would be the author.
-func (s *Server) read(ctx context.Context, query string, args []dialect.Arg, ceiling int, maxBytes ByteSize) (dialect.Result, int, string) {
+func (s *Server) read(ctx context.Context, query string, args []dialect.Arg, ceiling int, maxBytes, maxResponse ByteSize) (dialect.Result, int, string) {
 	conn, err := s.cfg.Open(ctx)
 	if err != nil {
 		return dialect.Result{}, http.StatusBadGateway, "the warehouse could not be reached"
@@ -510,7 +510,7 @@ func (s *Server) read(ctx context.Context, query string, args []dialect.Arg, cei
 	// "exactly the ceiling" from "more than it", and the answer has to say
 	// which. MaxBytes travels too: a query priced a moment ago can grow
 	// before it runs, and this is what makes the refusal hold anyway.
-	req := dialect.Request{Query: query, Args: args, Limit: ceiling + 1, MaxBytes: int64(maxBytes)}
+	req := dialect.Request{Query: query, Args: args, Limit: ceiling + 1, MaxBytes: int64(maxBytes), MaxResultBytes: int64(maxResponse)}
 	var res dialect.Result
 	run := func(ctx context.Context) error {
 		var err error

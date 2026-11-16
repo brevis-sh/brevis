@@ -98,20 +98,8 @@ func GenerateHash(password string) (string, error) {
 // login path, and the only safe answer there is "did not get in". The
 // configuration error is caught at boot, by Credential.Validate.
 func CheckPassword(hash, password string) bool {
-	parts := strings.Split(hash, "$")
-	if len(parts) != 4 || parts[0] != "pbkdf2-sha256" {
-		return false
-	}
-	iter, err := strconv.Atoi(parts[1])
-	if err != nil || iter <= 0 {
-		return false
-	}
-	salt, err := base64.RawStdEncoding.DecodeString(parts[2])
-	if err != nil {
-		return false
-	}
-	expected, err := base64.RawStdEncoding.DecodeString(parts[3])
-	if err != nil {
+	iter, salt, expected, ok := parseHash(hash)
+	if !ok {
 		return false
 	}
 	got, err := pbkdf2.Key(sha256.New, password, salt, iter, len(expected))
@@ -119,6 +107,28 @@ func CheckPassword(hash, password string) bool {
 		return false
 	}
 	return subtle.ConstantTimeCompare(got, expected) == 1
+}
+
+// parseHash splits `pbkdf2-sha256$<iterations>$<salt>$<key>`. CheckPassword and
+// Validate share it, so a hash that boots is a hash that can verify.
+func parseHash(hash string) (iter int, salt, key []byte, ok bool) {
+	parts := strings.Split(hash, "$")
+	if len(parts) != 4 || parts[0] != "pbkdf2-sha256" {
+		return 0, nil, nil, false
+	}
+	iter, err := strconv.Atoi(parts[1])
+	if err != nil || iter <= 0 {
+		return 0, nil, nil, false
+	}
+	salt, err = base64.RawStdEncoding.DecodeString(parts[2])
+	if err != nil {
+		return 0, nil, nil, false
+	}
+	key, err = base64.RawStdEncoding.DecodeString(parts[3])
+	if err != nil {
+		return 0, nil, nil, false
+	}
+	return iter, salt, key, true
 }
 
 // ---------------------------------------------------------------------------
@@ -158,7 +168,7 @@ func (c Credential) Validate() error {
 		}
 		return nil
 	}
-	if !strings.HasPrefix(c.Hash, "pbkdf2-sha256$") {
+	if _, _, _, ok := parseHash(c.Hash); !ok {
 		return errors.New("BREVIS_AUTH_PASSWORD_HASH is not in the expected format; " +
 			"generate one with `brevis hash`")
 	}
@@ -294,7 +304,12 @@ func (p *Gate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	cookie, err := sessionCookie(r)
 	if err == nil && p.Cred.checkSession(cookie.Value, time.Now()) {
-		p.Next.ServeHTTP(w, r.WithContext(IntoContext(r.Context(), p.Cred.User)))
+		ctx := IntoContext(r.Context(), p.Cred.User)
+		ctx = context.WithValue(ctx, recheckKey{}, func() bool { return p.Cred.checkSession(cookie.Value, time.Now()) })
+		if p.Cred.ClientIPHeader != "" {
+			ctx = context.WithValue(ctx, clientKeyKey{}, ClientKey(r, p.Cred.ClientIPHeader))
+		}
+		p.Next.ServeHTTP(w, r.WithContext(ctx))
 		return
 	}
 
@@ -468,6 +483,25 @@ func IntoContext(ctx context.Context, user string) context.Context {
 
 type anonymousKey struct{}
 
+type (
+	recheckKey   struct{}
+	clientKeyKey struct{}
+)
+
+// StillSignedIn re-checks the session the request came in with, for a response
+// that outlives its deadline (the live stream). True on an open console.
+func StillSignedIn(ctx context.Context) bool {
+	f, ok := ctx.Value(recheckKey{}).(func() bool)
+	return !ok || f()
+}
+
+// ClientOf is the throttle's key for the request's client, or empty when it
+// cannot tell clients apart (no trusted client-IP header, or no credential).
+func ClientOf(ctx context.Context) string {
+	k, _ := ctx.Value(clientKeyKey{}).(string)
+	return k
+}
+
 // Anonymous reports that the console has a credential and this request has no
 // valid session, on a path the Gate lets through without one. False on an open
 // console (nobody is asked to sign in, so nobody is a stranger) and on every
@@ -481,4 +515,14 @@ func Anonymous(ctx context.Context) bool {
 func OperatorOf(ctx context.Context) string {
 	u, _ := ctx.Value(key{}).(string)
 	return u
+}
+
+// WithRecheck and WithClient install what the Gate does, for a test that
+// serves a handler without it.
+func WithRecheck(ctx context.Context, f func() bool) context.Context {
+	return context.WithValue(ctx, recheckKey{}, f)
+}
+
+func WithClient(ctx context.Context, k string) context.Context {
+	return context.WithValue(ctx, clientKeyKey{}, k)
 }

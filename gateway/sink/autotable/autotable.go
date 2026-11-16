@@ -658,6 +658,10 @@ func merge(into, add sdk.Schema, folds bool) sdk.Schema {
 	return into
 }
 
+// maxShapesPerTable bounds the distinct field sets one table may be built for
+// in this process. A restart or invalidate starts the count again.
+const maxShapesPerTable = 64
+
 // sinkFor returns the destination for one table, building it once.
 //
 // The rate limit is charged HERE and only when the table is new to this
@@ -677,6 +681,18 @@ func (r *router) sinkFor(ctx context.Context, table string, record sdk.Schema) (
 	key := table + "\x00" + fingerprintOf(record)
 	if s, ok := r.made[key]; ok {
 		return s, nil
+	}
+
+	// A producer that keeps inventing field sets would grow this map and cost
+	// one ALTER TABLE per shape; past the cap the batch is refused.
+	shapes := 0
+	for k := range r.made {
+		if strings.HasPrefix(k, table+"\x00") {
+			shapes++
+		}
+	}
+	if shapes >= maxShapesPerTable {
+		return nil, fmt.Errorf("table %q has %d distinct record shapes; refusing another", table, shapes)
 	}
 
 	now := r.now()

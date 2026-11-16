@@ -263,3 +263,30 @@ func TestADialectWithoutUniqueRefusesByName(t *testing.T) {
 		t.Errorf("the refusal does not explain: %v", err)
 	}
 }
+
+// MySQL reads a backslash as an escape: a default or note ending in one would
+// swallow the closing quote. Other dialects take it literally.
+func TestMySQLDoublesBackslashesInLiterals(t *testing.T) {
+	s := Schema{{Name: "c", Type: TypeString, Default: `a\`}}
+	my, err := s.CreateTable(MySQL, "t")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(my, `'a\\'`) {
+		t.Errorf("mysql default not escaped: %s", my)
+	}
+	rs, err := s.CreateTable(Redshift, "t")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(rs, `'a\\'`) {
+		t.Errorf("redshift default not escaped: %s", rs)
+	}
+	pg, err := s.CreateTable(Postgres, "t")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(pg, `'a\'`) || strings.Contains(pg, `\\`) {
+		t.Errorf("postgres default changed: %s", pg)
+	}
+}

@@ -175,7 +175,8 @@ type UI struct {
 	gallery bool
 
 	// hub feeds GET /api/events. See WithChangeHub.
-	hub *events.Hub
+	hub     *events.Hub
+	streams streamCounts
 	// scrape reads the live volume (from Postgres in production); nil serves
 	// "not configured".
 	scrape metrics.SnapshotReader

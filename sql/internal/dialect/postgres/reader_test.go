@@ -75,3 +75,31 @@ func TestPostgresValuesArriveAsSomethingAGridCanDraw(t *testing.T) {
 		}
 	}
 }
+
+// THE ROW CEILING ALONE DOES NOT BOUND MEMORY: ten thousand rows of a large text value are all held
+// before the response cap sees them. MaxResultBytes stops the read and says the answer was cut.
+func TestPostgresReadStopsAtTheResultSize(t *testing.T) {
+	dsn := os.Getenv("BREVIS_SQL_IT_DSN")
+	if testing.Short() || dsn == "" {
+		t.Skip("BREVIS_SQL_IT_DSN not set")
+	}
+	ctx := context.Background()
+	conn, err := postgres.Dialect{}.Open(ctx, dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = conn.Close(context.Background()) })
+
+	got, err := conn.(dialect.Reader).Read(ctx, dialect.Request{
+		Limit: 1000, MaxResultBytes: 10_000,
+		Query: `SELECT repeat('x', 1000) AS big FROM generate_series(1, 1000)`})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.Truncated {
+		t.Error("a read over the size cap was not marked truncated")
+	}
+	if n := len(got.Rows); n < 10 || n > 12 {
+		t.Errorf("kept %d rows of 1000 bytes under a 10000-byte cap, wanted about 11", n)
+	}
+}

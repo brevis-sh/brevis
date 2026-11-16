@@ -229,6 +229,27 @@ func (c *Client) ListPods(ctx context.Context) ([]Pod, error) {
 	return nil, fmt.Errorf("the pod list has more than 20 pages")
 }
 
+// ListStepPods returns the pods labeled with the run and the node, in any phase.
+func (c *Client) ListStepPods(ctx context.Context, run, node string) ([]Pod, error) {
+	q := url.Values{}
+	q.Set("labelSelector", "brevis.dev/run="+run+",brevis.dev/node="+node)
+	res, err := c.request(ctx, http.MethodGet, "/api/v1/namespaces/"+c.namespace+"/pods?"+q.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = res.Body.Close() }()
+	if res.StatusCode >= 300 {
+		return nil, apiError(res)
+	}
+	var list struct {
+		Items []Pod `json:"items"`
+	}
+	if err := json.NewDecoder(io.LimitReader(res.Body, 32<<20)).Decode(&list); err != nil {
+		return nil, fmt.Errorf("reading the pod list: %w", err)
+	}
+	return list.Items, nil
+}
+
 // Logs opens the container's output stream. With `follow`, the response only
 // ends when the container ends — which is why there is no timeout on the
 // http.Client.

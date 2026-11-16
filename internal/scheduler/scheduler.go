@@ -2,6 +2,8 @@ package scheduler
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -287,6 +289,16 @@ func (s *Scheduler) Trigger(ctx context.Context, slug string, now time.Time,
 	}
 
 	second := now.UTC().Truncate(time.Second).Format(time.RFC3339)
+	// The params are part of the key: two clicks in one second with different
+	// values are two requests, and only a repeat of the same one is a double click.
+	if len(values) > 0 {
+		enc, err := json.Marshal(values)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		sum := sha256.Sum256(enc)
+		second += ":" + hex.EncodeToString(sum[:4])
+	}
 	key := fmt.Sprintf("%s:%s:%s", slug, sch.TriggerManual, second)
 	var logical *time.Time
 	if slot != nil {
@@ -396,6 +408,10 @@ type Backfilled struct {
 // Existing is how many slots already had a run.
 func (b Backfilled) Existing() int { return b.Slots - b.Created }
 
+// maxBackfillSlots stops `--from 2020-01-01` on a minute cron from queueing a million runs by accident.
+// Slots are idempotent, so splitting a larger range into several calls loses nothing.
+var maxBackfillSlots = 50_000
+
 func (s *Scheduler) Backfill(ctx context.Context, slug string, from, until time.Time,
 	params map[string]string) (Backfilled, error) {
 	schedules, err := s.schedules.Active(ctx)
@@ -447,6 +463,12 @@ func (s *Scheduler) Backfill(ctx context.Context, slug string, from, until time.
 		// COUNTED BEFORE IT IS CREATED. A slot the cron fired is a slot
 		// whether or not it became a run, which is the whole point of
 		// carrying both numbers.
+		if out.Slots >= maxBackfillSlots {
+			return out, fmt.Errorf("a backfill is capped at %d slots; narrow the range and run it again (the slots already made are kept)", maxBackfillSlots)
+		}
+		if err := ctx.Err(); err != nil {
+			return out, err
+		}
 		out.Slots++
 		made, err := s.createAndEnqueue(ctx, slug, raw, next,
 			sch.TriggerBackfill, s.backfillPriority, values, def.MaxActive, def.Group)
