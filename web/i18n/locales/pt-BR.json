@@ -586,6 +586,7 @@
   "overview.second_time": "2ª vez seguida",
   "overview.tabs": "O que acabou de acontecer",
   "overview.target.missed": "{workflow} perdeu a execução {when}",
+  "overview.target.nodata": "{workflow} executa, mas o último dado chegou {when}",
   "overview.target.more": {"one": "e mais {count} destino atrasado", "other": "e mais {count} destinos atrasados"},
   "overview.title": "Visão geral",
   "overview.view_log": "Ver log",

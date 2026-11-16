@@ -676,6 +676,7 @@
   "overview.second_time": "2e fois d'affilée",
   "overview.tabs": "Ce qui vient de se passer",
   "overview.target.missed": "{workflow} a manqué son run {when}",
+  "overview.target.nodata": "{workflow} s'exécute, mais ses dernières données sont arrivées {when}",
   "overview.target.more": {
     "one": "et {count} autre destination en retard",
     "other": "et {count} autres destinations en retard"

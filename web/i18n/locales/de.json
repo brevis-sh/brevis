@@ -676,6 +676,7 @@
   "overview.second_time": "2. Mal in Folge",
   "overview.tabs": "Was gerade passiert ist",
   "overview.target.missed": "{workflow} hat seinen Run {when} verpasst",
+  "overview.target.nodata": "{workflow} läuft, aber die letzten Daten kamen {when}",
   "overview.target.more": {
     "one": "und {count} weiteres verspätetes Ziel",
     "other": "und {count} weitere verspätete Ziele"

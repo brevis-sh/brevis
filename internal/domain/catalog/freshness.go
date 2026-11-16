@@ -42,7 +42,31 @@ type Writer struct {
 	// of loaded_at minus the run's slot over its recent landings. Queue,
 	// retries and the step's own duration are all in it, which is the point.
 	Lag time.Duration
+
+	// Landed is when data last reached the destination, as opposed to Last,
+	// which is the later of that and the step's last good run. They differ when
+	// the step ran and wrote nothing, which a cache-style table does by design.
+	// Zero when Last is all there is.
+	Landed time.Time
+
+	// MaxGap is the longest stretch between two landings in the writer's recent
+	// history: what "quiet" has meant for this table so far. Zero when it has
+	// fewer than two landings.
+	MaxGap time.Duration
 }
+
+// A run keeps a table fresh only while its silence looks like the table's own.
+// A step that runs well and writes nothing is how a cache table behaves, and
+// also how a broken fetcher behaves; what tells them apart is how long the
+// table has gone without data compared with the longest it has gone before.
+const (
+	// quietFloor is the least silence tolerated, for a table with little or no
+	// history to learn from.
+	quietFloor = 7 * 24 * time.Hour
+
+	// quietFactor is how many times its longest known gap a table may be quiet.
+	quietFactor = 2
+)
 
 // Verdict is a writer's status and what it rests on.
 type Verdict struct {
@@ -52,6 +76,12 @@ type Verdict struct {
 	// has. Grace is how long each slot was given.
 	Missed time.Time
 	Grace  time.Duration
+
+	// NoData is true when the status comes from the silence outgrowing the
+	// table's own (see Freshness), not from a slot with no run: the writer ran,
+	// and what to tell the reader is when data last landed. Missed then holds
+	// that moment.
+	NoData bool
 }
 
 // Freshness reads a writer's lateness from its OWN schedule.
@@ -70,7 +100,22 @@ type Verdict struct {
 // A paused schedule is paused and never stale: the operator chose it. A writer
 // with no schedule, or one whose cron cannot be read, gets no verdict --
 // guessing an interval is the inference this catalog refuses.
+//
+// A step that ended well keeps the table on time even with no landing (see
+// Writer.Last), unless the silence outgrew what the table has shown before:
+// longer than quietFactor times its longest recent gap, and than quietFloor.
 func Freshness(w Writer, now time.Time) Verdict {
+	v := bySlots(w, now)
+	if (v.Status != OnTime && v.Status != Late) || w.Landed.IsZero() || !w.Last.After(w.Landed) {
+		return v
+	}
+	if now.Sub(w.Landed) <= max(quietFloor, quietFactor*w.MaxGap) {
+		return v
+	}
+	return Verdict{Status: Stale, Missed: w.Landed, Grace: v.Grace, NoData: true}
+}
+
+func bySlots(w Writer, now time.Time) Verdict {
 	if w.Schedule == nil {
 		return Verdict{Status: Unscheduled}
 	}

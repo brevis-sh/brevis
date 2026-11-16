@@ -22,7 +22,7 @@ type Item = {
   params: Record<string, string>;
   rerunning: string;
 };
-type Target = { target: string; status: string; workflow: string; missed: string };
+type Target = { target: string; status: string; workflow: string; missed: string; noData?: boolean };
 type StreamItem = { gateway: string; path: string; href: string; since: string | null };
 export type Attention = { total: number; items: Item[]; more: number; targets: Target[]; targetsMore: number; streams: StreamItem[]; streamsMore: number };
 
@@ -125,7 +125,7 @@ function TargetRow({ tg }: { tg: Target }) {
           <span className="font-mono break-all text-ink">{tg.target}</span>
           <span className="ml-1 text-[12.5px] text-muted">{word(runKind(tg.status))}</span>
         </p>
-        <p className="mt-0.5 text-[12.5px] text-ink-2">{t("overview.target.missed", { workflow: tg.workflow, when: ago(tg.missed) })}</p>
+        <p className="mt-0.5 text-[12.5px] text-ink-2">{t(tg.noData ? "overview.target.nodata" : "overview.target.missed", { workflow: tg.workflow, when: ago(tg.missed) })}</p>
       </div>
       <Link to={`/data/target?u=${encodeURIComponent(tg.target)}`} className={buttonClass("secondary", "small")}>{t("overview.open_catalog")}</Link>
     </li>

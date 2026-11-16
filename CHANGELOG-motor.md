@@ -18,6 +18,11 @@ The engine's tag is `vX.Y.Z`, with no prefix; the SDK's carries `sdk/`.
 
 ## [Unreleased]
 
+### Changed: a run hides a table's silence only while it looks like the table's own
+
+- A step that ran well keeps its table on time (above), but no longer for ever: past 7 days without data **and** twice the longest gap between the table's last 30 landings, the table is stale even though the step runs. A cache table that is quiet for weeks by nature keeps its own pace; a fetcher that exits 0 and never writes is caught. Paused schedules stay paused.
+- The overview says so in its own words, "*workflow* runs, but its last data landed *when*" (`overview.target.nodata`, in all 11 catalogs), because "missed its run" was not true. Added by a model, not reviewed by a native speaker.
+
 ### Fixed: the catalog calls a table stale only when its step did not run
 
 - **A step that stood down no longer reads as a missed run.** Freshness counted

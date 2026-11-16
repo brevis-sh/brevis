@@ -61,6 +61,18 @@ depends on failed, was canceled, or was itself skipped upstream), and a skip
 recorded before `skip_cause` existed, which stays as it was. The page still shows
 the last landing as "last loaded".
 
+**A run hides silence only while the silence looks like the table's own.** A
+step that runs well and writes nothing is how a cache table behaves, and also how
+a broken fetcher behaves. So when a run is what keeps the table on time, the
+catalog also compares how long it has gone **without data** with the longest
+stretch between two of its last 30 landings: past twice that, and past 7 days
+(the floor for a table with little history), the table is **stale** although the
+step ran. A table that has been quiet for ten days before may be quiet for
+twenty; one that lands every two days is stale at seven. The overview then reads
+"*workflow* runs, but its last data landed *when*", not "missed its run", because
+it did not. With no run after the last landing nothing changes: the landing is
+the only proof.
+
 The schedule is read the way the scheduler reads it, in the schedule's
 timezone, so a daylight-saving change moves the slot exactly as it moves the
 run.
