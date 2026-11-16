@@ -113,11 +113,11 @@ type Persister interface {
 		workflow string, landings []Landing) error
 
 	// MarkSkipped records a step whose trigger rule was not satisfied, with the
-	// reason. Required rather than optional: a skipped step that leaves no row
+	// reason and the cause (by design, or because something upstream failed). Required rather than optional: a skipped step that leaves no row
 	// is invisible, and "did not run and nobody can tell why" is the state this
 	// whole feature exists to remove.
 	MarkSkipped(ctx context.Context, runID uuid.UUID, step run.StepKey, attempt int,
-		reason string) error
+		reason string, cause run.SkipCause) error
 }
 
 // Runner runs a whole workflow.
@@ -392,8 +392,41 @@ func (r Runner) Run(ctx context.Context, w wf.Workflow) error {
 // outcomes is what each step ended as. A mutex because a level runs in
 // parallel.
 type outcomes struct {
-	mu sync.Mutex
-	by map[string]run.Status
+	mu    sync.Mutex
+	by    map[string]run.Status
+	cause map[string]run.SkipCause
+}
+
+// skipped records a step skipped for cause.
+func (o *outcomes) skipped(id string, cause run.SkipCause) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	o.by[id] = run.StatusSkipped
+	if o.cause == nil {
+		o.cause = map[string]run.SkipCause{}
+	}
+	o.cause[id] = cause
+}
+
+// causeOf says why the step is skipped when its trigger rule is not met: a
+// failed, canceled or upstream-skipped dependency is upstream; anything else
+// (a dependency skipped by design, a `when: any_failed` that saw no failure)
+// is the step standing down on its own.
+func (o *outcomes) causeOf(n wf.Node, upstream []string) run.SkipCause {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if n.WhenOf() == wf.WhenAnyFailed {
+		return run.SkippedByDesign
+	}
+	for _, up := range upstream {
+		switch s := o.by[up]; {
+		case s == run.StatusSkipped && o.cause[up] == run.SkippedByDesign:
+		case s == run.StatusSuccess:
+		default:
+			return run.SkippedUpstream
+		}
+	}
+	return run.SkippedByDesign
 }
 
 func (o *outcomes) set(id string, s run.Status) {
@@ -438,8 +471,9 @@ func (r Runner) runLevel(ctx context.Context, w wf.Workflow, level []string,
 		// two siblings disagree about whether something had failed, depending
 		// on which one the scheduler woke first.
 		if why := r.notEligible(n, deps[n.ID], done); why != "" {
-			r.markSkipped(ctx, run.Step(n.ID), why)
-			done.set(n.ID, run.StatusSkipped)
+			cause := done.causeOf(n, deps[n.ID])
+			r.markSkipped(ctx, run.Step(n.ID), why, cause)
+			done.skipped(n.ID, cause)
 			continue
 		}
 
@@ -455,8 +489,8 @@ func (r Runner) runLevel(ctx context.Context, w wf.Workflow, level []string,
 			r.fail(ctx, run.Step(n.ID), err, &mu, &errs, done)
 			continue
 		} else if why != "" {
-			r.markSkipped(ctx, run.Step(n.ID), why)
-			done.set(n.ID, run.StatusSkipped)
+			r.markSkipped(ctx, run.Step(n.ID), why, run.SkippedByDesign)
+			done.skipped(n.ID, run.SkippedByDesign)
 			continue
 		}
 
@@ -473,8 +507,8 @@ func (r Runner) runLevel(ctx context.Context, w wf.Workflow, level []string,
 			// because there was nothing to do did not succeed at doing it, and
 			// a green node over zero instances is the kind of thing somebody
 			// builds a dashboard on.
-			r.markSkipped(ctx, run.Step(n.ID), why)
-			done.set(n.ID, run.StatusSkipped)
+			r.markSkipped(ctx, run.Step(n.ID), why, run.SkippedByDesign)
+			done.skipped(n.ID, run.SkippedByDesign)
 			continue
 		}
 
@@ -786,7 +820,7 @@ func (r Runner) alreadySucceeded(ctx context.Context) map[run.StepKey]bool {
 
 // markSkipped records the decision. Same rules as markStart: it needs both a
 // persister and a RunID, and a write failure does not interrupt the run.
-func (r Runner) markSkipped(ctx context.Context, step run.StepKey, reason string) {
+func (r Runner) markSkipped(ctx context.Context, step run.StepKey, reason string, cause run.SkipCause) {
 	if r.Report != nil {
 		r.Report.Event(execution.Event{
 			Kind: execution.EventLog, NodeID: step.Node, Stream: "stderr",
@@ -796,7 +830,7 @@ func (r Runner) markSkipped(ctx context.Context, step run.StepKey, reason string
 	if r.Persist == nil || r.RunID == uuid.Nil {
 		return
 	}
-	if err := r.Persist.MarkSkipped(ctx, r.RunID, step, 0, reason); err != nil && r.Report != nil {
+	if err := r.Persist.MarkSkipped(ctx, r.RunID, step, 0, reason, cause); err != nil && r.Report != nil {
 		r.Report.Event(execution.Event{
 			Kind: execution.EventLog, NodeID: step.Node, Stream: "stderr",
 			Message: "could not record the skip: " + err.Error(),

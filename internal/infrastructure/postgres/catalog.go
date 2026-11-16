@@ -37,6 +37,13 @@ type CatalogWriter struct {
 	LastLoaded time.Time
 	LastRows   *int64
 
+	// LastRan is when the step last ended well on one of its workflow's recent
+	// runs: succeeded, or stood down by design ("skipped: nothing pending"). A
+	// cache-style table is written only when there is something to fetch, so
+	// LastLoaded alone calls a healthy schedule a missed run. Zero when it did
+	// not, or on runs from before skip_cause existed.
+	LastRan time.Time
+
 	// The writer's schedule. HasSchedule is false for a workflow that only runs
 	// by hand.
 	HasSchedule    bool
@@ -233,7 +240,8 @@ func (r *ReadRepo) catalogWriters(ctx context.Context, target *string) ([]Catalo
 		SELECT l.target, l.legacy, l.workflow_slug, l.node_id, l.loaded_at, l.rows_written,
 		       s.cron IS NOT NULL, COALESCE(s.cron, ''), COALESCE(s.timezone, ''), COALESCE(s.active, false),
 		       COALESCE(lag.p90, 0),
-		       inflight.id::text
+		       inflight.id::text,
+		       ran.at
 		FROM latest l
 		LEFT JOIN schedules s ON s.workflow_slug = l.workflow_slug
 		LEFT JOIN LATERAL (
@@ -248,6 +256,23 @@ func (r *ReadRepo) catalogWriters(ctx context.Context, target *string) ([]Catalo
 			) x
 			JOIN runs ru ON ru.id = x.run_id
 		) lag ON true
+		LEFT JOIN LATERAL (
+			-- The step's last good run, from the workflow's recent runs only (the
+			-- table grows with every run). A run counts when the step's rows at
+			-- its last attempt are all success or skipped by design: a mapped
+			-- step with one failed partition, or one cut off by a failure
+			-- upstream, did not keep its schedule.
+			SELECT max(x.fin) AS at FROM (
+				SELECT bool_and(t.status = 'success' OR (t.status = 'skipped' AND t.skip_cause = 'design')) AS ok,
+				       max(t.finished_at) AS fin
+				FROM (SELECT id FROM runs WHERE workflow_slug = l.workflow_slug
+				      ORDER BY created_at DESC LIMIT 30) ru
+				JOIN task_runs t ON t.run_id = ru.id AND t.node_id = l.node_id
+				 AND t.attempt = (SELECT max(m.attempt) FROM task_runs m
+				                  WHERE m.run_id = t.run_id AND m.node_id = t.node_id)
+				GROUP BY ru.id
+			) x WHERE x.ok
+		) ran ON true
 		LEFT JOIN LATERAL (
 			SELECT id FROM runs
 			WHERE workflow_slug = l.workflow_slug AND status IN ('queued', 'running', 'retrying')
@@ -268,10 +293,14 @@ func (r *ReadRepo) catalogWriters(ctx context.Context, target *string) ([]Catalo
 			legacy bool
 			w      CatalogWriter
 			lagSec float64
+			ranAt  *time.Time
 		)
 		if err := rows.Scan(&target, &legacy, &w.Workflow, &w.Node, &w.LastLoaded, &w.LastRows,
-			&w.HasSchedule, &w.Cron, &w.Timezone, &w.Active, &lagSec, &w.RunInFlight); err != nil {
+			&w.HasSchedule, &w.Cron, &w.Timezone, &w.Active, &lagSec, &w.RunInFlight, &ranAt); err != nil {
 			return nil, nil, err
+		}
+		if ranAt != nil {
+			w.LastRan = *ranAt
 		}
 		w.Lag = time.Duration(lagSec * float64(time.Second)).Round(time.Second)
 		i, ok := index[target]
