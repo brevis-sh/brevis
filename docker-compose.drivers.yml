@@ -146,7 +146,7 @@ services:
 
   mysql:
     profiles: [sql, all]
-    image: mysql:8
+    image: mysql:26
     environment:
       MYSQL_ROOT_PASSWORD: brevis
       MYSQL_DATABASE: brevis_it
