@@ -47,6 +47,7 @@ type spyPersister struct {
 
 	// skipped is node -> reason, for the trigger-rule tests.
 	skipped map[string]string
+	causes  map[string]dom.SkipCause
 
 	// ended is every instance that reached a terminal state, for the mapping
 	// tests: a mapped step's four rows are four keys here.
@@ -182,14 +183,27 @@ func (p *spyPersister) loaded() map[dom.StepKey]app.LoadNumbers {
 }
 
 func (p *spyPersister) MarkSkipped(_ context.Context, _ uuid.UUID, step dom.StepKey,
-	_ int, reason string) error {
+	_ int, reason string, cause dom.SkipCause) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.skipped == nil {
 		p.skipped = map[string]string{}
+		p.causes = map[string]dom.SkipCause{}
 	}
 	p.skipped[step.Node] = reason
+	p.causes[step.Node] = cause
 	return nil
+}
+
+// skipCauses is a copy, for a test to read after the run.
+func (p *spyPersister) skipCauses() map[string]dom.SkipCause {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	out := make(map[string]dom.SkipCause, len(p.causes))
+	for k, v := range p.causes {
+		out[k] = v
+	}
+	return out
 }
 
 // skips is a copy, for a test to read after the run.

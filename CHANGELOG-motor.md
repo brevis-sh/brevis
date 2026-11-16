@@ -18,6 +18,19 @@ The engine's tag is `vX.Y.Z`, with no prefix; the SDK's carries `sdk/`.
 
 ## [Unreleased]
 
+### Fixed: the catalog calls a table stale only when its step did not run
+
+- **A step that stood down no longer reads as a missed run.** Freshness counted
+  only the table's last write, so a cache table whose fetcher found nothing to
+  do ("skipped: nobody is pending", exit 0) went stale and the catalog said the
+  workflow missed its run. The clock now restarts at the step's last good run
+  (success, or skipped by design) as well as its last landing. A step that never
+  ran, failed, or was skipped because something upstream failed still counts as
+  missed. No rows are written to the table.
+- **Migration 00035** adds `task_runs.skip_cause` (`design` or `upstream`),
+  written when a step is skipped. Runs from before it have none and count as
+  before.
+
 ## [0.45.1] — 2026-11-07
 
 ### Fixed: runner detection for steps using `host:` and workflow tags

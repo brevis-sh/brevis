@@ -44,6 +44,23 @@ const (
 	StatusSkipped Status = "skipped"
 )
 
+// SkipCause says why a step was skipped. Both are a skipped step, and they are
+// not the same event for whoever watches the data: a step that stood down
+// because there was nothing to do kept its schedule, and one cut off because
+// something it needs failed did not.
+type SkipCause string
+
+const (
+	// SkippedByDesign: nothing for the step to do. An empty `unless_empty`
+	// value or `for_each` list, a `when: any_failed` that saw no failure, or an
+	// upstream that was itself skipped by design.
+	SkippedByDesign SkipCause = "design"
+
+	// SkippedUpstream: a step it depends on failed, was canceled, or was itself
+	// skipped upstream.
+	SkippedUpstream SkipCause = "upstream"
+)
+
 // transitions declares section 7's graph, for a RUN. Keeping it as data, and
 // not as a chain of ifs, makes the machine inspectable and the exhaustive test
 // trivial.

@@ -50,16 +50,16 @@ func (r *RunRepo) StartTask(ctx context.Context, runID uuid.UUID, step dom.StepK
 // the second try overwrites attempt 0 of the first, and a step skipped once may
 // well run the next time.
 func (r *RunRepo) MarkSkipped(ctx context.Context, runID uuid.UUID, step dom.StepKey,
-	attempt int, reason string) error {
+	attempt int, reason string, cause dom.SkipCause) error {
 
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO task_runs (id, run_id, node_id, map_index, status, attempt, error, finished_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+		INSERT INTO task_runs (id, run_id, node_id, map_index, status, attempt, error, skip_cause, finished_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())
 		ON CONFLICT (run_id, node_id, attempt, map_index) DO UPDATE
-		SET status = EXCLUDED.status, error = EXCLUDED.error,
+		SET status = EXCLUDED.status, error = EXCLUDED.error, skip_cause = EXCLUDED.skip_cause,
 		    started_at = NULL, finished_at = now(),
 		    exit_code = NULL, log = ''`,
-		uuid.New(), runID, step.Node, step.MapIndex, dom.StatusSkipped, attempt, reason)
+		uuid.New(), runID, step.Node, step.MapIndex, dom.StatusSkipped, attempt, reason, string(cause))
 	return err
 }
 

@@ -23,7 +23,8 @@ list as complete.
 
 A table three hours old is stale if it loads hourly and fine if it loads daily,
 and only the writer's cron knows which. So a writer — a `workflow · step` — is
-judged by how many of **its own** slots went by since its last landing:
+judged by how many of **its own** slots went by since its last landing **or its
+last good run** (see "A step that stood down" below):
 
 ```
 grace  = max(10 min, lag)
@@ -37,6 +38,28 @@ logical date (its creation, for a manual run). Queue, retries and the step's
 own duration are all in it. A writer that always lands 40 minutes after its
 slot gets 40 minutes; the 10-minute floor keeps a load ending at `:03` from
 flickering between late and on time.
+
+### A step that stood down
+
+A cache-style table is written only when there is something to fetch: a fetcher
+that finds nobody pending exits 0 with "skipped: nobody is pending" and writes
+nothing. The table is old, and the schedule is fine. So the catalog follows the
+workflow's **run** as well as the table's write: the clock restarts at the
+latest of the last landing and the last time the step ended well on one of the
+workflow's 30 most recent runs. "Ended well" is:
+
+- **success**, including a step that exits 0 after saying it skipped (the engine
+  sees a success; no fake rows are written to the table);
+- **skipped by design** (`skip_cause = design`): an empty `unless_empty` value or
+  `for_each` list, a `when: any_failed` that saw no failure, or a step below
+  one that was itself skipped by design.
+
+Not counted: a step that never ran, one that **failed** (a mapped step with one
+failed partition, or an attempt that failed before a retry, is judged by its
+last attempt), one **skipped upstream** (`skip_cause = upstream`: something it
+depends on failed, was canceled, or was itself skipped upstream), and a skip
+recorded before `skip_cause` existed, which stays as it was. The page still shows
+the last landing as "last loaded".
 
 The schedule is read the way the scheduler reads it, in the schedule's
 timezone, so a daylight-saving change moves the slot exactly as it moves the

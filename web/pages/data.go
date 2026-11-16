@@ -130,7 +130,13 @@ func verdictOf(e postgres.CatalogEntry, w postgres.CatalogWriter, now time.Time)
 
 // writerOf is what freshness needs from a catalog row.
 func writerOf(w postgres.CatalogWriter) catalog.Writer {
+	// Freshness follows the workflow's run, not only the table's write: a step
+	// that ended well (or stood down by design) kept its slot even if it wrote
+	// nothing. LastLoaded is still what the page shows as "last loaded".
 	out := catalog.Writer{Last: w.LastLoaded, Lag: w.Lag}
+	if w.LastRan.After(out.Last) {
+		out.Last = w.LastRan
+	}
 	if w.HasSchedule {
 		out.Schedule = &schedule.Schedule{
 			WorkflowSlug: w.Workflow, Cron: w.Cron, Timezone: w.Timezone, Active: w.Active,
