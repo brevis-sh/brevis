@@ -27,7 +27,7 @@ services:
   # does the same thing one layer down. It is said here rather than discovered
   # by somebody reading the file after it is already running.
   k3s:
-    image: rancher/k3s:v1.37.1-k3s1
+    image: rancher/k3s:v1.37.2-k3s1
     privileged: true
     command:
       - server
