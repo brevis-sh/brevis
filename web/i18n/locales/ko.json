@@ -676,6 +676,7 @@
   "overview.second_time": "2회 연속",
   "overview.tabs": "방금 일어난 일",
   "overview.target.missed": "{workflow}: {when} 실행을 놓쳤습니다",
+  "overview.target.nodata": "{workflow}: 실행은 되고 있지만 마지막 데이터는 {when} 도착했습니다",
   "overview.target.more": {
     "one": "그 외 지연된 목적지 {count}개",
     "other": "그 외 지연된 목적지 {count}개"

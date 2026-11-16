@@ -27,34 +27,34 @@ func TestFreshnessReadsLatenessFromTheWritersOwnSchedule(t *testing.T) {
 		want Status
 	}{
 		// Hourly, landing five minutes past the hour. Grace is the 10-minute floor.
-		{"hourly, before the next slot", Writer{sched("0 * * * *", "UTC"), at("2026-10-07T10:05:00Z"), 0}, "2026-10-07T10:59:00Z", OnTime},
-		{"hourly, next slot inside its grace", Writer{sched("0 * * * *", "UTC"), at("2026-10-07T10:05:00Z"), 0}, "2026-10-07T11:09:00Z", OnTime},
-		{"hourly, one slot missed", Writer{sched("0 * * * *", "UTC"), at("2026-10-07T10:05:00Z"), 0}, "2026-10-07T11:11:00Z", Late},
-		{"hourly, still one slot missed", Writer{sched("0 * * * *", "UTC"), at("2026-10-07T10:05:00Z"), 0}, "2026-10-07T12:09:00Z", Late},
-		{"hourly, two slots missed", Writer{sched("0 * * * *", "UTC"), at("2026-10-07T10:05:00Z"), 0}, "2026-10-07T12:11:00Z", Stale},
+		{"hourly, before the next slot", Writer{Schedule: sched("0 * * * *", "UTC"), Last: at("2026-10-07T10:05:00Z"), Lag: 0}, "2026-10-07T10:59:00Z", OnTime},
+		{"hourly, next slot inside its grace", Writer{Schedule: sched("0 * * * *", "UTC"), Last: at("2026-10-07T10:05:00Z"), Lag: 0}, "2026-10-07T11:09:00Z", OnTime},
+		{"hourly, one slot missed", Writer{Schedule: sched("0 * * * *", "UTC"), Last: at("2026-10-07T10:05:00Z"), Lag: 0}, "2026-10-07T11:11:00Z", Late},
+		{"hourly, still one slot missed", Writer{Schedule: sched("0 * * * *", "UTC"), Last: at("2026-10-07T10:05:00Z"), Lag: 0}, "2026-10-07T12:09:00Z", Late},
+		{"hourly, two slots missed", Writer{Schedule: sched("0 * * * *", "UTC"), Last: at("2026-10-07T10:05:00Z"), Lag: 0}, "2026-10-07T12:11:00Z", Stale},
 
 		// The same table read as daily: three hours old is fine.
-		{"daily, hours later", Writer{sched("0 5 * * *", "UTC"), at("2026-10-07T05:20:00Z"), 0}, "2026-10-07T08:00:00Z", OnTime},
-		{"daily, next morning missed", Writer{sched("0 5 * * *", "UTC"), at("2026-10-07T05:20:00Z"), 0}, "2026-10-08T06:00:00Z", Late},
+		{"daily, hours later", Writer{Schedule: sched("0 5 * * *", "UTC"), Last: at("2026-10-07T05:20:00Z"), Lag: 0}, "2026-10-07T08:00:00Z", OnTime},
+		{"daily, next morning missed", Writer{Schedule: sched("0 5 * * *", "UTC"), Last: at("2026-10-07T05:20:00Z"), Lag: 0}, "2026-10-08T06:00:00Z", Late},
 		// Midnight daily. (Descriptors like @daily are not accepted by the
 		// engine's five-field parser, so no published schedule has one.)
-		{"daily at midnight", Writer{sched("0 0 * * *", "UTC"), at("2026-10-07T00:20:00Z"), 0}, "2026-10-09T00:11:00Z", Stale},
-		{"every five minutes", Writer{sched("*/5 * * * *", "UTC"), at("2026-10-07T10:01:00Z"), 0}, "2026-10-07T10:21:00Z", Stale},
+		{"daily at midnight", Writer{Schedule: sched("0 0 * * *", "UTC"), Last: at("2026-10-07T00:20:00Z"), Lag: 0}, "2026-10-09T00:11:00Z", Stale},
+		{"every five minutes", Writer{Schedule: sched("*/5 * * * *", "UTC"), Last: at("2026-10-07T10:01:00Z"), Lag: 0}, "2026-10-07T10:21:00Z", Stale},
 
 		// A writer that usually lands 40 minutes after its slot gets 40
 		// minutes of grace, not the floor.
-		{"the lag widens the grace", Writer{sched("0 * * * *", "UTC"), at("2026-10-07T10:40:00Z"), 40 * time.Minute}, "2026-10-07T11:35:00Z", OnTime},
-		{"the lag widens it, and no further", Writer{sched("0 * * * *", "UTC"), at("2026-10-07T10:40:00Z"), 40 * time.Minute}, "2026-10-07T11:41:00Z", Late},
+		{"the lag widens the grace", Writer{Schedule: sched("0 * * * *", "UTC"), Last: at("2026-10-07T10:40:00Z"), Lag: 40 * time.Minute}, "2026-10-07T11:35:00Z", OnTime},
+		{"the lag widens it, and no further", Writer{Schedule: sched("0 * * * *", "UTC"), Last: at("2026-10-07T10:40:00Z"), Lag: 40 * time.Minute}, "2026-10-07T11:41:00Z", Late},
 		// A lag longer than the interval: an hourly job that lands 90 minutes
 		// late every time is on time by its own measure.
-		{"a lag longer than the interval", Writer{sched("0 * * * *", "UTC"), at("2026-10-07T10:30:00Z"), 90 * time.Minute}, "2026-10-07T12:25:00Z", OnTime},
+		{"a lag longer than the interval", Writer{Schedule: sched("0 * * * *", "UTC"), Last: at("2026-10-07T10:30:00Z"), Lag: 90 * time.Minute}, "2026-10-07T12:25:00Z", OnTime},
 
 		// A clock that ran ahead must not make a table look late.
-		{"last load in the future", Writer{sched("0 * * * *", "UTC"), at("2026-10-07T12:00:00Z"), 0}, "2026-10-07T11:00:00Z", OnTime},
+		{"last load in the future", Writer{Schedule: sched("0 * * * *", "UTC"), Last: at("2026-10-07T12:00:00Z"), Lag: 0}, "2026-10-07T11:00:00Z", OnTime},
 
-		{"paused is a choice, never stale", Writer{&schedule.Schedule{Cron: "0 * * * *", Active: false}, at("2026-01-01T00:00:00Z"), 0}, "2026-10-07T11:00:00Z", Paused},
-		{"no schedule, no verdict", Writer{nil, at("2026-01-01T00:00:00Z"), 0}, "2026-10-07T11:00:00Z", Unscheduled},
-		{"an unreadable cron gives no verdict", Writer{sched("not a cron", "UTC"), at("2026-10-07T10:00:00Z"), 0}, "2026-10-07T11:00:00Z", Unscheduled},
+		{"paused is a choice, never stale", Writer{Schedule: &schedule.Schedule{Cron: "0 * * * *", Active: false}, Last: at("2026-01-01T00:00:00Z")}, "2026-10-07T11:00:00Z", Paused},
+		{"no schedule, no verdict", Writer{Schedule: nil, Last: at("2026-01-01T00:00:00Z"), Lag: 0}, "2026-10-07T11:00:00Z", Unscheduled},
+		{"an unreadable cron gives no verdict", Writer{Schedule: sched("not a cron", "UTC"), Last: at("2026-10-07T10:00:00Z"), Lag: 0}, "2026-10-07T11:00:00Z", Unscheduled},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -68,7 +68,7 @@ func TestFreshnessReadsLatenessFromTheWritersOwnSchedule(t *testing.T) {
 // The verdict carries what the target page says in one sentence: which slot
 // was missed, and how much grace it had.
 func TestALateVerdictNamesTheMissedSlotAndTheGrace(t *testing.T) {
-	v := Freshness(Writer{sched("0 * * * *", "UTC"), at("2026-10-07T10:05:00Z"), 12 * time.Minute}, at("2026-10-07T11:30:00Z"))
+	v := Freshness(Writer{Schedule: sched("0 * * * *", "UTC"), Last: at("2026-10-07T10:05:00Z"), Lag: 12 * time.Minute}, at("2026-10-07T11:30:00Z"))
 	if v.Status != Late {
 		t.Fatalf("status = %s", v.Status)
 	}
@@ -93,7 +93,7 @@ func TestADailyWriterStaysOnTimeAcrossDaylightSaving(t *testing.T) {
 				landed := tick.Add(5 * time.Minute)
 				next, _ := s.Next(tick)
 				// Just before the next tick's grace runs out: on time.
-				if got := Freshness(Writer{s, landed, 0}, next.Add(9*time.Minute)).Status; got != OnTime {
+				if got := Freshness(Writer{Schedule: s, Last: landed}, next.Add(9*time.Minute)).Status; got != OnTime {
 					t.Fatalf("%s: landed %v, at %v: %s, want on time", tz, landed, next.Add(9*time.Minute), got)
 				}
 				tick = next
@@ -125,7 +125,7 @@ func TestBestTakesTheHealthiestWriter(t *testing.T) {
 // The slots that went by without a landing, each past its grace -- what the
 // destination page draws as dashed bars after the last load.
 func TestMissedSlotsListsTheTicksPastTheirGrace(t *testing.T) {
-	w := Writer{sched("0 * * * *", "UTC"), at("2026-10-07T10:05:00Z"), 0}
+	w := Writer{Schedule: sched("0 * * * *", "UTC"), Last: at("2026-10-07T10:05:00Z"), Lag: 0}
 	got := MissedSlots(w, at("2026-10-07T13:30:00Z"), 5)
 	want := []string{"2026-10-07T11:00:00Z", "2026-10-07T12:00:00Z", "2026-10-07T13:00:00Z"}
 	if len(got) != len(want) {
@@ -143,7 +143,60 @@ func TestMissedSlotsListsTheTicksPastTheirGrace(t *testing.T) {
 	if n := len(MissedSlots(w, at("2026-10-07T10:30:00Z"), 5)); n != 0 {
 		t.Errorf("on time, yet %d missed", n)
 	}
-	if n := len(MissedSlots(Writer{nil, at("2026-10-07T10:05:00Z"), 0}, at("2026-10-09T00:00:00Z"), 5)); n != 0 {
+	if n := len(MissedSlots(Writer{Schedule: nil, Last: at("2026-10-07T10:05:00Z"), Lag: 0}, at("2026-10-09T00:00:00Z"), 5)); n != 0 {
 		t.Errorf("no schedule, yet %d missed", n)
+	}
+}
+
+// A step that ran well and wrote nothing keeps a table on time only while the
+// silence looks like the table's own: under 7 days, and under twice the
+// longest gap it has shown.
+func TestASilenceLongerThanTheTablesOwnIsStaleEvenWhenTheStepRuns(t *testing.T) {
+	daily := sched("0 9 * * *", "UTC")
+	ran := at("2026-11-16T09:00:30Z")
+	cases := []struct {
+		name   string
+		landed string
+		gap    time.Duration
+		want   Status
+	}{
+		{"three days, no history: inside the floor", "2026-11-13T09:05:00Z", 0, OnTime},
+		{"eight days, no history: past the floor", "2026-11-08T09:05:00Z", 0, Stale},
+		{"eight days, but it has been quiet for five before", "2026-11-08T09:05:00Z", 5 * 24 * time.Hour, OnTime},
+		{"eleven days, longest known gap five", "2026-11-05T09:05:00Z", 5 * 24 * time.Hour, Stale},
+		{"thirty days, it has been quiet for twenty before", "2026-10-17T09:05:00Z", 20 * 24 * time.Hour, OnTime},
+	}
+	for _, c := range cases {
+		w := Writer{Schedule: daily, Last: ran, Landed: at(c.landed), MaxGap: c.gap}
+		v := Freshness(w, at("2026-11-16T10:00:00Z"))
+		if v.Status != c.want {
+			t.Errorf("%s: %s, want %s", c.name, v.Status, c.want)
+		}
+		// Stale by silence says when data last landed, and says the step ran.
+		if want := c.want == Stale; v.NoData != want || (want && !v.Missed.Equal(w.Landed)) {
+			t.Errorf("%s: NoData = %v, Missed = %v", c.name, v.NoData, v.Missed)
+		}
+	}
+}
+
+// With no run after the last landing the old rule stands: the landing is the
+// only proof, and the limit only judges what a run is hiding.
+func TestTheLearnedLimitOnlyJudgesWhatARunIsHiding(t *testing.T) {
+	w := Writer{Schedule: sched("0 9 * * *", "UTC"), Last: at("2026-11-08T09:05:00Z"), Landed: at("2026-11-08T09:05:00Z")}
+	if got := Freshness(w, at("2026-11-08T21:00:00Z")).Status; got != OnTime {
+		t.Errorf("a fresh landing: %s", got)
+	}
+	if got := Freshness(w, at("2026-11-16T10:00:00Z")).Status; got != Stale {
+		t.Errorf("eight days of nothing, no run: %s, want stale", got)
+	}
+}
+
+// A paused writer stays paused: the limit never overrides a choice.
+func TestTheLearnedLimitNeverOverridesPaused(t *testing.T) {
+	s := sched("0 9 * * *", "UTC")
+	s.Active = false
+	w := Writer{Schedule: s, Last: at("2026-11-16T09:00:30Z"), Landed: at("2026-10-01T09:05:00Z")}
+	if got := Freshness(w, at("2026-11-16T10:00:00Z")).Status; got != Paused {
+		t.Errorf("%s, want paused", got)
 	}
 }

@@ -34,3 +34,23 @@ func TestAScheduleThatRanButWroteNothingIsNotStale(t *testing.T) {
 		t.Errorf("the 17th's slot missed by half an hour is %q, want late", got)
 	}
 }
+
+// The same schedule, but the last landing is fifteen days old and the table has
+// never been quiet that long: running well is not enough, the data stopped.
+func TestAScheduleThatRunsButHasWrittenNothingForTooLongIsStale(t *testing.T) {
+	now := time.Date(2026, 11, 16, 10, 0, 0, 0, time.UTC)
+	entry := postgres.CatalogEntry{Target: "bigquery://zarv/bronze/vendors_wanted_googlemaps_geocode"}
+	w := postgres.CatalogWriter{
+		Workflow: "footprint_wanted_person", Node: "fetch_geocoding",
+		LastLoaded: time.Date(2026, 11, 1, 9, 5, 0, 0, time.UTC), LastRan: time.Date(2026, 11, 16, 9, 0, 30, 0, time.UTC),
+		MaxGap:      2 * 24 * time.Hour,
+		HasSchedule: true, Cron: "0 9 * * *", Timezone: "UTC", Active: true,
+	}
+	if v := verdictOf(entry, w, now); v.Status != catalog.Stale || !v.NoData || !v.Missed.Equal(w.LastLoaded) {
+		t.Errorf("fifteen days without data, longest known gap two: %+v, want stale since the last landing", v)
+	}
+	w.MaxGap = 10 * 24 * time.Hour
+	if got := verdictOf(entry, w, now).Status; got != catalog.OnTime {
+		t.Errorf("a table that has been quiet for ten days before: %q, want on time", got)
+	}
+}

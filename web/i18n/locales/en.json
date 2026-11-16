@@ -585,6 +585,7 @@
   "overview.second_time": "2nd time in a row",
   "overview.tabs": "What just happened",
   "overview.target.missed": "{workflow} missed its run {when}",
+  "overview.target.nodata": "{workflow} runs, but its last data landed {when}",
   "overview.target.more": {"one": "and {count} more late destination", "other": "and {count} more late destinations"},
   "overview.title": "Overview",
   "overview.view_log": "View log",

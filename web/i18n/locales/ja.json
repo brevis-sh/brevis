@@ -676,6 +676,7 @@
   "overview.second_time": "2回連続",
   "overview.tabs": "直近の出来事",
   "overview.target.missed": "{workflow}は{when}の実行を逃しました",
+  "overview.target.nodata": "{workflow}は実行されていますが、最後のデータが届いたのは{when}です",
   "overview.target.more": {
     "one": "ほか遅延中の宛先{count}件",
     "other": "ほか遅延中の宛先{count}件"

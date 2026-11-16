@@ -55,6 +55,10 @@ type CatalogWriter struct {
 	// were purged -- which leaves the 10-minute floor as the grace.
 	Lag time.Duration
 
+	// MaxGap is the longest stretch between two of the writer's last 30
+	// landings. Zero when it has fewer than two.
+	MaxGap time.Duration
+
 	// RunInFlight is the id of a run of this workflow that is queued, running
 	// or retrying, if there is one.
 	RunInFlight *string
@@ -241,7 +245,8 @@ func (r *ReadRepo) catalogWriters(ctx context.Context, target *string) ([]Catalo
 		       s.cron IS NOT NULL, COALESCE(s.cron, ''), COALESCE(s.timezone, ''), COALESCE(s.active, false),
 		       COALESCE(lag.p90, 0),
 		       inflight.id::text,
-		       ran.at
+		       ran.at,
+		       COALESCE(gap.secs, 0)
 		FROM latest l
 		LEFT JOIN schedules s ON s.workflow_slug = l.workflow_slug
 		LEFT JOIN LATERAL (
@@ -256,6 +261,16 @@ func (r *ReadRepo) catalogWriters(ctx context.Context, target *string) ([]Catalo
 			) x
 			JOIN runs ru ON ru.id = x.run_id
 		) lag ON true
+		LEFT JOIN LATERAL (
+			SELECT max(EXTRACT(EPOCH FROM y.loaded_at - y.before)) AS secs FROM (
+				SELECT loaded_at, lag(loaded_at) OVER (ORDER BY loaded_at) AS before FROM (
+					SELECT loaded_at FROM landings x
+					WHERE x.workflow_slug = l.workflow_slug AND x.node_id = l.node_id AND x.target = l.target
+					ORDER BY x.loaded_at DESC
+					LIMIT 30
+				) z
+			) y
+		) gap ON true
 		LEFT JOIN LATERAL (
 			-- The step's last good run, from the workflow's recent runs only (the
 			-- table grows with every run). A run counts when the step's rows at
@@ -294,14 +309,16 @@ func (r *ReadRepo) catalogWriters(ctx context.Context, target *string) ([]Catalo
 			w      CatalogWriter
 			lagSec float64
 			ranAt  *time.Time
+			gapSec float64
 		)
 		if err := rows.Scan(&target, &legacy, &w.Workflow, &w.Node, &w.LastLoaded, &w.LastRows,
-			&w.HasSchedule, &w.Cron, &w.Timezone, &w.Active, &lagSec, &w.RunInFlight, &ranAt); err != nil {
+			&w.HasSchedule, &w.Cron, &w.Timezone, &w.Active, &lagSec, &w.RunInFlight, &ranAt, &gapSec); err != nil {
 			return nil, nil, err
 		}
 		if ranAt != nil {
 			w.LastRan = *ranAt
 		}
+		w.MaxGap = time.Duration(gapSec * float64(time.Second)).Round(time.Second)
 		w.Lag = time.Duration(lagSec * float64(time.Second)).Round(time.Second)
 		i, ok := index[target]
 		if !ok {

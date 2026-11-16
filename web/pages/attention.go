@@ -40,6 +40,10 @@ type TargetItem struct {
 	Status   catalog.Status
 	Workflow string
 	Missed   time.Time
+
+	// NoData: the writer ran and wrote nothing for longer than the table's own
+	// quiet; Missed is then when data last landed.
+	NoData bool
 }
 
 // AttentionTargets are the destinations that need the reader, stale before
@@ -64,7 +68,7 @@ func AttentionTargets(rows []DataRow, failing map[string]bool) []TargetItem {
 		if failingWriter || late == nil {
 			continue
 		}
-		out = append(out, TargetItem{Target: r.Target, Status: r.Status, Workflow: late.Workflow, Missed: late.Verdict.Missed})
+		out = append(out, TargetItem{Target: r.Target, Status: r.Status, Workflow: late.Workflow, Missed: late.Verdict.Missed, NoData: late.Verdict.NoData})
 	}
 	sort.SliceStable(out, func(i, j int) bool {
 		return out[i].Status == catalog.Stale && out[j].Status != catalog.Stale

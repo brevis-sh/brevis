@@ -181,6 +181,7 @@ type attentionTargetView struct {
 	Status   string    `json:"status"`
 	Workflow string    `json:"workflow"`
 	Missed   time.Time `json:"missed"`
+	NoData   bool      `json:"noData"`
 }
 
 type attentionView struct {
@@ -234,7 +235,7 @@ func (u *UI) overviewAttentionAPI(w http.ResponseWriter, r *http.Request) {
 		out.Items = append(out.Items, v)
 	}
 	for _, tg := range a.Targets {
-		out.Targets = append(out.Targets, attentionTargetView{Target: tg.Target, Status: string(tg.Status), Workflow: tg.Workflow, Missed: tg.Missed})
+		out.Targets = append(out.Targets, attentionTargetView{Target: tg.Target, Status: string(tg.Status), Workflow: tg.Workflow, Missed: tg.Missed, NoData: tg.NoData})
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, out)

@@ -143,3 +143,24 @@ func TestAMappedStepCountsOnlyWhenEveryPartitionOfTheLastAttemptEndedWell(t *tes
 		t.Errorf("a step that succeeded on its retry: LastRan = %v, want %v", w.LastRan, day)
 	}
 }
+
+// MaxGap is the longest stretch between two landings: what quiet has meant for
+// this table so far. One landing has no gap.
+func TestTheCatalogReadsTheLongestGapBetweenLandings(t *testing.T) {
+	pool := catalogDB(t)
+	const gappy, single = "bigquery://zarv/bronze/gappy", "bigquery://zarv/bronze/single"
+	schedule(t, pool, "wf_gappy", "0 9 * * *", "UTC", true)
+	schedule(t, pool, "wf_single", "0 9 * * *", "UTC", true)
+	day := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
+	for _, d := range []int{0, 1, 2, 9, 10, 12} { // the longest silence is seven days
+		landAt(t, pool, "wf_gappy", "fetch", gappy, day.AddDate(0, 0, d), time.Minute, nil)
+	}
+	landAt(t, pool, "wf_single", "fetch", single, day, time.Minute, nil)
+
+	if got := writerOfNode(t, pool, gappy, "fetch").MaxGap; got != 7*24*time.Hour {
+		t.Errorf("MaxGap = %v, want 168h", got)
+	}
+	if got := writerOfNode(t, pool, single, "fetch").MaxGap; got != 0 {
+		t.Errorf("a table with one landing has MaxGap = %v, want 0", got)
+	}
+}

@@ -676,6 +676,7 @@
   "overview.second_time": "लगातार दूसरी बार",
   "overview.tabs": "अभी क्या हुआ",
   "overview.target.missed": "{workflow} का {when} वाला run छूट गया",
+  "overview.target.nodata": "{workflow} चल रहा है, लेकिन इसका आखिरी डेटा {when} आया था",
   "overview.target.more": {
     "one": "और {count} destination देर से",
     "other": "और {count} destination देर से"

@@ -133,7 +133,7 @@ func writerOf(w postgres.CatalogWriter) catalog.Writer {
 	// Freshness follows the workflow's run, not only the table's write: a step
 	// that ended well (or stood down by design) kept its slot even if it wrote
 	// nothing. LastLoaded is still what the page shows as "last loaded".
-	out := catalog.Writer{Last: w.LastLoaded, Lag: w.Lag}
+	out := catalog.Writer{Last: w.LastLoaded, Lag: w.Lag, Landed: w.LastLoaded, MaxGap: w.MaxGap}
 	if w.LastRan.After(out.Last) {
 		out.Last = w.LastRan
 	}

@@ -676,6 +676,7 @@
   "overview.second_time": "连续第 2 次",
   "overview.tabs": "刚刚发生了什么",
   "overview.target.missed": "{workflow} 错过了 {when} 的运行",
+  "overview.target.nodata": "{workflow} 仍在运行，但最近一次数据是 {when} 到达的",
   "overview.target.more": {
     "one": "另有 {count} 个延迟的目标",
     "other": "另有 {count} 个延迟的目标"

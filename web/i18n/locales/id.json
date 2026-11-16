@@ -676,6 +676,7 @@
   "overview.second_time": "kedua kalinya berturut-turut",
   "overview.tabs": "Yang baru saja terjadi",
   "overview.target.missed": "{workflow} melewatkan run-nya {when}",
+  "overview.target.nodata": "{workflow} berjalan, tetapi data terakhirnya masuk {when}",
   "overview.target.more": {
     "one": "dan {count} tujuan terlambat lagi",
     "other": "dan {count} tujuan terlambat lagi"

@@ -686,6 +686,7 @@
   "overview.second_time": "второй раз подряд",
   "overview.tabs": "Что только что произошло",
   "overview.target.missed": "{workflow} пропустил запуск {when}",
+  "overview.target.nodata": "{workflow} запускается, но последние данные поступили {when}",
   "overview.target.more": {
     "one": "и ещё {count} опаздывающее назначение",
     "few": "и ещё {count} опаздывающих назначения",
