@@ -59,6 +59,9 @@ type CatalogWriter struct {
 	// landings. Zero when it has fewer than two.
 	MaxGap time.Duration
 
+	// LandedRuns is how many distinct runs those landings come from.
+	LandedRuns int
+
 	// RunInFlight is the id of a run of this workflow that is queued, running
 	// or retrying, if there is one.
 	RunInFlight *string
@@ -246,7 +249,7 @@ func (r *ReadRepo) catalogWriters(ctx context.Context, target *string) ([]Catalo
 		       COALESCE(lag.p90, 0),
 		       inflight.id::text,
 		       ran.at,
-		       COALESCE(gap.secs, 0)
+		       COALESCE(gap.secs, 0), COALESCE(gap.runs, 0)
 		FROM latest l
 		LEFT JOIN schedules s ON s.workflow_slug = l.workflow_slug
 		LEFT JOIN LATERAL (
@@ -262,9 +265,9 @@ func (r *ReadRepo) catalogWriters(ctx context.Context, target *string) ([]Catalo
 			JOIN runs ru ON ru.id = x.run_id
 		) lag ON true
 		LEFT JOIN LATERAL (
-			SELECT max(EXTRACT(EPOCH FROM y.loaded_at - y.before)) AS secs FROM (
-				SELECT loaded_at, lag(loaded_at) OVER (ORDER BY loaded_at) AS before FROM (
-					SELECT loaded_at FROM landings x
+			SELECT max(EXTRACT(EPOCH FROM y.loaded_at - y.before)) AS secs, count(DISTINCT y.run_id) AS runs FROM (
+				SELECT run_id, loaded_at, lag(loaded_at) OVER (ORDER BY loaded_at) AS before FROM (
+					SELECT run_id, loaded_at FROM landings x
 					WHERE x.workflow_slug = l.workflow_slug AND x.node_id = l.node_id AND x.target = l.target
 					ORDER BY x.loaded_at DESC
 					LIMIT 30
@@ -312,7 +315,7 @@ func (r *ReadRepo) catalogWriters(ctx context.Context, target *string) ([]Catalo
 			gapSec float64
 		)
 		if err := rows.Scan(&target, &legacy, &w.Workflow, &w.Node, &w.LastLoaded, &w.LastRows,
-			&w.HasSchedule, &w.Cron, &w.Timezone, &w.Active, &lagSec, &w.RunInFlight, &ranAt, &gapSec); err != nil {
+			&w.HasSchedule, &w.Cron, &w.Timezone, &w.Active, &lagSec, &w.RunInFlight, &ranAt, &gapSec, &w.LandedRuns); err != nil {
 			return nil, nil, err
 		}
 		if ranAt != nil {

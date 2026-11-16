@@ -43,7 +43,7 @@ func TestAScheduleThatRunsButHasWrittenNothingForTooLongIsStale(t *testing.T) {
 	w := postgres.CatalogWriter{
 		Workflow: "footprint_wanted_person", Node: "fetch_geocoding",
 		LastLoaded: time.Date(2026, 11, 1, 9, 5, 0, 0, time.UTC), LastRan: time.Date(2026, 11, 16, 9, 0, 30, 0, time.UTC),
-		MaxGap:      2 * 24 * time.Hour,
+		MaxGap: 2 * 24 * time.Hour, LandedRuns: 8,
 		HasSchedule: true, Cron: "0 9 * * *", Timezone: "UTC", Active: true,
 	}
 	if v := verdictOf(entry, w, now); v.Status != catalog.Stale || !v.NoData || !v.Missed.Equal(w.LastLoaded) {
@@ -52,5 +52,11 @@ func TestAScheduleThatRunsButHasWrittenNothingForTooLongIsStale(t *testing.T) {
 	w.MaxGap = 10 * 24 * time.Hour
 	if got := verdictOf(entry, w, now).Status; got != catalog.OnTime {
 		t.Errorf("a table that has been quiet for ten days before: %q, want on time", got)
+	}
+	// vendors_registry_receita_cnpj on 2026-11-16: a public dataset loaded a few
+	// times, last on the 3rd. Too little history to call the silence a stop.
+	w.MaxGap, w.LandedRuns, w.LastLoaded = 0, 2, time.Date(2026, 11, 3, 9, 5, 0, 0, time.UTC)
+	if got := verdictOf(entry, w, now).Status; got != catalog.OnTime {
+		t.Errorf("a table with two landings, 13 days quiet: %q, want on time", got)
 	}
 }

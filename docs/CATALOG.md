@@ -66,8 +66,10 @@ step that runs well and writes nothing is how a cache table behaves, and also ho
 a broken fetcher behaves. So when a run is what keeps the table on time, the
 catalog also compares how long it has gone **without data** with the longest
 stretch between two of its last 30 landings: past twice that, and past 7 days
-(the floor for a table with little history), the table is **stale** although the
-step ran. A table that has been quiet for ten days before may be quiet for
+(the floor), the table is **stale** although the step ran. Only a table that has
+landed in at least **6 runs** is judged this way: with fewer it has not shown a
+rhythm, and a monthly public dataset or a one-off load looks exactly like a
+stopped one, so it keeps the run's verdict. A table that has been quiet for ten days before may be quiet for
 twenty; one that lands every two days is stale at seven. The overview then reads
 "*workflow* runs, but its last data landed *when*", not "missed its run", because
 it did not. With no run after the last landing nothing changes: the landing is

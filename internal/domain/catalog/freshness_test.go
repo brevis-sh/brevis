@@ -158,16 +158,21 @@ func TestASilenceLongerThanTheTablesOwnIsStaleEvenWhenTheStepRuns(t *testing.T) 
 		name   string
 		landed string
 		gap    time.Duration
+		runs   int
 		want   Status
 	}{
-		{"three days, no history: inside the floor", "2026-11-13T09:05:00Z", 0, OnTime},
-		{"eight days, no history: past the floor", "2026-11-08T09:05:00Z", 0, Stale},
-		{"eight days, but it has been quiet for five before", "2026-11-08T09:05:00Z", 5 * 24 * time.Hour, OnTime},
-		{"eleven days, longest known gap five", "2026-11-05T09:05:00Z", 5 * 24 * time.Hour, Stale},
-		{"thirty days, it has been quiet for twenty before", "2026-10-17T09:05:00Z", 20 * 24 * time.Hour, OnTime},
+		{"three days, no gaps: inside the floor", "2026-11-13T09:05:00Z", 0, 8, OnTime},
+		{"eight days, no gaps: past the floor", "2026-11-08T09:05:00Z", 0, 8, Stale},
+		{"eight days, but it has been quiet for five before", "2026-11-08T09:05:00Z", 5 * 24 * time.Hour, 8, OnTime},
+		{"eleven days, longest known gap five", "2026-11-05T09:05:00Z", 5 * 24 * time.Hour, 8, Stale},
+		{"thirty days, it has been quiet for twenty before", "2026-10-17T09:05:00Z", 20 * 24 * time.Hour, 8, OnTime},
+		// Too little history to have a rhythm: a monthly dataset, or one load.
+		{"fifteen days, one run: nothing learned yet", "2026-11-01T09:05:00Z", 0, 1, OnTime},
+		{"fifteen days, five runs: still nothing learned", "2026-11-01T09:05:00Z", 2 * 24 * time.Hour, 5, OnTime},
+		{"fifteen days, six runs: it has a rhythm now", "2026-11-01T09:05:00Z", 2 * 24 * time.Hour, 6, Stale},
 	}
 	for _, c := range cases {
-		w := Writer{Schedule: daily, Last: ran, Landed: at(c.landed), MaxGap: c.gap}
+		w := Writer{Schedule: daily, Last: ran, Landed: at(c.landed), MaxGap: c.gap, Runs: c.runs}
 		v := Freshness(w, at("2026-11-16T10:00:00Z"))
 		if v.Status != c.want {
 			t.Errorf("%s: %s, want %s", c.name, v.Status, c.want)
@@ -182,7 +187,7 @@ func TestASilenceLongerThanTheTablesOwnIsStaleEvenWhenTheStepRuns(t *testing.T) 
 // With no run after the last landing the old rule stands: the landing is the
 // only proof, and the limit only judges what a run is hiding.
 func TestTheLearnedLimitOnlyJudgesWhatARunIsHiding(t *testing.T) {
-	w := Writer{Schedule: sched("0 9 * * *", "UTC"), Last: at("2026-11-08T09:05:00Z"), Landed: at("2026-11-08T09:05:00Z")}
+	w := Writer{Schedule: sched("0 9 * * *", "UTC"), Last: at("2026-11-08T09:05:00Z"), Landed: at("2026-11-08T09:05:00Z"), Runs: 8}
 	if got := Freshness(w, at("2026-11-08T21:00:00Z")).Status; got != OnTime {
 		t.Errorf("a fresh landing: %s", got)
 	}
@@ -195,7 +200,7 @@ func TestTheLearnedLimitOnlyJudgesWhatARunIsHiding(t *testing.T) {
 func TestTheLearnedLimitNeverOverridesPaused(t *testing.T) {
 	s := sched("0 9 * * *", "UTC")
 	s.Active = false
-	w := Writer{Schedule: s, Last: at("2026-11-16T09:00:30Z"), Landed: at("2026-10-01T09:05:00Z")}
+	w := Writer{Schedule: s, Last: at("2026-11-16T09:00:30Z"), Landed: at("2026-10-01T09:05:00Z"), Runs: 8}
 	if got := Freshness(w, at("2026-11-16T10:00:00Z")).Status; got != Paused {
 		t.Errorf("%s, want paused", got)
 	}

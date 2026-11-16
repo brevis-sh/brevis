@@ -53,6 +53,10 @@ type Writer struct {
 	// history: what "quiet" has meant for this table so far. Zero when it has
 	// fewer than two landings.
 	MaxGap time.Duration
+
+	// Runs is how many runs the writer has landed in, over its recent history
+	// (up to 30 landings). It is what the table has had to learn from.
+	Runs int
 }
 
 // A run keeps a table fresh only while its silence looks like the table's own.
@@ -63,6 +67,12 @@ const (
 	// quietFloor is the least silence tolerated, for a table with little or no
 	// history to learn from.
 	quietFloor = 7 * 24 * time.Hour
+
+	// learnedAfter is the fewest runs a table must have landed in before its
+	// silence is judged. A table with fewer has not shown a rhythm yet: a
+	// monthly public dataset, or one loaded once, looks exactly like a stopped
+	// one, and calling it stale is the false alarm this exists to avoid.
+	learnedAfter = 6
 
 	// quietFactor is how many times its longest known gap a table may be quiet.
 	quietFactor = 2
@@ -106,7 +116,7 @@ type Verdict struct {
 // longer than quietFactor times its longest recent gap, and than quietFloor.
 func Freshness(w Writer, now time.Time) Verdict {
 	v := bySlots(w, now)
-	if (v.Status != OnTime && v.Status != Late) || w.Landed.IsZero() || !w.Last.After(w.Landed) {
+	if (v.Status != OnTime && v.Status != Late) || w.Landed.IsZero() || !w.Last.After(w.Landed) || w.Runs < learnedAfter {
 		return v
 	}
 	if now.Sub(w.Landed) <= max(quietFloor, quietFactor*w.MaxGap) {

@@ -163,4 +163,7 @@ func TestTheCatalogReadsTheLongestGapBetweenLandings(t *testing.T) {
 	if got := writerOfNode(t, pool, single, "fetch").MaxGap; got != 0 {
 		t.Errorf("a table with one landing has MaxGap = %v, want 0", got)
 	}
+	if g, s := writerOfNode(t, pool, gappy, "fetch").LandedRuns, writerOfNode(t, pool, single, "fetch").LandedRuns; g != 6 || s != 1 {
+		t.Errorf("LandedRuns = %d and %d, want 6 and 1", g, s)
+	}
 }
