@@ -17,6 +17,27 @@ and the versions follow [SemVer](https://semver.org/).
 
 ---
 
+## [0.8.1] — 2026-11-16
+
+### Fixed: a Postgres read no longer buffers the whole result
+
+- **It stops at the response size.** The 8 MB response cap was applied after
+  every row had been read, so an endpoint over a table with large `jsonb` or
+  `text` values could hold up to 10,001 rows per request in memory, and a few
+  of them at once could take the process down. The Postgres read now keeps a
+  running estimate of the bytes (`Request.MaxResultBytes`) and stops, marking
+  the answer truncated, as the cap already did. The estimate is not exact and
+  may pass the cap by one row. BigQuery is unchanged: its `MaxBytes` is a
+  billing cap and stays one.
+- **A panic in the cache leader no longer reads as success.** Concurrent
+  identical requests share one result; if the one that runs the query
+  panicked, the others got a zero result and answered 200 with an empty body.
+  They now get an error.
+
+### Changed: dependencies
+
+- `andybalholm/brotli` 1.2.8 and `golang.org/x/oauth2` 0.38.0.
+
 ## [0.8.0] — 2026-11-06
 
 ### Added: `max_in_flight_per_tenant`
