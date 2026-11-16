@@ -18,6 +18,10 @@ The engine's tag is `vX.Y.Z`, with no prefix; the SDK's carries `sdk/`.
 
 ## [Unreleased]
 
+### Fixed: the learned limit judges only a table that has a rhythm
+
+- 0.46.0 called a table stale when its step ran and it had had no data for 7 days and twice its longest gap. A table with little history (a monthly public dataset, one loaded a few times) has no gap to learn, so it got the 7-day floor and showed as stale although nothing was wrong. The limit now applies only to a table that has landed in at least 6 runs; with fewer, the run keeps it on time as before.
+
 ## [0.46.0] — 2026-11-16
 
 ### Added: colors in the run log
