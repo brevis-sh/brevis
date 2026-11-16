@@ -3,8 +3,8 @@ module brevis.sh/brevis/examples
 go 1.26.0
 
 require (
-	cloud.google.com/go/pubsub v1.51.1
 	brevis.sh/brevis/sdk v0.10.0
+	cloud.google.com/go/pubsub v1.52.0
 	github.com/jackc/pgx/v5 v5.12.0
 )
 
