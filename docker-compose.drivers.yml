@@ -210,7 +210,7 @@ services:
   # property no unit test can show -- `memory` says yes to every caller.
   redis:
     profiles: [metastore, all]
-    image: redis:7-alpine
+    image: redis:8-alpine
     ports:
       - "56379:6379"
     healthcheck:
