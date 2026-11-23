@@ -366,7 +366,7 @@ services:
   # it would be evicted by, and evict, what the gateway knows about tables.
   cache:
     profiles: ["demo"]
-    image: redis:7-alpine
+    image: redis:8-alpine
     ports: ["${BREVIS_CACHE_PORT:-56380}:6379"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
